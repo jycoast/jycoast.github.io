@@ -1,10 +1,10 @@
 name: Deploy GitHub Pages
 
-# 触发条件：在 push 到 master 分支后
+# 触发条件：在 push 到 gh-pages 分支后
 on:
   push:
     branches:
-      - master
+      - gh-pages
 
 # 任务
 jobs:
@@ -27,5 +27,5 @@ jobs:
         uses: JamesIves/github-pages-deploy-action@releases/v3
         with:
           ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
-          BRANCH: gh-pages
+          BRANCH: master
           FOLDER: public
