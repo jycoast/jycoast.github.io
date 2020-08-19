@@ -1465,3 +1465,233 @@ public class PredicateTest3 {
 本质上这个其实"test".equals(new Date())，那么显然结果是false。
 
 ### Supplier函数式接口
+
+同样的，我们来看一下Supplier函数式接口的文档：
+
+```java
+/**
+ * Represents a supplier of results.
+ *
+ * <p>There is no requirement that a new or distinct result be returned each
+ * time the supplier is invoked.
+ *
+ * <p>This is a <a href="package-summary.html">functional interface</a>
+ * whose functional method is {@link #get()}.
+ *
+ * @param <T> the type of results supplied by this supplier
+ *
+ * @since 1.8
+ */
+@FunctionalInterface
+public interface Supplier<T> {
+
+    /**
+     * Gets a result.
+     *
+     * @return a result
+     */
+    T get();
+}
+
+```
+
+首先来看类的说明：
+
+```txt
+Represents a supplier of results.
+There is no requirement that a new or distinct result be returned each time the supplier is invoked.
+```
+
+Supplier表示提供结果的供应者，它每次被调用的时候无需保证返回不同的结果，换言之，每次被调用的结果可能是相同的。
+
+Supplier不接受参数，并返回一个结果。
+
+我们来新建一个测试类：
+
+```java
+public class SupplierJyc {
+    public static void main(String[] args) {
+        Supplier<String> supplierJyc = () -> "hello word";
+        System.out.println(supplierJyc.get());
+    }
+}
+```
+
+显然，控制台会打印出以下结果：
+
+```txt
+> Task :SupplierJyc.main()
+hello word
+```
+
+实际上，Supplier更多的适用于工厂创建对象，下面我们用具体的例子来说明，首先创建一个Student类，并生成无参构造方法和setter及getter方法：
+
+```txt
+public class Student {
+
+    private String name = "zhangsan";
+    
+    private int age = 20;
+
+    public Student() {
+
+    }
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+}
+
+```
+
+下面我们使用Supplier来创建一个对象：
+
+```java
+public class StudentTest {
+    public static void main(String[] args) {
+        Supplier<Student> supplier = () -> new Student();
+        System.out.println(supplier.get().getName());
+    }
+}
+```
+
+正式由于Supplier这个函数式接口不接收参数，并且返回一个泛型T类型的对象，所以() -> new Student()就是Supplier函数式接口的一个实例。除了通过这种方式创建实例外，我们还可以使用一种特殊的方式来创建Supplier的实例，即对象引用：
+
+```java
+public class StudentTest {
+    public static void main(String[] args) {
+        Supplier<Student> supplier = () -> new Student();
+        System.out.println(supplier.get().getName());
+        System.out.println("--------------");
+
+        Supplier<Student> supplier2 = Student::new;
+        System.out.println(supplier2.get().getName());
+    }
+}
+
+```
+
+这会与上面的代码得到相同的结果，如果点击Student::new中的new的话，会自动跳转到Student的无参构造的地方：
+
+```java
+  public Student() {
+
+    }
+```
+
+说明这个新的语法就是在调用Student的无参构造来创建对象，而这个无参构造刚好满足不接受参数，只返回对象的Supplier函数式接口的要求，所以创建了Student的实例。
+
+当我们修改这个类的默认构造方法，去掉没有参数的构造方法：
+
+```java
+    public Student(String name) {
+        this.name = name;
+    }
+```
+
+编译器就会提示我们不能解析构造方法：
+
+![1597851410941](D:\笔记\jiyongchao-qf.github.io\docs\views\images\Functionalprogramming.md)
+
+这也验证了我们之前的说法。
+
+以上就是几个最基础也是最重要的几个函数式接口，在此基础上，JDK还为我们提供了一些其他的函数式接口，例如BinaryOperator，他们可以看成是前面几个函数式接口的扩展。
+
+### 函数式接口扩展
+
+相同的方式，我们首先来阅读一下BinaryOperator这个函数式接口的文档：
+
+```txt
+/**
+ * Represents an operation upon two operands of the same type, producing a result
+ * of the same type as the operands.  This is a specialization of
+ * {@link BiFunction} for the case where the operands and the result are all of
+ * the same type.
+ *
+ * <p>This is a <a href="package-summary.html">functional interface</a>
+ * whose functional method is {@link #apply(Object, Object)}.
+ *
+ * @param <T> the type of the operands and result of the operator
+ *
+ * @see BiFunction
+ * @see UnaryOperator
+ * @since 1.8
+ */
+@FunctionalInterface
+public interface BinaryOperator<T> extends BiFunction<T,T,T> {
+    /**
+     * Returns a {@link BinaryOperator} which returns the lesser of two elements
+     * according to the specified {@code Comparator}.
+     *
+     * @param <T> the type of the input arguments of the comparator
+     * @param comparator a {@code Comparator} for comparing the two values
+     * @return a {@code BinaryOperator} which returns the lesser of its operands,
+     *         according to the supplied {@code Comparator}
+     * @throws NullPointerException if the argument is null
+     */
+    public static <T> BinaryOperator<T> minBy(Comparator<? super T> comparator) {
+        Objects.requireNonNull(comparator);
+        return (a, b) -> comparator.compare(a, b) <= 0 ? a : b;
+    }
+
+    /**
+     * Returns a {@link BinaryOperator} which returns the greater of two elements
+     * according to the specified {@code Comparator}.
+     *
+     * @param <T> the type of the input arguments of the comparator
+     * @param comparator a {@code Comparator} for comparing the two values
+     * @return a {@code BinaryOperator} which returns the greater of its operands,
+     *         according to the supplied {@code Comparator}
+     * @throws NullPointerException if the argument is null
+     */
+    public static <T> BinaryOperator<T> maxBy(Comparator<? super T> comparator) {
+        Objects.requireNonNull(comparator);
+        return (a, b) -> comparator.compare(a, b) >= 0 ? a : b;
+    }
+}
+```
+
+首先来看类的说明：
+
+```txt
+Represents an operation upon two operands of the same type, producing a result of the same type as the operands. This is a specialization of BiFunction for the case where the operands and the result are all of the same type.
+This is a functional interface whose functional method is apply(Object, Object).
+```
+
+BinaryOperator表示针对于两个相同运算对象的操作，并且生成与运算对象相同类型的结果类型，这是当使用BiFunction运算对象与结果类型相同时候的一个特例，我们知道，在BiFunction中，类型可以是不相同的：
+
+```java
+BiFunction<T, U, R>
+```
+
+同时其中的抽象方法apply()，也接收了两个不同类型的参数，并且返回了不同类型的结果：
+
+```java
+R apply(T t, U u);
+```
+
+当类型相同的时候，就变成了：
+
+```java
+ BinaryOperator<T> extends BiFunction<T,T,T>
+```
+
+apply()方法也就变成了：
+
+```java
+T apply(T t, T u);
+```
+
+
+
