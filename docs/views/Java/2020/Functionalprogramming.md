@@ -582,7 +582,9 @@ public class FunctionalInterfaceTest {
 
 程序运行的效果是完全等价的，使用这种写法，我们就更能直观的体会到，() -> System.out.println("myTest")其实就是MyInterface的一个具体实现。
 
-前面我们提到过，在Java中，Lambda表达式需要依赖于函数式接口这样一种特殊的形式，实际上，对于一个特定的Lambda表达式是什么类型的，是需要上下文才能解读的，来看这样一个例子：
+前面我们提到过，在Java中，Lambda表达式需要依赖于函数式接口这样一种特殊的形式，所以为什么是函数式接口呢？或者说为什么需要函数式接口呢？简而言之，Java是纯面向对象的语言，方法无法脱离类或者接口单独存在，因此在Java中，函数式编程必须依附这样一类特殊的对象：函数式接口。
+
+实际上，对于一个特定的Lambda表达式是什么类型的，是需要上下文才能解读的，来看这样一个例子：
 
 ``` java
 public class Essence {
@@ -1526,7 +1528,7 @@ hello word
 
 实际上，Supplier更多的适用于工厂创建对象，下面我们用具体的例子来说明，首先创建一个Student类，并生成无参构造方法和setter及getter方法：
 
-```txt
+```java
 public class Student {
 
     private String name = "zhangsan";
@@ -1693,5 +1695,80 @@ apply()方法也就变成了：
 T apply(T t, T u);
 ```
 
+BinaryOperator中还有两个静态方法，首先来看minBy()的说明：
 
+```txt
+Returns a BinaryOperator which returns the lesser of two elements according to the specified Comparator.
+```
+
+minBy()方法会根据比较器Comparator返回两个元素中比较小的那一个，来看一个具体的例子，我们给定两个字符串，来返回比较小的那一个：
+
+```java
+public class BinaryOperatorTest {
+    public static void main(String[] args) {
+        BinaryOperatorTest binaryOperatorTest = new BinaryOperatorTest();
+        System.out.println(binaryOperatorTest.getShort("hellohello", "hello", (a, b) -> a.length() - b.length()));
+        System.out.println(binaryOperatorTest.getShort("hellohello", "hello", (a, b) -> a.charAt(0) - b.charAt(0)));
+    }
+
+    public String getShort(String a, String b, Comparator<String> comparator) {
+        return BinaryOperator.minBy(comparator).apply(a, b);
+    }
+}
+```
+
+显然使用maxBy()方法会获得相反的结果。
+
+其实在java.util.function这个包下面，还有很多的其他的函数式接口，比如BiConsumer，BiFunction，LongPredicate，IntSupplier等等，这些都是对于这几个基础的函数式接口的有力的补充，也是这几个基础的函数式接口的特例。
+
+## 方法引用
+
+```java
+public class MethodReferenceDemo {
+    public static void main(String[] args) {
+        List<String> list = Arrays.asList("hello", "world", "hello world");
+        list.forEach(System.out::println);
+    }
+}
+
+```
+
+这个例子中的::就是JDK8中新增的语法，叫做方法引用，它可以看成是Lambda表达式的一种语法糖，如果所使用的Lambda表达式恰好被实现过的话，就可以使用方法引用来写出更加简洁的代码，我们可以将方法引用看作是一个【函数指针（function pointer）】。
+
+方法引用共分为4类：静态方法引用、构造方法引用、类的任意对象的实例方法引用、特定对象的实例方法引用，对于其中的每一种，我们都会给出Lambda表达式的方式和方法引用的方式实现相同的功能，以此来对照学习。
+
+### 静态方法引用
+
+首先定义一个类：
+
+```java
+public class Student {
+    private String name;
+    private int score;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getScore() {
+        return score;
+    }
+
+    public void setScore(int score) {
+        this.score = score;
+    }
+
+    public static int compareStudentByScore(Student student1, Student student2) {
+        return student1.score - student2.score;
+    }
+
+    private static int compareStudentByName(Student student1, Student student2) {
+        return student1.getName().compareToIgnoreCase(student2.getName());
+    }
+}
+```
 
