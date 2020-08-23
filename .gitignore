@@ -2,6 +2,5 @@ node_modules/
 node_modules/
 docs/.vuepress/theme
 package-lock.json
-public/
 # vuepress temp file
 .temp
