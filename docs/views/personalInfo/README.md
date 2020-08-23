@@ -3,8 +3,8 @@ title: 个人信息
 tags:
  - 个人信息
 date: 2020-07-13
-isComment: false
 sidebar: false
+isShowComments: false
 ---
 
 #### 我做过的事
@@ -16,6 +16,6 @@ sidebar: false
 
 ***
 
-个人博客：[**吉永超**](https://jiyongchao-qf.github.io/) 
+个人博客：[**吉永超**](https://jycoder.club/) 
 
 ***

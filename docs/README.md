@@ -1,11 +1,12 @@
 ---
 home: true
 bgImage: '/banner.jpg'
+heroText: null
 bgImageStyle: {
-  height: '450px'
+  height: '350px'
 }
 faceImage: '/head.png'
-heroImage: /hero_write.png
+heroImage: null
 heroImageStyle: {
   maxHeight: '200px',
   display: block,
