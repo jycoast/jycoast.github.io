@@ -1772,3 +1772,201 @@ public class Student {
 }
 ```
 
+接下来我们使用List集合中新增加的sort方法进行排序：
+
+```java
+public class MethodReferenceDemo {
+    public static void main(String[] args) {
+        Student student1 = new Student("zhangsan", 10);
+        Student student2 = new Student("lisi", 90);
+        Student student3 = new Student("wangwu", 50);
+        Student student4 = new Student("zhaoliu", 40);
+
+        List<Student> students = Arrays.asList(student1, student2, student3, student4);
+        students.sort((studentParam1, studentParam2) -> Student.compareStudentByScore(studentParam1, studentParam2));
+
+        students.forEach(student -> System.out.println(student.getScore()));
+    }
+}
+```
+
+这里我们排序的时候直接调用的是List集合中的默认方法sort（），这也是在JDK8中新增加的方法：
+
+```java
+  default void sort(Comparator<? super E> c) {
+        Object[] a = this.toArray();
+        Arrays.sort(a, (Comparator) c);
+        ListIterator<E> i = this.listIterator();
+        for (Object e : a) {
+            i.next();
+            i.set((E) e);
+        }
+    }
+
+```
+
+可以看到其接收Comparator作为参数，我们再来看一下Comparator的类定义情况：
+
+```java
+@FunctionalInterface
+public interface Comparator<T> {
+    int compare(T o1, T o2);
+}
+```
+
+可以看到这是一个函数式接口，并且接收两个相同类型的参数，并且返回一个Int值，它会根据定义好的排序规则，如果第一个参数大于第二个参数，那么会返回正数，相等会返回0，小于会返回负数，针对于以上的例子，Student类中的静态方法compareStudentByScore恰好是接收两个参数，并且返回一个结果，所以可以作为Comparator这个Lambda表达式的方法体，其实我们还可以使用方法引用的方式，来完成相同的功能：
+
+```java
+public class MethodReferenceDemo {
+    public static void main(String[] args) {
+        Student student1 = new Student("zhangsan", 10);
+        Student student2 = new Student("lisi", 90);
+        Student student3 = new Student("wangwu", 50);
+        Student student4 = new Student("zhaoliu", 40);
+
+        List<Student> students = Arrays.asList(student1, student2, student3, student4);
+        // students.sort((studentParam1, studentParam2) -> Student.compareStudentByScore(studentParam1, studentParam2));
+
+        // students.forEach(student -> System.out.println(student.getScore()));
+
+        System.out.println("==================================");
+        students.sort(Student::compareStudentByScore);
+        students.forEach(student -> System.out.println(student.getScore()));
+    }
+}
+```
+
+这两种方式的效果完全等价，换言之，在这个场景下，方法引用与Lambda表达式完全等价，方法引用是Lambda表达式的一种语法糖，只有当某一个已经存在的方法，恰好满足了Lambda表达式的要求，才可以使用方法引用，Lambda表达式其实是一种更为通用的形式，而方法引用则需要满足一些条件才能使用。
+
+### 实例方法引用
+
+我们依然使用排序这个例子，这次我们使用另一种写法来完成这个功能，首先定义一个这样的类：
+
+```java
+public class StudentComparator {
+    public int compareStudentByScore(Student student1, Student student2) {
+        return student1.getScore() - student2.getScore();
+    }
+
+    public int compareStudentByName(Student student1, Student student2) {
+        return student1.getName().compareToIgnoreCase(student2.getName());
+    }
+}
+
+```
+
+然后来实现对于Student的排序：
+
+```java
+public class MethodReferenceDemo {
+    
+    public static void main(String[] args) {
+        Student student1 = new Student("zhangsan", 10);
+        Student student2 = new Student("lisi", 90);
+        Student student3 = new Student("wangwu", 50);
+        Student student4 = new Student("zhaoliu", 40);
+        
+        StudentComparator studentComparator = new StudentComparator();
+        students.sort((studentParam1, studentParam2) -> studentComparator.
+                compareStudentByScore(studentParam1, studentParam2));
+        
+        students.forEach(student -> System.out.println(student.getScore()));
+    }
+}
+```
+
+这里我们直接使用StudentComparator实例中的compareStudentByScore来进行排序，事实上，这种场景下，也可以使用方法引用来替代：
+
+``` java
+public class MethodReferenceDemo {
+    public static void main(String[] args) {
+        Student student1 = new Student("zhangsan", 10);
+        Student student2 = new Student("lisi", 90);
+        Student student3 = new Student("wangwu", 50);
+        Student student4 = new Student("zhaoliu", 40);
+
+        List<Student> students = Arrays.asList(student1, student2, student3, student4);
+        StudentComparator studentComparator = new StudentComparator();
+        students.sort(studentComparator::compareStudentByScore);
+        students.forEach(student -> System.out.println(student.getScore()));
+        System.out.println("==================================");
+        students.sort(studentComparator::compareStudentByName);
+        students.forEach(student -> System.out.println(student.getName()));
+    }
+}
+```
+
+与静态方法引用的不同的是，这里我们调用的是类实例的方法。
+
+### 实例方法名引用
+
+首先，在Student类中，我们增加一个方法：
+
+```java
+package lambda;
+
+/**
+ * 2 * @Author: jiyongchao
+ * 3 * @Date: 2020/8/20 23:56
+ * 4
+ */
+public class Student {
+    private String name;
+    private int score;
+
+    public Student(String name, int score) {
+        this.name = name;
+        this.score = score;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getScore() {
+        return score;
+    }
+
+    public void setScore(int score) {
+        this.score = score;
+    }
+
+    public static int compareStudentByScore(Student student1, Student student2) {
+        return student1.score - student2.score;
+    }
+
+    private static int compareStudentByName(Student student1, Student student2) {
+        return student1.getName().compareToIgnoreCase(student2.getName());
+    }
+
+    public int compareByScore(Student student) {
+        return this.getScore() - student.getScore();
+    }
+
+    public int compareByName(Student student) {
+        return this.getName().compareToIgnoreCase(student.getName());
+    }
+}
+```
+
+在之前的例子中，compareStudentByScore与compareStudentByName方法实际上是我们有意为之的，实际上这两个静态方法放在任何一个类中，都是可以调用的，通常我们比较两个对象时，更多的情况是，传入一个对象，并与当前对象进行比较，这也是新增加的compareByScore和compareByName的作用，在这种情况下，排序规则又可以做出如下修改：
+
+```java
+public class MethodReferenceDemo {
+    public static void main(String[] args) {
+        Student student1 = new Student("zhangsan", 10);
+        Student student2 = new Student("lisi", 90);
+        Student student3 = new Student("wangwu", 50);
+        Student student4 = new Student("zhaoliu", 40);
+
+        List<Student> students = Arrays.asList(student1, student2, student3, student4);
+        students.sort(Student::compareByName);
+        students.forEach(student -> System.out.println(student.getName()));
+    }
+}
+```
+
