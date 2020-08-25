@@ -1970,3 +1970,163 @@ public class MethodReferenceDemo {
 }
 ```
 
+我们再举一个例子，来加深对于实例方法名引用的理解：
+
+```java
+public class MethodReferenceDemo {
+    public static void main(String[] args) {
+        List<String> cities = Arrays.asList("qingdao", "chongqing", "tianjin", "beijing");
+        Collections.sort(cities, (city1, city2) -> city1.compareToIgnoreCase(city2));
+        cities.forEach(city -> System.out.println(city));
+        Collections.sort(cities, String::compareToIgnoreCase);
+       	cities.forEach(city -> System.out.println(city));
+    }
+}
+```
+
+这个时候，再回到集合遍历的例子当中：
+
+```java
+System.out::println()
+```
+
+实际上，查看System源码可以发现out实际上是PrintStream的一个对象：
+
+```java
+    public final static PrintStream out = null;
+```
+
+而println()方法就是PrintStream中的一个方法：
+
+```java
+  public void println(double x) {
+        synchronized (this) {
+            print(x);
+            newLine();
+        }
+    }
+```
+
+### 构造方法引用
+
+前面我们介绍过的Supplier函数式接口其中一个很重要的应用就是构造方法引用，因为其不接收参数，返回值的特性正好与构造方法的作用不谋而合，所以，我们可以很轻松的写出如下代码：
+
+```java
+public class MethodReferenceDemo {
+
+    public String getString(Supplier<String> supplier) {
+        return supplier.get() + "test";
+    }
+    public static void main(String[] args) {
+        MethodReferenceDemo methodReferenceDemo = new MethodReferenceDemo();
+        System.out.println(methodReferenceDemo.getString(String::new));
+
+    }
+}
+```
+
+除了无参构造，还可以调用有参数的构造方法，这个时候就变成了接收一个参数，返回值：
+
+```java
+public class MethodReferenceDemo {
+
+    public String getString2(String str, Function<String, String> function) {
+        return function.apply(str);
+    }
+
+    public static void main(String[] args) {
+        MethodReferenceDemo methodReferenceDemo = new MethodReferenceDemo();
+        System.out.println(methodReferenceDemo.getString2("hello", String::new));
+
+    }
+}
+```
+
+### 默认方法
+
+在方法引用的最后，我们补充一些关于JDK8中默认方法的相关介绍，首先定义这样两个接口，接口中有同名的默认方法：
+
+```java
+public interface MyInterface1 {
+    default void myMethod() {
+        System.out.println("MyInterface1");
+    }
+}
+```
+
+```java
+public interface MyInterface2 {
+    default void myMethod() {
+        System.out.println("MyInterface2");
+    }
+}
+```
+
+这个时候，假设有一个类，要实现这两个接口，但是由于这两个接口中有同名的默认方法，所以，编译器无法自动推断出要继承哪一个接口中的默认方法，一般这个时候，处理方式有两种，一种是在实现类中重写方法：
+
+```java
+public class MyClass implements MyInterface1, MyInterface2 {
+
+    @Override
+    public void myMethod() {
+        System.out.println("MyInterface1");
+    }
+
+    public static void main(String[] args) {
+        MyClass myClass = new MyClass();
+        myClass.myMethod();
+    }
+}
+```
+
+这种方式的弊端在于，我们需要将某一个子类中的默认方法实现重写一遍，如果代码很多，既费时，可维护性也比较差，好在JDK为我们提供了另一种方式来完成：
+
+```java
+public class MyClass implements MyInterface1, MyInterface2 {
+
+    @Override
+    public void myMethod() {
+       MyInterface1.super.myMethod();
+    }
+
+    public static void main(String[] args) {
+        MyClass myClass = new MyClass();
+        myClass.myMethod();
+    }
+}
+```
+
+对于以上例子我们再做一个小的扩展，增加一个MyInterface1的实现类：
+
+```java
+public class MyInterface1Impl implements MyInterface1 {
+    @Override
+    public void myMethod() {
+        System.out.println("MyInterface1Impl");
+    }
+}
+
+```
+
+这个时候，我们再定义一个类，这个类继承MyInterface1Impl，并且实现MyInterface2：
+
+```java
+public class MyClass2 extends MyInterface1Impl implements MyInterface2 {
+    public static void main(String[] args) {
+        MyClass2 myClass2 = new MyClass2();
+        myClass2.myMethod();
+    }
+}
+```
+
+这个时候调用当前类的myMethod()方法并不会报错，也就是说，编译器自动推断出了我们要想调用MyInterface1Impl中的myMethod()方法，还是MyInterface2中的默认方法myMethod()，这实际上是JDK中的一个约定，编译器会认为继承的优先级大于实现，类中的方法才表示具体的行为，而接口更多的时候还是表示一种模板或者契约。
+
+增加默认方法的特性是Java对于支持函数式编程一个非常重要的改变，在上面排序的例子中可以看到，List这样一个顶层的集合增加了排序的方法，试想，如果没有默认方法，那对于想从JDK7升级到JDK8的人无疑是一场灾难，如果一旦在自己的代码实现过List，那意味你需要重写所有的子类，而JDK在很多的接口中都增加了默认方法，为了升级JDK还需要入侵式的修改客户端的代码，这显然是不合适的，那为什么还会增加默认方法的机制呢？其目的，就是为了更为方便的编写函数式的代码，同时也是为了向后兼容的一种妥协，从这一个层面来说，Java的函数式编程并不是完美无暇的，更像是一个裹足前行的人，这也是面向对象带来限制，但我们还是非常振奋，JDK8使我们看到了Java这门古老的语言的全新面目。
+
+增加默认方法也可以看到，接口和抽象类的区别越来越小了。
+
+## Stream初识
+
+在前面的章节我们花费了不少的章节整理了Lambda表达式的相关特性，也举出了不少的例子来展示了Lambda表达式的应用，但总有种纸上谈兵的感觉，还是无法理解Lambda表达式到底可以帮我们做哪些事情？函数式编程又指的是什么？在接下来的章节中，我们就会围绕这两个问题展开。
+
+实际上，Lambda表达式在大多数的场景下，都是与Stream相伴出现的，两个配合使用，更加高效、简洁、优雅的处理集合相关的问题。
