@@ -2121,7 +2121,7 @@ public class MyClass2 extends MyInterface1Impl implements MyInterface2 {
 
 这个时候调用当前类的myMethod()方法并不会报错，也就是说，编译器自动推断出了我们要想调用MyInterface1Impl中的myMethod()方法，还是MyInterface2中的默认方法myMethod()，这实际上是JDK中的一个约定，编译器会认为继承的优先级大于实现，类中的方法才表示具体的行为，而接口更多的时候还是表示一种模板或者契约。
 
-增加默认方法的特性是Java对于支持函数式编程一个非常重要的改变，在上面排序的例子中可以看到，List这样一个顶层的集合增加了排序的方法，试想，如果没有默认方法，那对于想从JDK7升级到JDK8的人无疑是一场灾难，如果一旦在自己的代码实现过List，那意味你需要重写所有的子类，而JDK在很多的接口中都增加了默认方法，为了升级JDK还需要入侵式的修改客户端的代码，这显然是不合适的，那为什么还会增加默认方法的机制呢？其目的，就是为了更为方便的编写函数式的代码，同时也是为了向后兼容的一种妥协，从这一个层面来说，Java的函数式编程并不是完美无暇的，更像是一个裹足前行的人，这也是面向对象带来限制，但我们还是非常振奋，JDK8使我们看到了Java这门古老的语言的全新面目。
+增加默认方法的特性是Java对于支持函数式编程一个非常重要的改变，在上面排序的例子中可以看到，List这样一个顶层的集合增加了排序的方法，试想，如果没有默认方法，那对于想从JDK7升级到JDK8的人无疑是一场灾难，如果一旦在自己的代码实现过List，那意味你需要重写所有的子类，而JDK在很多的接口中都增加了默认方法，为了升级JDK还需要入侵式的修改客户端的代码，这显然是不合适的，那为什么还会增加默认方法的机制呢？其目的，就是为了更为方便的编写函数式的代码，同时也是为了向后兼容的一种妥协，从这一个层面来说，Java的函数式编程并不是完美无暇的，更像是一个裹足前行的人，这也是面向对象带来限制，但我们还是非常振奋，JDK8使我们看到了Java这门古老的语言的全新面貌。
 
 增加默认方法也可以看到，接口和抽象类的区别越来越小了。
 
@@ -2129,4 +2129,172 @@ public class MyClass2 extends MyInterface1Impl implements MyInterface2 {
 
 在前面的章节我们花费了不少的章节整理了Lambda表达式的相关特性，也举出了不少的例子来展示了Lambda表达式的应用，但总有种纸上谈兵的感觉，还是无法理解Lambda表达式到底可以帮我们做哪些事情？函数式编程又指的是什么？在接下来的章节中，我们就会围绕这两个问题展开。
 
-实际上，Lambda表达式在大多数的场景下，都是与Stream相伴出现的，两个配合使用，更加高效、简洁、优雅的处理集合相关的问题。
+实际上，Lambda表达式在大多数的场景下，都是与Stream相伴出现的，两个配合使用，更加高效、简洁、优雅的处理集合相关的问题。 
+
+首先我们需要了解一些Stream的基本概念，学会新的API使用，在不断的实践中，最后探究Stream的实现原理。一般而言Stream由3个部分组成：
+
+1. 源
+2. 零个或多个中间操作
+3. 终止操作
+
+流操作的分类又有两种：
+
+1. 惰性求值
+2. 及早求值
+
+Stream也可以分为并行流和串行流，可以通过非常简单的方式，就是使用并发来加快运行的效率。
+
+我们首先使用不同的方式来创建一个Stream对象：
+
+```java
+public class StreamTest {
+    public static void main(String[] args) {
+        Stream stream1 = Stream.of("hello", "world", "hello world");
+    }
+}
+
+```
+
+为什么可以这样创建呢？不妨查看一下Stream这个类中的of()方法：
+
+```java
+    public static<T> Stream<T> of(T... values) {
+        return Arrays.stream(values);
+    }
+```
+
+可以看到这是一个静态方法，本身接受的是可变参数，并且会调用Arrays中的stream方法：
+
+```java
+ public static <T> Stream<T> stream(T[] array) {
+        return stream(array, 0, array.length);
+    }
+```
+
+其中的"hello", "world", "hello world"就称之为源，源的意思就是要操作的数据对象，使用相似的方式，我们还可以这样创建Stream：
+
+```java
+public class StreamTest {
+    public static void main(String[] args) {
+        Stream stream1 = Stream.of("hello", "world", "hello world");
+        String[] myArray = new String[]{"hello", "world", "hello world"};
+        Stream stream2 = Stream.of(myArray);
+        Stream stream3 = Arrays.stream(myArray);
+    }
+}
+```
+
+本质上而言，这几种创建Stream的方式并没有什么区别，其实最常见的，是采用下面的方式来创建流：
+
+```java
+public class StreamTest {
+    public static void main(String[] args) {
+        List<String> list = Arrays.asList(myArray);
+        Stream stream = list.stream();
+    }
+}
+```
+
+以上就是关于如何创建流的对象的例子，接下来我们看看引入Stream会为我们的编码带来什么样的改变，首先我们创建一个Stream，并且调用它的forEach（）方法：
+
+```java
+public class StreamTest2 {
+    public static void main(String[] args) {
+        Stream.of(new int[]{5, 6, 7}).forEach(System.out::println);
+    }
+}
+```
+
+在这段代码中，我们首先创建了一个元素为5，6，7的Stream对象，并且调用forEach()方法，对流中的每一个元素执行打印的操作。
+
+Stream本身其实也提供了针对与特定数据类型的具化的Stream对象，用来避免自动拆箱装箱带来的性能的损耗，所以这段代码也可以这么写：
+
+```java
+public class StreamTest2 {
+    public static void main(String[] args) {
+        IntStream.of(new int[]{5, 6, 7,}).forEach(System.out::println);
+    }
+}
+```
+
+再举一个例子：
+
+```java
+public class StreamTest2 {
+    public static void main(String[] args) {
+        IntStream.range(3, 8).forEach(System.out::println);
+    }
+}
+```
+
+这样我们就在控制台打印了3到7，我们可以来了解一下这个range()方法：
+
+```java
+    public static IntStream range(int startInclusive, int endExclusive) {
+        if (startInclusive >= endExclusive) {
+            return empty();
+        } else {
+            return StreamSupport.intStream(
+                    new Streams.RangeIntSpliterator(startInclusive, endExclusive, false), false);
+        }
+    }
+```
+
+可以看到这个方法返回的是包含最小值，不包含最大值的IntStream对象，那如果要包含最大值改怎么做呢？一种方式当然可以调整范围，比如，可以设置范围是（3，9）就可以打印3到8的内容，也可以调用另一个方法：
+
+```java
+IntStream.rangeClosed(3, 8).forEach(System.out::println);
+```
+
+我们不妨来看一下这个方法的源码：
+
+```java
+    public static IntStream rangeClosed(int startInclusive, int endInclusive) {
+        if (startInclusive > endInclusive) {
+            return empty();
+        } else {
+            return StreamSupport.intStream(
+                    new Streams.RangeIntSpliterator(startInclusive, endInclusive, true), false);
+        }
+    }
+```
+
+这样，就顺利的同时包含了较小的值和较大的值。
+
+上面的例子看起来还是相对而言比较简陋的，接下来我们给出一个稍微复杂一点的示例：
+
+```java
+public class StreamTest3 {
+    public static void main(String[] args) {
+        List<Integer> list = Arrays.asList(1, 2, 3, 4, 5, 6);
+        System.out.println(list.stream().map(i -> 2 * i).reduce(0, Integer::sum));
+    }
+}
+```
+
+这里我们对于集合中的元素先乘以2，然后求和，这里的map描述的是一种映射，而reduce描述的一种聚合，只有当表达式中具有reduce这样的终止操作的方法的时候，流才会被真正的执行，这就是所谓的终止操作，而map就称之为中间操作。不难看出，与传统的方式，使用函数式的方式，代码变的异常简洁和优雅。
+
+## Stream类源码解析
+
+在初步了解了Sream给我们来了些什么之后，我们来了解一些关于流的特性：
+
+- Collection提供了新的Stream()方法
+- 流不存储值，通过管道的方式获取值
+- 本质是函数式的，对流的操作会生成一个结果，不过并不会修改底层的数据源，集合可以作为流的底层数据源
+- 延迟查找，很多流操作（过滤、映射、排序等）都可以延迟实现
+
+ 
+
+接下来再通过一些实际的例子，来加深对于Stream的理解：
+
+```java
+public class StreamTest4 {
+    public static void main(String[] args) {
+        Stream<String> stream = Stream.of("hello", "world", "helloworld");
+        String[] stringArray = stream.toArray(length -> new String[length]);
+        String[] strings = stream.toArray(String[]::new);
+        Arrays.asList(stringArray).forEach(System.out::println);
+    }
+}
+```
+
