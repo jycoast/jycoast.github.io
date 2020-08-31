@@ -2298,3 +2298,223 @@ public class StreamTest4 {
 }
 ```
 
+上面的例子创建Stream的，那Stream是如何转变成我们常用的List集合呢？这里就要说明一个及其重要的方法collect()：
+
+```java
+public class StreamTest4 {
+    public static void main(String[] args) {
+        Stream<String> stream = Stream.of("hello", "world", "helloworld");
+        List<String> list = stream.collect(Collectors.toList());
+         list.forEach(System.out::println);
+    }
+}
+```
+
+collect()方法是有几个重载的方法，我们来看接收参数最多的这个：
+
+```java
+    /**
+     * Performs a <a href="package-summary.html#MutableReduction">mutable
+     * reduction</a> operation on the elements of this stream.  A mutable
+     * reduction is one in which the reduced value is a mutable result container,
+     * such as an {@code ArrayList}, and elements are incorporated by updating
+     * the state of the result rather than by replacing the result.  This
+     * produces a result equivalent to:
+     * <pre>{@code
+     *     R result = supplier.get();
+     *     for (T element : this stream)
+     *         accumulator.accept(result, element);
+     *     return result;
+     * }</pre>
+     *
+     * <p>Like {@link #reduce(Object, BinaryOperator)}, {@code collect} operations
+     * can be parallelized without requiring additional synchronization.
+     *
+     * <p>This is a <a href="package-summary.html#StreamOps">terminal
+     * operation</a>.
+     *
+     * @apiNote There are many existing classes in the JDK whose signatures are
+     * well-suited for use with method references as arguments to {@code collect()}.
+     * For example, the following will accumulate strings into an {@code ArrayList}:
+     * <pre>{@code
+     *     List<String> asList = stringStream.collect(ArrayList::new, ArrayList::add,
+     *                                                ArrayList::addAll);
+     * }</pre>
+     *
+     * <p>The following will take a stream of strings and concatenates them into a
+     * single string:
+     * <pre>{@code
+     *     String concat = stringStream.collect(StringBuilder::new, StringBuilder::append,
+     *                                          StringBuilder::append)
+     *                                 .toString();
+     * }</pre>
+     *
+     * @param <R> type of the result
+     * @param supplier a function that creates a new result container. For a
+     *                 parallel execution, this function may be called
+     *                 multiple times and must return a fresh value each time.
+     * @param accumulator an <a href="package-summary.html#Associativity">associative</a>,
+     *                    <a href="package-summary.html#NonInterference">non-interfering</a>,
+     *                    <a href="package-summary.html#Statelessness">stateless</a>
+     *                    function for incorporating an additional element into a result
+     * @param combiner an <a href="package-summary.html#Associativity">associative</a>,
+     *                    <a href="package-summary.html#NonInterference">non-interfering</a>,
+     *                    <a href="package-summary.html#Statelessness">stateless</a>
+     *                    function for combining two values, which must be
+     *                    compatible with the accumulator function
+     * @return the result of the reduction
+     */
+    <R> R collect(Supplier<R> supplier,
+                  BiConsumer<R, ? super T> accumulator,
+                  BiConsumer<R, R> combiner);
+```
+
+collect方法接收三个参数，其中的BiConsumer是接收两个参数，并且没有返回值的函数式接口：
+
+```java
+@FunctionalInterface
+public interface BiConsumer<T, U> 
+    void accept(T t, U u);
+}
+```
+
+我们来阅读一下collect方法的说明：
+
+```txt
+Performs a mutable reduction operation on the elements of this stream. A mutable reduction is one in which the reduced value is a mutable result container, such as an ArrayList, and elements are incorporated by updating the state of the result rather than by replacing the result. This produces a result equivalent to:
+```
+
+对流当中的元素进行可变的汇聚操作，一个可变的汇聚操作指的是将值汇聚到可变的结果容器，比如ArrayList，并且这个容器是通过更新结果的状态来进行合并的，而不是通过替换结果进行合并的，这个结果相当于下面这段代码：
+
+```java
+ R result = supplier.get();
+     for (T element : this stream)
+         accumulator.accept(result, element);
+     return result;
+```
+
+首先会通过supplier.get()方法获取到结果集，然后对流中的元素进行遍历，遍历执行累加器accumulator中的accept，最后返回结果，这里总共有三个步骤，对应的就是collect方法的三个函数式接口：
+
+```java
+ <R> R collect(Supplier<R> supplier,
+                  BiConsumer<R, ? super T> accumulator,
+                  BiConsumer<R, R> combiner);
+```
+
+我们来举一个具体的例子来说明，这段文字的含义：
+
+```java
+public class StreamTest4 {
+    public static void main(String[] args) {
+        Stream<String> stream = Stream.of("hello", "world", "helloworld");
+        List<String> list = stream.collect(() -> new ArrayList<String>(), (theList, item) -> theList.add(item),(theList1, theList2) -> theList1.addAll(theList2));
+    }
+}
+```
+
+supplier就是我们要返回的结果，这里我们选择new一个ArrayList作为返回的容器，accumulator是我们要把流中的元素添加到要返回的结果容器当中，所以这里调用List的add()方法，将流中的元素依次添加到我们新new出来的ArrayList当中，每次将流中的元素添加到的ArrayList时都会新newArrayList，combiner是将上一次返回的结果，添加到的最终的结果theList1当中，当然，这个方法我们也可以用方法引用来完成：
+
+```java
+ stream.collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
+```
+
+理解了三个参数具体的作用我们具体再往下看：
+
+```txt
+Like reduce(Object, BinaryOperator), collect operations can be parallelized without requiring additional synchronization.This is a terminal operation.
+```
+
+就像reduce一样，collect无需其他操作就可以很好的支持并行流，并且也是一个终止操作，这也是流式编程给我们带来的好处。
+
+```txt
+There are many existing classes in the JDK whose signatures are well-suited for use with method references as arguments to collect(). 
+```
+
+在JDK中有很多的方法都可以采用方法引用的方式，作为collect()的参数，这里举了两个例子，一个正是我们前面举出的例子：
+
+```java
+ List<String> asList = stringStream.collect(ArrayList::new, ArrayList::add,
+                                                ArrayList::addAll);
+```
+
+还有一个例子：
+
+```java
+   String concat = stringStream.collect(StringBuilder::new, StringBuilder::append,
+                                          StringBuilder::append).toString();
+```
+
+这里使用StringBuilder作为最终返回的结果容器，遍历集合中的单个的字符串，最终将他们拼接起来。
+
+最后我们来看一下对于参数的说明：
+
+- supplier – a function that creates a new result container. For a parallel execution, this function may be called multiple times and must return a fresh value each time.
+- accumulator – an associative, non-interfering, stateless function for incorporating an additional element into a result
+- combiner – an associative, non-interfering, stateless function for combining two values, which must be compatible with the accumulator function
+
+supplier会创建一个新的结果容器，在并行流中可能会多次调用，所以它每次返回的一定是一个新的结果容器，accumulator，它是一个相关的，不冲突的，可关联的一个无状态的一个函数，用于将一个额外的元素合并到结果容器当中，combiner用于合并两个值，它必须和accumulator 是兼容的。
+
+最后我们可以看一个JDK实现的一个例子：
+
+```java
+    public static <T>
+    Collector<T, ?, List<T>> toList() {
+        return new CollectorImpl<>((Supplier<List<T>>) ArrayList::new, List::add,
+                                   (left, right) -> { left.addAll(right); return left; },
+                                   CH_ID);
+    }
+```
+
+## Stream实例剖析
+
+首先来看一个具体的例子：
+
+```java
+public class StreamTest4 {
+    public static void main(String[] args) {
+      Stream<String> stream = Stream.of("hello", "world", "helloworld");
+        ArrayList<String> list = stream.collect(Collectors.toCollection(ArrayList::new));
+        list.forEach(System.out::println);
+    }
+}
+```
+
+这里我们使用的Collectors类中的toCollection()方法：
+
+```java
+public static <T, C extends Collection<T>>
+    Collector<T, ?, C> toCollection(Supplier<C> collectionFactory) {
+        return new CollectorImpl<>(collectionFactory, Collection<T>::add,
+                                   (r1, r2) -> { r1.addAll(r2); return r1; },
+                                   CH_ID);
+    }
+```
+
+可以看到，它接受一个Supplier参数，这里我们使用构方法引用的方式，这实际上是一种比起toList()更为通用的写法，使用toCollection可以很方便的自定义返回结果容器的类型，比如我们要返回一个LinkedList，我们只需要：
+
+```java
+LinkedList<String> list = stream.collect(Collectors.toCollection(LinkedList::new));
+```
+
+除了将流转化为List，我们也可以转化为Set、Map等，例如：
+
+```java
+public class StreamTest4 {
+    public static void main(String[] args) {
+        TreeSet<String> set = stream.collect(Collectors.toCollection(TreeSet::new));
+        set.forEach(System.out::println);
+    }
+}
+```
+
+上一章节中，JDK中举出的拼接字符串的例子，实际上在Collectors中有一种更为简洁的实现方案：
+
+```java
+public class StreamTest4 {
+    public static void main(String[] args) {
+        Stream<String> stream = Stream.of("hello", "world", "helloworld");
+        String str = stream.collect(Collectors.joining()).toString();
+    }
+}
+```
+
