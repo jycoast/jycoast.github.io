@@ -2518,3 +2518,169 @@ public class StreamTest4 {
 }
 ```
 
+之前我们举的例子要么是将集合转化为Stream，要么是将Stream转化为集合，实际使用的时候，需要两者配合使用，举一个这样的例子，将集合中的字符串传化为大写并打印：
+
+```java
+public class StreamTest5 {
+    public static void main(String[] args) {
+        List<String> list = Arrays.asList("hello", "world", "helloworld", "test");
+        list.stream().map(String::toUpperCase).collect(Collectors.toList()).
+                forEach(System.out::println);
+    }
+}
+```
+
+类似这样的代码，才是在实际应用中使用的最多的，其中的map()是JDK为我们提供的API，表示一种映射关系，将集合中的元素映射成后面表达式的结果的操作，再比如，要求出集合中每一个元素的平方并打印：
+
+```java
+public class StreamTest5 {
+    public static void main(String[] args) {
+        List<Integer> list2 = Arrays.asList(1, 2, 3, 4);
+        list2.stream().map(item -> item * item).collect(Collectors.toList()).
+                forEach(System.out::println);
+    }
+}
+```
+
+与map比较类似的还有一个flatmap()方法，它表示将流中元素的界限打破，最终返回一个整体，举个例子：
+
+```java
+public class StreamTest5 {
+    public static void main(String[] args) {
+        Stream<List<Integer>> stream = Stream.of(Arrays.asList(1), Arrays.asList(2, 3),
+                Arrays.asList(4, 5, 6));
+        stream.flatMap(theList -> theList.stream().map(item -> item * item)).forEach(System.out::println);
+    }
+}
+```
+
+这里我们首先对于流中的集合畸形了平方的操作，然后将所有的元素作为一个整体进行打印。
+
+接下来介绍generate和iterate这两个特殊的方法：
+
+```java
+public class StreamTest6 {
+    public static void main(String[] args) {
+        Stream<String> stream = Stream.generate(UUID.randomUUID()::toString);
+        stream.findFirst().ifPresent(System.out::println);
+    }
+}
+```
+
+接下来介绍iterate方法：
+
+```java
+public static<T> Stream<T> iterate(final T seed, final UnaryOperator<T> f) {
+        Objects.requireNonNull(f);
+        final Iterator<T> iterator = new Iterator<T>() {
+            @SuppressWarnings("unchecked")
+            T t = (T) Streams.NONE;
+
+            @Override
+            public boolean hasNext() {
+                return true;
+            }
+
+            @Override
+            public T next() {
+                return t = (t == Streams.NONE) ? seed : f.apply(t);
+            }
+        };
+        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(
+                iterator,
+                Spliterator.ORDERED | Spliterator.IMMUTABLE), false);
+    }
+```
+
+它的参数UnaryOperator可以简单的看一下：
+
+```java
+@FunctionalInterface
+public interface UnaryOperator<T> extends Function<T, T> {
+    static <T> UnaryOperator<T> identity() {
+        return t -> t;
+    }
+}
+```
+
+Function这个函数式接口本身接口T类型的参数，返回R类型的结果，这里的UnaryOperator表示接收参数与返回结果类型相同的情况，接下来我们阅读一下iterate的文档：
+
+```txt
+Returns an infinite sequential ordered Stream produced by iterative application of a function f to an initial element seed, producing a Stream consisting of seed, f(seed), f(f(seed)), etc.
+The first element (position 0) in the Stream will be the provided seed. For n > 0, the element at position n, will be the result of applying the function f to the element at position n - 1.
+
+```
+
+这个方法返回无限的、串行的、有序的一个Stream，它是由迭代函数f对于初始值seed的不断迭代，第一个元素作为seed（种子）,而对于n>0，会不断应用n-1次迭代函数f，比如f(seed)、f(f(seed))等等。
+
+举个例子：
+
+```java
+public class StreamTest6 {
+    public static void main(String[] args) {
+        Stream.iterate(1, item -> item + 2).limit(10).forEach(System.out::println);
+    }
+}
+```
+
+需要注意的是，这里之所以使用limit是因为如果不加限制，程序将一直运行下去，这是因为iterate他是无限的。
+
+## Stream陷阱剖析
+
+首先来看这样一个例子，假设有这样一个流，流中的元素为1，3，5，6，7，11，我们要找出流中大于2的元素，然后将每个元素乘以2，忽略掉流中的前两个元素之后，再取出流中的前两个元素，然后求出流中元素的总和：
+
+```java
+public class StreamTest6 {
+    public static void main(String[] args) {
+        Stream<Integer> stream = Stream.iterate(1, item -> item + 2).limit(6);
+        int sum = stream.filter(item -> item > 2).mapToInt(item -> item * 2).skip(2).limit(2).sum();
+        System.out.println(sum);
+    }
+}
+```
+
+这里有两个新的方法，skip()表示跳过，而limit()表示取前几个元素。
+
+如果我们改一下需求，把求出流中元素的总和改为求出流中元素的最小值，我们猜想代码可能是这样的：
+
+```java
+stream.filter(item -> item > 2).mapToInt(item -> item * 2).skip(2).limit(2).min();
+```
+
+但是运行之后控制台的输出却不是我们想要的结果，而是这样的：
+
+```txt
+OptionalInt[14]
+```
+
+原来min()方法的源码是这样的：
+
+```java
+OptionalInt min();
+```
+
+返回的是一个Optional对象，而不是一个普通的Int，类似的max()方法返回的也是Optional对象，原因就在于，求最大值和最小值有可能为空，而求和则不会，如果流中没有元素返回0即可，从本质上来说，是否会直接返回值，还是返回Optional对象，就是取决于是否可能会出现空指针的情况。
+
+```java
+public class StreamTest6 {
+    public static void main(String[] args) {
+        Stream<Integer> stream = Stream.iterate(1, item -> item + 2).limit(10);
+        stream.filter(item -> item > 2).mapToInt(item -> item * 2).skip(2).limit(2).max().ifPresent(System.out::println);
+    }
+}
+```
+
+那如果既想求出最大值，也想求出最小值，也想求出总和，改怎么办呢？
+
+```java
+public class StreamTest6 {
+    public static void main(String[] args) {
+        IntSummaryStatistics intSummaryStatistics = stream.filter(item -> item > 2).mapToInt(item -> item * 2).skip(2).limit(2).summaryStatistics();
+        System.out.println(intSummaryStatistics.getMax());
+        System.out.println(intSummaryStatistics.getMin());
+        System.out.println(intSummaryStatistics.getSum());
+    }
+}
+```
+
+答案就是调用summaryStatistics()方法。
