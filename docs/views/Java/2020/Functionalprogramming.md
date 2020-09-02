@@ -2684,3 +2684,165 @@ public class StreamTest6 {
 ```
 
 答案就是调用summaryStatistics()方法。
+
+Stream实际上和文件系统中的IO流有很多类似的性质，比如，Stream只能使用一次：
+
+```java
+public class StreamTest6 {
+    public static void main(String[] args) {
+        Stream<Integer> stream = Stream.iterate(1, item -> item + 2).limit(6);
+        System.out.println(stream);
+        System.out.println(stream.filter(item -> item > 2));
+        System.out.println(stream.distinct());
+    }
+}
+```
+
+运行程序，会得到如下的输出：
+
+```txt
+java.util.stream.SliceOps$1@816f27d
+java.util.stream.ReferencePipeline$2@53d8d10a
+Exception in thread "main" java.lang.IllegalStateException: stream has already been operated upon or closed
+```
+
+可以看到我们在调用filter方法之后，就会抛出Stream已经被使用的异常，即便我们使用的不是终止操作，而只是一个中间操作，或者说，对于Stream的操作我们只能进行一次，其实中间操作都会返回一个新的Stream对象，为了说明这一点，我们来举个例子：
+
+```java
+public class StreamTest6 {
+    public static void main(String[] args) {
+        Stream<Integer> stream = Stream.iterate(1, item -> item + 2).limit(6);
+        System.out.println(stream);
+        Stream<Integer> stream2 = stream.filter(item -> item > 2);
+        System.out.println(stream2);
+        Stream<Integer> stream3 = stream2.distinct();
+        System.out.println(stream3);
+    }
+}
+```
+
+这次我们顺利的打印出了Stream对象，但其实每次打印的Stream对象都是不同的，实际使用的时候，我们更多的是使用链式的写法：
+
+```java
+stream.filter(item -> item > 2).distinct();
+```
+
+接下来我们再了解流的另一个特性：
+
+```java
+public class StreamTest7 {
+    public static void main(String[] args) {
+        List<String> list = Arrays.asList("hello", "world", "hello world");
+        list.stream().map((item->{
+            String result = item.substring(0, 1).toUpperCase() + item.substring(1);
+            System.out.println(result);
+            return result;
+        }));
+    }
+}
+```
+
+这段代码会输出什么呢？答案是什么都不会，如果修改成如下：
+
+```java
+public class StreamTest7 {
+    public static void main(String[] args) {
+        List<String> list = Arrays.asList("hello", "world", "hello world");
+        list.stream().map(item -> item.substring(0, 1).toUpperCase() + item.substring(1)).forEach(System.out::println);
+
+        list.stream().map((item -> {
+            String result = item.substring(0, 1).toUpperCase() + item.substring(1);
+            System.out.println(result);
+            return result;
+        })).forEach(System.out::println);
+    }
+}
+```
+
+就会顺利的再控制台打印出我们想要的结果了。
+
+这也是流的另一个重要的特性——流是惰性的，流只有在遇到终止操作的时候，才会真正的执行，而map是中间操作，因此流并没有被真正的调用，而forEach是终止操作，所以流会被正常的调用执行。
+
+再来看一个例子：
+
+```java
+public class StreamTest8 {
+    public static void main(String[] args) {
+        IntStream.iterate(0, i -> (i + 1) % 2).distinct().limit(6).forEach(System.out::println);
+    }
+}
+```
+
+在控制台输出了：
+
+```txt
+0
+1
+```
+
+但程序并没有停止，而是在不停的运行，这是为什么呢？这是因为前面在不断的迭代产生0，1，而去重也并没有等待到新的值，所以程序会无限的运行下去，如果我们将刚才的操作反过来：
+
+```java
+IntStream.iterate(0, i -> (i + 1) % 2).limit(6).distinct().forEach(System.out::println);
+```
+
+可以看到，控制台在输出了0，1之后就停止了，这是因为我们限制了只取流中的前六个元素，这提示我们在使用流的使用后一定要注意编写的顺序和流的相关特性。
+
+## 内部迭代和外部迭代
+
+Stream和SQL语句其实非常的相似，例如，要完成这样的一个SQL的功能，使用SQL语句：
+
+```sql
+select name 
+from student 
+where age > 20 and address = ‘beijing’ order by age desc;
+```
+
+该简单的sql所要表达的意思是：从student这张表中查询出年龄>20并且地址=北京的记录，并且对年龄进行降序排序，排序之后将其名字查找出来。对于sql其实是一个描述性的语言，只描述其行为，而具体如何让db完成这个行为是没有暴露出来的，对于该sql所做的工作如果换成咱们的stream来实现那会是个什么样子呢，伪代码可能是这样的：
+
+```java
+        students.stream().filter(student -> student.getAge() > 20).filter(student -> student.getAddress().equals(“beijing”))
+                .sorted(…).forEach(student -> System.out.println(student.getName()));
+```
+
+从表现形式上而言，Stream和SQL非常的类似，这是因为Stream也是属于一种描述性的语句， 整个语句并没有告诉底层Stream要如何去做，等于只要发一些指令给底层就可以了，具体底层怎么做完全不用关心。
+
+如果使用原来传统的方式又该怎么做呢？
+
+```java
+ 		List list = new ArrayList<>();
+        for(int i=0; i < students.size();i++){
+            Student student = students.get(i);
+            if(student.getAge() > 20 && student.getAddress().equals(“beijing”)){
+                list.add(student);
+            }
+        }
+        Collections.sort(list. Comparator()…);
+        for(Student student : list){
+            System.out.println(student.getName());
+        }
+```
+
+可以看到，使用传统的方式，代码还相当冗余的，并且从易读性上而言，还是Stream的方式更加简洁明了，那什么是外部迭代，什么是内部迭代呢？实际上在Stream出现之前的都称之为外部迭代，使用Stream的就称之为内部迭代。
+
+针对一个集合：
+
+![img](D:\笔记\jiyongchao-qf.github.io\docs\views\Java\2020\Functionalprogramming.assets\2019031013382286.png)
+
+对于上面的例子而言：
+
+![img](D:\笔记\jiyongchao-qf.github.io\docs\views\Java\2020\Functionalprogramming.assets\20190310133837466.png)
+
+集合与我们编写的处理逻辑之间是有清晰的划分的：
+
+![img](D:\笔记\jiyongchao-qf.github.io\docs\views\Java\2020\Functionalprogramming.assets\20190310133848762-1599061148870.png)
+
+![img](D:\笔记\jiyongchao-qf.github.io\docs\views\Java\2020\Functionalprogramming.assets\20190310133900418.png)
+
+那对于Stream内部迭代的方式呢？
+
+![在这里插入图片描述](D:\笔记\jiyongchao-qf.github.io\docs\views\Java\2020\Functionalprogramming.assets\20190310133916114.png)
+
+总的来说，集合关注的是数据与数据存储本身；而流关注的则是对数据的计算。流与迭代器类似的一点是：流是无法重复使用或消费的，并且流在调用的时候，并不是对于集合中所有的元素先调用第一个filter方法，再调用第二个filter方法，再调用其他方法，实际上并不是这样的，流会将执行的调用链的时候，会有一个容器将所有的操作保存下来，并且针对具体的操作，会优化调用顺序，这一点，在后面源代码分析的时候，就可以看到。
+
+我们一直再说中间操作和终止操作，那如何判断一个操作是中间操作还是终止操作呢？简单来说，中间操纵都会返回一个Stream对象，而终止操作则不会返回Stream类型，可能不返回值，也可能返回其他类型的单个值。
