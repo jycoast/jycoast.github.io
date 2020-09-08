@@ -2125,7 +2125,7 @@ public class MyClass2 extends MyInterface1Impl implements MyInterface2 {
 
 增加默认方法也可以看到，接口和抽象类的区别越来越小了。
 
-## Stream初识
+## Stream应用
 
 在前面的章节我们花费了不少的章节整理了Lambda表达式的相关特性，也举出了不少的例子来展示了Lambda表达式的应用，但总有种纸上谈兵的感觉，还是无法理解Lambda表达式到底可以帮我们做哪些事情？函数式编程又指的是什么？在接下来的章节中，我们就会围绕这两个问题展开。
 
@@ -2274,7 +2274,7 @@ public class StreamTest3 {
 
 这里我们对于集合中的元素先乘以2，然后求和，这里的map描述的是一种映射，而reduce描述的一种聚合，只有当表达式中具有reduce这样的终止操作的方法的时候，流才会被真正的执行，这就是所谓的终止操作，而map就称之为中间操作。不难看出，与传统的方式，使用函数式的方式，代码变的异常简洁和优雅。
 
-## Stream类源码解析
+### Stream类源码解析
 
 在初步了解了Sream给我们来了些什么之后，我们来了解一些关于流的特性：
 
@@ -2465,7 +2465,7 @@ supplier会创建一个新的结果容器，在并行流中可能会多次调用
     }
 ```
 
-## Stream实例剖析
+### Stream实例剖析
 
 首先来看一个具体的例子：
 
@@ -2554,7 +2554,39 @@ public class StreamTest5 {
 }
 ```
 
-这里我们首先对于流中的集合畸形了平方的操作，然后将所有的元素作为一个整体进行打印。
+这里我们首先对于流中的集合进行了平方的操作，然后将所有的元素作为一个整体进行打印。
+
+再来看一个map和flatMap例子，假设我们要对一个集合中的元素提取出单词并去重：
+
+```java
+public class StreamTest11 {
+    public static void main(String[] args) {
+        List<String> list = Arrays.asList("hello welcome", "world hello", "hello world hello", "hello welcome");
+        list.stream().map(item -> item.split(" ")).distinct().collect(Collectors.toList()).forEach(System.out::println);
+    }
+}
+```
+
+运行的结果：
+
+```txt
+[Ljava.lang.String;@4eec7777
+[Ljava.lang.String;@3b07d329
+[Ljava.lang.String;@41629346
+[Ljava.lang.String;@404b9385
+```
+
+这显然是不对的，原因就在于这里我们使用map返回的类型实际上变成了String[]，自然的，后续的去重操作当然也都失败了，那如果要实现这个需求改怎么做呢？就需要调用flatMap方法：
+
+```java
+public class StreamTest11 {
+    public static void main(String[] args) {
+        List<String> list = Arrays.asList("hello welcome", "world hello", "hello world hello", "hello welcome");
+        list.stream().map(item -> item.split(" ")).flatMap(Arrays::stream).distinct().
+                collect(Collectors.toList()).forEach(System.out::println);
+    }
+}
+```
 
 接下来介绍generate和iterate这两个特殊的方法：
 
@@ -2625,7 +2657,7 @@ public class StreamTest6 {
 
 需要注意的是，这里之所以使用limit是因为如果不加限制，程序将一直运行下去，这是因为iterate他是无限的。
 
-## Stream陷阱剖析
+### Stream陷阱剖析
 
 首先来看这样一个例子，假设有这样一个流，流中的元素为1，3，5，6，7，11，我们要找出流中大于2的元素，然后将每个元素乘以2，忽略掉流中的前两个元素之后，再取出流中的前两个元素，然后求出流中元素的总和：
 
@@ -2788,7 +2820,7 @@ IntStream.iterate(0, i -> (i + 1) % 2).limit(6).distinct().forEach(System.out::p
 
 可以看到，控制台在输出了0，1之后就停止了，这是因为我们限制了只取流中的前六个元素，这提示我们在使用流的使用后一定要注意编写的顺序和流的相关特性。
 
-## 内部迭代和外部迭代
+### 内部迭代和外部迭代
 
 Stream和SQL语句其实非常的相似，例如，要完成这样的一个SQL的功能，使用SQL语句：
 
@@ -2846,3 +2878,71 @@ where age > 20 and address = ‘beijing’ order by age desc;
 总的来说，集合关注的是数据与数据存储本身；而流关注的则是对数据的计算。流与迭代器类似的一点是：流是无法重复使用或消费的，并且流在调用的时候，并不是对于集合中所有的元素先调用第一个filter方法，再调用第二个filter方法，再调用其他方法，实际上并不是这样的，流会将执行的调用链的时候，会有一个容器将所有的操作保存下来，并且针对具体的操作，会优化调用顺序，这一点，在后面源代码分析的时候，就可以看到。
 
 我们一直再说中间操作和终止操作，那如何判断一个操作是中间操作还是终止操作呢？简单来说，中间操纵都会返回一个Stream对象，而终止操作则不会返回Stream类型，可能不返回值，也可能返回其他类型的单个值。
+
+### 流的短路与并发流
+
+但从使用的角度而言，使用并发流与串行流的区别并不是很大，但在底层实现上时完全不同的。
+
+```java
+public class StreamTest9 {
+    public static void main(String[] args) {
+        List<String> list = new ArrayList<>(50000000);
+        for (int i = 0; i < list.size(); i++) {
+            list.add(UUID.randomUUID().toString());
+        }
+
+        System.out.println("==================");
+        long startTime = System.nanoTime();
+        list.stream().sorted().count();
+        long endTime = System.nanoTime();
+        long millis = TimeUnit.NANOSECONDS.toMillis(endTime - startTime);
+        System.out.println("=======================");
+        System.out.println(millis);
+    }
+}
+```
+
+如果要改用串行流改怎么做呢？仅仅需要将我们调用的方法修改为：
+
+```java
+  list.parallelStream().sorted().count();
+```
+
+这也是使用内部迭代给我们带来的另一个好处，至于底层如何充分利用计算机资源帮助我们快速迭代，实际上在框架的底层就已经帮我们实现了，复杂性永远都是存在的，区别在于框架帮助我们实现了多少。当然，你可能会说，既然调用并行流这么方便，那是不是所有的场景下，都可以使用并行流来代替串行流？答案是否定的，并流行并不一定就比串行流的效率高，这取决于解决的实际问题，需要选择合适的方法，才能效率最高，这一点，在后续分析源码的时候就可以看到。
+
+接下来我们讨论有关流的短路问题，首先来看这样一个例子：
+
+```java
+public class StreamTest10 {
+    public static void main(String[] args) {
+        List<String> list = Arrays.asList("hello", "world", "hello world");
+        list.stream().mapToInt(String::length).filter(length -> length == 5).findFirst().ifPresent(System.out::println);
+    }
+}
+```
+
+显然，如果有长度为5的字符串，就会在控制台打印字符5，将这个例子做如下修改：
+
+```java
+public class StreamTest10 {
+    public static void main(String[] args) {
+        List<String> list = Arrays.asList("hello", "world", "hello world");
+        list.stream().mapToInt(item -> {
+            int length = item.length();
+            System.out.println(item);
+            return length;
+        }).filter(length -> length == 5).findFirst().ifPresent(System.out::println);
+    }
+}
+```
+
+控制台会打印什么呢？答案是会在控制台打印出：
+
+```txt
+hello
+```
+
+为什么会只打印hello呢？原因就在于虽然我们采用的是链式的调用，但其实在调用这些方法的时候并没有先后的顺序，对于流中元素进行处理的时候，会从流中的第一个元素开始应用所有对于流元素的操作，并且对于流的操作也有短路的特性，我们要找到长度为5的字符串，第一个元素就已经满足了所有的操作，所以后面的就不再执行了。
+
+### 分区于分组
+
