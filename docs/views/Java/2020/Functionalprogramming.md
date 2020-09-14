@@ -2125,7 +2125,7 @@ public class MyClass2 extends MyInterface1Impl implements MyInterface2 {
 
 增加默认方法也可以看到，接口和抽象类的区别越来越小了。
 
-## Stream应用
+## Stream实践
 
 在前面的章节我们花费了不少的章节整理了Lambda表达式的相关特性，也举出了不少的例子来展示了Lambda表达式的应用，但总有种纸上谈兵的感觉，还是无法理解Lambda表达式到底可以帮我们做哪些事情？函数式编程又指的是什么？在接下来的章节中，我们就会围绕这两个问题展开。
 
@@ -2588,6 +2588,19 @@ public class StreamTest11 {
 }
 ```
 
+再举这样一个例子来加深对于flatMap理解的场景，比如我们要获取两个集合的笛卡尔积，我们就可以：
+
+```java
+public class StreamTest12 {
+    public static void main(String[] args) {
+        List<String> list1 = Arrays.asList("Hi", "Hello", "你好");
+        List<String> list2 = Arrays.asList("zhangsan", "lisi", "wangwu", "zhaoliu");
+        list1.stream().flatMap(item -> list2.stream().map(item2 -> item + " " + item2)).
+                collect(Collectors.toList()).forEach(System.out::println);
+    }
+}
+```
+
 接下来介绍generate和iterate这两个特殊的方法：
 
 ```java
@@ -2881,7 +2894,7 @@ where age > 20 and address = ‘beijing’ order by age desc;
 
 ### 流的短路与并发流
 
-但从使用的角度而言，使用并发流与串行流的区别并不是很大，但在底层实现上时完全不同的。
+单从使用的角度而言，并发流与串行流的区别并不是很大，但在底层实现上是完全不同的。
 
 ```java
 public class StreamTest9 {
@@ -2945,4 +2958,170 @@ hello
 为什么会只打印hello呢？原因就在于虽然我们采用的是链式的调用，但其实在调用这些方法的时候并没有先后的顺序，对于流中元素进行处理的时候，会从流中的第一个元素开始应用所有对于流元素的操作，并且对于流的操作也有短路的特性，我们要找到长度为5的字符串，第一个元素就已经满足了所有的操作，所以后面的就不再执行了。
 
 ### 分区于分组
+
+在内部迭代与外部迭代的章节中，我们曾经提到过，使用Stream的API很像在使用SQL语句，在SQL语句中分组是一个很常见的需求，同样的，Stream也对与分组提供了强有力的支持。
+
+同样的，我们先创建一个学生类，并生成构造方法、setter、getter方法：
+
+```java
+public class Student {
+    private String name;
+    private int score;
+    private int age;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getScore() {
+        return score;
+    }
+
+    public void setScore(int score) {
+        this.score = score;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    public Student(String name, int score, int age) {
+        this.name = name;
+        this.score = score;
+        this.age = age;
+    }
+}
+```
+
+然后来创建一些对象：
+
+```java
+public class StreamTest13 {
+    public static void main(String[] args) {
+        Student student1 = new Student("zhangsan", 100, 20);
+        Student student2 = new Student("lisi", 90, 20);
+        Student student3 = new Student("wangwu", 90, 30);
+        Student student4 = new Student("zhangsan", 80, 40);
+        List<Student> students = Arrays.asList(student1, student2, student3, student4);
+
+    }
+}
+```
+
+如果我们使用传统的编码方式来实现对于名字的分组操作，大概要经历如下的步骤：
+
+1. 循环列表
+2. 取出学生的名字
+3. 检查Map中是否存在该名字，不存在则直接添加到该Map中，存在则将Map中的List对象取出来，然后将该Student对象添加到List中
+4. 返回Map对象
+
+那如果我们使用函数式的编程方式呢？
+
+```java
+students.stream().collect(Collectors.groupingBy(Student::getName));
+```
+
+只需要这一行代码就可以完成根据姓名对于学生的分组操作，这里面用到了Collectors这个类提供的静态方法groupingBy()，我们可以简单的看一下这个方法接收的参数以及它要完成的事情：
+
+```java
+    public static <T, K> Collector<T, ?, Map<K, List<T>>>
+    groupingBy(Function<? super T, ? extends K> classifier) {
+        return groupingBy(classifier, toList());
+    }
+```
+
+这个方法本身是一个Function的函数式接口，Function我们都知道它接收一个参数，并且有返回值，正如它的方法名称那样描述的，我们需要提供分组的依据，这个方法的文档如下：
+
+```txt
+Returns a Collector implementing a "group by" operation on input elements of type T, grouping elements according to a classification function, and returning the results in a Map.
+```
+
+这个方法对于给定的输入元素进行了排序的操作，并且返回了一个Map集合，看到这里我们就明白了，T实际上表示的就是流中的每个元素的类型，而我们通过方法引用的方式，返回了流中Student的姓名字段，流就会自动的为我们根据姓名来进行分类了,并且姓名这个字段会作为分组的key。
+
+如果要根据年龄来分组呢，显然只要将分组的key换成分数就可以了：
+
+```java
+students.stream().collect(Collectors.groupingBy(Student::getScore));
+```
+
+接下来，我们尝试实现一个稍微复杂的需求，假设我们要实现与这样的SQL语句相同的功能：
+
+```sql
+select name,count(*) from student group by name;
+```
+
+这里我们就要调用groupingBy的一个重载的方式来实现：
+
+```java
+ students.stream().collect(Collectors.groupingBy(Student::getName, Collectors.counting()));
+```
+
+我们首先来看一下这里面调用的counting()方法：
+
+```java
+    public static <T> Collector<T, ?, Long>
+    counting() {
+        return reducing(0L, e -> 1L, Long::sum);
+    }
+
+```
+
+它的相关说明：
+
+```txt
+Returns a Collector accepting elements of type T that counts the number of input elements. If no elements are present, the result is 0.
+```
+
+这个方法会统计流中元素的个数，如果没有元素，就会返回0。
+
+我们通过这种方式就实现了上述SQL的需求，运行程序就会在控制台打印：
+
+```txt
+{lisi=1, zhangsan=2, wangwu=1}
+```
+
+我们再举一个例子，之前我们是对于分组中的元素个数进行统计，那如果我们想分组的时候也统计分数的平均值，这里我们也是需要使用另一个Collectors中的方法：
+
+```java
+students.stream().collect(Collectors.groupingBy(Student::getName, Collectors.averagingDouble(Student::getScore)));
+```
+
+运行效果如下：
+
+```txt
+{lisi=90.0, zhangsan=90.0, wangwu=90.0}
+```
+
+与分组相关的实际上还有一个概念叫做分区，分区可以认为是特殊的分组，它只会分成两组，调用的Api分别是：
+
+- 分组：group by
+- 分区：partition by
+
+比如，90分以上的分成一组，90分以下的分成一组：
+
+```java
+students.stream().collect(Collectors.partitioningBy(student -> student.getScore() >= 90));
+```
+
+运行的结果：
+
+```txt
+{false=[stream.Student@3d494fbf], true=[stream.Student@1ddc4ec2, stream.Student@133314b, stream.Student@b1bc7ed]}
+```
+
+至此，对于JDK8中的重要的API全部都介绍完成，学会使用是第一步也是非常重要的一步，在长时间的练习和记忆中，我们才能体会到函数式编程带给我们巨大好处，如果只是从使用的角度而言，掌握本章及之前的内容对于一般的开发者，完全是够用的，然而我想这是远远不够的，学习JDK中优秀的源码，反过来加深我们使用的时候的理解，达到相互促进的作用，这才是更重要的，因此，从下一章节开始，我们将系统而全面的分析JDK是如何实现函数式编程，以及我们之前使用的诸多的API在底层到底是如何实现的。
+
+## Stream源码分析
+
+Stream的源码复杂而多变，要掌握整个的流程，我们就不得不先要理清楚一些及其重要的概念和几个核心类的作用，当然一开始这是不太容易能够理解的，但是，这会为后面我们能完整的看到流的整个调用顺序打下良好的基础。
+
+### Collector源码分析与收集器核心
 
