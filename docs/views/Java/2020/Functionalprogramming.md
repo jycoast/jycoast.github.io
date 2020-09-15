@@ -2959,7 +2959,7 @@ hello
 
 ### 分区于分组
 
-在内部迭代与外部迭代的章节中，我们曾经提到过，使用Stream的API很像在使用SQL语句，在SQL语句中分组是一个很常见的需求，同样的，Stream也对与分组提供了强有力的支持。
+我们曾经在内部迭代与外部迭代的章节中提到过，使用Stream的API很像在使用SQL语句，使用SQL语句进行分组的查询是一个很常见的需求，实际上，Stream也对分组提供了强有力的支持。
 
 同样的，我们先创建一个学生类，并生成构造方法、setter、getter方法：
 
@@ -3123,5 +3123,120 @@ students.stream().collect(Collectors.partitioningBy(student -> student.getScore(
 
 Stream的源码复杂而多变，要掌握整个的流程，我们就不得不先要理清楚一些及其重要的概念和几个核心类的作用，当然一开始这是不太容易能够理解的，但是，这会为后面我们能完整的看到流的整个调用顺序打下良好的基础。
 
+首先我们为接下来的部分提前定义好一个学生类作为我们分析源码的入口：
+
+```java
+public class Student {
+    private String name;
+    private int score;
+
+    public String getName() {
+        return name;
+    }
+
+    public Student(String name, int score) {
+        this.name = name;
+        this.score = score;
+    }
+
+    @Override
+    public String toString() {
+        return "Student{" +
+                "name='" + name + '\'' +
+                ", score=" + score +
+                '}';
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getScore() {
+        return score;
+    }
+
+    public void setScore(int score) {
+        this.score = score;
+    }
+}
+
+```
+
 ### Collector源码分析与收集器核心
+
+Collector无疑是整个Stream源码中及其重要的一个类，了解它对于我们认识Stream类有着及其关键的作用，首先回到我们之前的例子当中：
+
+```java
+public class StreamTest1 {
+    public static void main(String[] args) {
+        Student student1 = new Student("zhangsan", 80);
+        Student student2 = new Student("lisi", 90);
+        Student student3 = new Student("wangwu", 100);
+        Student student4 = new Student("zhaoliu", 90);
+
+        List<Student> students = Arrays.asList(student1, student2, student3, student4);
+        List<Student> studentList = students.stream().collect(Collectors.toList());
+        studentList.forEach(System.out::println);
+    }
+}
+```
+
+毫无疑问，到目前这个阶段，这样的代码我们应该已经掌握的非常的熟练了，现在假设说要求使用流的方式求出列表的长度改怎么做呢？你可以使用Collectors中的静态方法：
+
+```java
+ System.out.println("count: " + students.stream().collect(Collectors.counting()));
+```
+
+可以看到，实际使用的时候，使用collect（收集器）的频率非常的高，collect本身的定义是这样的：
+
+```java
+<R, A> R collect(Collector<? super T, A, R> collector);
+```
+
+它本身接收一个参数叫做collector，是Collector类型的，接下来的章节重点分析这个类。
+
+```txt
+A mutable reduction operation that accumulates input elements into a mutable result container, optionally transforming the accumulated result into a final representation after all input elements have been processed. Reduction operations can be performed either sequentially or in parallel.
+Examples of mutable reduction operations include: accumulating elements into a Collection; concatenating strings using a StringBuilder; computing summary information about elements such as sum, min, max, or average; computing "pivot table" summaries such as "maximum valued transaction by seller", etc. The class Collectors provides implementations of many common mutable reductions.
+```
+
+它是一个可变的汇聚操作，作用是将输入元素累积到一个可变的结果容器当中。它可以在所有的元素都处理完毕后，将累积的结果转换为一个最终的表示（这是一个可选的操作），它支持串行与并行两种方式执行。什么是可变的汇聚操作呢？比如将集合中的元素添加到Collection当中，再比如使用StringBuilder将字符串拼接起来，计算关于元素的求和、最小值、最大值、平均值，这也是一种可变操作，计算“数据透视图”的时候一些汇总信息，比如计算卖方交易数量的最大值，Collectors提供了很多对于常见的可变的汇聚操作的实现（Collectors是Collector的实现类，而Collectors本身实际上是一个工厂）。
+
+```txt
+A Collector is specified by four functions that work together to accumulate entries into a mutable result container, and optionally perform a final transform on the result. They are:
+```
+
+Collector是由以下四个方法构成，用来完成向一个可变结果容器当中添加元素的，并且对于结果进行最终的转换：
+
+- creation of a new result container (supplier())
+- incorporating a new data element into a result container (accumulator())
+- combining two result containers into one (combiner())
+- performing an optional final transform on the container (finisher())
+
+```txt
+A function that creates and returns a new mutable result container.
+```
+
+supplier()是用来创建结果容器。
+
+```java
+A function that folds a value into a mutable result container.
+```
+
+accumulator()是用来将一个新的数据元素添加到结果容器当中。
+
+```txt
+A function that accepts two partial results and merges them. The combiner function may fold state from one argument into the other and return that, or may return a new result container.
+```
+
+combiner函数接收两个部分的结果并且合并它们，combiner函数可以将状态从一个折叠成为另一个，并且返回它们，也可能返回一个新的结果容器，实际上这个是在并行中使用的。
+
+```txt
+Perform the final transformation from the intermediate accumulation type A to the final result type R.
+If the characteristic IDENTITY_TRANSFORM is set, this function may be presumed to be an identity transform with an unchecked cast from A to R.
+```
+
+是将中间的累积类型转换称为最终的结果类型，如果设置了IDENTITY_TRANSFORM这个特性，那么这个函数就会直接将A转型为R。
+
+### Collector同一性与结合性分析
 
