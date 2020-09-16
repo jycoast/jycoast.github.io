@@ -3162,7 +3162,7 @@ public class Student {
 
 ```
 
-### Collector源码分析与收集器核心
+### Collector源码分析
 
 Collector无疑是整个Stream源码中及其重要的一个类，了解它对于我们认识Stream类有着及其关键的作用，首先回到我们之前的例子当中：
 
@@ -3217,7 +3217,7 @@ Collector是由以下四个方法构成，用来完成向一个可变结果容�
 A function that creates and returns a new mutable result container.
 ```
 
-supplier()是用来创建结果容器。
+supplier()是用来创建新的可变的结果容器。
 
 ```java
 A function that folds a value into a mutable result container.
@@ -3238,5 +3238,103 @@ If the characteristic IDENTITY_TRANSFORM is set, this function may be presumed t
 
 是将中间的累积类型转换称为最终的结果类型，如果设置了IDENTITY_TRANSFORM这个特性，那么这个函数就会直接将A转型为R。
 
-### Collector同一性与结合性分析
+```txt
+Collectors also have a set of characteristics, such as Collector.Characteristics.CONCURRENT, that provide hints that can be used by a reduction implementation to provide better performance.
+```
+
+Collectors还有一个描述特征的的集合，比如Collector.Characteristics.CONCURRENT，它可以通过不同的枚举值来提高并发流的执行效率。
+
+```java
+ /**
+     * Characteristics indicating properties of a {@code Collector}, which can
+     * be used to optimize reduction implementations.
+     */
+    enum Characteristics {
+        /**
+         * Indicates that this collector is <em>concurrent</em>, meaning that
+         * the result container can support the accumulator function being
+         * called concurrently with the same result container from multiple
+         * threads.
+         *
+         * <p>If a {@code CONCURRENT} collector is not also {@code UNORDERED},
+         * then it should only be evaluated concurrently if applied to an
+         * unordered data source.
+         */
+        CONCURRENT,
+
+        /**
+         * Indicates that the collection operation does not commit to preserving
+         * the encounter order of input elements.  (This might be true if the
+         * result container has no intrinsic order, such as a {@link Set}.)
+         */
+        UNORDERED,
+
+        /**
+         * Indicates that the finisher function is the identity function and
+         * can be elided.  If set, it must be the case that an unchecked cast
+         * from A to R will succeed.
+         */
+        IDENTITY_FINISH
+    }
+```
+
+这个枚举是定义在Collector这个接口当中的，首先来看一下类的说明：
+
+```txt
+Characteristics indicating properties of a Collector, which can be used to optimize reduction implementations.
+```
+
+Characteristics是Collector的一个属性，能够优化汇聚操作。
+
+```txt
+A sequential implementation of a reduction using a collector would create a single result container using the supplier function, and invoke the accumulator function once for each input element. A parallel implementation would partition the input, create a result container for each partition, accumulate the contents of each partition into a subresult for that partition, and then use the combiner function to merge the subresults into a combined result.
+```
+
+对于流的串行实现会创建一个单个的结果容器，并且每个元素会调用accumulator方法一次，而对于并行实现将会对输入进行分区，对于每一个分区都会创建一个结果容器，然后使用combiner方法将每个分区的结果容器当中的内容进行合并。
+
+```txt
+To ensure that sequential and parallel executions produce equivalent results, the collector functions must satisfy an identity and an associativity constraints.
+```
+
+为了确保串行与并行生成等价的结果，collector必须满足两个条件，即identity（同一性）和associativity（结合性）。
+
+```txt
+The identity constraint says that for any partially accumulated result, combining it with an empty result container must produce an equivalent result. That is, for a partially accumulated result a that is the result of any series of accumulator and combiner invocations, a must be equivalent to combiner.apply(a, supplier.get()).
+```
+
+同一性指的是，部分累积的结果与一个空的结果容器运算之后还是它本身，这也就是说，对于一个部分累积的结果a而言，它要满足combiner.apply(a, supplier.get())等于a。
+
+```txt
+The associativity constraint says that splitting the computation must produce an equivalent result. That is, for any input elements t1 and t2, the results r1 and r2 in the computation below must be equivalent:
+```
+
+结合性指的是分割计算也会得到一个等价的结果，也就是说对于任意的输入t1和t2，和产生的结果r1和r2，下面的计算是等价的。
+
+```java
+     // 串行操作
+	 A a1 = supplier.get();
+     accumulator.accept(a1, t1);
+     accumulator.accept(a1, t2);
+     R r1 = finisher.apply(a1);
+	 // 并行操作
+     A a2 = supplier.get();
+     accumulator.accept(a2, t1);
+     A a3 = supplier.get();
+     accumulator.accept(a3, t2);
+     R r2 = finisher.apply(combiner.apply(a2, a3)); 
+```
+
+也就是说无论对于串行操作还是并行操作，最终生成的结果必须是等价的。
+
+```txt
+For collectors that do not have the UNORDERED characteristic, two accumulated results a1 and a2 are equivalent if finisher.apply(a1).equals(finisher.apply(a2)). For unordered collectors, equivalence is relaxed to allow for non-equality related to differences in order. (For example, an unordered collector that accumulated elements to a List would consider two lists equivalent if they contained the same elements, ignoring order.)
+```
+
+对于没有UNORDERED特性的collectors来说，如果finisher.apply(a1).equals(finisher.apply(a2))，这两种累加的结果是等价的，对于无序的要求就被放松了，它会考虑到顺序上的区别带来的不相等性，比如无序的collector它累积元素到一个List当中，就会两个List是相同的，他们包含了相同的元素，忽略了顺序。
+
+```txt
+Libraries that implement reduction based on Collector, such as Stream.collect(Collector), must adhere to the following constraints:
+```
+
+基于Collector实现汇聚操作的库，比如Stream.collect(Collector)，必须要遵守下面的约定。
 
