@@ -1,11 +1,9 @@
----
 title: 函数式编程
 date: 2020-07-13
 categories:
+
  - Java
 author: jyc
-
----
 
 ## 匿名内部类
 
@@ -2872,21 +2870,21 @@ where age > 20 and address = ‘beijing’ order by age desc;
 
 针对一个集合：
 
-![img](D:\笔记\jiyongchao-qf.github.io\docs\views\Java\2020\Functionalprogramming.assets\2019031013382286.png)
+![1600354418799](assets/1600354418799.png)
 
 对于上面的例子而言：
 
-![img](D:\笔记\jiyongchao-qf.github.io\docs\views\Java\2020\Functionalprogramming.assets\20190310133837466.png)
+![1600354444327](assets/1600354444327.png)
 
 集合与我们编写的处理逻辑之间是有清晰的划分的：
 
-![img](D:\笔记\jiyongchao-qf.github.io\docs\views\Java\2020\Functionalprogramming.assets\20190310133848762-1599061148870.png)
+![1600354460849](assets/1600354460849.png)
 
-![img](D:\笔记\jiyongchao-qf.github.io\docs\views\Java\2020\Functionalprogramming.assets\20190310133900418.png)
+![1600354474589](assets/1600354474589.png)
 
 那对于Stream内部迭代的方式呢？
 
-![在这里插入图片描述](D:\笔记\jiyongchao-qf.github.io\docs\views\Java\2020\Functionalprogramming.assets\20190310133916114.png)
+![1600354503346](assets/1600354503346.png)
 
 总的来说，集合关注的是数据与数据存储本身；而流关注的则是对数据的计算。流与迭代器类似的一点是：流是无法重复使用或消费的，并且流在调用的时候，并不是对于集合中所有的元素先调用第一个filter方法，再调用第二个filter方法，再调用其他方法，实际上并不是这样的，流会将执行的调用链的时候，会有一个容器将所有的操作保存下来，并且针对具体的操作，会优化调用顺序，这一点，在后面源代码分析的时候，就可以看到。
 
@@ -3337,4 +3335,122 @@ Libraries that implement reduction based on Collector, such as Stream.collect(Co
 ```
 
 基于Collector实现汇聚操作的库，比如Stream.collect(Collector)，必须要遵守下面的约定。
+
+```txt
+The first argument passed to the accumulator function, both arguments passed to the combiner function, and the argument passed to the finisher function must be the result of a previous invocation of the result supplier, accumulator, or combiner functions.
+```
+
+传递给accumulator方法的第一个参数，以及传递给combiner方法的两个参数，以及传递给finisher的参数，它们必须都是result supplier, accumulator, combiner上一次调用的结果。
+
+看到这里还是比较难以理解的，我们首先需要理解Collector泛型的含义：
+
+```txt
+<T> – the type of input elements to the reduction operation
+<A> – the mutable accumulation type of the reduction operation (often hidden as an implementation detail)
+<R> – the result type of the reduction operation
+```
+
+<T>类型表示进行汇聚操作的输入元素的类型，即流中的每一个元素的类型，<A>类型表示汇聚操作的可变的累积类型，可以认为是每次中间结果容器的类型，<R>类型表示汇聚操作的结果类型，这个时候我们再来分析一个这四个方法对应的泛型：
+
+```java
+Supplier<A> supplier();
+BiConsumer<A, T> accumulator();
+BinaryOperator<A> combiner();
+Function<A, R> finisher();
+```
+
+BinaryOperator是因为合并的是两个部分的结果容器的类型，那最终的结果一定也是A类型，从泛型的角度就可以清楚的认识到，对于每一次的调用，supplier提供的结果容器就会传递给accumulator，而accumulator将流中待处理的元素添加到结果容器之后，又将这个部分结果传递给combiner，依次类推。
+
+```txt
+The implementation should not do anything with the result of any of the result supplier, accumulator, or combiner functions other than to pass them again to the accumulator, combiner, or finisher functions, or return them to the caller of the reduction operation.
+```
+
+对于具体的实现不应该对生成的supplier、accumulator、combiner做任何的事情，除了将他们再一次传递给accumulator、combiner或者finisher方法，否则将他们返回给汇聚操作的调用者。
+
+```txt
+If a result is passed to the combiner or finisher function, and the same object is not returned from that function, it is never used again.
+```
+
+如果一个结果被传递给combiner或者finisher函数了，并没有返回相同的类型的对象，那么它就再也不会被使用了。
+
+```txt
+Once a result is passed to the combiner or finisher function, it is never passed to the accumulator function again.
+```
+
+一旦一个结果被传递给了combiner或者finisher方法，它就不会再被accumulator方法使用了（这是因为调用顺序的原因）。
+
+```txt
+For non-concurrent collectors, any result returned from the result supplier, accumulator, or combiner functions must be serially thread-confined. This enables collection to occur in parallel without the Collector needing to implement any additional synchronization. The reduction implementation must manage that the input is properly partitioned, that partitions are processed in isolation, and combining happens only after accumulation is complete.
+```
+
+对于非并发的collectors，从supplier, accumulator, 或者 combiner中返回的结果都一定是线程封闭的，不会被其他线程使用，这样在并发的情况下，就不用再做其他的操作来保证线程安全，每一个部分的操作都是独立的，并且只有当部分完成之后猜会进行合并的操作。
+
+```txt
+For concurrent collectors, an implementation is free to (but not required to) implement reduction concurrently. A concurrent reduction is one where the accumulator function is called concurrently from multiple threads, using the same concurrently-modifiable result container, rather than keeping the result isolated during accumulation. A concurrent reduction should only be applied if the collector has the Collector.Characteristics.UNORDERED characteristics or if the originating data is unordered.
+```
+
+对于并发的collectors，实现是可以自由的实现，一个多线程的汇聚操作指的是accumulator同时被多个线程调用，他们可以使用相同的可以并发修改的结果容器，而不是保持独立，一个并发的结果容器在什么情况下使用呢？只有当特性值设置为UNORDERED的时候，或者数据源本身不要求有序。
+
+```txt
+In addition to the predefined implementations in Collectors, the static factory methods of(Supplier, BiConsumer, BinaryOperator, Characteristics...) can be used to construct collectors. For example, you could create a collector that accumulates widgets into a TreeSet with:
+```
+
+除了在Collectors预先定义好的静态工厂方法可以创建一个收集器之外，还可以使用Collector中的of方法，比如你可以使用下面的方式将widget累积到TreeSet当中：
+
+```java
+Collector<Widget, ?, TreeSet<Widget>> intoSet =
+         Collector.of(TreeSet::new, TreeSet::add,
+                      (left, right) -> { left.addAll(right); return left; });
+```
+
+实际上就是除了预先定义好的收集器，我们可以通过Collector中的of方法实现自定的收集器。
+
+```txt
+Performing a reduction operation with a Collector should produce a result equivalent to:
+```
+
+使用一个Collector执行汇聚操作会生成的结果应该和下面的结果等价:
+
+```java
+R container = collector.supplier().get();
+     for (T t : data)
+         collector.accumulator().accept(container, t);
+     return collector.finisher().apply(container);
+```
+
+这其实就是汇聚操作的整个过程。
+
+```txt
+However, the library is free to partition the input, perform the reduction on the partitions, and then use the combiner function to combine the partial results to achieve a parallel reduction. (Depending on the specific reduction operation, this may perform better or worse, depending on the relative cost of the accumulator and combiner functions.)
+```
+
+然而，库可以自由的对输入元素分组与分区，在每一个分区上执行这种汇聚操作，然后使用combiner方法合并部分的结果执行一个并行的汇聚操作（取决于具体的并行操作的类型，这可能效率高，也可能效率会变低，这取决于accumulator和combiner消耗的成本和代价）。
+
+```txt
+Collectors are designed to be composed; many of the methods in Collectors are functions that take a collector and produce a new collector. For example, given the following collector that computes the sum of the salaries of a stream of employees:
+```
+
+收集器是被设计成可以组合的，这意味着，Collectors很多方法可以接收collector作为参数返回一个新的collector，例如一个员工构成的流的工资的总数：
+
+```java
+ Collector<Employee, ?, Integer> summingSalaries
+         = Collectors.summingInt(Employee::getSalary))
+```
+
+如果我们想实现收集器的复合改怎么做呢？
+
+```txt
+If we wanted to create a collector to tabulate the sum of salaries by department, we could reuse the "sum of salaries" logic using Collectors.groupingBy(Function, Collector):
+```
+
+如果以向创建一个根据部门对于工资的总和表格化，我们就可以重用“工资总和”逻辑，然后使用分组方法Collectors.groupingBy(Function, Collector):
+
+```java
+ Collector<Employee, ?, Map<Department, Integer>> summingSalariesByDept
+         = Collectors.groupingBy(Employee::getDepartment, summingSalaries);
+```
+
+这里的第二个参数就是我们上面定义过的收集器，这就实现了收集器的复合。
+
+### 收集器实践
 
