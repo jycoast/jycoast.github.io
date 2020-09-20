@@ -3350,7 +3350,7 @@ The first argument passed to the accumulator function, both arguments passed to 
 <R> – the result type of the reduction operation
 ```
 
-<T>类型表示进行汇聚操作的输入元素的类型，即流中的每一个元素的类型，<A>类型表示汇聚操作的可变的累积类型，可以认为是每次中间结果容器的类型，<R>类型表示汇聚操作的结果类型，这个时候我们再来分析一个这四个方法对应的泛型：
+T类型表示进行汇聚操作的输入元素的类型，即流中的每一个元素的类型，A类型表示汇聚操作的可变的累积类型，可以认为是每次中间结果容器的类型，R类型表示汇聚操作的结果类型，这个时候我们再来分析一个这四个方法对应的泛型：
 
 ```java
 Supplier<A> supplier();
@@ -3452,5 +3452,194 @@ If we wanted to create a collector to tabulate the sum of salaries by department
 
 这里的第二个参数就是我们上面定义过的收集器，这就实现了收集器的复合。
 
-### 收集器实践
+### Collector实践
 
+Collector接口有且仅有唯一的实现类CollectorImpl：
+
+```java
+    static class CollectorImpl<T, A, R> implements Collector<T, A, R> {
+        private final Supplier<A> supplier;
+        private final BiConsumer<A, T> accumulator;
+        private final BinaryOperator<A> combiner;
+        private final Function<A, R> finisher;
+        private final Set<Characteristics> characteristics;
+
+        CollectorImpl(Supplier<A> supplier,
+                      BiConsumer<A, T> accumulator,
+                      BinaryOperator<A> combiner,
+                      Function<A,R> finisher,
+                      Set<Characteristics> characteristics) {
+            this.supplier = supplier;
+            this.accumulator = accumulator;
+            this.combiner = combiner;
+            this.finisher = finisher;
+            this.characteristics = characteristics;
+        }
+
+        CollectorImpl(Supplier<A> supplier,
+                      BiConsumer<A, T> accumulator,
+                      BinaryOperator<A> combiner,
+                      Set<Characteristics> characteristics) {
+            this(supplier, accumulator, combiner, castingIdentity(), characteristics);
+        }
+
+        @Override
+        public BiConsumer<A, T> accumulator() {
+            return accumulator;
+        }
+
+        @Override
+        public Supplier<A> supplier() {
+            return supplier;
+        }
+
+        @Override
+        public BinaryOperator<A> combiner() {
+            return combiner;
+        }
+
+        @Override
+        public Function<A, R> finisher() {
+            return finisher;
+        }
+
+        @Override
+        public Set<Characteristics> characteristics() {
+            return characteristics;
+        }
+    }
+```
+
+需要注意的是，这个类没有定义在一个单独的文件当中，而是定义在Collectors当中，这个类本身并没有做任何事情，只是根据Collector接口的要求，将需要的属性和方法定义好。这么做的理由是什么呢？实际上是一种设计上的考量，Collectors类被用来生产一些常见的方法，它绝大部分的方法都是静态方法，可以直接调用，而作为Collector的工厂，所有的方法一定会返回CollectorImpl类型，而在别的地方，又不会用到CollectorImpl，所以设计者直接将这个类作为一个静态的内部类。
+
+接下来我们就围绕Collectors为我们提供的诸多的静态方法展开，了解这些方法的使用以及实现细节。
+
+```txt
+Implementations of Collector that implement various useful reduction operations, such as accumulating elements into collections, summarizing elements according to various criteria, etc.
+```
+
+Collectors实现了Collector接口并提供了很多很有用的汇聚操作，比如将元素累积到一个集合当中，比如摘要（最大值、最小值、平均值等等）。
+
+```txt
+The following are examples of using the predefined collectors to perform common mutable reduction tasks:
+```
+
+下面的例子就是使用JDK预先定义好的方法来执行可变的汇聚任务：
+
+```java
+     // Accumulate names into a List
+     List<String> list = people.stream().map(Person::getName).collect(Collectors.toList());
+
+     // Accumulate names into a TreeSet
+     Set<String> set = people.stream().map(Person::getName).collect(Collectors.toCollection(TreeSet::new));
+
+     // Convert elements to strings and concatenate them, separated by commas
+     String joined = things.stream()
+                           .map(Object::toString)
+                           .collect(Collectors.joining(", "));
+
+     // Compute sum of salaries of employee
+     int total = employees.stream()
+                          .collect(Collectors.summingInt(Employee::getSalary)));
+
+     // Group employees by department
+     Map<Department, List<Employee>> byDept
+         = employees.stream()
+                    .collect(Collectors.groupingBy(Employee::getDepartment));
+
+     // Compute sum of salaries by department
+     Map<Department, Integer> totalByDept
+         = employees.stream()
+                    .collect(Collectors.groupingBy(Employee::getDepartment,
+                                                   Collectors.summingInt(Employee::getSalary)));
+
+     // Partition students into passing and failing
+     Map<Boolean, List<Student>> passingFailing =
+         students.stream()
+                 .collect(Collectors.partitioningBy(s -> s.getGrade() >= PASS_THRESHOLD));
+```
+
+在完整的理解了收集器相关的概念之后，我们可以看一些具体的例子，针对于之前的学生的集合，如果我们想求出学生分数的最小值：
+
+```java
+students.stream().collect(Collectors.minBy(Comparator.comparingInt(Student::getScore))).ifPresent(System.out::println);
+```
+
+如果是最大值呢？
+
+```java
+students.stream().collect(Collectors.maxBy(Comparator.comparingInt(Student::getScore))).ifPresent(System.out::println);
+```
+
+如果是平均值呢？
+
+```java
+System.out.println( students.stream().collect(Collectors.averagingInt(Student::getScore)));
+```
+
+如果是求出分数的总和呢？
+
+```java
+System.out.println(students.stream().collect(Collectors.summingInt(Student::getScore)));
+```
+
+当然也可以调用统计的方法一次将这些特征值都求出来：
+
+```java
+System.out.println(students.stream().collect(Collectors.summarizingInt(Student::getScore)));
+```
+
+如果想将学生的名字使用字符串拼接呢？
+
+```java
+System.out.println(students.stream().map(Student::getName).collect(Collectors.joining()));
+```
+
+还可以使用逗号分隔：
+
+```java
+System.out.println(students.stream().map(Student::getName).collect(Collectors.joining(",")));
+```
+
+还可以拼接前缀和后缀：
+
+```
+System.out.println(students.stream().map(Student::getName).collect(Collectors.joining(",","<begin>","<end>")));
+```
+
+除了这些常规的操作，其实对于分组的操作还可以进行二级分组：
+
+```java
+students.stream().collect(Collectors.groupingBy(Student::getScore,Collectors.groupingBy(Student::getName)));
+```
+
+类似的对于分区的操作也可以进行二级分区：
+
+```java
+students.stream().collect(Collectors.partitioningBy(student -> student.getScore() > 90, Collectors.        partitioningBy(student -> student.getScore() > 80)));
+```
+
+分组和分区还可以互相嵌套：
+
+```java
+students.stream().collect(Collectors.partitioningBy(student -> student.getScore() > 80, Collectors.counting()));
+```
+
+下面我们来看一个稍微复杂一点的例子：
+
+```java
+students.stream().collect(Collectors.groupingBy(Student::getName,Collectors.collectingAndThen(Collectors.minBy(Comparator.comparingInt(Student::getScore)), Optional::get)));
+```
+
+### Comparator源码分析及实践
+
+Comparator并不是JDK8新增加的内容，但是JDK8对它做了一定程度的增强，在函数式编程中非常的常见，所以也非常的重要。
+
+```java
+@FunctionalInterface
+public interface Comparator<T> {
+    int compare(T o1, T o2);
+}
+```
+
+首先可以看到这是一个函数式接口，拥有唯一的抽象方法compare，这个方法接口两个参数并且有返回值，并且在这个类中，JDK从1.8开始增加了若干个默认方法。
