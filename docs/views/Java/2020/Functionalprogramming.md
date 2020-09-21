@@ -3603,7 +3603,7 @@ System.out.println(students.stream().map(Student::getName).collect(Collectors.jo
 
 还可以拼接前缀和后缀：
 
-```
+```java
 System.out.println(students.stream().map(Student::getName).collect(Collectors.joining(",","<begin>","<end>")));
 ```
 
@@ -3643,3 +3643,128 @@ public interface Comparator<T> {
 ```
 
 首先可以看到这是一个函数式接口，拥有唯一的抽象方法compare，这个方法接口两个参数并且有返回值，并且在这个类中，JDK从1.8开始增加了若干个默认方法。
+
+假如我们要对一个字符串数据按照首字母进行排序：
+
+```java
+public class MyComparatorTest {
+    public static void main(String[] args) {
+        List<String> list = Arrays.asList("nihao", "hello", "world", "welcome");
+        Collections.sort(list);
+        System.out.println(list);
+    }
+}
+```
+
+如果要按照长度来进行排序：
+
+```java
+Collections.sort(list, (item1, item2) -> item1.length() - item2.length());
+```
+
+也可以使用方法引用的方式来实现：
+
+```java
+Collections.sort(list, Comparator.comparingInt(String::length));
+```
+
+如果是降序则：
+
+```java
+Collections.sort(list, (item1, item2) -> item2.length() - item1.length());
+```
+
+同样的，也可以使用方法引用的方式来实现，只是这里我们调用新的方法reversed：
+
+```java
+Collections.sort(list, Comparator.comparingInt(String::length).reversed());
+```
+
+但是如果你这么写的话，就会发现有问题：
+
+```java
+Collections.sort(list, Comparator.comparingInt(item -> item.length()).reversed());
+```
+
+看起来与上面的写法是完全等价的，但IDE却会提示：
+
+```txt
+cannot resolve method 'length()'
+```
+
+原因就在于，编译器会认为此时的item是一个Object类型的对象，如果要正常编译运行，就需要显示的声明类型：
+
+```java
+Collections.sort(list, Comparator.comparingInt((String item) -> item.length()).reversed());
+```
+
+在我们之前的所有的例子当中，编译器都可以自动的推断出元素的类型，在这个例子当中，接收的参数ToIntFunction<? super T>由于没有明确的上下文（可能是T类型，也有可能是T类型以上的类型），并且由于调用了reversed获取了新的比较器，所以编译器没有办法准确的推断出类型：
+
+```java
+  public static <T> Comparator<T> comparingInt(ToIntFunction<? super T> keyExtractor) {
+        Objects.requireNonNull(keyExtractor);
+        return (Comparator<T> & Serializable)
+            (c1, c2) -> Integer.compare(keyExtractor.applyAsInt(c1), keyExtractor.applyAsInt(c2));
+    }
+```
+
+这里为什么会是T类型以及T类型以上的类型呢？简而言之，就是可以传入自己本身以及父类的比较器，而如果传入的是夫类型的比较器，比较完成之后还是会强转会原来的类型。
+
+其实我们也可以直接调用list的sort方法：
+
+```java
+list.sort(Comparator.comparingInt(String::length).reversed());
+```
+
+上面的方法都是一次排序，接下来我们看多次排序的方法，比如现根据名称排序，排好序之后对于名称相同的再根据分数进行排序：
+
+```java
+Collections.sort(list,Comparator.comparingInt(String::length).thenComparing(String.CASE_INSENSITIVE_ORDER));
+```
+
+这里我们使用的静态的常量是：
+
+```java
+    public static final Comparator<String> CASE_INSENSITIVE_ORDER
+                                         = new CaseInsensitiveComparator();
+```
+
+这个类本身就定义在String类当中：
+
+```java
+    private static class CaseInsensitiveComparator
+            implements Comparator<String>, java.io.Serializable {
+        // use serialVersionUID from JDK 1.2.2 for interoperability
+        private static final long serialVersionUID = 8575799808933029326L;
+
+        public int compare(String s1, String s2) {
+            int n1 = s1.length();
+            int n2 = s2.length();
+            int min = Math.min(n1, n2);
+            for (int i = 0; i < min; i++) {
+                char c1 = s1.charAt(i);
+                char c2 = s2.charAt(i);
+                if (c1 != c2) {
+                    c1 = Character.toUpperCase(c1);
+                    c2 = Character.toUpperCase(c2);
+                    if (c1 != c2) {
+                        c1 = Character.toLowerCase(c1);
+                        c2 = Character.toLowerCase(c2);
+                        if (c1 != c2) {
+                            // No overflow because of numeric promotion
+                            return c1 - c2;
+                        }
+                    }
+                }
+            }
+            return n1 - n2;
+        }
+```
+
+而对于thenComparing方法而言：
+
+```txt
+Returns a lexicographic-order comparator with another comparator. If this Comparator considers two elements equal, i.e. compare(a, b) == 0, other is used to determine the order.
+```
+
+ 与另一个比较器相比，它返回一个字典顺序的比较器，如果它的前一个比较器返回是元素的相等的情况，即compare(a, b) == 0的情况下，当前传入的比较器就会发挥作用，进行二次排序。
