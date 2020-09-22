@@ -3243,35 +3243,9 @@ Collectors also have a set of characteristics, such as Collector.Characteristics
 Collectors还有一个描述特征的的集合，比如Collector.Characteristics.CONCURRENT，它可以通过不同的枚举值来提高并发流的执行效率。
 
 ```java
- /**
-     * Characteristics indicating properties of a {@code Collector}, which can
-     * be used to optimize reduction implementations.
-     */
     enum Characteristics {
-        /**
-         * Indicates that this collector is <em>concurrent</em>, meaning that
-         * the result container can support the accumulator function being
-         * called concurrently with the same result container from multiple
-         * threads.
-         *
-         * <p>If a {@code CONCURRENT} collector is not also {@code UNORDERED},
-         * then it should only be evaluated concurrently if applied to an
-         * unordered data source.
-         */
-        CONCURRENT,
-
-        /**
-         * Indicates that the collection operation does not commit to preserving
-         * the encounter order of input elements.  (This might be true if the
-         * result container has no intrinsic order, such as a {@link Set}.)
-         */
+        CONCURRENT，
         UNORDERED,
-
-        /**
-         * Indicates that the finisher function is the identity function and
-         * can be elided.  If set, it must be the case that an unchecked cast
-         * from A to R will succeed.
-         */
         IDENTITY_FINISH
     }
 ```
@@ -3708,7 +3682,7 @@ Collections.sort(list, Comparator.comparingInt((String item) -> item.length()).r
     }
 ```
 
-这里为什么会是T类型以及T类型以上的类型呢？简而言之，就是可以传入自己本身以及父类的比较器，而如果传入的是夫类型的比较器，比较完成之后还是会强转会原来的类型。
+这里为什么会是T类型以及T类型以上的类型呢？简而言之，就是可以传入自己本身以及父类的比较器，而如果传入的是父类型的比较器，比较完成之后还是会强转会原来的类型。
 
 其实我们也可以直接调用list的sort方法：
 
@@ -3717,6 +3691,12 @@ list.sort(Comparator.comparingInt(String::length).reversed());
 ```
 
 上面的方法都是一次排序，接下来我们看多次排序的方法，比如现根据名称排序，排好序之后对于名称相同的再根据分数进行排序：
+
+```java
+Collections.sort(list, Comparator.comparingInt(String::length).thenComparing((item1, item2) -> item1.compareToIgnoreCase(item2)));
+```
+
+其实我们也可以这样调用：
 
 ```java
 Collections.sort(list,Comparator.comparingInt(String::length).thenComparing(String.CASE_INSENSITIVE_ORDER));
@@ -3767,4 +3747,109 @@ Collections.sort(list,Comparator.comparingInt(String::length).thenComparing(Stri
 Returns a lexicographic-order comparator with another comparator. If this Comparator considers two elements equal, i.e. compare(a, b) == 0, other is used to determine the order.
 ```
 
- 与另一个比较器相比，它返回一个字典顺序的比较器，如果它的前一个比较器返回是元素的相等的情况，即compare(a, b) == 0的情况下，当前传入的比较器就会发挥作用，进行二次排序。
+ 与另一个比较器相比，它返回一个字典顺序的比较器，如果它的前一个比较器返回是元素的相等的情况，即compare(a, b) == 0的情况下，当前传入的比较器就会发挥作用，进行二次排序，这意味着，如果前面的比较器返回的结果不是0，那么后面的比较器就不会再调用，这一点在源代码中也有体现：
+
+```java
+    default Comparator<T> thenComparing(Comparator<? super T> other) {
+        Objects.requireNonNull(other);
+        return (Comparator<T> & Serializable) (c1, c2) -> {
+            int res = compare(c1, c2);
+            // 当比较的结果不为0的时候直接返回，相等再执行传入的比较器。
+            return (res != 0) ? res : other.compare(c1, c2);
+        };
+    }
+```
+
+当然，你还可以这么做：
+
+```java
+Collections.sort(list,Comparator.comparingInt(String::length).thenComparing(Comparator.comparing(String::toLowerCase)));
+```
+
+类似的，比较器也可以进行复合：
+
+```java
+Collections.sort(list, Comparator.comparingInt(String::length).thenComparing(String::toLowerCase, Comparator.reverseOrder()));
+```
+
+比这个例子稍微复杂一个例子：
+
+```java
+Collections.sort(list,Comparator.comparingInt(String::length).reversed().thenComparing(String::toLowerCase, Comparator.reverseOrder()));
+```
+
+### 自定义收集器
+
+在进行Collector源码分析的时候，我们提到过Characteristics这个内部枚举类，接下来我们首先分析每一个枚举项代表的含义：
+
+1、CONCURRENT
+
+```txt
+Indicates that this collector is concurrent, meaning that the result container can support the accumulator function being called concurrently with the same result container from multiple threads.
+If a CONCURRENT collector is not also UNORDERED, then it should only be evaluated concurrently if applied to an unordered data source.
+```
+
+CONCURRENT表示当前的收集器是并发的，这意味着中间结果容器支持使用多线程进行并发访问，CONCURRENT并不是UNORDERED，只有无序的数据源才可以使用这个属性。
+
+2、UNORDERED
+
+```txt
+Indicates that the collection operation does not commit to preserving the encounter order of input elements. (This might be true if the result container has no intrinsic order, such as a Set.)
+```
+
+UNORDERED意味着收集的操作并不确保保留输入元素的顺序（可以用在结果容器不要求有序的场景下，比如Set）
+
+3、IDENTITY_FINISH
+
+```txt
+Indicates that the finisher function is the identity function and can be elided. If set, it must be the case that an unchecked cast from A to R will succeed.
+```
+
+IDENTITY_FINISH表示finisher方法就是identity方法，可以被省略掉，如果设置了这个属性，那么就要确保从A类型到R类型的强制转换是可以成功的。
+
+接下来我们实现一个自定义的收集器：
+
+```java
+public class MySetCollector<T> implements Collector<T, Set<T>, Set<T>> {
+    @Override
+    public Supplier<Set<T>> supplier() {
+        System.out.println("supplier invoked!");
+        return HashSet::new;
+    }
+
+    @Override
+    public BiConsumer<Set<T>, T> accumulator() {
+        System.out.println("accmulator invoked!");
+        // 这里不能调用HashSet::add，因为无法保证与supplier()方法返回的中间结果容器类型相同
+        return Set::add;
+    }
+
+    @Override
+    public BinaryOperator<Set<T>> combiner() {
+        System.out.println("combiner invoked!");
+        return (set1, set2) -> {
+            set1.addAll(set2);
+            return set1;
+        };
+    }
+
+    @Override
+    public Function<Set<T>, Set<T>> finisher() {
+        System.out.println("finisher invoked!");
+        return Function.identity();
+    }
+
+    @Override
+    public Set<Characteristics> characteristics() {
+        System.out.println("characteristics invoked!");
+        return Collections.unmodifiableSet(EnumSet.of(Characteristics.IDENTITY_FINISH, Characteristics.UNORDERED));
+    }
+
+    public static void main(String[] args) {
+        List<String> list = Arrays.asList("hello", "world", "welcome");
+        Set<String> set = list.stream().collect(new MySetCollector<>());
+        System.out.println(set);
+    }
+}
+```
+
