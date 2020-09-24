@@ -3778,7 +3778,7 @@ Collections.sort(list, Comparator.comparingInt(String::length).thenComparing(Str
 Collections.sort(list,Comparator.comparingInt(String::length).reversed().thenComparing(String::toLowerCase, Comparator.reverseOrder()));
 ```
 
-### 自定义收集器
+### 自定义Collector
 
 在进行Collector源码分析的时候，我们提到过Characteristics这个内部枚举类，接下来我们首先分析每一个枚举项代表的含义：
 
@@ -3852,4 +3852,278 @@ public class MySetCollector<T> implements Collector<T, Set<T>, Set<T>> {
     }
 }
 ```
+
+程序运行的结果如下：
+
+```txt
+supplier invoked!
+accmulator invoked!
+combiner invoked!
+characteristics invoked!
+characteristics invoked!
+[world, hello, welcome]
+```
+
+可以看到supplier、accumulator、combiner分别执行了一次，而characteristics执行了两次，只有finisher没有被调用。
+
+```java
+    public final <R, A> R collect(Collector<? super P_OUT, A, R> collector) {
+        A container;
+        // 如果是并行流
+        if (isParallel()
+                && (collector.characteristics().contains(Collector.Characteristics.CONCURRENT))
+                && (!isOrdered() || collector.characteristics().contains(Collector.Characteristics.UNORDERED))) {
+            container = collector.supplier().get();
+            BiConsumer<A, ? super P_OUT> accumulator = collector.accumulator();
+            forEach(u -> accumulator.accept(container, u));
+        }
+        else {
+            container = evaluate(ReduceOps.makeRef(collector));
+        }
+        // characteristics()在这里被第二次调用，用于判断中间结果容器与最终返回的类型是否相同,如果包含了IDENTITY_FINISH这个特性，直接进行强制类型转换，会将中间结果容器强制转换为最终的结果类型。
+        return collector.characteristics().contains(Collector.Characteristics.IDENTITY_FINISH)
+               ? (R) container
+               : collector.finisher().apply(container);
+    }
+```
+
+这里我们显然是串行流，所以直接进入到第二种情况，首先我们来看一下ReduceOps的makeRef方法：
+
+```java
+ public static <T, I> TerminalOp<T, I>
+    makeRef(Collector<? super T, I, ?> collector) {
+        // 我们的方法就是在这里被调用了，返回了supplier、accumulator、combiner三个对象。
+        Supplier<I> supplier = Objects.requireNonNull(collector).supplier();
+        BiConsumer<I, ? super T> accumulator = collector.accumulator();
+        BinaryOperator<I> combiner = collector.combiner();
+        class ReducingSink extends Box<I>
+                implements AccumulatingSink<T, I, ReducingSink> {
+            @Override
+            public void begin(long size) {
+                state = supplier.get();
+            }
+
+            @Override
+            public void accept(T t) {
+                accumulator.accept(state, t);
+            }
+
+            @Override
+            public void combine(ReducingSink other) {
+                state = combiner.apply(state, other.state);
+            }
+        }
+        return new ReduceOp<T, I, ReducingSink>(StreamShape.REFERENCE) {
+            @Override
+            public ReducingSink makeSink() {
+                return new ReducingSink();
+            }
+			// Characteristics()在这里被第一次调用，用于判断是否有序
+            @Override
+            public int getOpFlags() {
+                return collector.characteristics().contains(Collector.Characteristics.UNORDERED)
+                       ? StreamOpFlag.NOT_ORDERED
+                       : 0;
+            }
+        };
+    }
+```
+
+为了验证关于Characteristics方法的调用逻辑，我们去掉characteristics方法中的枚举项IDENTITY_FINISH：
+
+```java
+	@Override
+    public Set<Characteristics> characteristics() {
+        System.out.println("characteristics invoked!");
+        return Collections.unmodifiableSet(EnumSet.of( Characteristics.UNORDERED));
+    }
+```
+
+观察结果，finsher就得到了调用：
+
+```txt
+supplier invoked!
+accmulator invoked!
+combiner invoked!
+characteristics invoked!
+characteristics invoked!
+finisher invoked!
+[world, hello, welcome]
+```
+
+接下来我们定义一个中间结果容器需要进行类型转换的例子：
+
+```java
+public class MySetCollector2<T> implements Collector<T, Set<T>, Map<T, T>> {
+    @Override
+    public Supplier<Set<T>> supplier() {
+        System.out.println("supplier invoked!");
+        return HashSet::new;
+    }
+
+    @Override
+    public BiConsumer<Set<T>, T> accumulator() {
+        System.out.println("accmulator invoked!");
+        return (set, item) -> set.add(item);
+    }
+
+    @Override
+    public BinaryOperator<Set<T>> combiner() {
+        System.out.println("combiner invoked!");
+        return (set1, set2) -> {
+            set1.addAll(set2);
+            return set1;
+        };
+    }
+
+    @Override
+    public Function<Set<T>, Map<T, T>> finisher() {
+        System.out.println("finisher invoked!");
+        return set -> {
+            Map<T, T> map = new HashMap<>(10);
+            set.forEach(item -> map.put(item, item));
+            return map;
+        };
+    }
+
+    @Override
+    public Set<Characteristics> characteristics() {
+        System.out.println("characteristics invoked!");
+        return Collections.unmodifiableSet(EnumSet.of(Characteristics.UNORDERED));
+    }
+
+    public static void main(String[] args) {
+        List<String> list = Arrays.asList("hello", "world", "welcome", "hello", "a", "b", "c", "d", "e", "f", "g");
+        Set<String> set = new HashSet<>();
+        set.addAll(list);
+        System.out.println("set: " + set);
+        Map<String, String> map = set.stream().collect(new MySetCollector2<>());
+        System.out.println(map);
+    }
+}
+```
+
+执行的结果：
+
+```txt
+supplier invoked!
+accmulator invoked!
+combiner invoked!
+characteristics invoked!
+characteristics invoked!
+finisher invoked!
+{a=a, b=b, world=world, c=c, d=d, e=e, f=f, g=g, hello=hello, welcome=welcome}
+```
+
+如果将这个枚举值修改为：
+
+```java
+return Collections.unmodifiableSet(EnumSet.of(Characteristics.UNORDERED,Characteristics.IDENTITY_FINISH));
+```
+
+就会抛出异常：
+
+```txt
+Exception in thread "main" java.lang.ClassCastException: java.util.HashSet cannot be cast to java.util.Map
+```
+
+这就是因为我们的中间结果类型是Set类型，而最终的结果类型是Map类型，同时也说明了characteristics就定义了中间结果容器和最终结果的结果容器类型的关系，在运行期间，JDK会根据这个枚举项类判断他们之间的关系，如果编写错误了，就可能会出现错误。
+
+另外如果中间结果容器和最终结果的结果容器类型相同，但是需要对于中间结果容器做一些处理才返回结果，这个时候也要去掉IDENTITY_FINISH这个枚举值，因为在执行过程中，会直接转换类型，而不会操作里面的值。
+
+如果我们在accumulator中打印当前线程的名称：
+
+```java
+    @Override
+    public BiConsumer<Set<T>, T> accumulator() {
+        System.out.println("accmulator invoked!");
+        return (set, item) -> {
+            set.add(item);
+            System.out.println("accmulator: " + Thread.currentThread().getName());
+        };
+    }
+```
+
+控制台就会打印十次：
+
+```txt
+accmulator: main
+accmulator: main
+accmulator: main
+accmulator: main
+accmulator: main
+accmulator: main
+accmulator: main
+accmulator: main
+accmulator: main
+accmulator: main
+```
+
+去掉集合中重复的元素"hello",正好是十个元素，执行了十次累积的操作，并且都是主线程的，如果我们使用并行流：
+
+```java
+Map<String, String> map = set.parallelStream().collect(new MySetCollector2<>());
+```
+
+运行的结果就变成了：
+
+```txt
+set: [a, b, world, c, d, e, f, g, hello, welcome]
+characteristics invoked!
+supplier invoked!
+accmulator invoked!
+combiner invoked!
+characteristics invoked!
+accmulator: main
+accmulator: ForkJoinPool.commonPool-worker-5
+accmulator: ForkJoinPool.commonPool-worker-4
+accmulator: ForkJoinPool.commonPool-worker-3
+accmulator: ForkJoinPool.commonPool-worker-1
+accmulator: ForkJoinPool.commonPool-worker-1
+accmulator: ForkJoinPool.commonPool-worker-3
+accmulator: ForkJoinPool.commonPool-worker-3
+accmulator: ForkJoinPool.commonPool-worker-5
+accmulator: ForkJoinPool.commonPool-worker-2
+characteristics invoked!
+finisher invoked!
+{a=a, b=b, world=world, c=c, d=d, e=e, f=f, g=g, hello=hello, welcome=welcome}
+```
+
+为了方便观察并行流和串行流的区别，我们打印一下，进行累积操作的集合中的元素，再次运行，就会发现：
+
+```txt
+set: [a, b, world, c, d, e, f, g, hello, welcome]
+characteristics invoked!
+supplier invoked!
+accmulator invoked!
+combiner invoked!
+characteristics invoked!
+[hello]
+[b]
+accmulator: ForkJoinPool.commonPool-worker-2
+accmulator: main
+[f]
+accmulator: ForkJoinPool.commonPool-worker-3
+[d]
+accmulator: ForkJoinPool.commonPool-worker-1
+[d, e]
+accmulator: ForkJoinPool.commonPool-worker-1
+[welcome]
+accmulator: ForkJoinPool.commonPool-worker-4
+[f, g]
+accmulator: ForkJoinPool.commonPool-worker-3
+[b, world]
+accmulator: ForkJoinPool.commonPool-worker-2
+[b, world, c]
+accmulator: ForkJoinPool.commonPool-worker-2
+[a]
+accmulator: ForkJoinPool.commonPool-worker-5
+characteristics invoked!
+finisher invoked!
+{a=a, b=b, world=world, c=c, d=d, e=e, f=f, g=g, hello=hello, welcome=welcome}
+```
+
+
+
+
 
