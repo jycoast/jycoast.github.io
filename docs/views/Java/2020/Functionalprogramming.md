@@ -3160,6 +3160,179 @@ public class Student {
 
 ```
 
+### Comparator源码分析及实践
+
+Comparator并不是JDK8新增加的内容，但是JDK8对它做了一定程度的增强，在函数式编程中非常的常见，所以也非常的重要，在正式进入Stream源码分析之前，有必要了解关于Comparator比较器的内容。
+
+```java
+@FunctionalInterface
+public interface Comparator<T> {
+    int compare(T o1, T o2);
+}
+```
+
+首先可以看到这是一个函数式接口，拥有唯一的抽象方法compare，这个方法接口两个参数并且有返回值，并且在这个类中，JDK从1.8开始增加了若干个默认方法。
+
+假如我们要对一个字符串数据按照首字母进行排序：
+
+```java
+public class MyComparatorTest {
+    public static void main(String[] args) {
+        List<String> list = Arrays.asList("nihao", "hello", "world", "welcome");
+        Collections.sort(list);
+        System.out.println(list);
+    }
+}
+```
+
+如果要按照长度来进行排序：
+
+```java
+Collections.sort(list, (item1, item2) -> item1.length() - item2.length());
+```
+
+也可以使用方法引用的方式来实现：
+
+```java
+Collections.sort(list, Comparator.comparingInt(String::length));
+```
+
+如果是降序则：
+
+```java
+Collections.sort(list, (item1, item2) -> item2.length() - item1.length());
+```
+
+同样的，也可以使用方法引用的方式来实现，只是这里我们调用新的方法reversed：
+
+```java
+Collections.sort(list, Comparator.comparingInt(String::length).reversed());
+```
+
+但是如果你这么写的话，就会发现有问题：
+
+```java
+Collections.sort(list, Comparator.comparingInt(item -> item.length()).reversed());
+```
+
+看起来与上面的写法是完全等价的，但IDE却会提示：
+
+```txt
+cannot resolve method 'length()'
+```
+
+原因就在于，编译器会认为此时的item是一个Object类型的对象，如果要正常编译运行，就需要显示的声明类型：
+
+```java
+Collections.sort(list, Comparator.comparingInt((String item) -> item.length()).reversed());
+```
+
+在我们之前的所有的例子当中，编译器都可以自动的推断出元素的类型，在这个例子当中，接收的参数ToIntFunction<? super T>由于没有明确的上下文（可能是T类型，也有可能是T类型以上的类型），并且由于调用了reversed获取了新的比较器，所以编译器没有办法准确的推断出类型：
+
+```java
+  public static <T> Comparator<T> comparingInt(ToIntFunction<? super T> keyExtractor) {
+        Objects.requireNonNull(keyExtractor);
+        return (Comparator<T> & Serializable)
+            (c1, c2) -> Integer.compare(keyExtractor.applyAsInt(c1), keyExtractor.applyAsInt(c2));
+    }
+```
+
+这里为什么会是T类型以及T类型以上的类型呢？简而言之，就是可以传入自己本身以及父类的比较器，而如果传入的是父类型的比较器，比较完成之后还是会强转会原来的类型。
+
+其实我们也可以直接调用list的sort方法：
+
+```java
+list.sort(Comparator.comparingInt(String::length).reversed());
+```
+
+上面的方法都是一次排序，接下来我们看多次排序的方法，比如现根据名称排序，排好序之后对于名称相同的再根据分数进行排序：
+
+```java
+Collections.sort(list, Comparator.comparingInt(String::length).thenComparing((item1, item2) -> item1.compareToIgnoreCase(item2)));
+```
+
+其实我们也可以这样调用：
+
+```java
+Collections.sort(list,Comparator.comparingInt(String::length).thenComparing(String.CASE_INSENSITIVE_ORDER));
+```
+
+这里我们使用的静态的常量是：
+
+```java
+    public static final Comparator<String> CASE_INSENSITIVE_ORDER
+                                         = new CaseInsensitiveComparator();
+```
+
+这个类本身就定义在String类当中：
+
+```java
+    private static class CaseInsensitiveComparator
+            implements Comparator<String>, java.io.Serializable {
+        // use serialVersionUID from JDK 1.2.2 for interoperability
+        private static final long serialVersionUID = 8575799808933029326L;
+
+        public int compare(String s1, String s2) {
+            int n1 = s1.length();
+            int n2 = s2.length();
+            int min = Math.min(n1, n2);
+            for (int i = 0; i < min; i++) {
+                char c1 = s1.charAt(i);
+                char c2 = s2.charAt(i);
+                if (c1 != c2) {
+                    c1 = Character.toUpperCase(c1);
+                    c2 = Character.toUpperCase(c2);
+                    if (c1 != c2) {
+                        c1 = Character.toLowerCase(c1);
+                        c2 = Character.toLowerCase(c2);
+                        if (c1 != c2) {
+                            // No overflow because of numeric promotion
+                            return c1 - c2;
+                        }
+                    }
+                }
+            }
+            return n1 - n2;
+        }
+```
+
+而对于thenComparing方法而言：
+
+```txt
+Returns a lexicographic-order comparator with another comparator. If this Comparator considers two elements equal, i.e. compare(a, b) == 0, other is used to determine the order.
+```
+
+ 与另一个比较器相比，它返回一个字典顺序的比较器，如果它的前一个比较器返回是元素的相等的情况，即compare(a, b) == 0的情况下，当前传入的比较器就会发挥作用，进行二次排序，这意味着，如果前面的比较器返回的结果不是0，那么后面的比较器就不会再调用，这一点在源代码中也有体现：
+
+```java
+    default Comparator<T> thenComparing(Comparator<? super T> other) {
+        Objects.requireNonNull(other);
+        return (Comparator<T> & Serializable) (c1, c2) -> {
+            int res = compare(c1, c2);
+            // 当比较的结果不为0的时候直接返回，相等再执行传入的比较器。
+            return (res != 0) ? res : other.compare(c1, c2);
+        };
+    }
+```
+
+当然，你还可以这么做：
+
+```java
+Collections.sort(list,Comparator.comparingInt(String::length).thenComparing(Comparator.comparing(String::toLowerCase)));
+```
+
+类似的，比较器也可以进行复合：
+
+```java
+Collections.sort(list, Comparator.comparingInt(String::length).thenComparing(String::toLowerCase, Comparator.reverseOrder()));
+```
+
+比这个例子稍微复杂一个例子：
+
+```java
+Collections.sort(list,Comparator.comparingInt(String::length).reversed().thenComparing(String::toLowerCase, Comparator.reverseOrder()));
+```
+
 ### Collector源码分析
 
 Collector无疑是整个Stream源码中及其重要的一个类，了解它对于我们认识Stream类有着及其关键的作用，首先回到我们之前的例子当中：
@@ -3605,179 +3778,6 @@ students.stream().collect(Collectors.partitioningBy(student -> student.getScore(
 students.stream().collect(Collectors.groupingBy(Student::getName,Collectors.collectingAndThen(Collectors.minBy(Comparator.comparingInt(Student::getScore)), Optional::get)));
 ```
 
-### Comparator源码分析及实践
-
-Comparator并不是JDK8新增加的内容，但是JDK8对它做了一定程度的增强，在函数式编程中非常的常见，所以也非常的重要。
-
-```java
-@FunctionalInterface
-public interface Comparator<T> {
-    int compare(T o1, T o2);
-}
-```
-
-首先可以看到这是一个函数式接口，拥有唯一的抽象方法compare，这个方法接口两个参数并且有返回值，并且在这个类中，JDK从1.8开始增加了若干个默认方法。
-
-假如我们要对一个字符串数据按照首字母进行排序：
-
-```java
-public class MyComparatorTest {
-    public static void main(String[] args) {
-        List<String> list = Arrays.asList("nihao", "hello", "world", "welcome");
-        Collections.sort(list);
-        System.out.println(list);
-    }
-}
-```
-
-如果要按照长度来进行排序：
-
-```java
-Collections.sort(list, (item1, item2) -> item1.length() - item2.length());
-```
-
-也可以使用方法引用的方式来实现：
-
-```java
-Collections.sort(list, Comparator.comparingInt(String::length));
-```
-
-如果是降序则：
-
-```java
-Collections.sort(list, (item1, item2) -> item2.length() - item1.length());
-```
-
-同样的，也可以使用方法引用的方式来实现，只是这里我们调用新的方法reversed：
-
-```java
-Collections.sort(list, Comparator.comparingInt(String::length).reversed());
-```
-
-但是如果你这么写的话，就会发现有问题：
-
-```java
-Collections.sort(list, Comparator.comparingInt(item -> item.length()).reversed());
-```
-
-看起来与上面的写法是完全等价的，但IDE却会提示：
-
-```txt
-cannot resolve method 'length()'
-```
-
-原因就在于，编译器会认为此时的item是一个Object类型的对象，如果要正常编译运行，就需要显示的声明类型：
-
-```java
-Collections.sort(list, Comparator.comparingInt((String item) -> item.length()).reversed());
-```
-
-在我们之前的所有的例子当中，编译器都可以自动的推断出元素的类型，在这个例子当中，接收的参数ToIntFunction<? super T>由于没有明确的上下文（可能是T类型，也有可能是T类型以上的类型），并且由于调用了reversed获取了新的比较器，所以编译器没有办法准确的推断出类型：
-
-```java
-  public static <T> Comparator<T> comparingInt(ToIntFunction<? super T> keyExtractor) {
-        Objects.requireNonNull(keyExtractor);
-        return (Comparator<T> & Serializable)
-            (c1, c2) -> Integer.compare(keyExtractor.applyAsInt(c1), keyExtractor.applyAsInt(c2));
-    }
-```
-
-这里为什么会是T类型以及T类型以上的类型呢？简而言之，就是可以传入自己本身以及父类的比较器，而如果传入的是父类型的比较器，比较完成之后还是会强转会原来的类型。
-
-其实我们也可以直接调用list的sort方法：
-
-```java
-list.sort(Comparator.comparingInt(String::length).reversed());
-```
-
-上面的方法都是一次排序，接下来我们看多次排序的方法，比如现根据名称排序，排好序之后对于名称相同的再根据分数进行排序：
-
-```java
-Collections.sort(list, Comparator.comparingInt(String::length).thenComparing((item1, item2) -> item1.compareToIgnoreCase(item2)));
-```
-
-其实我们也可以这样调用：
-
-```java
-Collections.sort(list,Comparator.comparingInt(String::length).thenComparing(String.CASE_INSENSITIVE_ORDER));
-```
-
-这里我们使用的静态的常量是：
-
-```java
-    public static final Comparator<String> CASE_INSENSITIVE_ORDER
-                                         = new CaseInsensitiveComparator();
-```
-
-这个类本身就定义在String类当中：
-
-```java
-    private static class CaseInsensitiveComparator
-            implements Comparator<String>, java.io.Serializable {
-        // use serialVersionUID from JDK 1.2.2 for interoperability
-        private static final long serialVersionUID = 8575799808933029326L;
-
-        public int compare(String s1, String s2) {
-            int n1 = s1.length();
-            int n2 = s2.length();
-            int min = Math.min(n1, n2);
-            for (int i = 0; i < min; i++) {
-                char c1 = s1.charAt(i);
-                char c2 = s2.charAt(i);
-                if (c1 != c2) {
-                    c1 = Character.toUpperCase(c1);
-                    c2 = Character.toUpperCase(c2);
-                    if (c1 != c2) {
-                        c1 = Character.toLowerCase(c1);
-                        c2 = Character.toLowerCase(c2);
-                        if (c1 != c2) {
-                            // No overflow because of numeric promotion
-                            return c1 - c2;
-                        }
-                    }
-                }
-            }
-            return n1 - n2;
-        }
-```
-
-而对于thenComparing方法而言：
-
-```txt
-Returns a lexicographic-order comparator with another comparator. If this Comparator considers two elements equal, i.e. compare(a, b) == 0, other is used to determine the order.
-```
-
- 与另一个比较器相比，它返回一个字典顺序的比较器，如果它的前一个比较器返回是元素的相等的情况，即compare(a, b) == 0的情况下，当前传入的比较器就会发挥作用，进行二次排序，这意味着，如果前面的比较器返回的结果不是0，那么后面的比较器就不会再调用，这一点在源代码中也有体现：
-
-```java
-    default Comparator<T> thenComparing(Comparator<? super T> other) {
-        Objects.requireNonNull(other);
-        return (Comparator<T> & Serializable) (c1, c2) -> {
-            int res = compare(c1, c2);
-            // 当比较的结果不为0的时候直接返回，相等再执行传入的比较器。
-            return (res != 0) ? res : other.compare(c1, c2);
-        };
-    }
-```
-
-当然，你还可以这么做：
-
-```java
-Collections.sort(list,Comparator.comparingInt(String::length).thenComparing(Comparator.comparing(String::toLowerCase)));
-```
-
-类似的，比较器也可以进行复合：
-
-```java
-Collections.sort(list, Comparator.comparingInt(String::length).thenComparing(String::toLowerCase, Comparator.reverseOrder()));
-```
-
-比这个例子稍微复杂一个例子：
-
-```java
-Collections.sort(list,Comparator.comparingInt(String::length).reversed().thenComparing(String::toLowerCase, Comparator.reverseOrder()));
-```
-
 ### 自定义Collector
 
 在进行Collector源码分析的时候，我们提到过Characteristics这个内部枚举类，接下来我们首先分析每一个枚举项代表的含义：
@@ -4123,7 +4123,103 @@ finisher invoked!
 {a=a, b=b, world=world, c=c, d=d, e=e, f=f, g=g, hello=hello, welcome=welcome}
 ```
 
+这里就会开启多个线程，这个时候如果再设置CONCURRENT特性：
 
+```java
+return Collections.unmodifiableSet(EnumSet.of(Characteristics.UNORDERED, Characteristics.CONCURRENT));
+```
 
+控制台输出：
 
+```txt
+set: [a, b, world, c, d, e, f, g, hello, welcome]
+characteristics invoked!
+supplier invoked!
+====================================
+accmulator invoked!
+[hello]
+accmulator: main
+[hello, welcome]
+accmulator: ForkJoinPool.commonPool-worker-2
+[f, hello, welcome]
+[b, f, hello, welcome]
+accmulator: ForkJoinPool.commonPool-worker-2
+accmulator: ForkJoinPool.commonPool-worker-3
+[a, b, f, hello, welcome]
+accmulator: ForkJoinPool.commonPool-worker-4
+[a, b, world, d, f, g, hello, welcome]
+accmulator: ForkJoinPool.commonPool-worker-3
+[a, b, world, d, f, hello, welcome]
+accmulator: ForkJoinPool.commonPool-worker-2
+[a, b, d, f, hello, welcome]
+accmulator: ForkJoinPool.commonPool-worker-1
+[a, b, world, c, d, e, f, g, hello, welcome]
+accmulator: ForkJoinPool.commonPool-worker-1
+[a, b, world, c, d, f, g, hello, welcome]
+accmulator: ForkJoinPool.commonPool-worker-2
+characteristics invoked!
+finisher invoked!
+{a=a, b=b, world=world, c=c, d=d, e=e, f=f, g=g, hello=hello, welcome=welcome}
+```
 
+如果执行的次数过多，还有可能会出现如下报错：
+
+```java
+Exception in thread "main" java.util.ConcurrentModificationException: java.util.ConcurrentModificationException
+```
+
+这是因为设置了CONCURRENT特性，多个线程就会操作同一个中间结果容器，而在我们的程序中，除了往集合中不断累加元素之外，还在打印集合中的元素：
+
+```java
+    public BiConsumer<Set<T>, T> accumulator() {
+        System.out.println("accmulator invoked!");
+        return (set, item) -> {
+            set.add(item);
+            System.out.println("accmulator: " + Thread.currentThread().getName());
+        };
+    }
+```
+
+这将导致，偶发的情况下就会出现并发修改的异常，这就要求在在定义Collector的是偶，如果设置了CONCURRENT特性，accumulator方法只能进行累积的操作，而尽量不要进行其他的操作。
+
+总结一下，在使用并行流的时候，如果设置了CONCURRENT特性，那么多个线程就会操作操作同一个中间结果容器，而这个唯一的结果容器就是最终的结果容器，如果没有设置这个特性，那么就会操作不同的中间结果容器，换言之，如果设置了CONCURRENT特性，那么combiner就不会被调用，因为无需进行最后的合并操作，而如果没有设置，那么combiner就会得到调用。
+
+总而言之combiner被调用有两个条件，一个是并行流，一个是没有设置CONCURRENT特性，中间结果容器的个数也是类似的，只有当开启并行流，并且没有设置过CONCURRENT特性的时候才会创建和流中元素个数相同的中间结果容器。
+
+开启并行流的方式除了之前我们使用过的parallelStream，其实还可以这样：
+
+```java
+Map<String, String> map = set.stream().parallel().collect(new MySetCollector2<>());
+```
+
+如果要使用串行流，你也可以：
+
+```java
+Map<String, String> map = set.stream().sequential().collect(new MySetCollector2<>());
+```
+
+甚至可以：
+
+```java
+Map<String, String> map = set.stream().sequential().parallel().sequential().collect(new MySetCollector2<>());
+```
+
+但需要注意的是，这里程序并不会依次的调用，而是会调用最后指定的方式，也就是说，上面的代码其实等价于：
+
+```java
+Map<String, String> map = set.stream().sequential().collect(new MySetCollector2<>());
+```
+
+这两种写法完全是等价的，这是因为，选择并行流还是串行流，仅仅是由一个布尔值来控制的：
+
+```java
+   /**
+     * True if pipeline is parallel, otherwise the pipeline is sequential; only
+     * valid for the source stage.
+     */
+    private boolean parallel;
+```
+
+### Collectors源码分析
+
+自定义Collector的过程帮助我们很好的理解了关于Collector的基本概念，我们也尝试着自己实现了两个相对比较简单的例子，Collectors作为生产Collector的静态工厂类，里面有大量的关于Collector的实现，本节我们就分析JDK已经帮我们实现的Collector的例子，学习这些例子，有助于我们强化对于Collector的理解。
