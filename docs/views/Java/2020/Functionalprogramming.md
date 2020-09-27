@@ -4223,3 +4223,130 @@ Map<String, String> map = set.stream().sequential().collect(new MySetCollector2<
 ### Collectors源码分析
 
 自定义Collector的过程帮助我们很好的理解了关于Collector的基本概念，我们也尝试着自己实现了两个相对比较简单的例子，Collectors作为生产Collector的静态工厂类，里面有大量的关于Collector的实现，本节我们就分析JDK已经帮我们实现的Collector的例子，学习这些例子，有助于我们强化对于Collector的理解。
+
+对于Collectors静态工厂来说，实现Collector，总的来说分为两种情况：
+
+1. 通过CollectorImpl来实现
+2. 通过reducing方法来实现，而reducing方法本身又是通过CollectorImpl来实现的。
+
+首先我们来分析一下我们使用过的最多的toList方法：
+
+```java
+   public static <T> Collector<T, ?, List<T>> toList() {
+        return new CollectorImpl<>((Supplier<List<T>>) ArrayList::new, List::add,
+                                   (left, right) -> { left.addAll(right); return left; },
+                                   CH_ID);
+    }
+```
+
+这里的(Supplier<List<T>>) ArrayList::new也可以写成ArrayList<T>::new，这里的第四个参数是：
+
+```java
+    static final Set<Collector.Characteristics> CH_ID
+            = Collections.unmodifiableSet(EnumSet.of(Collector.Characteristics.IDENTITY_FINISH));
+```
+
+这里的属性值是IDENTITY_FINISH，意味着中间结果容器的类型和最终返回的结果类型相同，所以无需定义finisher。对于toList还有一个接受的更宽广的toCollection：
+
+```java
+   public static <T, C extends Collection<T>>
+    Collector<T, ?, C> toCollection(Supplier<C> collectionFactory) {
+        return new CollectorImpl<>(collectionFactory, Collection<T>::add,
+                                   (r1, r2) -> { r1.addAll(r2); return r1; },
+                                   CH_ID);
+    }
+```
+
+这里只是提供了创建结果容器的入口，例如，要使用LinkedList，你只需要：
+
+```java
+list.stream().collect(Collectors.toCollection(LinkedList::new));
+```
+
+对于toSet方法：
+
+```java
+   public static <T>
+    Collector<T, ?, Set<T>> toSet() {
+        return new CollectorImpl<>((Supplier<Set<T>>) HashSet::new, Set::add,
+                                   (left, right) -> { left.addAll(right); return left; },
+                                   CH_UNORDERED_ID);
+    }
+```
+
+由于Set集合本身是无序的，并且最终返回的结果也是Set类型，所以它的特性值是：
+
+```java
+    static final Set<Collector.Characteristics> CH_UNORDERED_ID
+            = Collections.unmodifiableSet(EnumSet.of(Collector.Characteristics.UNORDERED,
+                                                     Collector.Characteristics.IDENTITY_FINISH));
+```
+
+对于joining方法：
+
+```java
+    public static Collector<CharSequence, ?, String> joining() {
+        return new CollectorImpl<CharSequence, StringBuilder, String>(
+                StringBuilder::new, StringBuilder::append,
+                (r1, r2) -> { r1.append(r2); return r1; },
+                StringBuilder::toString, CH_NOID);
+    }
+```
+
+joining方法与之前的方法不同的是，它还调用了finisher方法，这是因为需要将StringBuilder转为String类型。这里的第四个参数指的是：
+
+```java
+static final Set<Collector.Characteristics> CH_NOID = Collections.emptySet();
+```
+
+返回的是一个空的集合，说明三个特性都不具备。
+
+joining还有一个重载的方法，可以增加前缀和后缀：
+
+```java
+    public static Collector<CharSequence, ?, String> joining(CharSequence delimiter,
+                                                             CharSequence prefix,
+                                                             CharSequence suffix) {
+        return new CollectorImpl<>(
+                () -> new StringJoiner(delimiter, prefix, suffix),
+                StringJoiner::add, StringJoiner::merge,
+                StringJoiner::toString, CH_NOID);
+    }
+```
+
+StringJoiner是JDK1.8提供的一个新的类，用于完成字符串的拼接操作。
+
+```java
+    public static <T, U, A, R>
+    Collector<T, ?, R> mapping(Function<? super T, ? extends U> mapper,
+                               Collector<? super U, A, R> downstream) {
+        BiConsumer<A, ? super U> downstreamAccumulator = downstream.accumulator();
+        return new CollectorImpl<>(downstream.supplier(),
+                                   (r, t) -> downstreamAccumulator.accept(r, mapper.apply(t)),
+                                   downstream.combiner(), downstream.finisher(),
+                                   downstream.characteristics());
+    }
+```
+
+这是一个相对比较复杂的例子，我们先来读一下方法说明：
+
+```txt
+Adapts a Collector accepting elements of type U to one accepting elements of type T by applying a mapping function to each input element before accumulation.
+```
+
+mapping方法被用来在累积操作之前对每个输入元素都应用mapping方法，将接收的U类型映射为T类型，从而实现收集器的映射。
+
+方法本身接收两个参数：
+
+```txt
+mapper – a function to be applied to the input elements
+downstream – a collector which will accept mapped values
+```
+
+这里的下游指的是，将要被映射的值，给出了一个具体的案例：
+
+```java
+ Map<City, Set<String>> lastNamesByCity
+         = people.stream().collect(groupingBy(Person::getCity,
+                                              mapping(Person::getLastName, toSet())));
+```
