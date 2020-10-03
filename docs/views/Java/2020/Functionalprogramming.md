@@ -5,11 +5,13 @@ categories:
  - Java
 author: jyc
 ---
-## 匿名内部类
+## 函数式编程起源
 
 JDK8或者说Java8是目前企业开发中最常用的JDK版本，Java8可谓Java语言历史上变化最大的一个版本，其承诺要调整Java编程向着函数式风格迈进，这有助于编写出更为简洁、表达力更强，并且在很多情况下能够利用并行运行的代码。
 
 但是很多人在使用Java8的时候，还是使用传统的面向对象的编程方式，这样在使用Java8的好处也仅仅停留在JVM带来的性能上的提升，而事实上Java8的新特性可以极大提升我们的开发效率，面向函数式编程也是将来编程语言的重要趋势，可以说，学习函数式编程风格，刻不容缓。
+
+### 匿名内部类
 
 在以往的使用传统面向对象的编程中，我们不得不这样编写代码：
 
@@ -124,7 +126,7 @@ public class Lambda {
 
 而使用Lambda表达式所带来的好处其实远不止简化代码，它还可以为我们带来代码执行效率上的提升，所以，无论是处于开发效率，还是代码的执行速度上来看，都应该使用Lambda表达式，在后面的文章中，我们首先认识一下函数式编程中两个核心的概念Lambda表达式和Stream。
 
-## Lambda表达式和Stream
+### Lambda表达式和Stream
 
 Lambda表达式与Stream是java8中新增加的重要新特性，Lambda表达式与Stream相互配合，可以非常高效的处理一些集合的运算。
 
@@ -3117,7 +3119,7 @@ students.stream().collect(Collectors.partitioningBy(student -> student.getScore(
 
 至此，对于JDK8中的重要的API全部都介绍完成，学会使用是第一步也是非常重要的一步，在长时间的练习和记忆中，我们才能体会到函数式编程带给我们巨大好处，如果只是从使用的角度而言，掌握本章及之前的内容对于一般的开发者，完全是够用的，然而我想这是远远不够的，学习JDK中优秀的源码，反过来加深我们使用的时候的理解，达到相互促进的作用，这才是更重要的，因此，从下一章节开始，我们将系统而全面的分析JDK是如何实现函数式编程，以及我们之前使用的诸多的API在底层到底是如何实现的。
 
-## Stream源码分析
+## Collector接口
 
 Stream的源码复杂而多变，要掌握整个的流程，我们就不得不先要理清楚一些及其重要的概念和几个核心类的作用，当然一开始这是不太容易能够理解的，但是，这会为后面我们能完整的看到流的整个调用顺序打下良好的基础。
 
@@ -4350,3 +4352,431 @@ downstream – a collector which will accept mapped values
          = people.stream().collect(groupingBy(Person::getCity,
                                               mapping(Person::getLastName, toSet())));
 ```
+
+比这个例子稍微复杂一点的例子：
+
+```java
+    public static<T,A,R,RR> Collector<T,A,RR> collectingAndThen(Collector<T,A,R> downstream,
+                                                                Function<R,RR> finisher) {
+        Set<Collector.Characteristics> characteristics = downstream.characteristics();
+        if (characteristics.contains(Collector.Characteristics.IDENTITY_FINISH)) {
+            if (characteristics.size() == 1)
+                // 如果只有IDENTITY_FINISH特性，就将特性值设置为空
+                characteristics = Collectors.CH_NOID;
+            else {
+                // 将IDENTITY_FINISH去掉
+                characteristics = EnumSet.copyOf(characteristics);
+                characteristics.remove(Collector.Characteristics.IDENTITY_FINISH);
+                characteristics = Collections.unmodifiableSet(characteristics);
+            }
+        }
+        return new CollectorImpl<>(downstream.supplier(),
+                                   downstream.accumulator(),
+                                   downstream.combiner(),
+                                   downstream.finisher().andThen(finisher),
+                                   characteristics);
+    }
+
+```
+
+首先来读一下方法的说明：
+
+```txt
+Adapts a Collector to perform an additional finishing transformation. For example, one could adapt the toList() collector to always produce an immutable list with:
+```
+
+适配一个Collector来执行finisher方法的转换，例如，我们可以使用这个方法将使用toList收集的方法来转换为一个不可变的集合，例如：
+
+```java
+  List<String> people
+         = people.stream().collect(collectingAndThen(toList(), Collections::unmodifiableList));
+```
+
+toList本身方法返回的是一个ArrayList对象，本身是可变的，通过这种方式就可以得到一个不可变的集合列表，方法实现中将原来流中的IDENTITY_FINISH特性去掉的原因在于，如果设置了这个特性值，finisher方法就不会得到执行，而collectingAndThen方法的目的就在于转换最终的结果类型，关键就在于需要执行的finisher方法。
+
+接下来我们看一个之前使用的方法，summingInt的实现：
+
+```java
+    public static <T> Collector<T, ?, Integer>
+    summingInt(ToIntFunction<? super T> mapper) {
+        return new CollectorImpl<>(
+                () -> new int[1],
+                (a, t) -> { a[0] += mapper.applyAsInt(t); },
+                (a, b) -> { a[0] += b[0]; return a; },
+                a -> a[0], CH_NOID);
+    }
+
+```
+
+summingInt方法的说明：
+
+```txt
+Returns a Collector that produces the sum of a integer-valued function applied to the input elements. If no elements are present, the result is 0.
+```
+
+ 返回的Collector是对流中的每一个元素执行传入的整型值函数，如果流中没有元素，就返回0。
+
+需要说明的是，这里为什么不直接使用数字，而是new了一个int类型的数组，原因在于数字是值类型的，而数组是引用类型的，值类型的参数无法进行传递，数组本身也符合容器的定义，只不过这里每次只是取出来数组中唯一的元素，对数组中唯一的元素进行累加的操作。
+
+以上都是通过CollectorImpl来实现的Collector，接下来我们看一下通过reducing来实现的例子，首先来查看reducing方法的定义：
+
+```java
+    public static <T, U>
+    Collector<T, ?, U> reducing(U identity,
+                                Function<? super T, ? extends U> mapper,
+                                BinaryOperator<U> op) {
+        return new CollectorImpl<>(
+                boxSupplier(identity),
+                (a, t) -> { a[0] = op.apply(a[0], mapper.apply(t)); },
+                (a, b) -> { a[0] = op.apply(a[0], b[0]); return a; },
+                a -> a[0], CH_NOID);
+    }
+```
+
+reducing方法也是借助CollectorImpl来实现的Collector的，我们来阅读一下reducing方法的说明：
+
+```txt
+Returns a Collector which performs a reduction of its input elements under a specified mapping function and BinaryOperator. This is a generalization of reducing(Object, BinaryOperator) which allows a transformation of the elements before reduction.
+```
+
+groupingBy和partitioningBy是整个Collectors类中比较难以理解的两部分，关键的部分在于，理解每个泛型代表的含义以及每个参数的作用，在有了前面的基础之后，我们有必要了解一下有关分区和分组的实现。首先来看一下groupingBy方法的定义：
+
+```java
+    public static <T, K> Collector<T, ?, Map<K, List<T>>>
+    groupingBy(Function<? super T, ? extends K> classifier) {
+        return groupingBy(classifier, toList());
+    }
+```
+
+T类型表示流中元素的类型，？表示的是中间结果容器的类型，Map是最终的结果类型，K表示分类的时候的key的类型，List<T>就表示根据分类依据K分类之后的列表集合，方法本身的参数并没有直接使用T和K，而是使用T类型以及T以上的类型，K类型以及K类型以下的类型，并且只接受一个参数，调用了另一个重载的groupingBy方法：
+
+```java
+    public static <T, K, A, D>
+    Collector<T, ?, Map<K, D>> groupingBy(Function<? super T, ? extends K> classifier,
+                                          Collector<? super T, A, D> downstream) {
+        return groupingBy(classifier, HashMap::new, downstream);
+    }
+```
+
+方法的第一个参数是一个Function类型，第二个参数是Collector类型的，同样的，我们需要搞清楚这里每一个泛型的含义，T表示流中元素的类型，K表示分类器返回的结果的类型，或者说是返回的Map的key的类型，D表示Map返回的值的类型，方法要完成的事情实际上就是要将downstream在收集的时候，应用分类器classifier。它本身又调用一个重载的方法，在查看之前首先需要了解一个JDK中新增加的方法，在最终构造返回的accumulator的时候，我们要用到Map接口中所新增加的默认方法computeIfAbsent：
+
+```java
+default V computeIfAbsent(K key,
+            Function<? super K, ? extends V> mappingFunction) {
+        Objects.requireNonNull(mappingFunction);
+    	// 	V表示当前map的值的类型
+        V v;
+        if ((v = get(key)) == null) {
+            V newValue;
+            if ((newValue = mappingFunction.apply(key)) != null) {
+                put(key, newValue);
+                return newValue;
+            }
+        }
+
+        return v;
+    }
+```
+
+方法的说明：
+
+```txt
+If the specified key is not already associated with a value (or is mapped to null), attempts to compute its value using the given mapping function and enters it into this map unless null.
+```
+
+如果给定一个key与值没有关联起来（或者键映射为空），直接返回结果，如果它不为空的话，将尝试着计算他们的值使用给定的映射方法，就将他放入到map里面。总而言之，如果key不存在，则返回，如果存在，就执行mappingFunction，然后将映射之后的值放入到map当中。
+
+下面的方式是groupingBy真正执行的方法：
+
+```java
+public static <T, K, D, A, M extends Map<K, D>>
+    Collector<T, ?, M> groupingBy(Function<? super T, ? extends K> classifier,
+                                  Supplier<M> mapFactory,
+                                  Collector<? super T, A, D> downstream) {
+    	// A表示下游收集器的中间结果容器类型
+        Supplier<A> downstreamSupplier = downstream.supplier();
+    	// T表示流中元素的类型
+        BiConsumer<A, ? super T> downstreamAccumulator = downstream.accumulator();
+    	// 构造最终所返回的累加器对象
+        BiConsumer<Map<K, A>, T> accumulator = (m, t) -> {
+            K key = Objects.requireNonNull(classifier.apply(t), "element cannot be mapped to a null key");
+            A container = m.computeIfAbsent(key, k -> downstreamSupplier.get());
+            downstreamAccumulator.accept(container, t);
+        };
+    	// 完成两个Map的合并操作
+        BinaryOperator<Map<K, A>> merger = Collectors.<K, A, Map<K, A>>mapMerger(downstream.combiner());
+    	// 将M类型强转为<K,A>类型，M本身是<K,D>类型，由于中间结果类型一定是<K,A>类型，所以可以强转成功。
+        @SuppressWarnings("unchecked")
+        Supplier<Map<K, A>> mangledFactory = (Supplier<Map<K, A>>) mapFactory;
+
+        if (downstream.characteristics().contains(Collector.Characteristics.IDENTITY_FINISH)) {
+            return new CollectorImpl<>(mangledFactory, accumulator, merger, CH_ID);
+        }
+        else {
+            // 下游收集器本身返回的是<A,D>类型的，这里也是由于一定是<A,A>类型的，所以可以强转成功。
+            @SuppressWarnings("unchecked")
+            Function<A, A> downstreamFinisher = (Function<A, A>) downstream.finisher();
+            // 将Map中的键值对替换 
+            Function<Map<K, A>, M> finisher = intermediate -> {
+                intermediate.replaceAll((k, v) -> downstreamFinisher.apply(v));
+                @SuppressWarnings("unchecked")
+                M castResult = (M) intermediate;
+                return castResult;
+            };
+            return new CollectorImpl<>(mangledFactory, accumulator, merger, finisher, CH_NOID);
+        }
+    }
+```
+
+第一个参数是一个分类器，输入类型是T，返回的是K类型，第二个参数是accumulator累加器的类型，对应上面例子中的HashMap::new，第三个参数是下游收集器，其中的A表示的是中间结果的容器类型，在整个方法的返回类型中，泛型M的定义是M extends Map<K, D>。首先我们来阅读以下这个方法的说明：
+
+```txt
+Returns a Collector implementing a cascaded "group by" operation on input elements of type T, grouping elements according to a classification function, and then performing a reduction operation on the values associated with a given key using the specified downstream Collector. The Map produced by the Collector is created with the supplied factory function.
+```
+
+groupingBy方法返回了完成对于给定T类型的层叠的分组操作的Collector，它是根据提供的分类器来对元素进行分组的，然后会对于给定的key所关联的值（即Map）使用给定的下游收集器执行汇聚操作，Collector所使用的Map是由supplied工厂函数提供的。
+
+ ```txt
+The classification function maps elements to some key type K. The downstream collector operates on elements of type T and produces a result of type D. The resulting collector produces a Map<K, D>.
+ ```
+
+分类器方法会将元素映射成某个k类型，然后下游收集器会对流中T类型的元素生成一个D类型的结果，所生成的collector类型是Map<K,D>。
+
+```txt
+For example, to compute the set of last names of people in each city, where the city names are sorted:
+```
+
+比如要根据城市的名字对城市中每个人的姓进行分组，并且返回的结果要求带有排序的功能：
+
+```java
+  Map<City, Set<String>> namesByCity
+         = people.stream().collect(groupingBy(Person::getCity, TreeMap::new,
+                                              mapping(Person::getLastName, toSet())));
+```
+
+关于分组的方法还有另外的说明：
+
+```txt
+The returned Collector is not concurrent. For parallel stream pipelines, the combiner function operates by merging the keys from one map into another, which can be an expensive operation. If preservation of the order in which elements are presented to the downstream collector is not required, using groupingByConcurrent(Function, Supplier, Collector) may offer better parallel performance.
+```
+
+groupingBy方法返回的Collector不是并发的，对于并行流管道，combiner方法会将一个map的key合并到另一个当中，这可能是一个昂贵的操作，如果对于下游收集器而言，元素的顺序不是很重要的话，建议使用groupingByConcurrent，它可以提供更好的并发的性能：
+
+```java
+    public static <T, K, A, D>
+    Collector<T, ?, ConcurrentMap<K, D>> groupingByConcurrent(Function<? super T, ? extends K> classifier,
+                                                              Collector<? super T, A, D> downstream) {
+        return groupingByConcurrent(classifier, ConcurrentHashMap::new, downstream);
+    }
+```
+
+原因就在于groupingByConcurrent使用的是ConcurrentHashMap。
+
+与groupingBy相关联的另一个方法就是分区partitioningBy：
+
+```java
+    public static <T>
+    Collector<T, ?, Map<Boolean, List<T>>> partitioningBy(Predicate<? super T> predicate) {
+        return partitioningBy(predicate, toList());
+    }
+```
+
+它也有两个重载的方法：
+
+```java
+    public static <T, D, A>
+    Collector<T, ?, Map<Boolean, D>> partitioningBy(Predicate<? super T> predicate,
+                                                    Collector<? super T, A, D> downstream) {
+        BiConsumer<A, ? super T> downstreamAccumulator = downstream.accumulator();
+        BiConsumer<Partition<A>, T> accumulator = (result, t) ->
+                downstreamAccumulator.accept(predicate.test(t) ? result.forTrue : result.forFalse, t);
+        BinaryOperator<A> op = downstream.combiner();
+        BinaryOperator<Partition<A>> merger = (left, right) ->
+                new Partition<>(op.apply(left.forTrue, right.forTrue),
+                                op.apply(left.forFalse, right.forFalse));
+        Supplier<Partition<A>> supplier = () ->
+                new Partition<>(downstream.supplier().get(),
+                                downstream.supplier().get());
+        if (downstream.characteristics().contains(Collector.Characteristics.IDENTITY_FINISH)) {
+            return new CollectorImpl<>(supplier, accumulator, merger, CH_ID);
+        }
+        else {
+            Function<Partition<A>, Map<Boolean, D>> finisher = par ->
+                    new Partition<>(downstream.finisher().apply(par.forTrue),
+                                    downstream.finisher().apply(par.forFalse));
+            return new CollectorImpl<>(supplier, accumulator, merger, finisher, CH_NOID);
+        }
+    }
+```
+
+这里的Partition是用来定义分组结果的一个静态内部类：
+
+```java
+   private static final class Partition<T>
+            extends AbstractMap<Boolean, T>
+            implements Map<Boolean, T> {
+        final T forTrue;
+        final T forFalse;
+
+        Partition(T forTrue, T forFalse) {
+            this.forTrue = forTrue;
+            this.forFalse = forFalse;
+        }
+
+        @Override
+        public Set<Map.Entry<Boolean, T>> entrySet() {
+            return new AbstractSet<Map.Entry<Boolean, T>>() {
+                @Override
+                public Iterator<Map.Entry<Boolean, T>> iterator() {
+                    Map.Entry<Boolean, T> falseEntry = new SimpleImmutableEntry<>(false, forFalse);
+                    Map.Entry<Boolean, T> trueEntry = new SimpleImmutableEntry<>(true, forTrue);
+                    return Arrays.asList(falseEntry, trueEntry).iterator();
+                }
+
+                @Override
+                public int size() {
+                    return 2;
+                }
+            };
+        }
+    }
+```
+
+之所以这么做的原因是，分区一定是固定的两组结果，如果再使用Map类描述的话并不是特别清晰。
+
+## Stream原理
+
+收集器是我们认识整个Stream的第一步，在了解了有关收集器的内容之后，可以为我们了解Stream打下良好的基础，这一部分是整个函数式编程最核心的部分，我们将会看到JDK在底层到底是如何巧妙的实现函数式编程。
+
+### Stream源码分析
+
+在正式开始介绍之前，需要有一些预备的知识，从JDK1.7开始增加了这样一个接口：
+
+```java
+public interface AutoCloseable {
+    void close() throws Exception;
+}
+
+```
+
+方法的说明：
+
+```txt
+An object that may hold resources (such as file or socket handles) until it is closed. The close() method of an AutoCloseable object is called automatically when exiting a try-with-resources block for which the object has been declared in the resource specification header. This construction ensures prompt release, avoiding resource exhaustion exceptions and errors that may otherwise occur.
+```
+
+这是一个关闭之前可能持有一些资源（比如文件、socket句柄）的对象，它的close方法会在退出 try-with-resources代码块的时候自动得到调用，这种调用的机制被声明在资源的规范的头里面，这种设置确保了可以适当的释放一些资源，避免了资源被消耗尽造异常外和错误。
+
+举个例子：
+
+```java
+public class AutoCloseableTest implements AutoCloseable {
+    @Override
+    public void close() throws Exception {
+        System.out.println("close invoked!");
+    }
+
+    public void doSomething() {
+        System.out.println("doSomething invoked!");
+    }
+
+    public static void main(String[] args) throws Exception {
+        try (AutoCloseableTest autoCloseableTest = new AutoCloseableTest()) {
+            autoCloseableTest.doSomething();
+        }
+    }
+}
+```
+
+使用这种方式可以替换原来的需要人为的显示关闭各种流的操作，close方法会自动的得到调用：
+
+```txt
+doSomething invoked!
+close invoked!
+```
+
+接下来我们就完整的梳理一下关于Sream类本身的内容：
+
+```txt
+A sequence of elements supporting sequential and parallel aggregate operations. The following example illustrates an aggregate operation using Stream and IntStream:
+```
+
+首先Stream是一个支持并行与串行聚合操作的元素的序列，下面的示例演示了如何让使用Stream和IntStream进行聚合操作：
+
+```java
+int sum = widgets.stream()
+                      .filter(w -> w.getColor() == RED)
+                      .mapToInt(w -> w.getWeight())
+                      .sum();
+```
+
+对于这个例子的说明：
+
+```txt
+In this example, widgets is a Collection<Widget>. We create a stream of Widget objects via Collection.stream(), filter it to produce a stream containing only the red widgets, and then transform it into a stream of int values representing the weight of each red widget. Then this stream is summed to produce a total weight.
+```
+
+在这个例子当中，widgets是Widget类型的集合，我们通过使用Collection的stream方法创建了一个Widget对象的流，生成了一个新的只包含红色的Widget的流，然后将它转换成int值的Stream对象，代表了每个红色Widget的重量，最后流被汇总起来生成一个总的重量。
+
+```txt
+In addition to Stream, which is a stream of object references, there are primitive specializations for IntStream, LongStream, and DoubleStream, all of which are referred to as "streams" and conform to the characteristics and restrictions described here.
+```
+
+Stream本身是一个对象引用流，除了他还有一些原生的、特化的版本。比如IntStream、LongStream、DoubleStream，他们都被称之为Stream，满足Stream的特性，遵循Stream的相关约束。
+
+```txt
+To perform a computation, stream operations are composed into a stream pipeline. A stream pipeline consists of a source (which might be an array, a collection, a generator function, an I/O channel, etc), zero or more intermediate operations (which transform a stream into another stream, such as filter(Predicate)), and a terminal operation (which produces a result or side-effect, such as count() or forEach(Consumer)). Streams are lazy; computation on the source data is only performed when the terminal operation is initiated, and source elements are consumed only as needed.
+```
+
+为了进行计算，Stream会被组合成一个Stream pipeline（流管道）当中，一个流管道包含了一个元（可以是一个数组，一个集合，一个生成器法，一个I/O通道等等），包含0个或多个中间操作（会将一个Stream转换为另一个Stream，比如filter(Predicate)），包含一个终止操作（将会产生一个结果或者是有副作用的，比如count() 或者forEach(Consumer)），流是延迟的，只有当终止操作开始的时候，才会对元数据的计算才会真正的进行执行，元的数据只有在需要的时候才会被消费。
+
+```txt
+Collections and streams, while bearing some superficial similarities, have different goals. Collections are primarily concerned with the efficient management of, and access to, their elements. By contrast, streams do not provide a means to directly access or manipulate their elements, and are instead concerned with declaratively describing their source and the computational operations which will be performed in aggregate on that source. However, if the provided stream operations do not offer the desired functionality, the iterator() and spliterator() operations can be used to perform a controlled traversal.
+```
+
+集合与流，他们有一些相似性，但是有不同的目标，集合主要考虑的是高效的访问和管理他们的元素，与之相反，流并不会直接提供直接的去操作元素的方式，而是通过声明式的方式来描述他们元以及操作，这些操作会被聚合起来应用到他们的元上面，流关注的是元的计算。然而，如果提供的流操作并没有所需要的功能，那么iterator()和spliterator() 就可以执行控制性的遍历（即采用传统的方式来进行一些流的操作）。
+
+```txt
+A stream pipeline, like the "widgets" example above, can be viewed as a query on the stream source. Unless the source was explicitly designed for concurrent modification (such as a ConcurrentHashMap), unpredictable or erroneous behavior may result from modifying the stream source while it is being queried.
+```
+
+一个流管道，比如刚才的widgets，它可以被看成是一种对于流元的查询，除非这个流被显示的设计成可以并发修改的（比如ConcurrentHashMap），否则一些错误的型为就可能会产生并发修改的异常。
+
+```txt
+Most stream operations accept parameters that describe user-specified behavior, such as the lambda expression w -> w.getWeight() passed to mapToInt in the example above. To preserve correct behavior, these behavioral parameters:
+```
+
+大多数的流都会接收用户指定的一种行为，比如Lambda表达式 w -> w.getWeight()，为了保证最终结果的正确性，这些行为参数都要满足下面的这些条件特性：
+
+```txt
+must be non-interfering (they do not modify the stream source); and
+in most cases must be stateless (their result should not depend on any state that might change during execution of the stream pipeline).
+```
+
+- 他们必须是冲突非干扰的，
+- 在大多数情况下都是一种无状态的操作（结果不应该依赖于在流管道执行过程当中可能会修改的任意状态）,即执行的结果与执行的顺序是无关的
+
+```txt
+Such parameters are always instances of a functional interface such as Function, and are often lambda expressions or method references. Unless otherwise specified these parameters must be non-null.
+```
+
+这些参数总是一个函数式接口的实例。比如说Lamda表达式，除特殊情况外，参数都是非空的。
+
+```txt
+stream should be operated on (invoking an intermediate or terminal stream operation) only once. This rules out, for example, "forked" streams, where the same source feeds two or more pipelines, or multiple traversals of the same stream. A stream implementation may throw IllegalStateException if it detects that the stream is being reused. However, since some stream operations may return their receiver rather than a new stream object, it may not be possible to detect reuse in all cases.
+```
+
+一个流调用中间操作或者终止操作只能被操作一次，这并不是绝对的，比如”派生“的流，相同的元会提供两个或多个流管道，或者对相同的元执行多次的遍历，如果检测到流被重用了，就会抛出IllegalStateException，然而有些流操作可能会返回他们的接收者而并不是一个新的Stream对象，这种情况下是无法检测到被重用的。
+
+```txt
+Streams have a close() method and implement AutoCloseable, but nearly all stream instances do not actually need to be closed after use. Generally, only streams whose source is an IO channel (such as those returned by Files.lines(Path, Charset)) will require closing. Most streams are backed by collections, arrays, or generating functions, which require no special resource management. (If a stream does require closing, it can be declared as a resource in a try-with-resources statement.)
+```
+
+流都实现了AutoCloseable接口，因此都会自动的调用close方法，但是几乎所有的流实例在使用完成之后都不需要关闭，只有当流的元是一个IO通道的时候（比如从Files.lines返回对象）需要被关闭，大多数流的元都是集合、数组、或者生成器函数，他们并不需要特殊的资源管理（如果一个流确实需要关闭，它会使用try-with-resources声明成一个资源）。
+
+```txt
+Stream pipelines may execute either sequentially or in parallel. This execution mode is a property of the stream. Streams are created with an initial choice of sequential or parallel execution. (For example, Collection.stream() creates a sequential stream, and Collection.parallelStream() creates a parallel one.) This choice of execution mode may be modified by the sequential() or parallel() methods, and may be queried with the isParallel() method.
+```
+
+流管道可以通过并行或者是串行的方式来去执行，这种执行方式只是流里面的一个属性而已，流初始被创建的时候就会选择串行还是并行的（比如Collection.stream() 创建的就是串行流，Collection.parallelStream()创建的就是并行流），这种执行模式的选择，还可以通过sequential()或者parallel() 方法进行修改，并且还可以通过isParallel() 方法来查询流的类型。
+
