@@ -5,7 +5,7 @@ categories:
  - Java
 author: jyc
 ---
-## 函数式编程起源
+## 函数式编程初识
 
 JDK8或者说Java8是目前企业开发中最常用的JDK版本，Java8可谓Java语言历史上变化最大的一个版本，其承诺要调整Java编程向着函数式风格迈进，这有助于编写出更为简洁、表达力更强，并且在很多情况下能够利用并行运行的代码。
 
@@ -123,6 +123,40 @@ public class Lambda {
 ```
 
 不难看出，Lambda表达式在简化代码上，是非常有效的，Lambda表达式看起来特别像是原来Java中匿名内部类的一种特殊写法，对于初学者而言，暂时不妨可以认为Lambda表达式就是匿名内部类的一种新的写法，或者说是一种语法糖，但其实两者有着本质的区别，Lambda表达式就是一种全新的语法。
+
+这里通过一个例子来说明Lambda表达式和匿名内部类的区别：
+
+```java
+public class LambdaTest {
+    Runnable r1 = () -> System.out.println(this);
+    Runnable r2 = new Runnable() {
+        @Override
+        public void run() {
+            System.out.println(this);
+        }
+    };
+
+    public static void main(String[] args) {
+        LambdaTest lambdaTest = new LambdaTest();
+        Thread t1 = new Thread(lambdaTest.r1);
+        t1.start();
+        
+        System.out.println("================");
+        
+        Thread t2 = new Thread(lambdaTest.r2);
+        t2.start();
+    }
+}
+```
+
+控制台输出：
+
+```txt
+Stream2.LambdaTest@362872a1
+Stream2.LambdaTest$1@60c8c409
+```
+
+首先来看第二行，它表示当前对象指的是LambdaTest$1，在Java中表示匿名内部类会使用类名称+"$"+顺序的方式来表示，"@"后面的表示类的哈希值，而第一个Lamda表达式所打印的就是当前类LambdaTest的地址，这说明使用Lambda表达式的这种方式与它所在的类是同一个作用域。通过这个例子说明了Lambda表达式与匿名内部类有着本质的区别，两者是完全不同的，并不是匿名内部类的语法糖或者另一种表达形式，只不过在某些场景下，可以使用Lambda表达式来替代匿名内部类完成相同的功能。
 
 而使用Lambda表达式所带来的好处其实远不止简化代码，它还可以为我们带来代码执行效率上的提升，所以，无论是处于开发效率，还是代码的执行速度上来看，都应该使用Lambda表达式，在后面的文章中，我们首先认识一下函数式编程中两个核心的概念Lambda表达式和Stream。
 
@@ -5404,10 +5438,942 @@ If this Spliterator's source is SORTED by a Comparator, returns that Comparator.
   public static final int SIZED      = 0x00000040;
   public static final int NONNULL    = 0x00000100;
   public static final int IMMUTABLE  = 0x00000400;
-  // 
+  // 不能同时返回SIZED和CONCURRENT，如果多个线程访问元，就有可能修改元的大小
   public static final int CONCURRENT = 0x00001000;
   public static final int SUBSIZED = 0x00004000;
 ```
+
+除了以上非常核心的方法，Spliterator中还有两个接口OfPrimitive和OfInt。
+
+```java
+public interface OfPrimitive<T, T_CONS, T_SPLITR extends Spliterator.OfPrimitive<T, T_CONS, T_SPLITR>>
+            extends Spliterator<T> {
+        @Override
+        T_SPLITR trySplit();
+
+        @SuppressWarnings("overloads")
+        boolean tryAdvance(T_CONS action);
+
+        @SuppressWarnings("overloads")
+        default void forEachRemaining(T_CONS action) {
+            do { } while (tryAdvance(action));
+        }
+    }
+```
+
+相关说明：
+
+```txt
+A Spliterator specialized for primitive values.
+<T> – the type of elements returned by this Spliterator. The type must be a wrapper type for a primitive type, such as Integer for the primitive int type.
+<T_CONS> – the type of primitive consumer. The type must be a primitive specialization of Consumer for T, such as IntConsumer for Integer.
+<T_SPLITR> – the type of primitive Spliterator. The type must be a primitive specialization of Spliterator for T, such as Spliterator.OfInt for Integer.
+```
+
+这是一个针对原生值设定的Spliterator，T表示由当前的Spliterator所返回的元素的类型，类型必须要是原生类型的包装类型，比如int类型的包装类型Integer。T_CONS是原生的consumer特化的类型，这个类型必须是java.util.function.Consumer原生类型的特化，比如对于Integer的IntConsumer，T_SPLITR是原生的Spliterator分割迭代器的类型，必须是对于T类型的原生类型的特化，比如对于Integer的OfInt。
+
+```java
+	public interface OfInt extends OfPrimitive<Integer, IntConsumer, OfInt> {
+
+        @Override
+        OfInt trySplit();
+		// 重写的OfPrimitive中的tryAdvance方法
+        @Override
+        boolean tryAdvance(IntConsumer action);
+
+        @Override
+        default void forEachRemaining(IntConsumer action) {
+            do { } while (tryAdvance(action));
+        }
+
+        // 重写的Spliterator中的tryAdvance方法
+        @Override
+        default boolean tryAdvance(Consumer<? super Integer> action) {
+            if (action instanceof IntConsumer) {
+                // IntConsumer和Consumer类型并没有直接继承的关系，这可以强转的原因是如果参数是Integer类型的，由于自动拆箱和自动装箱的原因存在，传递的action如果是Lambda表达式就既满足了Consumer的要求，也满足了IntConsumer的要求，另外是由于Lambda表达式中的类型判断是需要结合具体的上下文的。
+                return tryAdvance((IntConsumer) action);
+            }
+            else {
+                if (Tripwire.ENABLED)
+                    Tripwire.trip(getClass(),
+                                  "{0} calling Spliterator.OfInt.tryAdvance((IntConsumer) action::accept)");
+                return tryAdvance((IntConsumer) action::accept);
+            }
+        }
+
+        @Override
+        default void forEachRemaining(Consumer<? super Integer> action) {
+            if (action instanceof IntConsumer) {
+                forEachRemaining((IntConsumer) action);
+            }
+            else {
+                if (Tripwire.ENABLED)
+                    Tripwire.trip(getClass(),
+                                  "{0} calling Spliterator.OfInt.forEachRemaining((IntConsumer) action::accept)");
+                forEachRemaining((IntConsumer) action::accept);
+            }
+        }
+    }
+```
+
+相关说明：
+
+```txt
+A Spliterator specialized for int values.
+```
+
+针对于int值的分割迭代器。
+
+这其中比较重要的是第二个tryAdvance方法，首先来看方法的说明
+
+```txt
+If the action is an instance of IntConsumer then it is cast to IntConsumer and passed to tryAdvance(IntConsumer); otherwise the action is adapted to an instance of IntConsumer, by boxing the argument of IntConsumer, and then passed to tryAdvance(IntConsumer).
+```
+
+如果action是IntConsumer的一个实例，那么就会被强转为IntConsumer并传递给tryAdvance(IntConsumer)，否则，action会被适配成IntConsumer实例，方式是通过IntConsumer的参数进行装箱操作，然后再传递给tryAdvance(IntConsumer)。
+
+对于上面注释中提到的为什么可以强转，我们通过一个具体的例子来说明：
+
+```java
+public class ConsumerTest {
+    public void test(Consumer<Integer> consumer) {
+        consumer.accept(100);
+    }
+
+    public static void main(String[] args) {
+        ConsumerTest consumerTest = new ConsumerTest();
+        // 两个相同的Lambda表达式
+        Consumer<Integer> consumer = i -> System.out.println(i);
+        IntConsumer intConsumer = i -> System.out.println(i);
+        // 面向对象的方式
+        consumerTest.test(consumer);
+        // 编译通过但执行报错
+        consumerTest.test((Consumer<Integer>) intConsumer);
+        // 传递行为，函数式的方式
+        consumerTest.test(consumer::accept);
+        consumerTest.test(intConsumer::accept);
+    }
+}
+```
+
+除了OfInt之外还有其他两种OfLong、OfDouble，原理和功能都是类似的。
+
+### Pipeline源码分析
+
+分割迭代器无疑是函数式编程中一个相当核心的概念，其地位与收集器相同，在了解了分割迭代器的相关内容之后，我们再回到一开始的例子当中，看看JDK是如何使用分割迭代器来构造流源的，还是回到最开始的入口这里：
+
+```java
+default Stream<E> stream() {
+        return StreamSupport.stream(spliterator(), false);
+    }
+```
+
+这里的spliterator方法是定义Collection接口当中的一个默认方法：
+
+```java
+ default Spliterator<E> spliterator() {
+     	// 这里的this表示的是当前集合的引用，当前集合的引用就是在这个时候被传递进去的
+        return Spliterators.spliterator(this, 0);
+    }
+```
+
+Spliterators中静态方法spliterator返回了一个Spliterator实现：
+
+```java
+    public static <T> Spliterator<T> spliterator(Collection<? extends T> c,
+                                                 int characteristics) {
+        return new IteratorSpliterator<>(Objects.requireNonNull(c),
+                                         characteristics);
+    }
+```
+
+可以看到我们实际上使用的分割迭代器是IteratorSpliterator，IteratorSpliterator是实现了Spliterator接口的一个实现类，它本身持有了元数据集合的引用。
+
+创建流元的过程是由StreamSupport这个类来完成的，以下是关于StreamSupport这个类的说明：
+
+````txt
+Low-level utility methods for creating and manipulating streams.
+This class is mostly for library writers presenting stream views of data structures; most static stream methods intended for end users are in the various Stream classes.
+````
+
+提供了一些创建和操作流的底层方法。这个类是给类库的编写者提供的，用于呈现流的数据视图，为用户所设计的大多数的静态的流的方法大多都在stream类中提的方法。
+
+StreamSupport中的stream方法：
+
+```java
+    public static <T> Stream<T> stream(Spliterator<T> spliterator, boolean parallel) {
+        Objects.requireNonNull(spliterator);
+        return new ReferencePipeline.Head<>(spliterator,
+                                            StreamOpFlag.fromCharacteristics(spliterator),
+                                            parallel);
+    }
+```
+
+方法的说明：
+
+```txt
+Creates a new sequential or parallel Stream from a Spliterator.
+The spliterator is only traversed, split, or queried for estimated size after the terminal operation of the stream pipeline commences.
+It is strongly recommended the spliterator report a characteristic of IMMUTABLE or CONCURRENT, or be late-binding. Otherwise, stream(Supplier, int, boolean) should be used to reduce the scope of potential interference with the source. See Non-Interference for more details.
+```
+
+从一个分割迭代器对象创建一个串行或者并行的流，spliterator在流管道开启之后仅仅是完成遍历、分割、查询、大小的等功能，强烈建议spliterator返回IMMUTABLE、CONCURRENT或者late-binding这样一些特性，否则，stream应该用于减少潜在的干扰，查看Non-Interference获取更多信息。
+
+这里引出了另外一个及其重要的类ReferencePipeline，用于描述中间的管道阶段和管道源阶段的的类，它与流的操作息息相关，Head是ReferencePipeline的一个静态内部类，描述的是管道的源阶段，二者在大部分属性的设定上都是类似的，但存在一些属性是不同的，比如说Head是没有previousStage的，而ReferencePipeline则是存在previousStage的，等等。接下来就需要重点了解管道流相关的内容。
+
+首先是定义在ReferencePipeline类当中的内部类Head：
+
+```java
+    static class Head<E_IN, E_OUT> extends ReferencePipeline<E_IN, E_OUT> {
+     
+        Head(Supplier<? extends Spliterator<?>> source,
+             int sourceFlags, boolean parallel) {
+            super(source, sourceFlags, parallel);
+        }
+		// 这里Spliterator作为流的源
+        Head(Spliterator<?> source,
+             int sourceFlags, boolean parallel) {
+            super(source, sourceFlags, parallel);
+        }
+
+        @Override
+        final boolean opIsStateful() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        final Sink<E_IN> opWrapSink(int flags, Sink<E_OUT> sink) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void forEach(Consumer<? super E_OUT> action) {
+            if (!isParallel()) {
+                sourceStageSpliterator().forEachRemaining(action);
+            }
+            else {
+                super.forEach(action);
+            }
+        }
+
+        @Override
+        public void forEachOrdered(Consumer<? super E_OUT> action) {
+            if (!isParallel()) {
+                sourceStageSpliterator().forEachRemaining(action);
+            }
+            else {
+                super.forEachOrdered(action);
+            }
+        }
+    }
+```
+
+Head类本身有两个泛型：
+
+```txt
+<E_IN> – type of elements in the upstream source
+<E_OUT> – type of elements in produced by this stage
+```
+
+E_IN表示上游流源的元素类型，E_OUT表示这个阶段生成的元素类型。
+
+真正在创建的时候又是调用了ReferencePipeline的构造方法：
+
+```java
+   ReferencePipeline(Supplier<? extends Spliterator<?>> source,
+                      int sourceFlags, boolean parallel) {
+        super(source, sourceFlags, parallel);
+    }
+```
+
+而ReferencePipeline的构造方法又调用了它的父类AbstractPipeline的构造方法：
+
+```java
+   AbstractPipeline(Supplier<? extends Spliterator<?>> source,
+                     int sourceFlags, boolean parallel) {
+        this.previousStage = null;
+        this.sourceSupplier = source;
+        this.sourceStage = this;
+        this.sourceOrOpFlags = sourceFlags & StreamOpFlag.STREAM_MASK;
+        // The following is an optimization of:
+        // StreamOpFlag.combineOpFlags(sourceOrOpFlags, StreamOpFlag.INITIAL_OPS_VALUE);
+        this.combinedFlags = (~(sourceOrOpFlags << 1)) & StreamOpFlag.INITIAL_OPS_VALUE;
+        this.depth = 0;
+        this.parallel = parallel;
+    }
+```
+
+AbstractPipeline的说明如下：
+
+```txt
+Abstract base class for "pipeline" classes, which are the core implementations of the Stream interface and its primitive specializations. Manages construction and evaluation of stream pipelines.
+```
+
+AbstractPipeline是对于管道类抽象出来的一个父类，管道类指的是流接口以及其原生特化的核心的实现，它会管理流管道的构建以及计算。
+
+```txt
+An AbstractPipeline represents an initial portion of a stream pipeline, encapsulating a stream source and zero or more intermediate operations. The individual AbstractPipeline objects are often referred to as stages, where each stage describes either the stream source or an intermediate operation.
+```
+
+AbstractPipeline代表了流管道初始的阶段，它封装了一个流源和0个或者多个中间操作，每一个单个的AbstractPipeline通常称为stages（阶段），这个阶段要么描述的是流的源，要么描述的是中间操作。
+
+```txt
+A concrete intermediate stage is generally built from an AbstractPipeline, a shape-specific pipeline class which extends it (e.g., IntPipeline) which is also abstract, and an operation-specific concrete class which extends that. AbstractPipeline contains most of the mechanics of evaluating the pipeline, and implements methods that will be used by the operation; the shape-specific classes add helper methods for dealing with collection of results into the appropriate shape-specific containers.
+```
+
+一个具体的中间阶段通常是通过AbstractPipeline构建出来的，特化的管道类（IntPipeline、LongPipeline）操作都是类似的，AbstractPipeline包含了大多数计算管道的机制，并且实现了操作的时候要使用的方法，与原生特定相关的类增加了用来处理结果集合添加到特定的特化的管道。
+
+```txt
+After chaining a new intermediate operation, or executing a terminal operation, the stream is considered to be consumed, and no more intermediate or terminal operations are permitted on this stream instance.
+```
+
+当链接一个新的中间操作，或者执行一个终止操作，流就会被认为被消费掉了，不会再有中间操作和终止操作添加到这个流实例上了。
+
+```txt
+For sequential streams, and parallel streams without stateful intermediate operations, parallel streams, pipeline evaluation is done in a single pass that "jams" all the operations together. For parallel streams with stateful operations, execution is divided into segments, where each stateful operations marks the end of a segment, and each segment is evaluated separately and the result used as the input to the next segment. In all cases, the source data is not consumed until a terminal operation begins.
+```
+
+对于串行流和中间操作都是无状态的并行流，管道的计算是在单个的过程中完成的（即不是通过链式调用，而是拿出一个元素执行所有的中间操作），对于有状态的并行流，管道的计算就会分成不同的段来执行，其中每一个有状态的都会标识一个段的结尾，每个段都会被单独的执行，而且每个段的执行结果会作为下一个段的输入（表示是有顺序的），直到一个终止操作开始的时候，源数据才会被消费。
+
+ 接下来是AbstractPipeline类中的一些属性：
+
+```java
+    private final AbstractPipeline previousStage;
+```
+
+属性的说明：
+
+```txt
+The "upstream" pipeline, or null if this is the source stage.
+```
+
+上游的pipline，如果是源阶段的话就是null。
+
+```java
+    private final AbstractPipeline sourceStage;
+```
+
+属性的说明：
+
+```txt
+Backlink to the head of the pipeline chain (self if this is the source stage).
+```
+
+表示管道反向链接的头（如果是源阶段就是它自身）。
+
+```java
+    private int depth;
+```
+
+属性的说明：
+
+```txt
+The number of intermediate operations between this pipeline object and the stream source if sequential, or the previous stateful if parallel. Valid at the point of pipeline preparation for evaluation.
+```
+
+当前的管道对象和流元的管道对象的中间操作的个数，在流准备进行计算的时候是有效的。
+
+```java
+    private boolean parallel;
+```
+
+属性的说明：
+
+```txt
+True if pipeline is parallel, otherwise the pipeline is sequential; only valid for the source stage.
+```
+
+如果是true表示并行，如果是false，表示串行，只有在流源这个阶段才有效。
+
+```java
+ private Spliterator<?> sourceSpliterator;
+```
+
+属性的说明：
+
+```txt
+The source spliterator. Only valid for the head pipeline. Before the pipeline is consumed if non-null then sourceSupplier must be null. After the pipeline is consumed if non-null then is set to null.
+```
+
+是针对于元的分割迭代器，只会head pipeline起作用，在管道被消费之前，如果sourceSpliterator是非空的话，那么sourceSupplier必须是null，管道被消费之后sourceSpliterator就要设置为空。
+
+```java
+    private Supplier<? extends Spliterator<?>> sourceSupplier;
+```
+
+属性的说明：
+
+```txt
+The source supplier. Only valid for the head pipeline. Before the pipeline is consumed if non-null then sourceSpliterator must be null. After the pipeline is consumed if non-null then is set to null.
+```
+
+supplier的元，只会head pipeline起作用，在管道被消费之前，如果sourceSupplier是空的，那么sourceSpliterator必须为空，在管道被消费之后，就要将sourceSupplier置为null。
+
+可以看到这两个成员变量可以认为是互斥的，必须要保证其中一个不为空，在流消费之后都要置为空，表示流已经消费完成，至此为止，流源的对象也已经构造完成。
+
+### 流调用机制与原理
+
+回到一开始的例子当中：
+
+```java
+list.stream().forEach(System.out::println);
+```
+
+这里调用的第一个stream方法，使用分割迭代器来构造流源的这一步我们已经完成了，接下来我们来查看一下forEach方法的说明：
+
+```txt
+Performs an action for each element of this stream.
+This is a terminal operation.
+```
+
+它表示要对于流中每个元素都执行action操作，并且这是一个终止操作。
+
+```txt
+The behavior of this operation is explicitly nondeterministic. For parallel stream pipelines, this operation does not guarantee to respect the encounter order of the stream, as doing so would sacrifice the benefit of parallelism. For any given element, the action may be performed at whatever time and in whatever thread the library chooses. If the action accesses shared state, it is responsible for providing the required synchronization.
+```
+
+这个操作的行为是不确定的，对于并行流管道来说，这个操作并不会保证它会遵循流当中元素的顺序，因为如果遵循的话，就会牺牲并行的优势，对于任意给定的元素，这个action可能会在任意的时间或者库所选择的任意线程中去执行，如果库访问了共享的状态，那么它就需要提供完整的同步机制。
+
+```java
+list.parallelStream().forEach(System.out::println);
+```
+
+这其实指的就是如果使用并行流，那么就无法再保证执行给定的Lambda表达式的元素的顺序了，这个方法实际上在ReferencePipeline中是有两个实现的，一个是在它的静态内部类Head中：
+
+```java
+        @Override
+        public void forEach(Consumer<? super E_OUT> action) {
+            // 对串行流进行优化
+            if (!isParallel()) {
+                sourceStageSpliterator().forEachRemaining(action);
+            }
+            else {
+                // 如果是并行流，调用ReferencePipeline中的forEach方法
+                super.forEach(action);
+            }
+        }
+```
+
+这个是针对于管道源的有过优化的实现，换句话说，如果被流的源调用的话，就是直接进入这个方法，另一个forEach方法是在ReferencePipeline当中：
+
+```java
+   @Override
+    public void forEach(Consumer<? super P_OUT> action) {
+        evaluate(ForEachOps.makeRef(action, false));
+    }
+
+```
+
+当有中间操作的时候，都会进入这个方法，之所以会有这个差异，就是为了效率上的考量，如果有中间操作的话，就需要对于中间操作进行一般化的处理，如果没有的话，就可以直接对流源进行操作。
+
+我们不妨来看一下优化的时候调用的sourceStageSpliterator方法，它是定义在AbstractPipeline当中的
+
+```java
+    final Spliterator<E_OUT> sourceStageSpliterator() {
+        if (this != sourceStage)
+            throw new IllegalStateException();
+		// 被链接或者被消费，为了保证是在源阶段
+        if (linkedOrConsumed)
+            // MSG_STREAM_LINKED = "stream has already been operated upon or closed";
+            throw new IllegalStateException(MSG_STREAM_LINKED);
+        linkedOrConsumed = true;
+		// 流源可能通过两种方式来构建，因此有两种情况，并且这两种情况是互斥的
+        if (sourceStage.sourceSpliterator != null) {
+            @SuppressWarnings("unchecked")
+            Spliterator<E_OUT> s = sourceStage.sourceSpliterator;
+            sourceStage.sourceSpliterator = null;
+            return s;
+        }
+        else if (sourceStage.sourceSupplier != null) {
+            @SuppressWarnings("unchecked")
+            Spliterator<E_OUT> s = (Spliterator<E_OUT>) sourceStage.sourceSupplier.get();
+            sourceStage.sourceSupplier = null;
+            return s;
+        }
+        else {
+            // MSG_CONSUMED = "source already consumed or closed";
+            throw new IllegalStateException(MSG_CONSUMED);
+        }
+    }
+```
+
+方法的说明：
+
+```txt
+Gets the source stage spliterator if this pipeline stage is the source stage. The pipeline is consumed after this method is called and returns successfully.
+```
+
+如果管道的阶段是源阶段的话，就会返回源阶段的分割迭代器，这个管道在被调用之后，就会返回并且销毁。
+
+我们知道一般情况下分割迭代器返回的是IteratorSpliterator实现，我们来看一下IteratorSpliterator中对于forEachRemaining的实现：
+
+```java
+        @Override
+        public void forEachRemaining(Consumer<? super T> action) {
+            if (action == null) throw new NullPointerException();
+            Iterator<? extends T> i;
+            // it是Spliterator中定义的迭代器
+            if ((i = it) == null) {
+                // 当前集合的迭代器
+                i = it = collection.iterator();
+                est = (long)collection.size();
+            }
+            i.forEachRemaining(action);
+        }
+```
+
+这里将集合中的迭代器找出来并且估算元素的大小，然后再调用Iterator中的新增加的forEachRemaining方法：
+
+```java
+    default void forEachRemaining(Consumer<? super E> action) {
+        Objects.requireNonNull(action);
+        while (hasNext())
+            action.accept(next());
+    }
+```
+
+看到这里我们就明白了，对于简单的遍历，使用传统的Iterator遍历的效率是要比流的方式效率要高的，当然这是因为我们是没有任何的中间操作，如果有了一系列的中间操作，那么使用流的方式效率还是比传统的方式要高的。
+
+ ```java
+list.stream().map(item -> item).forEach(System.out::println);
+ ```
+
+在ReferencePipeline当中，map方法只有唯一的实现：
+
+```java
+    public final <R> Stream<R> map(Function<? super P_OUT, ? extends R> mapper) {
+        Objects.requireNonNull(mapper);
+        // 返回StatelessOp的匿名内部类对象，this表示ReferencePipeline，第二个参数表示流的类型是引用类型的，第三个是流的特性值
+        return new StatelessOp<P_OUT, R>(this, StreamShape.REFERENCE,
+                                     StreamOpFlag.NOT_SORTED | StreamOpFlag.NOT_DISTINCT) {
+            @Override
+            Sink<P_OUT> opWrapSink(int flags, Sink<R> sink) {
+                return new Sink.ChainedReference<P_OUT, R>(sink) {
+                    // 真正执行传入Lambda表达式的地方
+                    @Override
+                    public void accept(P_OUT u) {
+                        downstream.accept(mapper.apply(u));
+                    }
+                };
+            }
+        };
+    }
+```
+
+这里的StatelessOp也是定义在ReferencePipeline当中的一个静态内部类：
+
+```java
+ abstract static class StatelessOp<E_IN, E_OUT>
+            extends ReferencePipeline<E_IN, E_OUT> {
+     
+        StatelessOp(AbstractPipeline<?, E_IN, ?> upstream,
+                    StreamShape inputShape,
+                    int opFlags) {
+            super(upstream, opFlags);
+            assert upstream.getOutputShape() == inputShape;
+        }
+
+        @Override
+        final boolean opIsStateful() {
+            return false;
+        }
+    }
+```
+
+相关说明：
+
+```txt
+Construct a new Stream by appending a stateless intermediate operation to an existing stream.
+```
+
+构造一个针对无状态的中间的阶段的流，这里的构造方法又调用了ReferencePipeline的构造方法：
+
+```java
+    ReferencePipeline(AbstractPipeline<?, P_IN, ?> upstream, int opFlags) {
+        super(upstream, opFlags);
+    }
+```
+
+方法的说明：
+
+```txt
+Constructor for appending an intermediate operation onto an existing pipeline.
+```
+
+这个构造方法完成的就是对于已经存在的管道追加一个中间操作，upstream表示上游元素的源。
+
+这里又调用了AbstractPipeline的构造方法：
+
+```java
+AbstractPipeline(AbstractPipeline<?, E_IN, ?> previousStage, int opFlags) {
+        if (previousStage.linkedOrConsumed)
+            throw new IllegalStateException(MSG_STREAM_LINKED);
+		// 标识为已经消费
+        previousStage.linkedOrConsumed = true;
+        previousStage.nextStage = this;
+
+        this.previousStage = previousStage;
+        this.sourceOrOpFlags = opFlags & StreamOpFlag.OP_MASK;
+        this.combinedFlags = StreamOpFlag.combineOpFlags(opFlags, previousStage.combinedFlags);
+        this.sourceStage = previousStage.sourceStage;
+        if (opIsStateful())
+            sourceStage.sourceAnyStateful = true;
+    	// 深度加1
+        this.depth = previousStage.depth + 1;
+    }
+```
+
+方法的说明：
+
+```txt
+Constructor for appending an intermediate operation stage onto an existing pipeline.
+```
+
+向一个已有的管道用于追加一个中间操作。
+
+这里也可以看到这个构造方法与我们之前见过的有关构造流源的构造方法的作用完全不同，回到刚才的例子当中，除了上面追加中间操作的部分，还涉及到了另外一个及其重要的类Sink，一般翻译为饮水槽，这是我们了解整个流调用机制的最后一个类。
+
+### Sink源码分析
+
+```txt
+An extension of Consumer used to conduct values through the stages of a stream pipeline, with additional methods to manage size information, control flow, etc. Before calling the accept() method on a Sink for the first time, you must first call the begin() method to inform it that data is coming (optionally informing the sink how much data is coming), and after all data has been sent, you must call the end() method. After calling end(), you should not call accept() without again calling begin(). Sink also offers a mechanism by which the sink can cooperatively signal that it does not wish to receive any more data (the cancellationRequested() method), which a source can poll before sending more data to the Sink.
+```
+
+Sink是Consumer接口的一个扩展，用于在整个流管道阶段处理值，还提供了一些额外的信息，比如管理大小的信息，控制流程，等等。在首次调用Sink的accept之前必须先调用begin方法来通知数据即将到达，同时你也可以通知Sink需要处理的数据量是多少，在所有的数据发送完成之后，必须调用end方法，在调用完end方法，你就不应该再去调用accept方法，如果还想调用，就需要再调用一次begin方法，Sink本身可以通过cancellationRequested方法来发出不要再接收数据的信号，那么源在发送数据之前就可以根据判断是否要向Sink发送数据。
+
+```txt
+A sink may be in one of two states: an initial state and an active state. It starts out in the initial state; the begin() method transitions it to the active state, and the end() method transitions it back into the initial state, where it can be re-used. Data-accepting methods (such as accept() are only valid in the active state.
+```
+
+一个Sink一定是处于两种状态之一的，一种是初始状态，另一种是激活状态，首先它是从初始状态开始的，使用begin方法可以将它从初始状态转换成激活状态，使用end方法可以将它从激活状态转换成初始状态，这样调用完之后就可以重用了，对于Sink来说，只有在激活状态下才可以接收数据。
+
+```txt
+A stream pipeline consists of a source, zero or more intermediate stages (such as filtering or mapping), and a terminal stage, such as reduction or for-each. For concreteness, consider the pipeline:
+```
+
+一个流管道包含了0个或多个中间阶段（比如过滤、映射），还有一个终止阶段，比如汇聚等等，具体考虑下面这个pipeline：
+
+```java
+int longestStringLengthStartingWithA
+         = strings.stream()
+                  .filter(s -> s.startsWith("A"))
+                  .mapToInt(String::length)
+                  .max();
+```
+
+继续往下：
+
+```txt
+Here, we have three stages, filtering, mapping, and reducing. The filtering stage consumes strings and emits a subset of those strings; the mapping stage consumes strings and emits ints; the reduction stage consumes those ints and computes the maximal value.
+```
+
+这里对我们而言有三个阶段，过滤，映射，汇聚，过滤阶段会消耗字符串集合，会输出字符串的子集，映射阶段会消耗字符串集合，映射成整型值，汇聚阶段会消耗这个整型值并求出最大值。
+
+```txt
+A Sink instance is used to represent each stage of this pipeline, whether the stage accepts objects, ints, longs, or doubles. Sink has entry points for accept(Object), accept(int), etc, so that we do not need a specialized interface for each primitive specialization. (It might be called a "kitchen sink" for this omnivorous tendency.) The entry point to the pipeline is the Sink for the filtering stage, which sends some elements "downstream" -- into the Sink for the mapping stage, which in turn sends integral values downstream into the Sink for the reduction stage. The Sink implementations associated with a given stage is expected to know the data type for the next stage, and call the correct accept method on its downstream Sink. Similarly, each stage must implement the correct accept method corresponding to the data type it accepts.
+```
+
+Sink实例是用来表示管道的每一个阶段，而无论这个阶段接收的类型，比如 ints, longs, or doubles，Sink对于accept有一个入口点，这样我们就不需要针对于原生类型的特化版本，上面的例子当中，就是一个过滤阶段，Sink会将值映射成整型值向下游发送，最后进行汇聚操作。
+
+Sink中的方法说明：
+
+```java
+    default void begin(long size) {}
+```
+
+方法的说明：
+
+```txt
+Resets the sink state to receive a fresh data set. This must be called before sending any data to the sink. After calling end(), you may call this method to reset the sink for another calculation.
+```
+
+会重新设置Sink的状态并且刷新数据集，向Sink发送任何数据之前一定要调用这个方法，调用完end方法之后，可以再次调用这个方法来重置Sink来进行其他的计算。
+
+```java
+   static abstract class ChainedReference<T, E_OUT> implements Sink<T> {
+       	// 表示下游的操作
+        protected final Sink<? super E_OUT> downstream;
+		// 会保存下游的对象
+        public ChainedReference(Sink<? super E_OUT> downstream) {
+            this.downstream = Objects.requireNonNull(downstream);
+        }
+
+        @Override
+        public void begin(long size) {
+            downstream.begin(size);
+        }
+
+        @Override
+        public void end() {
+            downstream.end();
+        }
+
+        @Override
+        public boolean cancellationRequested() {
+            return downstream.cancellationRequested();
+        }
+    }
+```
+
+类的说明：
+
+```txt
+Abstract Sink implementation for creating chains of sinks. The begin, end, and cancellationRequested methods are wired to chain to the downstream Sink. This implementation takes a downstream Sink of unknown input shape and produces a Sink<T>. The implementation of the accept() method must call the correct accept() method on the downstream Sink.
+```
+
+它是Sink的一个抽象实现，用于创建Sink的一个链，begin, end, 和cancellationRequested方法都会链接起来，这个实现会接收下游的Sink。
+
+```java
+ abstract Sink<E_IN> opWrapSink(int flags, Sink<E_OUT> sink);
+```
+
+```txt
+Accepts a Sink which will receive the results of this operation, and return a Sink which accepts elements of the input type of this operation and which performs the operation, passing the results to the provided Sink.
+```
+
+它会接收一个Sink作为当前操作的结果(E_OUT)，并且返回一个Sink，返回的Sink（E_IN）会接收这个操作的所对应的输入元素的类型并且执行这个操作，然后将结果传递给所提供的Sink。
+
+```txt
+a sink which accepts elements, perform the operation upon each element, and passes the results (if any) to the provided Sink.
+```
+
+返回的Sink会接收一个元素，并且对每个元素进行操作，最后将执行的结果（如果有的话）传递给提供的Sink。
+
+正是因为将执行的结果传递给了方法参数的Sink，才将一系列的Sink有机的串联了起来。
+
+```txt
+The implementation may use the flags parameter to optimize the sink wrapping. For example, if the input is already DISTINCT, the implementation for the Stream#distinct() method could just return the sink it was passed.
+```
+
+可以使用flags来优化sink，例如，如果输入一定是不同，那么实现的时候，stream.distinct()方法就可以不用再去执行。
+
+总的来说在进行中间操作的时候，StatelessOp继承了ReferencePipeline，而ReferencePipeline又实现了Stream接口，通过StatelessOp创建饮水槽，将中间操作串联起来。
+
+```java
+public static <T> TerminalOp<T, Void> makeRef(Consumer<? super T> action,                                              boolean ordered) {    Objects.requireNonNull(action);    return new ForEachOp.OfRef<>(action, ordered);}
+```
+
+```txt
+actory for creating instances of TerminalOp that perform an action for every element of a stream. Supported variants include unordered traversal (elements are provided to the Consumer as soon as they are available), and ordered traversal (elements are provided to the Consumer in encounter order.)
+```
+
+这是一个工厂，用来创建终止操作的实例，终止操作会对流中的每个元素执行action，支持的变化包括无序的遍历（只要还有元素，就将元素提供给Consumer）还有一种有序的遍历（按照元素输入的顺序提供给Consumer）
+
+```txt
+Elements are provided to the Consumer on whatever thread and whatever order they become available. For ordered traversals, it is guaranteed that processing an element happens-before processing subsequent elements in the encounter order.
+```
+
+在可用的任意的顺序，任意线程都会将元素提供给Consumer ，对于有序的遍历而言，会保证处理一个元素一定是happens-before（某一件事情一定是发生在另外一件事情之前）处理后续的元素之前，即先遇到的先遍历。
+
+makeRef方法的说明：
+
+```txt
+Constructs a TerminalOp that perform an action for every element of a stream.
+```
+
+构造了一个终止操作，并且对流中的每个元素都执行给定的动作。
+
+```java
+interface TerminalOp<E_IN, R> {
+    // 默认是引用类型
+    default StreamShape inputShape() { return StreamShape.REFERENCE; }
+
+    default int getOpFlags() { return 0; }
+
+    // 并行的方式
+    default <P_IN> R evaluateParallel(PipelineHelper<E_IN> helper,
+                                      Spliterator<P_IN> spliterator) {
+        if (Tripwire.ENABLED)
+            Tripwire.trip(getClass(), "{0} triggering TerminalOp.evaluateParallel serial default");
+        return evaluateSequential(helper, spliterator);
+    }
+
+    // 串行的方式
+    <P_IN> R evaluateSequential(PipelineHelper<E_IN> helper,
+                                Spliterator<P_IN> spliterator);
+}
+```
+
+类的说明：
+
+```txt
+An operation in a stream pipeline that takes a stream as input and produces a result or side-effect. A TerminalOp has an input type and stream shape, and a result type. A TerminalOp also has a set of operation flags that describes how the operation processes elements of the stream (such as short-circuiting or respecting encounter order; see StreamOpFlag).
+```
+
+这是流管道中的一个操作，它会接收一个流作为输入，生成一个结果或者拥有副作用（修改传入参数的引用），一个终止操作会拥有一个输入类型和一个流的类型（引用、整型、长整型等）和一个结果类型，一个终止操作描述了描述了流是如何处理流中元素的（比如短路、有序的执行）。
+
+```txt
+A TerminalOp must provide a sequential and parallel implementation of the operation relative to a given stream source and set of intermediate operations.
+```
+
+终止操作对于给定的流源和中间操作一定要提供并行和串行的实现。
+
+实际上，终止操作的数量并不是特别多。
+
+```txt
+A TerminalOp that evaluates a stream pipeline and sends the output to itself as a TerminalSink. Elements will be sent in whatever thread they become available. If the traversal is unordered, they will be sent independent of the stream's encounter order.
+```
+
+这是一个终止操作，它会计算一个流福安到并且将结果发送给自身作为一个TerminalSink，元素如果可用的话会发送给任意一个线程，如果遍历是无序的，那么在遍历的时候就会独立于流中输入的顺序。
+
+```txt
+This terminal operation is stateless. For parallel evaluation, each leaf instance of a ForEachTask will send elements to the same TerminalSink reference that is an instance of this class.
+```
+
+这个终止操作是无状态的，对于并行计算，每一个叶子节点都会发送个这个类的同一个TerminalSink实例。
+
+```txt
+Evaluate the pipeline with a terminal operation to produce a result.
+```
+
+执行一个终止的操作，并且返回一个结果。
+
+```java
+    final <R> R evaluate(TerminalOp<E_OUT, R> terminalOp) {
+        assert getOutputShape() == terminalOp.inputShape();
+        if (linkedOrConsumed)
+            throw new IllegalStateException(MSG_STREAM_LINKED);
+        linkedOrConsumed = true;
+
+        return isParallel()
+               ? terminalOp.evaluateParallel(this, sourceSpliterator(terminalOp.getOpFlags()))
+               : terminalOp.evaluateSequential(this, sourceSpliterator(terminalOp.getOpFlags()));
+    }
+```
+
+串行的实现：
+
+```java
+    	@Override
+        public <S> Void evaluateSequential(PipelineHelper<T> helper,
+                                           Spliterator<S> spliterator) {
+            return helper.wrapAndCopyInto(this, spliterator).get();
+        }
+```
+
+```txt
+Helper class for executing stream pipelines, capturing all of the information about a stream pipeline (output shape, intermediate operations, stream flags, parallelism, etc) in one place.
+```
+
+这是一个执行流管道的辅助类，它会在一个地方捕获关于流管道的所有信息（输出种类，中间操作，特性值，并行或者串行）。
+
+```txt
+A PipelineHelper describes the initial segment of a stream pipeline, including its source, intermediate operations, and may additionally incorporate information about the terminal (or stateful) operation which follows the last intermediate operation described by this PipelineHelper. The PipelineHelper is passed to the TerminalOp.
+evaluateParallel(PipelineHelper, Spliterator), TerminalOp.evaluateSequential(PipelineHelper, Spliterator), and AbstractPipeline.opEvaluateParallel(PipelineHelper, Spliterator, IntFunction), methods, which can use the PipelineHelper to access information about the pipeline such as head shape, stream flags, and size, and use the helper methods such as wrapAndCopyInto(Sink, Spliterator), copyInto(Sink, Spliterator), and wrapSink(Sink) to execute pipeline operations.
+```
+
+PipelineHelper描述了一个流管道最开始的阶段，包括它的源，中间操作，以及一些附加的信息关于终止的有状态的操作。
+
+```java
+abstract class AbstractPipeline<E_IN, E_OUT, S extends BaseStream<E_OUT, S>>
+        extends PipelineHelper<E_OUT> implements BaseStream<E_OUT, S>
+```
+
+```java
+		@Override
+        public <S> Void evaluateParallel(PipelineHelper<T> helper,
+                                         Spliterator<S> spliterator) {
+            if (ordered)
+                new ForEachOrderedTask<>(helper, spliterator, this).invoke();
+            else
+                new ForEachTask<>(helper, spliterator, helper.wrapSink(this)).invoke();
+            return null;
+        }
+```
+
+```java
+ abstract<P_IN, S extends Sink<P_OUT>> S wrapAndCopyInto(S sink, Spliterator<P_IN> spliterator);
+
+```
+
+方法的说明：
+
+```txt
+Applies the pipeline stages described by this PipelineHelper to the provided Spliterator and send the results to the provided Sink.
+```
+
+将PipelineHelper所描述的管道阶段应用到所提供的Spliterator同时把结果发送给提供的Sink。
+
+这个方法在AbstractPipeline中有唯一的实现：
+
+```java
+    @Override
+    final <P_IN, S extends Sink<E_OUT>> S wrapAndCopyInto(S sink, Spliterator<P_IN> spliterator) {
+        copyInto(wrapSink(Objects.requireNonNull(sink)), spliterator);
+        return sink;
+    }
+```
+
+这里的wrapSink方法如下：
+
+```java
+       abstract<P_IN> Sink<P_IN> wrapSink(Sink<P_OUT> sink);
+```
+
+方法的说明：
+
+```txt
+Takes a Sink that accepts elements of the output type of the PipelineHelper, and wrap it with a Sink that accepts elements of the input type and implements all the intermediate operations described by this PipelineHelper, delivering the result into the provided Sink.
+```
+
+它会接收PipelineHelper输出类型的元素，使用Sink对于接收到的所有的元素进行包装成由PipelineHelper所描述的中间操作，并且将结果传递给提供的Sink。
+
+这个方法就是对流中的中间操作进行串联的方法，具体的实现如下：
+
+```java
+ 	@Override
+    @SuppressWarnings("unchecked")
+    final <P_IN> Sink<P_IN> wrapSink(Sink<E_OUT> sink) {
+        Objects.requireNonNull(sink);
+		// 深度大于0说明有中间操作。
+        for ( @SuppressWarnings("rawtypes") AbstractPipeline p=AbstractPipeline.this; p.depth > 0; p=p.previousStage) {
+            // opWrapSink是map等方法中实现的
+            sink = p.opWrapSink(p.previousStage.combinedFlags, sink);
+        }
+        return (Sink<P_IN>) sink;
+    }
+```
+
+```java
+ abstract<P_IN> void copyInto(Sink<P_IN> wrappedSink, Spliterator<P_IN> spliterator);
+```
+
+方法的说明：
+
+```txt
+Pushes elements obtained from the Spliterator into the provided Sink. If the stream pipeline is known to have short-circuiting stages in it (see StreamOpFlag.SHORT_CIRCUIT), the Sink.cancellationRequested() is checked after each element, stopping if cancellation is requested.
+```
+
+将从Spliterator获取到元素推送到Sink当中，如果这个流管道已经知道了拥有短路的阶段，就会进入短路逻辑的判断，方法的实现如下：
+
+```java
+    @Override
+    final <P_IN> void copyInto(Sink<P_IN> wrappedSink, Spliterator<P_IN> spliterator) {
+        Objects.requireNonNull(wrappedSink);
+
+        if (!StreamOpFlag.SHORT_CIRCUIT.isKnown(getStreamAndOpFlags())) {
+            wrappedSink.begin(spliterator.getExactSizeIfKnown());
+            spliterator.forEachRemaining(wrappedSink);
+            wrappedSink.end();
+        }
+        else {
+            copyIntoWithCancel(wrappedSink, spliterator);
+        }
+    }
+```
+
+TerminalSink是Sink最终的形态。
+
+  ### Stream调用流程
+
+BaseStream->Stream->AbstractPipline->ReferencePipline->(Head（流源）、StatelessOp（无状态的中间操作）、StatefulOp（有状态的中间操作））
+
+Terminalop->(FindOp、ForeachOp、MatchOp、ReduceOp)
+
+
+
+
+
 
 
 
