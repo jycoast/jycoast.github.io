@@ -2,7 +2,7 @@ const themeConfig = require('./config/theme/')
 
 module.exports = {
   title: null,
-  description: "行则将至",
+  description: "行则将至.",
   dest: 'public',
   head: [
     ['link', { rel: 'icon', href: '/favicon.ico' }],
