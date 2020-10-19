@@ -3,7 +3,7 @@ title: Java并发编程
 date: 2020-10-05
 categories:
 - Java
-	author: jyc
+author: jyc
 ---
 
 # 前言
@@ -12,7 +12,7 @@ categories:
 
 全文大致共分为三个部分，第一部分为Java并发编程基础篇，主要讲解Java并发编程的基础知识、线程有关的知识和并发编程中的其他概念，这些知识在后续的章节中都会用到。第二部分为Java并发编程的高级篇，讲解Java并发包中的核心组件的实现原理。第三部分为Java并发编程实践篇，主要讲解并发组件的使用方法，以及一些注意事项。
 
-本文主要结合张龙老师的视频：https://www.bilibili.com/video/BV1qK4y1t78Z?from=search&seid=2031440298446612503，以及《Java并发编程之美》，系统而全面的介绍Java并发的方方面面。
+本文主要结合张龙老师的视频：[精通Java并发](https://www.bilibili.com/video/BV1qK4y1t78Z?from=search&seid=2031440298446612503)，以及《Java并发编程之美》，系统而全面的介绍Java并发的方方面面。
 
 # 并发编程基础
 
@@ -29,33 +29,44 @@ public class Thread implements Runnable {
 首先我们来阅读以下Thread类的文档说明：
 
 ```txt
-A thread is a thread of execution in a program. The Java Virtual Machine allows an application to have multiple threads of execution running concurrently.
+A thread is a thread of execution in a program. The Java Virtual Machine allows an application to have 
+multiple threads of execution running concurrently.
 ```
 
 一个thread指的是程序执行中的一个线程，Java虚拟机支持一个应用可以有多个并发执行的线程。
 
 ```txt
-Every thread has a priority. Threads with higher priority are executed in preference to threads with lower priority. Each thread may or may not also be marked as a daemon. When code running in some thread creates a new Thread object, the new thread has its priority initially set equal to the priority of the creating thread, and is a daemon thread if and only if the creating thread is a daemon.
+Every thread has a priority. Threads with higher priority are executed in preference to threads with 
+lower priority. Each thread may or may not also be marked as a daemon. When code running in some thread 
+creates a new Thread object, the new thread has its priority initially set equal to the priority of the 
+creating thread, and is a daemon thread if and only if the creating thread is a daemon.
 ```
 
 每一个线程都会有一个优先级，拥有高优先级的线程在执行的时候就会比低优先级的线程优先级要高，每一个线程也可以被标记为daemon（后台线程），当运行在某一个线程中的代码创建了一个新的线程，默认情况下，新的线程的优先级会和创建它的线程优先级相同，并且只有创建它的线程是daemon线程时，新的线程才会是daemon。
 
 ```txt
-When a Java Virtual Machine starts up, there is usually a single non-daemon thread (which typically calls the method named main of some designated class). The Java Virtual Machine continues to execute threads until either of the following occurs:
+When a Java Virtual Machine starts up, there is usually a single non-daemon thread (which typically calls 
+the method named main of some designated class). The Java Virtual Machine continues to execute threads 
+until either of the following occurs:
 ```
 
 当Java虚拟机启动的时候，通常会有一个单个的、非daemon线程（通常情况会调用某一个被指定类的main方法），Java虚拟机会继续执行线程，直到下面的两种情况发生：
 
 ```txt
-The exit method of class Runtime has been called and the security manager has permitted the exit operation to take place.
-All threads that are not daemon threads have died, either by returning from the call to the run method or by throwing an exception that propagates beyond the run method.
+The exit method of class Runtime has been called and the security manager has permitted the exit 
+operation to take place.
+All threads that are not daemon threads have died, either by returning from the call to the run method or 
+by throwing an exception that propagates beyond the run method.
 ```
 
 - 类的Runtime方法被调用，并且安全管理器允许退出操作发生。
 - 所有的非后台线程都已经消亡了，要么是通过run方法的调用返回了，要么是run方法外面抛出了异常。
 
 ```txt
-There are two ways to create a new thread of execution. One is to declare a class to be a subclass of Thread. This subclass should override the run method of class Thread. An instance of the subclass can then be allocated and started. For example, a thread that computes primes larger than a stated value could be written as follows:
+There are two ways to create a new thread of execution. One is to declare a class to be a subclass of 
+Thread. This subclass should override the run method of class Thread. An instance of the subclass can 
+then be allocated and started. For example, a thread that computes primes larger than a stated value 
+could be written as follows:
 ```
 
 有两种方式来创建一个新的执行线程，一种是继承Thread类，这个子类应该重写Thread类的run方法，这个子类就可以创建实例并且执行，比如，一个线程计算大于某一个状态值的，可以这样做：
@@ -84,7 +95,9 @@ class PrimeThread extends Thread {
 接下来是另外一种创建线程的方式：
 
 ```txt
-The other way to create a thread is to declare a class that implements the Runnable interface. That class then implements the run method. An instance of the class can then be allocated, passed as an argument when creating Thread, and started. The same example in this other style looks like the following:
+The other way to create a thread is to declare a class that implements the Runnable interface. That class 
+then implements the run method. An instance of the class can then be allocated, passed as an argument 
+when creating Thread, and started. The same example in this other style looks like the following:
 ```
 
 另一种创建线程的方式就是声明一个类并且实现Runnable接口，在这个类实现了run方法之后，就可以创建实例。当创建Thread的时候把这个类作为一个参数传入并启动，相同的例子用这个方式来实现，代码如下：
@@ -111,8 +124,10 @@ new Thread(p).start();
 ```
 
 ```txt
-Every thread has a name for identification purposes. More than one thread may have the same name. If a name is not specified when a thread is created, a new name is generated for it.
-Unless otherwise noted, passing a null argument to a constructor or method in this class will cause a NullPointerException to be thrown.
+Every thread has a name for identification purposes. More than one thread may have the same name. If a 
+name is not specified when a thread is created, a new name is generated for it.
+Unless otherwise noted, passing a null argument to a constructor or method in this class will cause a 
+NullPointerException to be thrown.
 ```
 
 每个线程都有一个名称用于标识，不同的线程可能会有相同的名称，如果创建线程的时候没有指定名称，就会产生一个新的名称，如无特别说明，将null参数传递给构造方法或者这个类的其他方法就会导致空指针异常。
@@ -121,8 +136,10 @@ Unless otherwise noted, passing a null argument to a constructor or method in th
 
 ```txt
 Causes this thread to begin execution; the Java Virtual Machine calls the run method of this thread.
-The result is that two threads are running concurrently: the current thread (which returns from the call to the start method) and the other thread (which executes its run method).
-It is never legal to start a thread more than once. In particular, a thread may not be restarted once it has completed execution.
+The result is that two threads are running concurrently: the current thread (which returns from the call 
+to the start method) and the other thread (which executes its run method).
+It is never legal to start a thread more than once. In particular, a thread may not be restarted once it
+has completed execution.
 ```
 
 当调用了start方法意味这个这个线程开始执行了，Java虚拟机会调用这个线程的run方法，结果是当前线程（调用start方法所返回的线程）和另外一个线程（执行run方法的线程）会并发的运行，多次启动一个线程是不合法的，特别的，一个线程已经执行完成之后不可以被重新启动。
@@ -139,14 +156,22 @@ public interface Runnable {
 接下来我们阅读以下Runnable接口的文档说明：
 
 ```txt
-The Runnable interface should be implemented by any class whose instances are intended to be executed by a thread. The class must define a method of no arguments called run.
-This interface is designed to provide a common protocol for objects that wish to execute code while they are active. For example, Runnable is implemented by class Thread. Being active simply means that a thread has been started and has not yet been stopped.
+The Runnable interface should be implemented by any class whose instances are intended to be executed by 
+a thread. The class must define a method of no arguments called run.
+This interface is designed to provide a common protocol for objects that wish to execute code while they 
+are active. For example, Runnable is implemented by class Thread. Being active simply means that a thread 
+has been started and has not yet been stopped.
 ```
 
 任何一个执行线程的类都应该实现Runnable接口，这个类必须定义一个无参的run方法。设计这个接口是为了，给执行处在激活状态的代码的时候，提供一种公共的协议，比如说，Runnable是被Thread类所实现出来了。处于激活状态表示一个线程被启动了，而且没有停止。
 
 ```txt
-In addition, Runnable provides the means for a class to be active while not subclassing Thread. A class that implements Runnable can run without subclassing Thread by instantiating a Thread instance and passing itself in as the target. In most cases, the Runnable interface should be used if you are only planning to override the run() method and no other Thread methods. This is important because classes should not be subclassed unless the programmer intends on modifying or enhancing the fundamental behavior of the class.
+In addition, Runnable provides the means for a class to be active while not subclassing Thread. A class 
+that implements Runnable can run without subclassing Thread by instantiating a Thread instance and 
+passing itself in as the target. In most cases, the Runnable interface should be used if you are only 
+planning to override the run() method and no other Thread methods. This is important because classes 
+should not be subclassed unless the programmer intends on modifying or enhancing the fundamental behavior
+of the class.
 ```
 
 此外，Runnable提供了让一个类处在激活状态同时又没有子类化的方式，一个类实现了Runnable可以不用通过子类化来运行，这是通过初始化一个Thread实例，然后将它自己作为目标传入，如果你只是计划重写run方法，而不打算重写Thread类其他的方法，一般情况下，都应该使用Runnable，这是非常重要的，除非程序员打算增强或修改一些基础的行为，因为类不应该被子类化。
@@ -154,7 +179,8 @@ In addition, Runnable provides the means for a class to be active while not subc
 接下来我们阅读以下run方法的说明：
 
 ```txt
-When an object implementing interface Runnable is used to create a thread, starting the thread causes the object's run method to be called in that separately executing thread.
+When an object implementing interface Runnable is used to create a thread, starting the thread causes the 
+object's run method to be called in that separately executing thread.
 The general contract of the method run is that it may take any action whatsoever.
 ```
 
@@ -163,7 +189,8 @@ The general contract of the method run is that it may take any action whatsoever
 同样的在Thread类中也有一个run方法：
 
 ```txt
-If this thread was constructed using a separate Runnable run object, then that Runnable object's run method is called; otherwise, this method does nothing and returns.
+If this thread was constructed using a separate Runnable run object, then that Runnable object's run 
+method is called; otherwise, this method does nothing and returns.
 Subclasses of Thread should override this method.
 ```
 
@@ -204,19 +231,25 @@ name – the name of the new Thread
 stackSize – the desired stack size for the new thread, or zero to indicate that this parameter is to be ignored.
 ```
 
-## wait和sleep
+## wait、sleep和notify
 
 在Object类中有几个与线程相关的方法：notify、notifyAll、wait，这几个方法非常的重要，接下来我们分析一下这个几个方法，首先从wait方法开始，wait方法又有几个重载的方法，首先来看不带参数的wait方法：
 
 ```txt
-Causes the current thread to wait until another thread invokes the notify() method or the notifyAll() method for this object. In other words, this method behaves exactly as if it simply performs the call wait(0).
+Causes the current thread to wait until another thread invokes the notify() method or the notifyAll() 
+method for this object. In other words, this method behaves exactly as if it simply performs the call 
+wait(0).
 ```
 
 wait方法会导致当前的线程进入等待状态，直到另外一个线程调用了这个对象的notify或者notifyAll方法，换言之，这个方法的行为是与wait(0)是等价的。
 
 ```txt
-The current thread must own this object's monitor. The thread releases ownership of this monitor and waits until another thread notifies threads waiting on this object's monitor to wake up either through a call to the notify method or the notifyAll method. The thread then waits until it can re-obtain ownership of the monitor and resumes execution.
-As in the one argument version, interrupts and spurious wakeups are possible, and this method should always be used in a loop:
+The current thread must own this object's monitor. The thread releases ownership of this monitor and 
+waits until another thread notifies threads waiting on this object's monitor to wake up either through a 
+call to the notify method or the notifyAll method. The thread then waits until it can re-obtain ownership
+of the monitor and resumes execution.
+As in the one argument version, interrupts and spurious wakeups are possible, and this method should 
+always be used in a loop:
 ```
 
 要调用当前对象wait方法，当前线程必须要拥有这个对象的锁，这个线程在调用了wait方法之后，就会释放掉锁的控制权，并且进行等待，直到另外的线程通知在这个锁上等待的所有线程。唤醒的方式要么是通过notify方法或者是notifyAll方法。接下来，这个线程还是会继续等待，直到它可以重新获取锁的有用权，并且恢复执行。对于一个参数的版本来说，终端和一些虚假的唤醒是可能发生的，这个方法应该只在循环当中使用：
@@ -230,7 +263,8 @@ synchronized (obj) {
 ```
 
 ```txt
-This method should only be called by a thread that is the owner of this object's monitor. See the notify method for a description of the ways in which a thread can become the owner of a monitor.
+This method should only be called by a thread that is the owner of this object's monitor. See the notify 
+method for a description of the ways in which a thread can become the owner of a monitor.
 ```
 
 这个方法应该只是被拥有了这个对象的锁的线程去调用，参考notify方法来查看什么情况下，一个线程可以成为锁的拥有者。
@@ -268,12 +302,186 @@ public class MyTest1 {
 程序并没有抛出异常，而是进入进入了一直等待的状态。在Thread类中有一个sleep方法：
 
 ```txt
-Causes the currently executing thread to sleep (temporarily cease execution) for the specified number of milliseconds, subject to the precision and accuracy of system timers and schedulers. The thread does not lose ownership of any monitors.
+Causes the currently executing thread to sleep (temporarily cease execution) for the specified number of
+milliseconds, subject to the precision and accuracy of system timers and schedulers. The thread does not 
+lose ownership of any monitors.
 ```
 
 它会导致当前正在执行的线程进入到休眠的状态（临时的终止执行）一段指定的毫秒数，它会收到系统定时器和调度器的精度的限制，线程并不会失去任何锁的所有权。
 
 这里其实就是wait方法和sleep方法的最明显的区别，调用wait方法之前，线程必须持有对象的锁，在调用wait方法之后，线程就会释放锁，而sleep方法则不会释放掉锁。
 
+前面我们提到过，不带参数的wait方法会调用他的重载方法：
 
+```java
+    public final void wait() throws InterruptedException {
+        wait(0);
+    }
+```
+
+wait方法本身又有两个重载的方法，我们首先来阅读一下只有一个参数的相关文档：
+
+首先是方法的定义：
+
+```java
+  public final native void wait(long timeout) throws InterruptedException;
+```
+
+方法的说明：
+
+```txt
+Causes the current thread to wait until either another thread invokes the notify() method or the 
+notifyAll() method for this object, or a specified amount of time has elapsed.
+The current thread must own this object's monitor.
+```
+
+这个方法会让当前的线程进入等待状态，除非对当前这个对象使用notify或者notifyAll方法，或者已经到了指定的超时时间，当前对象必须要拥有当前对象的锁。
+
+```txt
+This method causes the current thread (call it T) to place itself in the wait set for this object and 
+then to relinquish any and all synchronization claims on this object. Thread T becomes disabled for 
+thread scheduling purposes and lies dormant until one of four things happens:
+```
+
+这个方法会导致当前的线程（T），将它自身放置到一个这个对象的等待集合当中，然后放弃任何同步的声明，线程T将无法再进行调度，处在休眠状态，直到下面的四种情况发生：
+
+```txt
+Some other thread invokes the notify method for this object and thread T happens to be arbitrarily chosen
+as the thread to be awakened.
+Some other thread invokes the notifyAll method for this object.
+Some other thread interrupts thread T.
+The specified amount of real time has elapsed, more or less. If timeout is zero, however, then real time
+is not taken into consideration and the thread simply waits until notified.
+```
+
+- 另外一个线程调用了这个对象的notify方法，当前的线程T碰巧是要被选择唤醒的线程；
+- 其他的线程调用了这个对象的notifyAll方法；
+- 其他的线程中断了T线程
+- 指定的时间已经过去了，不过如果时间设置为0的话，线程会一直进入等待直到被通知，而不会再去计算时间。
+
+```txt
+The thread T is then removed from the wait set for this object and re-enabled for thread scheduling. It 
+then competes in the usual manner with other threads for the right to synchronize on the object; once it 
+has gained control of the object, all its synchronization claims on the object are restored to the status 
+quo ante - that is, to the situation as of the time that the wait method was invoked. Thread T then returns from the invocation of the wait method. Thus, on return from the wait method, the synchronization 
+state of the object and of thread T is exactly as it was when the wait method was invoked.
+```
+
+接下来线程T会从对象等待集合中移除掉，然后，重新又可以进行线程的调度了。它会按照通常的方式与其他的线程竞争对于对象的同步权，一旦获得了对象的同步权，所有它的对这个对象同步的声明又会恢复到之前的同步声明状态，也就是说恢复到wait方法被调用的时候所处的状态，接下来线程T就会从wait方法的调用当中去返回，返回的时候，对象的同步状态以及线程T的同步状态与wait方法被调用的时候的状态是一模一样的。
+
+```txt
+A thread can also wake up without being notified, interrupted, or timing out, a so-called spurious wakeup. While this will rarely occur in practice, applications must guard against it by testing for the condition that should have caused the thread to be awakened, and continuing to wait if the condition is not satisfied. In other words, waits should always occur in loops, like this one:
+```
+
+一个线程还可以被唤醒无需被通知、中断或者超时，这个称之为虚假的唤醒，虽然这种实际情况下很少发生，但是应用还是应该通过测试条件保证这一点，并且如果条件没有被满足的时候就持续处于等待状态，换句话说，等待总是应该发生在循环当中，就向下面的代码：
+
+```java
+ synchronized (obj) {
+               while (<condition does not hold>)
+                   obj.wait(timeout);
+               ... // Perform action appropriate to condition
+           }
+```
+
+```txt
+If the current thread is interrupted by any thread before or while it is waiting, then an InterruptedException is thrown. This exception is not thrown until the lock status of this object has been restored as described above.
+```
+
+如果当前的线程被别的线程在它等待之前或等待当中的时候被中断了，这个锁状态恢复之后才会被正常的抛出InterruptedException异常。
+
+```txt
+Note that the wait method, as it places the current thread into the wait set for this object, unlocks only this object; any other objects on which the current thread may be synchronized remain locked while the thread waits.
+```
+
+wait方法会将当前的线程放置到它的等待的对象集合当中，只会解锁当前的对象，当这个线程等待的时候，任何其它的对象对象可能会依然处于锁定的状态。
+
+```txt
+This method should only be called by a thread that is the owner of this object's monitor. See the notify method for a description of the ways in which a thread can become the owner of a monitor.
+```
+
+这个方法应该只被持有对象锁的线程所调用，请查看notify方法来查看如何让一个线程成为锁的拥有者。
+
+接下来我们查看wait方法另外一个重载的方法：
+
+```java
+    public final void wait(long timeout, int nanos) throws InterruptedException {
+        if (timeout < 0) {
+            throw new IllegalArgumentException("timeout value is negative");
+        }
+
+        if (nanos < 0 || nanos > 999999) {
+            throw new IllegalArgumentException(
+                                "nanosecond timeout value out of range");
+        }
+
+        if (nanos > 0) {
+            timeout++;
+        }
+        // 底层实现还是调用wait(long timeout)方法
+
+        wait(timeout);
+    }
+```
+
+wait方法和notify方法总是成对出现的，notify方法也是一个native方法：
+
+```java
+ public final native void notify();
+```
+
+我们来了解一下notify方法的作用：
+
+```AsciiDoc
+Wakes up a single thread that is waiting on this object's monitor. If any threads are waiting on this object, one of them is chosen to be awakened. The choice is arbitrary and occurs at the discretion of the implementation. A thread waits on an object's monitor by calling one of the wait methods.
+```
+
+它会唤醒正在等待这个对象的锁的单个线程，如果有多个线程都在等待这个对象的锁，那么就会选择其中的一个进行唤醒，选择是随机的，并且是受实现的约束，一个线程会通过调用某一个wait方法进入等待状态。
+
+```txt
+The awakened thread will not be able to proceed until the current thread relinquishes the lock on this
+object. The awakened thread will compete in the usual manner with any other threads that might be 
+actively competing to synchronize on this object; for example, the awakened thread enjoys no reliable
+privilege or disadvantage in being the next thread to lock this object.
+This method should only be called by a thread that is the owner of this object's monitor. A thread  
+becomes the owner of the object's monitor in one of three ways:    
+```
+
+被唤醒的线程是无法执行的，直到当前的线程放弃了这个对象的锁，被唤醒的线程会按照常规的方式与其他的线程进行对象同步的竞争，比如说，被唤醒的线程它是没有任何的特权，也没有任何不足的地方，都有可能会获得当前对象的锁。notify方法只能被这个对象的持有者来进行调用，一个线程获取对象锁有以下三种方式：
+
+```text
+By executing a synchronized instance method of that object.
+By executing the body of a synchronized statement that synchronizes on the object.
+For objects of type Class, by executing a synchronized static method of that class.
+```
+
+- 通过执行对象的synchronized实例方法来获取
+- 通过执行这个对象的synchronized语句块来获取
+- 对于Class类型的对象，通过执行这个class中synchronized静态方法来获取
+
+```txt
+Only one thread at a time can own an object's monitor.  
+```
+
+在某一个时刻只有一个线程拥有一个对象的锁。
+
+同样的，notifyAll方法也是一个本地方法：
+
+```java
+  public final native void notifyAll();
+```
+
+方法的说明：
+
+```txt
+Wakes up all threads that are waiting on this object's monitor. A thread waits on an object's monitor by 
+calling one of the wait methods.
+```
+
+notifyAll方法会唤醒在这个对象的锁上等待的所有的线程，一个线程可以通过调用这个对象的wait方法等待这个对象的锁。
+
+
+
+
+
+ 
 
