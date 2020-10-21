@@ -384,19 +384,24 @@ A thread can also wake up without being notified, interrupted, or timing out, a 
 ```
 
 ```txt
-If the current thread is interrupted by any thread before or while it is waiting, then an InterruptedException is thrown. This exception is not thrown until the lock status of this object has been restored as described above.
+If the current thread is interrupted by any thread before or while it is waiting, then an 
+InterruptedException is thrown. This exception is not thrown until the lock status of this object has 
+been restored as described above.
 ```
 
 如果当前的线程被别的线程在它等待之前或等待当中的时候被中断了，这个锁状态恢复之后才会被正常的抛出InterruptedException异常。
 
 ```txt
-Note that the wait method, as it places the current thread into the wait set for this object, unlocks only this object; any other objects on which the current thread may be synchronized remain locked while the thread waits.
+Note that the wait method, as it places the current thread into the wait set for this object, unlocks 
+only this object; any other objects on which the current thread may be synchronized remain locked while 
+the thread waits.
 ```
 
 wait方法会将当前的线程放置到它的等待的对象集合当中，只会解锁当前的对象，当这个线程等待的时候，任何其它的对象对象可能会依然处于锁定的状态。
 
 ```txt
-This method should only be called by a thread that is the owner of this object's monitor. See the notify method for a description of the ways in which a thread can become the owner of a monitor.
+This method should only be called by a thread that is the owner of this object's monitor. See the notify 
+method for a description of the ways in which a thread can become the owner of a monitor.
 ```
 
 这个方法应该只被持有对象锁的线程所调用，请查看notify方法来查看如何让一个线程成为锁的拥有者。
@@ -432,7 +437,9 @@ wait方法和notify方法总是成对出现的，notify方法也是一个native�
 我们来了解一下notify方法的作用：
 
 ```AsciiDoc
-Wakes up a single thread that is waiting on this object's monitor. If any threads are waiting on this object, one of them is chosen to be awakened. The choice is arbitrary and occurs at the discretion of the implementation. A thread waits on an object's monitor by calling one of the wait methods.
+Wakes up a single thread that is waiting on this object's monitor. If any threads are waiting on this 
+object, one of them is chosen to be awakened. The choice is arbitrary and occurs at the discretion of the
+implementation. A thread waits on an object's monitor by calling one of the wait methods.
 ```
 
 它会唤醒正在等待这个对象的锁的单个线程，如果有多个线程都在等待这个对象的锁，那么就会选择其中的一个进行唤醒，选择是随机的，并且是受实现的约束，一个线程会通过调用某一个wait方法进入等待状态。
@@ -473,11 +480,31 @@ Only one thread at a time can own an object's monitor.
 方法的说明：
 
 ```txt
-Wakes up all threads that are waiting on this object's monitor. A thread waits on an object's monitor by 
+Wakes up all threads that are waiting on this object's monitor. A thread waits on an object's monitor by
 calling one of the wait methods.
 ```
 
-notifyAll方法会唤醒在这个对象的锁上等待的所有的线程，一个线程可以通过调用这个对象的wait方法等待这个对象的锁。
+notifyAll方法会唤醒在这个对象的锁上等待的所有的线程，线程可以通过调用这个对象的wait方法等待这个对象的锁。
+
+```txt
+The awakened threads will not be able to proceed until the current thread relinquishes the lock on this object. The awakened threads will compete in the usual manner with any other threads that might be actively competing to synchronize on this object; for example, the awakened threads enjoy no reliable privilege or disadvantage in being the next thread to lock this object.
+```
+
+被唤醒的线程只有在当前对象释放掉锁的时候才能继续执行，它会按照通常的方式与其他的线程竞争对象的同步，既没有什么特权，也没有什么缺陷，都有可能是下一个给当前对象上锁的线程。
+
+```txt
+This method should only be called by a thread that is the owner of this object's monitor. See the notify method for a description of the ways in which a thread can become the owner of a monitor.
+```
+
+这个方法只能被持有锁的对象锁调用，查看notify方法获取对象锁的方式。
+
+我们可以用一张表格来总结以下wait、notify、notifyAll方法的区别：
+
+|  方法名   |                             特点                             |
+| :-------: | :----------------------------------------------------------: |
+|   wait    | 1、当调用wait方法时，首先需要确保wait方法的线程已经持有了对象的锁<br>2、当调用wait后，该线程会释放掉这个对象的锁，然后进入到等待状态（wait set）<br>3、当线程调用了wait后进入等待状态时，它就可以等待线程调用相同对象的notify和notifyAll方法来使得自己被唤醒<br>4、一旦这个线程被其他线程唤醒后，该线程就会与其他线程一同开始竞争这个对象的锁（公平竞争）；只有当该线程获取到了这个对象的锁后，线程才会继续往下执行<br>5、调用wait方法的代码片段需要放在synchronize代码块或者synchronized方法中，这样才可以确保线程在调用wait方法前已经获取到了对象的锁 |
+|  notify   | 1、当调用对象的notify方法时，它会随机唤醒该对象等待集合（wait set）中的任意一个线程，当某个线程被唤醒后，它就会与其他线程一同竞争对象的锁<br>2、在某一时刻只有唯一一个线程可以拥有对象的锁<br> |
+| notifyAll | 1、当调用对象的notifyAll方法时，它会唤醒该对象集合（wait set）中所有的线程，这些线程被唤醒后，又会开始竞争对象的锁 |
 
 
 
