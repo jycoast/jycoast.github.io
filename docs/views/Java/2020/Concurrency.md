@@ -233,6 +233,8 @@ stackSize – the desired stack size for the new thread, or zero to indicate tha
 
 ## wait、sleep和notify
 
+### 方法简介
+
 在Object类中有几个与线程相关的方法：notify、notifyAll、wait，这几个方法非常的重要，接下来我们分析一下这个几个方法，首先从wait方法开始，wait方法又有几个重载的方法，首先来看不带参数的wait方法：
 
 ```txt
@@ -363,14 +365,18 @@ is not taken into consideration and the thread simply waits until notified.
 The thread T is then removed from the wait set for this object and re-enabled for thread scheduling. It 
 then competes in the usual manner with other threads for the right to synchronize on the object; once it 
 has gained control of the object, all its synchronization claims on the object are restored to the status 
-quo ante - that is, to the situation as of the time that the wait method was invoked. Thread T then returns from the invocation of the wait method. Thus, on return from the wait method, the synchronization 
+quo ante - that is, to the situation as of the time that the wait method was invoked. Thread T then 
+returns from the invocation of the wait method. Thus, on return from the wait method, the synchronization 
 state of the object and of thread T is exactly as it was when the wait method was invoked.
 ```
 
 接下来线程T会从对象等待集合中移除掉，然后，重新又可以进行线程的调度了。它会按照通常的方式与其他的线程竞争对于对象的同步权，一旦获得了对象的同步权，所有它的对这个对象同步的声明又会恢复到之前的同步声明状态，也就是说恢复到wait方法被调用的时候所处的状态，接下来线程T就会从wait方法的调用当中去返回，返回的时候，对象的同步状态以及线程T的同步状态与wait方法被调用的时候的状态是一模一样的。
 
 ```txt
-A thread can also wake up without being notified, interrupted, or timing out, a so-called spurious wakeup. While this will rarely occur in practice, applications must guard against it by testing for the condition that should have caused the thread to be awakened, and continuing to wait if the condition is not satisfied. In other words, waits should always occur in loops, like this one:
+A thread can also wake up without being notified, interrupted, or timing out, a so-called spurious 
+wakeup. While this will rarely occur in practice, applications must guard against it by testing for the 
+condition that should have caused the thread to be awakened, and continuing to wait if the condition is 
+not satisfied. In other words, waits should always occur in loops, like this one:
 ```
 
 一个线程还可以被唤醒无需被通知、中断或者超时，这个称之为虚假的唤醒，虽然这种实际情况下很少发生，但是应用还是应该通过测试条件保证这一点，并且如果条件没有被满足的时候就持续处于等待状态，换句话说，等待总是应该发生在循环当中，就向下面的代码：
@@ -487,13 +493,17 @@ calling one of the wait methods.
 notifyAll方法会唤醒在这个对象的锁上等待的所有的线程，线程可以通过调用这个对象的wait方法等待这个对象的锁。
 
 ```txt
-The awakened threads will not be able to proceed until the current thread relinquishes the lock on this object. The awakened threads will compete in the usual manner with any other threads that might be actively competing to synchronize on this object; for example, the awakened threads enjoy no reliable privilege or disadvantage in being the next thread to lock this object.
+The awakened threads will not be able to proceed until the current thread relinquishes the lock on this 
+object. The awakened threads will compete in the usual manner with any other threads that might be 
+actively competing to synchronize on this object; for example, the awakened threads enjoy no reliable 
+privilege or disadvantage in being the next thread to lock this object.
 ```
 
 被唤醒的线程只有在当前对象释放掉锁的时候才能继续执行，它会按照通常的方式与其他的线程竞争对象的同步，既没有什么特权，也没有什么缺陷，都有可能是下一个给当前对象上锁的线程。
 
 ```txt
-This method should only be called by a thread that is the owner of this object's monitor. See the notify method for a description of the ways in which a thread can become the owner of a monitor.
+This method should only be called by a thread that is the owner of this object's monitor. See the notify
+method for a description of the ways in which a thread can become the owner of a monitor.
 ```
 
 这个方法只能被持有锁的对象锁调用，查看notify方法获取对象锁的方式。
@@ -503,12 +513,196 @@ This method should only be called by a thread that is the owner of this object's
 |  方法名   |                             特点                             |
 | :-------: | :----------------------------------------------------------: |
 |   wait    | 1、当调用wait方法时，首先需要确保wait方法的线程已经持有了对象的锁<br>2、当调用wait后，该线程会释放掉这个对象的锁，然后进入到等待状态（wait set）<br>3、当线程调用了wait后进入等待状态时，它就可以等待线程调用相同对象的notify和notifyAll方法来使得自己被唤醒<br>4、一旦这个线程被其他线程唤醒后，该线程就会与其他线程一同开始竞争这个对象的锁（公平竞争）；只有当该线程获取到了这个对象的锁后，线程才会继续往下执行<br>5、调用wait方法的代码片段需要放在synchronize代码块或者synchronized方法中，这样才可以确保线程在调用wait方法前已经获取到了对象的锁 |
-|  notify   | 1、当调用对象的notify方法时，它会随机唤醒该对象等待集合（wait set）中的任意一个线程，当某个线程被唤醒后，它就会与其他线程一同竞争对象的锁<br>2、在某一时刻只有唯一一个线程可以拥有对象的锁<br> |
+|  notify   | 1、当调用对象的notify方法时，它会随机唤醒该对象等待集合（wait set）中的任意一个线程，当某个线程被唤醒后，它就会与其他线程一同竞争对象的锁<br>2、在某一时刻只有唯一一个线程可以拥有对象的锁 |
 | notifyAll | 1、当调用对象的notifyAll方法时，它会唤醒该对象集合（wait set）中所有的线程，这些线程被唤醒后，又会开始竞争对象的锁 |
 
+### 方法实践
+
+我们来看一个需要运用并发编程的实际的需求：
+
+ 1、存在一个对象，该对象有个int类型的成员变量counter，该成员变量的初始值为0；
+
+2、创建两个线程，其中一个线程对该对象的成员变量counter加1，另一个线程对该对象的成员变量减1；
+
+3、输出该对象成员变量counter每次变化后的值；
+
+4、最终输出的结果应为：1010101010...。
+
+首先是我们需要操作的对象：
+
+```java
+public class MyObject {
+    // 需要操作的成员变量
+    private int counter;
+
+    public synchronized void increase() {
+        if (counter != 0) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        counter++;
+        System.out.println(counter);
+        notify();
+    }
+
+    public synchronized void decrease() {
+        if (counter == 0) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        counter--;
+        System.out.println(counter);
+        notify();
+    }
+}
+```
+
+增加的线程类：
+
+```java
+public class IncreaseThread extends Thread {
+    private MyObject myObject;
+
+    public IncreaseThread(MyObject myObject) {
+        this.myObject = myObject;
+    }
+
+    @Override
+    public void run() {
+        for (int i = 0; i < 30; i++) {
+            try {
+                Thread.sleep((long) (Math.random() * 1000));
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+             myObject.increase();
+        }
+    }
+}
+```
+
+减少的线程类：
+
+```java
+public class DecreaseThread extends Thread {
+    private MyObject myObject;
+
+    public DecreaseThread(MyObject myObject) {
+        this.myObject = myObject;
+    }
+
+    @Override
+    public void run() {
+        for (int i = 0; i < 30; i++) {
+            try {
+                Thread.sleep((long) (Math.random() * 1000));
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            myObject.decrease();
+        }
+    }
+}
+```
+
+我们使用客户端来进行测试：
+
+```java
+public class client {
+    public static void main(String[] args) {
+        MyObject myObject = new MyObject();
+        Thread increaseThread = new IncreaseThread(myObject);
+        Thread decreaseThread = new DecreaseThread(myObject);
+        // 这里先启动哪个线程结果都是相同的
+        increaseThread.start();
+        decreaseThread.start();
+    }
+}
+```
+
+程序也正如我们所愿，输出了：
+
+```txt
+> Task :client.main()
+1
+0
+1
+0
+1
+0
+1
+0
+1
+0
+1
+0
+1
+0
+```
+
+接下来我们尝试创建多个线程
+
+```java
+public class client {
+    public static void main(String[] args) {
+        MyObject myObject = new MyObject();
+        Thread increaseThread = new IncreaseThread(myObject);
+        Thread increaseThread2 = new IncreaseThread(myObject);
+        Thread decreaseThread = new DecreaseThread(myObject);
+        Thread decreaseThread2 = new DecreaseThread(myObject);
+        increaseThread.start();
+        increaseThread2.start();
+        decreaseThread.start();
+        decreaseThread2.start();
+    }
+}
+```
+
+程序输出的结果：
+
+```txt
+> Task :client.main()
+1
+0
+1
+0
+1
+0
+1
+0
+1
+0
+1
+0
+1
+0
+1
+0
+1
+0
+1
+0
+1
+0
+-1
+-2
+-3
+-2
+-1
+-2
+-3
+-4
+```
+
+可以看到这个时候，输入的结果其实已经是没有规律的了。这是因为在之前只有两个线程的时候，调用notify方法一定会唤醒唯一的另外一个方法，而在上面的这个例子中，被唤醒的线程实际上是随机的。
 
 
 
 
- 
 
