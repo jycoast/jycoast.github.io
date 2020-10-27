@@ -702,7 +702,150 @@ public class client {
 
 可以看到这个时候，输入的结果其实已经是没有规律的了。这是因为在之前只有两个线程的时候，调用notify方法一定会唤醒唯一的另外一个方法，而在上面的这个例子中，被唤醒的线程实际上是随机的。
 
+为了避免这种情况的发生，我们应该使用while来进行判断，而不是使用if：
 
+```java
+public class MyObject {
+    private int counter;
 
+    public synchronized void increase() {
+        while (counter != 0) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        counter++;
+        System.out.println(counter);
+        notify();
+    }
 
+    public synchronized void decrease() {
+        while (counter == 0) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        counter--;
+        System.out.println(counter);
+        notify();
+    }
+}
+```
+
+ ## synchronized详解
+
+### synchronized简介
+
+我们首先来看一个例子：
+
+```java
+public class MyThreadTest {
+    public static void main(String[] args) {
+        Runnable r = new MyThread();
+        // 传入的是同一个Runnable实例，都可以访问到成员变量x
+        Thread t1 = new Thread(r);
+        Thread t2 = new Thread(r);
+
+        t1.start();
+        t2.start();
+    }
+}
+
+class MyThread implements Runnable {
+    int x;
+
+    @Override
+    public void run() {
+        x = 0;
+        while (true) {
+            System.out.println("result: " + x++);
+            try {
+                Thread.sleep((long) (Math.random() * 1000));
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            if (x == 30) {
+                break;
+            }
+        }
+    }
+}
+```
+
+运行这个程序，实际上每次输出的结果都是不相同的，这两个线程实际上共享了成员变量x，如果一个对象有可以被修改的成员变量，我们就认为这个对象是可变的对象，或者称之为有状态的，反之，如果一个对象没有被修改的成员变量，那么我们称这个对象是无状态的。
+
+```java
+public class MyThreadTest2 {
+    public static void main(String[] args) {
+        MyClass myClass = new MyClass();
+        Thread t1 = new Thread1(myClass);
+        Thread t2 = new Thread2(myClass);
+        t1.start();
+        try {
+            Thread.sleep(700);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        t2.start();
+    }
+}
+
+class MyClass {
+    public synchronized void hello() {
+        try {
+            Thread.sleep(400);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println("hello");
+    }
+
+    public synchronized void world() {
+        System.out.println("world");
+    }
+}
+
+class Thread1 extends Thread {
+
+    private MyClass myClass;
+
+    public Thread1(MyClass myClass) {
+        this.myClass = myClass;
+    }
+
+    @Override
+    public void run() {
+        myClass.hello();
+    }
+}
+
+class Thread2 extends Thread {
+    private MyClass myClass;
+
+    public Thread2(MyClass myClass) {
+        this.myClass = myClass;
+    }
+
+    @Override
+    public void run() {
+        myClass.world();
+    }
+}
+```
+
+程序输出：
+
+```txt
+> Task :MyThreadTest2.main()
+hello
+world
+```
+
+如果一个对象有若个synchronized方法，在某一个时刻只会有唯一的一个synchronized方法会被某一个线程访问，原因就在于当前对象的锁只有一个。当方法是static的时候，获取的锁不再是当前对象的锁，而是当前对象的Class的锁。
+
+### synchronized字节码
 
