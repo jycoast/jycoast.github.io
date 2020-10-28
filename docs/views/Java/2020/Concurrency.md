@@ -849,3 +849,134 @@ world
 
 ### synchronized字节码
 
+synchronized关键字一般来说可以作用在代码块和方法当中，当作用在代码块的中的时候，一般会使用如下的方式：
+
+```java
+public class MyTest2 {
+    private Object object = new Object();
+
+    public void method() {
+        // 获取到object对象的锁
+        synchronized (object) {
+            System.out.println("hello world");
+        }
+    }
+}
+```
+
+使用命令进行反编译：
+
+```shell
+javap -c MyTest2.class
+```
+
+反编译的结果：
+
+```java
+public class concurrency2.MyTest2 {
+  // 构造方法
+  public concurrency2.MyTest2();
+    Code:
+       0: aload_0
+       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+       4: aload_0
+       5: new           #2                  // class java/lang/Object
+       8: dup
+       9: invokespecial #1                  // Method java/lang/Object."<init>":()V
+      12: putfield      #3                  // Field object:Ljava/lang/Object;
+      15: return
+
+  public void method();
+    Code:
+       0: aload_0
+       // 获取当前对象的成员变量
+       1: getfield      #3                  // Field object:Ljava/lang/Object;
+       4: dup
+       5: astore_1
+       // 锁进入
+       6: monitorenter
+       // 开始执行代码
+       7: getstatic     #4                  // Field java/lang/System.out:Ljava/io/PrintStream;
+      10: ldc           #5                  // String hello world
+      12: invokevirtual #6                  // Method java/io/PrintStream.println:(Ljava/lang/String;)V
+      15: aload_1
+      // 锁退出
+      16: monitorexit
+      17: goto          25
+      20: astore_2
+      21: aload_1
+      // 处理异常退出锁的释放
+      22: monitorexit
+      23: aload_2
+      24: athrow
+      25: return
+    Exception table:
+       from    to  target type
+           7    17    20   any
+          20    23    20   any
+}
+```
+
+这里有两个monitorexit的原因是，无论代码执行是否抛出了异常，都会释放掉锁的对象，这部分是由Java编译器所做的工作。
+
+当我们使用synchronized关键字来修饰代码块时，字节码层面上是通过monitor与monitorexit指令来实现的锁的获取与释放动作，一个monitor可能对应一个或者多个monitorexit，为了说明这一点，我们修改一下代码：
+
+```java
+public class MyTest2 {
+    private Object object = new Object();
+
+    public void method() {
+        // 获取到object对象的锁
+        synchronized (object) {
+            System.out.println("hello world");
+            throw new RuntimeException();
+        }
+    }
+}
+```
+
+这个时候反编译字节码就会得到：
+
+```java
+public class concurrency2.MyTest2 {
+  public concurrency2.MyTest2();
+    Code:
+       0: aload_0
+       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+       4: aload_0
+       5: new           #2                  // class java/lang/Object
+       8: dup
+       9: invokespecial #1                  // Method java/lang/Object."<init>":()V
+      12: putfield      #3                  // Field object:Ljava/lang/Object;
+      15: return
+
+  public void method();
+    Code:
+       0: aload_0
+       1: getfield      #3                  // Field object:Ljava/lang/Object;
+       4: dup
+       5: astore_1
+       6: monitorenter
+       7: getstatic     #4                  // Field java/lang/System.out:Ljava/io/PrintStream;
+      10: ldc           #5                  // String hello world
+      12: invokevirtual #6                  // Method java/io/PrintStream.println:(Ljava/lang/String;)V
+      15: new           #7                  // class java/lang/RuntimeException
+      18: dup
+      // RuntimeException的构造方法
+      19: invokespecial #8                  // Method java/lang/RuntimeException."<init>":()V
+      22: athrow
+      23: astore_2
+      24: aload_1
+      25: monitorexit
+      26: aload_2
+      27: athrow
+    Exception table:
+       from    to  target type
+           7    26    23   any
+}
+```
+
+为什么只有一个monitorexit呢？因为程序的出口只有一种，或者说程序运行的最终结果一定会抛出异常，这个时候athrow是一定会执行的，因此只有唯一的一个monitorexit。
+
+当线程进入到monitorenter指令后，线程将会持有Monitor对象，退出monitorenter指令后，线程将会释放Moniter对象。
+
