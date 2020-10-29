@@ -847,7 +847,7 @@ world
 
 如果一个对象有若个synchronized方法，在某一个时刻只会有唯一的一个synchronized方法会被某一个线程访问，原因就在于当前对象的锁只有一个。当方法是static的时候，获取的锁不再是当前对象的锁，而是当前对象的Class的锁。
 
-### synchronized字节码
+### synchronized字节码分析
 
 synchronized关键字一般来说可以作用在代码块和方法当中，当作用在代码块的中的时候，一般会使用如下的方式：
 
@@ -979,4 +979,110 @@ public class concurrency2.MyTest2 {
 为什么只有一个monitorexit呢？因为程序的出口只有一种，或者说程序运行的最终结果一定会抛出异常，这个时候athrow是一定会执行的，因此只有唯一的一个monitorexit。
 
 当线程进入到monitorenter指令后，线程将会持有Monitor对象，退出monitorenter指令后，线程将会释放Moniter对象。
+
+synchronized关键字除了可以作用在代码块上，还可以作用在方法上：
+
+```java
+public class MyTest3 {
+    public synchronized void method() {
+        System.out.println("hello world");
+    }
+}
+```
+
+同样反编译之后：
+
+```java
+{                                                                                                         
+  public concurrency2.MyTest3();                                                                          
+    descriptor: ()V                                                                                       
+    flags: ACC_PUBLIC                                                                                     
+    Code:                                                                                                 
+      stack=1, locals=1, args_size=1                                                                      
+         0: aload_0                                                                                       
+         1: invokespecial #1                  // Method java/lang/Object."<init>":()V                     
+         4: return                                                                                        
+      LineNumberTable:                                                                                    
+        line 8: 0                                                                                         
+      LocalVariableTable:                                                                                 
+        Start  Length  Slot  Name   Signature                                                             
+            0       5     0  this   Lconcurrency2/MyTest3;                                                
+                                                                                                          
+  public synchronized void method();                                                                      
+    descriptor: ()V                                                                                       	// ACC_SYNCHRONIZED表示这是一个synchronized方法
+    flags: ACC_PUBLIC, ACC_SYNCHRONIZED                                                                   
+    Code:                                                                                                 	//默认情况下参数的长度为1，是因为传入了当前对象
+      stack=2, locals=1, args_size=1                                                                      
+         0: getstatic     #2                  // Field java/lang/System.out:Ljava/io/PrintStream;         
+         3: ldc           #3                  // String hello world                                       
+         5: invokevirtual #4                  // Method java/io/PrintStream.println:(Ljava/lang/String;)V 
+         8: return                                                                                        
+      LineNumberTable:                                                                                    
+        line 10: 0                                                                                        
+        line 11: 8                                                                                        
+      LocalVariableTable:                                                                                 
+        Start  Length  Slot  Name   Signature                                                             
+            0       9     0  this   Lconcurrency2/MyTest3;                                                
+}                                                                                                       
+```
+
+synchronized关键字修饰方法与代码块不同的地方是，并没有通过monitorenter与monitorexit指令来描述，而是使用ACC_SYNCHRONIZED表示该方法被synchronized修饰。当方法被调用的时候，JVM会检查该方法是否拥有ACC_SYNCHRONIZED标志，如果有，那么执行线程将会持有方法所在的Monitor对象，然后再去执行方法体，在该方法执行期间，其他线程均无法再获取到这个Monitor对象，当线程执行完该方法后，它会释放掉这个Monitor对象。
+
+synchronized关键字还有可能作用在静态方法上面：
+
+```java
+public class MyTest4 {
+    public static synchronized void method() {
+        System.out.println("hello world");
+    }
+}
+```
+
+反编译的结果：
+
+```java
+{                                                                                                          
+  public concurrency2.MyTest4();                                                                           
+    descriptor: ()V                                                                                        
+    flags: ACC_PUBLIC                                                                                      
+    Code:                                                                                                  
+      stack=1, locals=1, args_size=1                                                                       
+         0: aload_0                                                                                        
+         1: invokespecial #1                  // Method java/lang/Object."<init>":()V                      
+         4: return                                                                                         
+      LineNumberTable:                                                                                     
+        line 8: 0                                                                                          
+      LocalVariableTable:                                                                                  
+        Start  Length  Slot  Name   Signature                                                              
+            0       5     0  this   Lconcurrency2/MyTest4;                                                 
+                                                                                                           
+  public static synchronized void method();                                                                
+    descriptor: ()V
+    //  ACC_STATIC表示静态的同步方法
+    flags: ACC_PUBLIC, ACC_STATIC, ACC_SYNCHRONIZED                                                        
+    Code:                                                                                                  
+      stack=2, locals=0, args_size=0                                                                       
+         0: getstatic     #2                  // Field java/lang/System.out:Ljava/io/PrintStream;          
+         3: ldc           #3                  // String hello world                                        
+         5: invokevirtual #4                  // Method java/io/PrintStream.println:(Ljava/lang/String;)V  
+         8: return                                                                                         
+      LineNumberTable:                                                                                     
+        line 10: 0                                                                                         
+        line 11: 8                                                                                         
+}                                                                                                          
+```
+
+可以看到无论是修改实例方法还是静态方法，都是通过ACC_SYNCHRONIZED来实现的，静态方法还会增加ACC_STATIC来表示是静态方法。
+
+## Monitor
+
+### 自旋锁
+
+JVM中的同步是基于进入与退出监视器对象（管程对象）（Monitor）来实现的，每个对象实例都会有一个Monitor对象，Monitor对象会和Java对象一同创建，一同销毁，Monitor对象是由C++来实现的。
+
+当多个线程同时访问一段同步代码时，这些线程会被方法一个EntryList集合当中，处于阻塞状态的线程都会被方法该列表中。接下来，当线程获取到对象的Monitor时，Monitor是依赖于底层操作系统的mutex lock（互斥锁）来实现互斥的，线程获取mutex成功，则会持有mutex，这时其他线程就无法再获取到该mutex。
+
+如果线程调用了wait方法，那么该线程就会释放掉所持有的mutex，并且该线程会进入到WaitSet集合（等待集合）中，等待下一次被其他线程调用notify/notifyAll唤醒。如果当前线程顺利执行完毕方法，那么它也会释放掉所持有的mutex。
+
+同步锁再这种实现方式当中，因为Monitor是依赖于底层的操作系统实现，因此存在用户态与内核态之间的切换，所以会增加性能开销，通过对象互斥锁的概念来保证共享数据操作的完整性。每个对象都对应于一个可称为互斥锁的标记，这个标记用于保证在任何时刻，只能有一个线程访问该对象。
 
