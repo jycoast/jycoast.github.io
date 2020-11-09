@@ -448,7 +448,7 @@ object, one of them is chosen to be awakened. The choice is arbitrary and occurs
 implementation. A thread waits on an object's monitor by calling one of the wait methods.
 ```
 
-它会唤醒正在等待这个对象的锁的单个线程，如果有多个线程都在等待这个对象的锁，那么就会选择其中的一个进行唤醒，选择是随机的，并且是受实现的约束，一个线程会通过调用某一个wait方法进入等待状态。
+它会唤醒正在等待这个对象的锁的单个线程，如果有多个线程都在等待这个对象的锁，那么就会选择其中的一个进行唤醒，选择是随机的，并且是根据实现来决定的，一个线程会通过调用某一个wait方法进入等待状态。
 
 ```txt
 The awakened thread will not be able to proceed until the current thread relinquishes the lock on this
@@ -1099,7 +1099,7 @@ JVM中的同步是基于进入与退出监视器对象（管程对象）（Monit
 3. PTHREAD_MUTEX_ERRORCHECK_NP：检错锁，如果一个线程请求同一个锁，则返回EDEADLK，否则与PTHREAD_MUTEX_TIME_NP类型相同，这样就保证了当不允许多次加锁时出现最简单情况下的死锁。
 4. PTHREAD_MUTEX_ADAPTIVE_NP：适应锁，动作最简单的锁类型，仅仅等待解锁后重新竞争。
 
-### Monitor对象的实现
+### Monitor源码分析
 
 接下来我们通过[openjdk](http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/73f624a2488d/src/share/vm/runtime)的源代码来分析Monitor底层的实现。
 
@@ -1118,7 +1118,9 @@ class ObjectWaiter : public StackObj {
  public:
   enum TStates { TS_UNDEF, TS_READY, TS_RUN, TS_WAIT, TS_ENTER, TS_CXQ } ;
   enum Sorted  { PREPEND, APPEND, SORTED } ;
+  // 前一个ObjectWaiter
   ObjectWaiter * volatile _next;
+  // 后一个ObjectWaiter
   ObjectWaiter * volatile _prev;
   Thread*       _thread;
   jlong         _notifier_tid;
@@ -1204,6 +1206,7 @@ class ObjectMonitor {
     _succ         = NULL ;
     _cxq          = NULL ;
     FreeNext      = NULL ;
+     // 等待集合
     _EntryList    = NULL ;
     _SpinFreq     = 0 ;
     _SpinClock    = 0 ;
@@ -1331,6 +1334,7 @@ public:
     // 等待集合定义
  protected:
   ObjectWaiter * volatile _WaitSet; // LL of threads wait()ing on the monitor
+    // 等待队列,简单的自旋锁
  private:
   volatile int _WaitSetLock;        // protects Wait Queue - simple spinlock
 
@@ -1387,4 +1391,468 @@ public:
 
 #endif
 ```
+
+EntryList、WaitSet采用链表的方式是因为在这个链表中，要根据某一定的规则查找、删除、增加线程比较容易。只有经过wait方法调用的时候，才会进入到WaitSet集合当中。
+
+### wait、notify源码分析
+
+wait方法的实现：
+
+```c++
+void ObjectMonitor::wait(jlong millis, bool interruptible, TRAPS) {
+   Thread * const Self = THREAD ;
+   assert(Self->is_Java_thread(), "Must be Java thread!");
+   JavaThread *jt = (JavaThread *)THREAD;
+
+   DeferredInitialize () ;
+
+   // Throw IMSX or IEX.
+   CHECK_OWNER();
+
+   EventJavaMonitorWait event;
+
+   // check for a pending interrupt
+   if (interruptible && Thread::is_interrupted(Self, true) && !HAS_PENDING_EXCEPTION) {
+     // post monitor waited event.  Note that this is past-tense, we are done waiting.
+     if (JvmtiExport::should_post_monitor_waited()) {
+        // Note: 'false' parameter is passed here because the
+        // wait was not timed out due to thread interrupt.
+        JvmtiExport::post_monitor_waited(jt, this, false);
+
+        // In this short circuit of the monitor wait protocol, the
+        // current thread never drops ownership of the monitor and
+        // never gets added to the wait queue so the current thread
+        // cannot be made the successor. This means that the
+        // JVMTI_EVENT_MONITOR_WAITED event handler cannot accidentally
+        // consume an unpark() meant for the ParkEvent associated with
+        // this ObjectMonitor.
+     }
+     if (event.should_commit()) {
+       post_monitor_wait_event(&event, this, 0, millis, false);
+     }
+     TEVENT (Wait - Throw IEX) ;
+     THROW(vmSymbols::java_lang_InterruptedException());
+     return ;
+   }
+
+   TEVENT (Wait) ;
+
+   assert (Self->_Stalled == 0, "invariant") ;
+   Self->_Stalled = intptr_t(this) ;
+   jt->set_current_waiting_monitor(this);
+
+   // create a node to be put into the queue
+   // Critically, after we reset() the event but prior to park(), we must check
+   // for a pending interrupt.
+   ObjectWaiter node(Self);
+   node.TState = ObjectWaiter::TS_WAIT ;
+   Self->_ParkEvent->reset() ;
+   OrderAccess::fence();          // ST into Event; membar ; LD interrupted-flag
+
+   // Enter the waiting queue, which is a circular doubly linked list in this case
+   // but it could be a priority queue or any data structure.
+   // _WaitSetLock protects the wait queue.  Normally the wait queue is accessed only
+   // by the the owner of the monitor *except* in the case where park()
+   // returns because of a timeout of interrupt.  Contention is exceptionally rare
+   // so we use a simple spin-lock instead of a heavier-weight blocking lock.
+
+   Thread::SpinAcquire (&_WaitSetLock, "WaitSet - add") ;
+    // 将封装好的node对象放到队列中，通过双向链表实现的
+   AddWaiter (&node) ;
+   Thread::SpinRelease (&_WaitSetLock) ;
+
+   if ((SyncFlags & 4) == 0) {
+      _Responsible = NULL ;
+   }
+   intptr_t save = _recursions; // record the old recursion count
+   _waiters++;                  // increment the number of waiters
+   _recursions = 0;             // set the recursion level to be 1
+    // 释放掉锁
+   exit (true, Self) ;                    // exit the monitor
+   guarantee (_owner != Self, "invariant") ;
+
+   // The thread is on the WaitSet list - now park() it.
+   // On MP systems it's conceivable that a brief spin before we park
+   // could be profitable.
+   //
+   // TODO-FIXME: change the following logic to a loop of the form
+   //   while (!timeout && !interrupted && _notified == 0) park()
+
+   int ret = OS_OK ;
+   int WasNotified = 0 ;
+   { // State transition wrappers
+     OSThread* osthread = Self->osthread();
+     OSThreadWaitState osts(osthread, true);
+     {
+       ThreadBlockInVM tbivm(jt);
+       // Thread is in thread_blocked state and oop access is unsafe.
+       jt->set_suspend_equivalent();
+
+       if (interruptible && (Thread::is_interrupted(THREAD, false) || HAS_PENDING_EXCEPTION)) {
+           // Intentionally empty
+       } else
+       if (node._notified == 0) {
+         if (millis <= 0) {
+            Self->_ParkEvent->park () ;
+         } else {
+            ret = Self->_ParkEvent->park (millis) ;
+         }
+       }
+
+       // were we externally suspended while we were waiting?
+       if (ExitSuspendEquivalent (jt)) {
+          // TODO-FIXME: add -- if succ == Self then succ = null.
+          jt->java_suspend_self();
+       }
+
+     } // Exit thread safepoint: transition _thread_blocked -> _thread_in_vm
+
+
+     // Node may be on the WaitSet, the EntryList (or cxq), or in transition
+     // from the WaitSet to the EntryList.
+     // See if we need to remove Node from the WaitSet.
+     // We use double-checked locking to avoid grabbing _WaitSetLock
+     // if the thread is not on the wait queue.
+     //
+     // Note that we don't need a fence before the fetch of TState.
+     // In the worst case we'll fetch a old-stale value of TS_WAIT previously
+     // written by the is thread. (perhaps the fetch might even be satisfied
+     // by a look-aside into the processor's own store buffer, although given
+     // the length of the code path between the prior ST and this load that's
+     // highly unlikely).  If the following LD fetches a stale TS_WAIT value
+     // then we'll acquire the lock and then re-fetch a fresh TState value.
+     // That is, we fail toward safety.
+
+     if (node.TState == ObjectWaiter::TS_WAIT) {
+         Thread::SpinAcquire (&_WaitSetLock, "WaitSet - unlink") ;
+         if (node.TState == ObjectWaiter::TS_WAIT) {
+            DequeueSpecificWaiter (&node) ;       // unlink from WaitSet
+            assert(node._notified == 0, "invariant");
+            node.TState = ObjectWaiter::TS_RUN ;
+         }
+         Thread::SpinRelease (&_WaitSetLock) ;
+     }
+
+     // The thread is now either on off-list (TS_RUN),
+     // on the EntryList (TS_ENTER), or on the cxq (TS_CXQ).
+     // The Node's TState variable is stable from the perspective of this thread.
+     // No other threads will asynchronously modify TState.
+     guarantee (node.TState != ObjectWaiter::TS_WAIT, "invariant") ;
+     OrderAccess::loadload() ;
+     if (_succ == Self) _succ = NULL ;
+     WasNotified = node._notified ;
+
+     // Reentry phase -- reacquire the monitor.
+     // re-enter contended monitor after object.wait().
+     // retain OBJECT_WAIT state until re-enter successfully completes
+     // Thread state is thread_in_vm and oop access is again safe,
+     // although the raw address of the object may have changed.
+     // (Don't cache naked oops over safepoints, of course).
+
+     // post monitor waited event. Note that this is past-tense, we are done waiting.
+     if (JvmtiExport::should_post_monitor_waited()) {
+       JvmtiExport::post_monitor_waited(jt, this, ret == OS_TIMEOUT);
+
+       if (node._notified != 0 && _succ == Self) {
+         // In this part of the monitor wait-notify-reenter protocol it
+         // is possible (and normal) for another thread to do a fastpath
+         // monitor enter-exit while this thread is still trying to get
+         // to the reenter portion of the protocol.
+         //
+         // The ObjectMonitor was notified and the current thread is
+         // the successor which also means that an unpark() has already
+         // been done. The JVMTI_EVENT_MONITOR_WAITED event handler can
+         // consume the unpark() that was done when the successor was
+         // set because the same ParkEvent is shared between Java
+         // monitors and JVM/TI RawMonitors (for now).
+         //
+         // We redo the unpark() to ensure forward progress, i.e., we
+         // don't want all pending threads hanging (parked) with none
+         // entering the unlocked monitor.
+         node._event->unpark();
+       }
+     }
+
+     if (event.should_commit()) {
+       post_monitor_wait_event(&event, this, node._notifier_tid, millis, ret == OS_TIMEOUT);
+     }
+
+     OrderAccess::fence() ;
+
+     assert (Self->_Stalled != 0, "invariant") ;
+     Self->_Stalled = 0 ;
+
+     assert (_owner != Self, "invariant") ;
+     ObjectWaiter::TStates v = node.TState ;
+     if (v == ObjectWaiter::TS_RUN) {
+         enter (Self) ;
+     } else {
+         guarantee (v == ObjectWaiter::TS_ENTER || v == ObjectWaiter::TS_CXQ, "invariant") ;
+         ReenterI (Self, &node) ;
+         node.wait_reenter_end(this);
+     }
+
+     // Self has reacquired the lock.
+     // Lifecycle - the node representing Self must not appear on any queues.
+     // Node is about to go out-of-scope, but even if it were immortal we wouldn't
+     // want residual elements associated with this thread left on any lists.
+     guarantee (node.TState == ObjectWaiter::TS_RUN, "invariant") ;
+     assert    (_owner == Self, "invariant") ;
+     assert    (_succ != Self , "invariant") ;
+   } // OSThreadWaitState()
+
+   jt->set_current_waiting_monitor(NULL);
+
+   guarantee (_recursions == 0, "invariant") ;
+   _recursions = save;     // restore the old recursion count
+   _waiters--;             // decrement the number of waiters
+
+   // Verify a few postconditions
+   assert (_owner == Self       , "invariant") ;
+   assert (_succ  != Self       , "invariant") ;
+   assert (((oop)(object()))->mark() == markOopDesc::encode(this), "invariant") ;
+
+   if (SyncFlags & 32) {
+      OrderAccess::fence() ;
+   }
+
+   // check if the notification happened
+   if (!WasNotified) {
+     // no, it could be timeout or Thread.interrupt() or both
+     // check for interrupt event, otherwise it is timeout
+     if (interruptible && Thread::is_interrupted(Self, true) && !HAS_PENDING_EXCEPTION) {
+       TEVENT (Wait - throw IEX from epilog) ;
+       THROW(vmSymbols::java_lang_InterruptedException());
+     }
+   }
+
+   // NOTE: Spurious wake up will be consider as timeout.
+   // Monitor notify has precedence over thread interrupt.
+}
+```
+
+notify方法的实现：
+
+```c++
+void ObjectMonitor::notify(TRAPS) {
+  CHECK_OWNER();
+    // 等待集合为空
+  if (_WaitSet == NULL) {
+     TEVENT (Empty-Notify) ;
+     return ;
+  }
+  DTRACE_MONITOR_PROBE(notify, this, object(), THREAD);
+	// 不同的调度策略（具体唤醒哪一个线程），使用调度策略将这个ObjectWaiter放置到EntryList
+  int Policy = Knob_MoveNotifyee ;
+
+  Thread::SpinAcquire (&_WaitSetLock, "WaitSet - notify") ;
+  ObjectWaiter * iterator = DequeueWaiter() ;
+  if (iterator != NULL) {
+     TEVENT (Notify1 - Transfer) ;
+     guarantee (iterator->TState == ObjectWaiter::TS_WAIT, "invariant") ;
+     guarantee (iterator->_notified == 0, "invariant") ;
+     if (Policy != 4) {
+        iterator->TState = ObjectWaiter::TS_ENTER ;
+     }
+     iterator->_notified = 1 ;
+     Thread * Self = THREAD;
+     iterator->_notifier_tid = JFR_THREAD_ID(Self);
+
+     ObjectWaiter * List = _EntryList ;
+     if (List != NULL) {
+        assert (List->_prev == NULL, "invariant") ;
+        assert (List->TState == ObjectWaiter::TS_ENTER, "invariant") ;
+        assert (List != iterator, "invariant") ;
+     }
+
+     if (Policy == 0) {       // prepend to EntryList
+         if (List == NULL) {
+             iterator->_next = iterator->_prev = NULL ;
+             _EntryList = iterator ;
+         } else {
+             List->_prev = iterator ;
+             iterator->_next = List ;
+             iterator->_prev = NULL ;
+             _EntryList = iterator ;
+        }
+     } else
+     if (Policy == 1) {      // append to EntryList
+         if (List == NULL) {
+             iterator->_next = iterator->_prev = NULL ;
+             _EntryList = iterator ;
+         } else {
+            // CONSIDER:  finding the tail currently requires a linear-time walk of
+            // the EntryList.  We can make tail access constant-time by converting to
+            // a CDLL instead of using our current DLL.
+            ObjectWaiter * Tail ;
+            for (Tail = List ; Tail->_next != NULL ; Tail = Tail->_next) ;
+            assert (Tail != NULL && Tail->_next == NULL, "invariant") ;
+            Tail->_next = iterator ;
+            iterator->_prev = Tail ;
+            iterator->_next = NULL ;
+        }
+     } else
+     if (Policy == 2) {      // prepend to cxq
+         // prepend to cxq
+         if (List == NULL) {
+             iterator->_next = iterator->_prev = NULL ;
+             _EntryList = iterator ;
+         } else {
+            iterator->TState = ObjectWaiter::TS_CXQ ;
+            for (;;) {
+                ObjectWaiter * Front = _cxq ;
+                iterator->_next = Front ;
+                if (Atomic::cmpxchg_ptr (iterator, &_cxq, Front) == Front) {
+                    break ;
+                }
+            }
+         }
+     } else
+     if (Policy == 3) {      // append to cxq
+        iterator->TState = ObjectWaiter::TS_CXQ ;
+        for (;;) {
+            ObjectWaiter * Tail ;
+            Tail = _cxq ;
+            if (Tail == NULL) {
+                iterator->_next = NULL ;
+                if (Atomic::cmpxchg_ptr (iterator, &_cxq, NULL) == NULL) {
+                   break ;
+                }
+            } else {
+                while (Tail->_next != NULL) Tail = Tail->_next ;
+                Tail->_next = iterator ;
+                iterator->_prev = Tail ;
+                iterator->_next = NULL ;
+                break ;
+            }
+        }
+     } else {
+        ParkEvent * ev = iterator->_event ;
+        iterator->TState = ObjectWaiter::TS_RUN ;
+        OrderAccess::fence() ;
+        ev->unpark() ;
+     }
+
+     if (Policy < 4) {
+       iterator->wait_reenter_begin(this);
+     }
+
+     // _WaitSetLock protects the wait queue, not the EntryList.  We could
+     // move the add-to-EntryList operation, above, outside the critical section
+     // protected by _WaitSetLock.  In practice that's not useful.  With the
+     // exception of  wait() timeouts and interrupts the monitor owner
+     // is the only thread that grabs _WaitSetLock.  There's almost no contention
+     // on _WaitSetLock so it's not profitable to reduce the length of the
+     // critical section.
+  }
+
+  Thread::SpinRelease (&_WaitSetLock) ;
+
+  if (iterator != NULL && ObjectMonitor::_sync_Notifications != NULL) {
+     ObjectMonitor::_sync_Notifications->inc() ;
+  }
+}
+```
+
+### 锁升级与偏向锁
+
+随着JDK版本的不断更迭，底层对于synchronized关键字的实现方式也不断地在进行调整。在JDK1.5之前，要实现线程同步，只能通过synchronized关键字来实现，Java底层也是通过synchronized关键字来做到数据的原子性维护，synchronized关键字是JVM实现的一种内置锁，从底层角度来说，这种锁的获取与释放都是由JVM帮助我们隐式实现的。从JDK1.5开始，并发包引入了Lock锁，Lock同步锁是基于Java来实现的，因此锁的获取与释放都是通过Java代码来实现与控制的，synchronized是基于底层操作系统Mutex Lock来实现的，每次对锁的获取与释放动作都会带来用户态与内核态之间的切换，这种切换会极大的增加系统的负担。在并发量较高时，也就是说锁的竞争比较激烈的时候，synchronized锁在性能上的表现就非常差。
+
+从JDK1.6开始，synchronized锁的实现发生了很大的变化，JVM引入了相应的优化手段来提升synchronized锁的性能，这种提升涉及到偏向锁、轻量级锁、重量级锁等，从而减少锁的竞争锁带来的用户态与内核态之前的切换，这种锁的优化是通过Java对象头中的一些标志位来去实现的。对于锁的访问与改变，实际上都与Java对象头息息相关。
+
+从JDK1.6开始，对象实例在堆当中会被划分为三个组成部分：对象头、实例数据与对齐填充。
+
+对象头主要由3块内容来构成：
+
+1. Mark Word 
+2. 指向类的指针
+3. 数组的长度
+
+其中Mark Word （它记录了对象、锁及垃圾回收相关的信息，在64位的JVM中，其长度也是64bit）的位信息包括了如下的组成部分：
+
+1. 无锁标记
+2. 偏向锁标记
+3. 轻量级锁标记
+4. 重量级锁标记
+5. GC标记
+
+对于synchronized锁来说，锁的升级主要是通过Mark Word中的锁的标志位与是否是偏向锁标志位来达成的；synchronized关键字锁对应的锁都是从偏向锁开始，随着锁竞争的不断升级，逐步演化至轻量级锁，最后则变成了重量级锁。
+
+对于锁的演化来说，它会经历如下阶段：
+
+无锁 -> 偏向锁 -> 轻量级锁 -> 重量级锁
+
+偏向锁：针对于一个线程来说，它的作用就是优化同一个线程多次获取一个锁的情况；如果一个synchronized方法被一个线程访问，那么这个方法所在的对象就会在其Mark Word中将偏向锁进行标记，同时还会有一个字段来存储该线程的ID；当这个线程再次访问同一个synchronized方法时，它会检查这个对象的Mark Word的偏向锁标记以及是否指向了其线程ID，如果是的话，那么该线程就无需进行管程（Monitor）了，而是直接进入到该方法体中。如果是另外一个线程访问这个synchronized方法，那么偏向锁的标记就会被去掉。
+
+轻量级锁：若第一个线程已经获取到了当前对象的锁，这是第二个线程又开始尝试争抢该对象的锁，由于该对象的锁已经被第一个线程获取到，因此它是偏向锁，而第二个线程在争抢时，会发现该对象头中的Mark Word已经是偏向锁，但里面存储的线程ID不是自己（第一个线程），那么它会进行CAS（Compare and Swap），从而获取到锁，这里面存在两种情况：
+
+1. 获取锁成功，那么它会直接将Mark Word中的线程ID由第一个线程变成自己（偏向锁标记位保持不变），这样该对象依然会保持偏向锁的状态
+2. 获取锁失败，表示这时可能会有多个线程同时在尝试争抢该对象的锁，那么这时偏向锁会进行升级，升级为轻量级锁
+
+自旋锁：若自旋失败（依然无法获取到锁），那么锁就会转化为重量级锁，在这种情况下，无法获取到锁的线程都会进入到Monitor（即内核态）。自旋最大的一个特点就是避免了线程从用户态进入到内核态。
+
+重量级锁：线程最终从用户态进入到了内核态。
+
+### 锁粗化与锁消除
+
+```java
+public class MyTest5 {
+    private Object object = new Object();
+
+    public void method() {
+        synchronized (object) {
+            System.out.println("hello world");
+        }
+    }
+}
+```
+
+编译器对于锁的优化措施：JIT编译器（Just In Time编译器）可以在动态编译同步代码时，使用一种叫做逃逸分析的技术，来通过该项技术判别程序中所使用的锁对象是否只被一个线程所使用，而没有散布到其他线程当中，如果情况就是这样的话，那么JIT编译器在编译这个同步代码时就不会生成synchronized关键字所标识的锁的申请与释放机器码，从而消除了锁的使用流程，这就是锁的消除。
+
+```java
+public class MyTest6 {
+    public void method() {
+        Object object = new Object();
+        synchronized (object) {
+            System.out.println("hello world");
+        }
+
+        synchronized (object) {
+            System.out.println("welcome");
+        }
+
+        synchronized (object) {
+            System.out.println("person");
+        }
+    }
+}
+```
+
+如果object是成员变量：
+
+```java
+public class MyTest6 {
+    Object object = new Object();
+    
+    public void method() {
+        synchronized (object) {
+            System.out.println("hello world");
+        }
+
+        synchronized (object) {
+            System.out.println("welcome");
+        }
+
+        synchronized (object) {
+            System.out.println("person");
+        }
+    }
+}
+```
+
+这种情况下就发生了：锁粗化，JIT编译器在执行动态编译时，若发现前后相邻的synchronized块使用的是同一个锁对象，那么它就会把这几个synchronized块合并为一个较大的同步块，这样做的好处在于线程在执行这些代码的时候，就无需频繁的申请与释放锁了，从而达到申请与释放锁一次，就可以执行完全部的同步代码块，从而提升了性能。
+
+## Lock
+
+### 死锁及死锁检测
 
