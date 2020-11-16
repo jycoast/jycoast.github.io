@@ -1856,3 +1856,235 @@ public class MyTest6 {
 
 ### 死锁及死锁检测
 
+- 死锁：线程1等待线程2互斥持有的资源，而线程2也在等待线程1互斥持有的资源，两个线程都无法继续执行；
+- 活锁：线程持续重试一个总是失败的操作，导致无法继续执行；
+- 饿死：线程一直被调度器延迟访问其赖以执行的资源，也许是调度器先于低优先级的线程而执行高优先级的线程，同时总是会有一个高优先级的线程可以执行，饿死也叫做无限延迟。
+
+首先来看一下可能会发生死锁的情况：
+
+```java
+public class MyTest7 {
+    private Object lock1 = new Object();
+    private Object lock2 = new Object();
+
+    public void method1() {
+        synchronized (lock1) {
+            synchronized (lock2) {
+                System.out.println("myMethod1 invoked");
+            }
+        }
+    }
+
+    public void method2() {
+        synchronized (lock2) {
+            synchronized (lock1) {
+                System.out.println("myMethod2 invoked");
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        MyTest7 myTest7 = new MyTest7();
+        Runnable runnable1 = () -> {
+            while (true) {
+                myTest7.method1();
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        Thread thread1 = new Thread(runnable1, "myThread1");
+
+        Runnable runnable2 = () -> {
+            while (true) {
+                myTest7.method2();
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        Thread thread2 = new Thread(runnable2, "myThread2");
+        thread1.start();
+        thread2.start();
+    }
+}
+```
+
+程序在运行一段时间之后就发生死锁的现象，发生死锁之后可以使用JVM自带的一些工具来进行检测。
+
+首先是jvisualvm:
+
+![1605541454922](./assets/1605541454922.png)
+
+可以看到，已经检测到死锁的情况，点击线程Dump可以查看详情。
+
+![1605541658677](./assets/1605541658677.png)
+
+除了使用可视化界面之外，也可以使用命令行的工具来进行检测死锁：
+
+```shell
+D:\code\java8\jyc>jps -l
+9104
+12212 concurrency2.MyTest7
+11656 org.jetbrains.idea.maven.server.RemoteMavenServer
+16428 org.gradle.launcher.daemon.bootstrap.GradleDaemon
+3468 sun.tools.jps.Jps
+```
+
+可以看到运行我们程序的进行号为12212，继续使用jstack来查看当前线程的执行详情：
+
+```shell
+D:\code\java8\jyc>jstack 12212
+2020-11-16 23:50:41
+Full thread dump Java HotSpot(TM) 64-Bit Server VM (25.212-b10 mixed mode):
+
+"JMX server connection timeout 18" #18 daemon prio=5 os_prio=0 tid=0x0000000019fca800 nid=0x25ec in Object.wait() [0x000000001b9de000]
+   java.lang.Thread.State: TIMED_WAITING (on object monitor)
+        at java.lang.Object.wait(Native Method)
+        at com.sun.jmx.remote.internal.ServerCommunicatorAdmin$Timeout.run(ServerCommunicatorAdmin.java:168)
+        - locked <0x00000000d8408178> (a [I)
+        at java.lang.Thread.run(Thread.java:748)
+
+"RMI Scheduler(0)" #17 daemon prio=5 os_prio=0 tid=0x0000000019fc9800 nid=0x36a0 waiting on condition [0x000000001b8df000]
+   java.lang.Thread.State: TIMED_WAITING (parking)
+        at sun.misc.Unsafe.park(Native Method)
+        - parking to wait for  <0x00000000d8410188> (a java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject)
+        at java.util.concurrent.locks.LockSupport.parkNanos(LockSupport.java:215)
+        at java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.awaitNanos(AbstractQueuedSynchronizer.java:2078)
+        at java.util.concurrent.ScheduledThreadPoolExecutor$DelayedWorkQueue.take(ScheduledThreadPoolExecutor.java:1093)
+        at java.util.concurrent.ScheduledThreadPoolExecutor$DelayedWorkQueue.take(ScheduledThreadPoolExecutor.java:809)
+        at java.util.concurrent.ThreadPoolExecutor.getTask(ThreadPoolExecutor.java:1074)
+        at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1134)
+        at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+        at java.lang.Thread.run(Thread.java:748)
+
+"RMI TCP Accept-0" #15 daemon prio=5 os_prio=0 tid=0x0000000019f5f000 nid=0x4270 runnable [0x000000001b6df000]
+   java.lang.Thread.State: RUNNABLE
+        at java.net.DualStackPlainSocketImpl.accept0(Native Method)
+        at java.net.DualStackPlainSocketImpl.socketAccept(DualStackPlainSocketImpl.java:131)
+        at java.net.AbstractPlainSocketImpl.accept(AbstractPlainSocketImpl.java:409)
+        at java.net.PlainSocketImpl.accept(PlainSocketImpl.java:199)
+        - locked <0x00000000d84182b0> (a java.net.SocksSocketImpl)
+        at java.net.ServerSocket.implAccept(ServerSocket.java:545)
+        at java.net.ServerSocket.accept(ServerSocket.java:513)
+        at sun.management.jmxremote.LocalRMIServerSocketFactory$1.accept(LocalRMIServerSocketFactory.java:52)
+        at sun.rmi.transport.tcp.TCPTransport$AcceptLoop.executeAcceptLoop(TCPTransport.java:405)
+        at sun.rmi.transport.tcp.TCPTransport$AcceptLoop.run(TCPTransport.java:377)
+        at java.lang.Thread.run(Thread.java:748)
+
+"DestroyJavaVM" #13 prio=5 os_prio=0 tid=0x0000000002a6e000 nid=0x19c0 waiting on condition [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+"myThread2" #12 prio=5 os_prio=0 tid=0x000000001a17e000 nid=0x3290 waiting for monitor entry [0x000000001b58f000]
+   java.lang.Thread.State: BLOCKED (on object monitor)
+        at concurrency2.MyTest7.method2(MyTest7.java:23)
+        - waiting to lock <0x00000000d84202f0> (a java.lang.Object)
+        - locked <0x00000000d8420300> (a java.lang.Object)
+        at concurrency2.MyTest7.lambda$main$1(MyTest7.java:44)
+        at concurrency2.MyTest7$$Lambda$2/1418481495.run(Unknown Source)
+        at java.lang.Thread.run(Thread.java:748)
+
+"myThread1" #11 prio=5 os_prio=0 tid=0x000000001a17d800 nid=0x3b8c waiting for monitor entry [0x000000001b48f000]
+   java.lang.Thread.State: BLOCKED (on object monitor)
+        at concurrency2.MyTest7.method1(MyTest7.java:15)
+        - waiting to lock <0x00000000d8420300> (a java.lang.Object)
+        - locked <0x00000000d84202f0> (a java.lang.Object)
+        at concurrency2.MyTest7.lambda$main$0(MyTest7.java:32)
+        at concurrency2.MyTest7$$Lambda$1/471910020.run(Unknown Source)
+        at java.lang.Thread.run(Thread.java:748)
+
+"Service Thread" #10 daemon prio=9 os_prio=0 tid=0x0000000019ebf000 nid=0x3194 runnable [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+"C1 CompilerThread3" #9 daemon prio=9 os_prio=2 tid=0x0000000019e28800 nid=0x48c0 waiting on condition [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+"C2 CompilerThread2" #8 daemon prio=9 os_prio=2 tid=0x0000000019e28000 nid=0x219c waiting on condition [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+"C2 CompilerThread1" #7 daemon prio=9 os_prio=2 tid=0x0000000019e26800 nid=0x39c waiting on condition [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+"C2 CompilerThread0" #6 daemon prio=9 os_prio=2 tid=0x0000000019e1f800 nid=0x22c waiting on condition [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+"Attach Listener" #5 daemon prio=5 os_prio=2 tid=0x0000000019e1d800 nid=0x898 waiting on condition [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+"Signal Dispatcher" #4 daemon prio=9 os_prio=2 tid=0x0000000019e1c800 nid=0x3174 runnable [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+"Finalizer" #3 daemon prio=8 os_prio=1 tid=0x0000000019db1000 nid=0x40e4 in Object.wait() [0x000000001a38e000]
+   java.lang.Thread.State: WAITING (on object monitor)
+        at java.lang.Object.wait(Native Method)
+        at java.lang.ref.ReferenceQueue.remove(ReferenceQueue.java:144)
+        - locked <0x00000000d84385e8> (a java.lang.ref.ReferenceQueue$Lock)
+        at java.lang.ref.ReferenceQueue.remove(ReferenceQueue.java:165)
+        at java.lang.ref.Finalizer$FinalizerThread.run(Finalizer.java:216)
+
+"Reference Handler" #2 daemon prio=10 os_prio=2 tid=0x0000000019db0800 nid=0x23e4 in Object.wait() [0x000000001a28e000]
+   java.lang.Thread.State: WAITING (on object monitor)
+        at java.lang.Object.wait(Native Method)
+        at java.lang.Object.wait(Object.java:502)
+        at java.lang.ref.Reference.tryHandlePending(Reference.java:191)
+        - locked <0x00000000d8430758> (a java.lang.ref.Reference$Lock)
+        at java.lang.ref.Reference$ReferenceHandler.run(Reference.java:153)
+
+"VM Thread" os_prio=2 tid=0x0000000017fb8800 nid=0x1f84 runnable
+
+"GC task thread#0 (ParallelGC)" os_prio=0 tid=0x0000000003008000 nid=0x2d74 runnable
+
+"GC task thread#1 (ParallelGC)" os_prio=0 tid=0x0000000003009800 nid=0x5374 runnable
+
+"GC task thread#2 (ParallelGC)" os_prio=0 tid=0x000000000300b000 nid=0x21ec runnable
+
+"GC task thread#3 (ParallelGC)" os_prio=0 tid=0x000000000300c800 nid=0x4064 runnable
+
+"GC task thread#4 (ParallelGC)" os_prio=0 tid=0x000000000300f000 nid=0x234c runnable
+
+"GC task thread#5 (ParallelGC)" os_prio=0 tid=0x0000000003011000 nid=0x2ea8 runnable
+
+"GC task thread#6 (ParallelGC)" os_prio=0 tid=0x0000000003014000 nid=0x14a0 runnable
+
+"GC task thread#7 (ParallelGC)" os_prio=0 tid=0x0000000003015800 nid=0x39d4 runnable
+
+"VM Periodic Task Thread" os_prio=2 tid=0x0000000019ed4000 nid=0x1d40 waiting on condition
+
+JNI global references: 232
+
+# 找到一个Java级别的死锁
+Found one Java-level deadlock:
+=============================
+"myThread2":
+  waiting to lock monitor 0x00000000030ee6c8 (object 0x00000000d84202f0, a java.lang.Object),
+  which is held by "myThread1"
+"myThread1":
+  waiting to lock monitor 0x00000000030ed228 (object 0x00000000d8420300, a java.lang.Object),
+  which is held by "myThread2"
+
+Java stack information for the threads listed above:
+===================================================
+"myThread2":
+        at concurrency2.MyTest7.method2(MyTest7.java:23)
+        - waiting to lock <0x00000000d84202f0> (a java.lang.Object)
+        - locked <0x00000000d8420300> (a java.lang.Object)
+        at concurrency2.MyTest7.lambda$main$1(MyTest7.java:44)
+        at concurrency2.MyTest7$$Lambda$2/1418481495.run(Unknown Source)
+        at java.lang.Thread.run(Thread.java:748)
+"myThread1":
+        at concurrency2.MyTest7.method1(MyTest7.java:15)
+        - waiting to lock <0x00000000d8420300> (a java.lang.Object)
+        - locked <0x00000000d84202f0> (a java.lang.Object)
+        at concurrency2.MyTest7.lambda$main$0(MyTest7.java:32)
+        at concurrency2.MyTest7$$Lambda$1/471910020.run(Unknown Source)
+        at java.lang.Thread.run(Thread.java:748)
+
+Found 1 deadlock.
+```
+
+### 锁的机制与原理
+
