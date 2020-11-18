@@ -1852,6 +1852,8 @@ public class MyTest6 {
 
 这种情况下就发生了：锁粗化，JIT编译器在执行动态编译时，若发现前后相邻的synchronized块使用的是同一个锁对象，那么它就会把这几个synchronized块合并为一个较大的同步块，这样做的好处在于线程在执行这些代码的时候，就无需频繁的申请与释放锁了，从而达到申请与释放锁一次，就可以执行完全部的同步代码块，从而提升了性能。
 
+# concurrent包
+
 ## Lock
 
 ### 死锁及死锁检测
@@ -2087,4 +2089,286 @@ Found 1 deadlock.
 ```
 
 ### 锁的机制与原理
+
+Lock是非常重要的顶级接口，接下来我们阅读一下关于它的说明：
+
+```txt
+Lock implementations provide more extensive locking operations than can be obtained using synchronized 
+methods and statements. They allow more flexible structuring, may have quite different properties, and 
+may support multiple associated Condition objects.
+```
+
+Lock实现了要比使用synchronized关键字修饰的方法及语句用途更为广泛的锁的操作，它们支持更为灵活的结构化，拥有很多不同的属性，支持多种相关联的Condition对象。
+
+```txt
+A lock is a tool for controlling access to a shared resource by multiple threads. Commonly, a lock 
+provides exclusive access to a shared resource: only one thread at a time can acquire the lock and all 
+access to the shared resource requires that the lock be acquired first. However, some locks may allow 
+concurrent access to a shared resource, such as the read lock of a ReadWriteLock.
+```
+
+锁是一种多个线程对于一个共享资源的访问，通常情况下，一个锁会对共享资源提供一种排它性的访问，这意味着在同一个时刻，只能有一个线程获取到锁，其他线程必须要先获取到锁才能访问共享资源。然而，某些锁可以对于共享资源的并发访问，比如读锁中的ReadWriteLock（读写锁）。
+
+```txt
+The use of synchronized methods or statements provides access to the implicit monitor lock associated 
+with every object, but forces all lock acquisition and release to occur in a block-structured way: when 
+multiple locks are acquired they must be released in the opposite order, and all locks must be released 
+in the same lexical scope in which they were acquired.
+```
+
+使用synchronized方法或者synchronized代码块提供了对于每一个对象的所关联的隐式的monitor对象的访问，但是它会强制所有锁的获取和释放都发生在块结构的方式中，当多个锁被获取的时候，必须要以相反的顺序释放，而且所有的锁必须以获取的相同的作用域释放掉。
+
+```txt
+While the scoping mechanism for synchronized methods and statements makes it much easier to program with monitor locks, and helps avoid many common programming errors involving locks, there are occasions where you need to work with locks in a more flexible way. For example, some algorithms for traversing concurrently accessed data structures require the use of "hand-over-hand" or "chain locking": you acquire the lock of node A, then node B, then release A and acquire C, then release B and acquire D and so on. Implementations of the Lock interface enable the use of such techniques by allowing a lock to be acquired and released in different scopes, and allowing multiple locks to be acquired and released in any order.
+```
+
+虽然synchronized方法和代码块的作用域使得我们对于monitor锁的编程更加轻松，而且还会避免与锁相关的编码错误，但是存在一些场景，需要更加灵活的处理锁，比如某些算法需要并发的遍历被访问的数据结构，他们需要需要使用hand-over-hand或者chain locking：你需要首先获取到node A的锁，然后是node B的锁，紧接着释放A，然后获取到C，然后释放掉B，然后获取到D等等，Lock接口的实现使得这种技术的使用成为可能，它可以使得锁的获取和释放不在同一个作用域，也可以不再按照顺序。
+
+```txt
+With this increased flexibility comes additional responsibility. The absence of block-structured locking 
+removes the automatic release of locks that occurs with synchronized methods and statements. In most 
+cases, the following idiom should be used:
+```
+
+但是如果我们不使用这种块结构的锁的话，就没法再使用synchronized提供的自动释放锁的功能，在大多数情况下按照如下的方式使用：
+
+```java
+Lock l = ...;
+ l.lock();
+ try {
+   // access the resource protected by this lock
+ } finally {
+   l.unlock();
+ }
+```
+
+```txt
+When locking and unlocking occur in different scopes, care must be taken to ensure that all code that is 
+executed while the lock is held is protected by try-finally or try-catch to ensure that the lock is 
+released when necessary.
+```
+
+当加锁和解锁出现在不同的作用域当中，我们必须要非常小心的确保被执行的所有的代码都是在try-finally 或者try-catch的保护当中，从而保证锁在必要的时候可以被释放掉。
+
+```txt
+Lock implementations provide additional functionality over the use of synchronized methods and 
+statements by providing a non-blocking attempt to acquire a lock (tryLock()), an attempt to acquire the 
+lock that can be interrupted (lockInterruptibly, and an attempt to acquire the lock that can timeout 
+(tryLock(long, TimeUnit)).
+```
+
+Lock的实现相比于synchronized方法和语句的实现提供了一些额外的功能，它是通过一种非阻塞的方式获取到锁，并且还提供了获取锁的操作是可以被中断的，可以设置锁的超时时间。
+
+```txt
+A Lock class can also provide behavior and semantics that is quite different from that of the implicit 
+monitor lock, such as guaranteed ordering, non-reentrant usage, or deadlock detection. If an 
+implementation provides such specialized semantics then the implementation must document those 
+semantics.
+```
+
+一个Lock的类还可以提供一些与隐式的monitor锁的完全不同的行为和语义，比如可以确保顺序性、可重入的使用或者死锁检测。如果一种实现实现了这种特殊的语气，那么实现就必须将这个语义清楚的记录下来。
+
+```txt
+Note that Lock instances are just normal objects and can themselves be used as the target in a 
+synchronized statement. Acquiring the monitor lock of a Lock instance has no specified relationship with
+invoking any of the lock methods of that instance. It is recommended that to avoid confusion you never
+use Lock instances in this way, except within their own implementation.
+```
+
+Lock实例仅仅是一个普通的对象而已，它们本身也可以被synchronized语句修饰，因为每个对象都会有一个与之相关的monitor存在，对于Lock实例对象也不例外，获取到Lock实例的monitor锁，与调用这个Lock方法之间没有什么特殊的关联关系。换言之，我们如果将一个Lock实例作为synchronized使用的对象的话，JVM会获取到Lock实例的monitor对象，它与Lock是两个层面的东西，推荐的做法是避免这种混淆，除了在它们自己的底层实现当中，永远不要通过这种方式使用Lock实例。
+
+```txt
+All Lock implementations must enforce the same memory synchronization semantics as provided by the built-in monitor lock, as described in The Java Language Specification (17.4 Memory Model) :
+```
+
+所有的Lock的实现都必须强制与内建的monitor锁的内存同步语义是一致的，这一点是在Java语言规范中明确的。
+
+```txt
+A successful lock operation has the same memory synchronization effects as a successful Lock action.
+A successful unlock operation has the same memory synchronization effects as a successful Unlock action.
+```
+
+- 一个成功的加锁的操作与成功的synchronization拥有相同的同步效果
+- 一个成功的释放锁的操作与成功的synchronization拥有相同的释放锁的效果
+
+```txt
+Unsuccessful locking and unlocking operations, and reentrant locking/unlocking operations, do not require any memory synchronization effects.
+```
+
+（可重入的）加锁和释放锁不成功的操作，它们是不要求任何的内存同步的效果的。
+
+```txt
+The three forms of lock acquisition (interruptible, non-interruptible, and timed) may differ in their performance 
+characteristics, ordering guarantees, or other implementation qualities.
+```
+
+获取lock的三种方式（可中断的，非可中断的，基于时间的）在性能上、顺序上的保证还有一些其他的特性上可能有所不同。
+
+```txt
+Further, the ability to interrupt the ongoing acquisition of a lock may not be available in a given Lock class. Consequently, 
+an implementation is not required to define exactly the same guarantees or semantics for all three forms of lock acquisition, 
+nor is it required to support interruption of an ongoing lock acquisition. An implementation is required to clearly document 
+the semantics and guarantees provided by each of the locking methods. It must also obey the interruption semantics as defined 
+in this interface, to the extent that interruption of lock acquisition is supported: which is either totally, or only on 
+method entry.
+```
+
+进一步而言，这种能力可以中断锁获取可能不在给定的lock类当中，因此一种实现并不要求精确的定义相同的这种语义针对于这三种实现。
+
+```txt
+As interruption generally implies cancellation, and checks for interruption are often infrequent, an implementation can favor 
+responding to an interrupt over normal method return. This is true even if it can be shown that the interrupt occurred after 
+another action may have unblocked the thread. An implementation should document this behavior.
+```
+
+由于中断通常意味着取消，因此检查这个中断通常不是一个频繁的操作，实现可以对一个中断进行响应，而不是等待一个正常的方法的返回。即便中断可能出现在另外一个动作之后有可能解锁这个线程，实现应该将这种行为记录下来。
+
+以上是Lock接口的说明，接下来我们了解一下其中部分的核心方法：
+
+```java
+   void lock();
+```
+
+方法的说明：
+
+```txt
+Acquires the lock.
+If the lock is not available then the current thread becomes disabled for thread scheduling purposes and lies dormant until 
+the lock has been acquired.
+```
+
+该方法用于获取到锁，如果获取不到锁，当前的线程将会无法被用于线程调度，线程会进入睡眠状态，直到获取到锁。
+
+```txt
+A Lock implementation may be able to detect erroneous use of the lock, such as an invocation that would cause deadlock, and 
+may throw an (unchecked) exception in such circumstances. The circumstances and the exception type must be documented by that
+Lock implementation.
+```
+
+Lock实现可以检测锁的错误的使用，比如可能导致死锁的调用。
+
+```java
+void lockInterruptibly() throws InterruptedException;
+```
+
+方法的说明：
+
+```txt
+Acquires the lock unless the current thread is interrupted.
+Acquires the lock if it is available and returns immediately.
+If the lock is not available then the current thread becomes disabled for thread scheduling purposes and lies dormant until one of two things happens:
+```
+
+如果当前线程没有被中断就尝试获取到锁。如果锁是可以获取，就会立刻返回。如果这个锁是不可用的，那么当前线程也无法进行调度，而且会陷入到睡眠状态，直到下面两种情况发生：
+
+```txt
+The lock is acquired by the current thread; or
+Some other thread interrupts the current thread, and interruption of lock acquisition is supported.
+```
+
+- 当前线程获取到锁
+- 其他的线程中断了当前线程，而且锁获取的过程的是支持的中断的
+
+如果当前线程：
+
+```txt
+has its interrupted status set on entry to this method; or
+is interrupted while acquiring the lock, and interruption of lock acquisition is supported,
+```
+
+- 在这个方法的入口中拥有自己的被中断的状态
+- 在获取锁的过程被中断了，并且这种在获取锁的时候的中断是被支持的
+
+那么 InterruptedException 会被抛出，并且当前线程的状态会被清理掉。
+
+```java
+ boolean tryLock();
+```
+
+方法的说明
+
+```txt
+Acquires the lock only if it is free at the time of invocation.
+Acquires the lock if it is available and returns immediately with the value true. If the lock is not available then this 
+method will return immediately with the value false.
+A typical usage idiom for this method would be:
+```
+
+调用的时候，只有当可以获取的锁的时候，才获取到锁。如果获取可以获取到锁，就会立刻返回true，如果获取不到，就会立刻返回false，一中典型的使用方式：
+
+```java
+Lock lock = ...;
+ if (lock.tryLock()) {
+   try {
+     // manipulate protected state
+   } finally {
+     lock.unlock();
+   }
+ } else {
+   // perform alternative actions
+ }
+```
+
+```txt
+This usage ensures that the lock is unlocked if it was acquired, and doesn't try to unlock if the lock was not acquired.
+```
+
+这种用法可以保证如果锁被获取了，那么锁是会被释放掉的，如果没有获取到锁，就不用去释放锁。
+
+```java
+boolean tryLock(long time, TimeUnit unit) throws InterruptedException;
+```
+
+这是另外一个重载的方法：
+
+```txt
+Acquires the lock if it is free within the given waiting time and the current thread has not been interrupted.
+If the lock is available this method returns immediately with the value true. If the lock is not available then the current thread becomes disabled for thread scheduling purposes and lies dormant until one of three things happens:
+```
+
+在给定的等待时间之内，如果线程没有被中断并且锁是可以获取的，那么就获取到锁。如果锁拿到了，就会立刻返回true，如果没有获取到，那么线程就无法再进行调度，进入睡眠状态，直到如下三种情况发生：
+
+```txt
+The lock is acquired by the current thread; or
+Some other thread interrupts the current thread, and interruption of lock acquisition is supported; or
+The specified waiting time elapses
+```
+
+- 当前线程获取到了锁
+- 其他线程中断了当前的线程，并且在锁获取的过程中，中断是被支持的
+- 指定的时间到了
+
+如果获取到了锁则立刻返回true，如果当前线程被中断了，并且这种中断是被允许的，那么：
+
+```txt
+then InterruptedException is thrown and the current thread's interrupted status is cleared.
+If the specified waiting time elapses then the value false is returned. If the time is less than or equal to zero, the method will not wait at all.
+```
+
+当前线程就会抛出InterruptedException，并且当前线程的状态也会被清理掉。如果过了指定的时间，那么就会返回false，如果指定时间小于或者等于0，那么这个方法就会做任何的等待。
+
+```java
+  void unlock();
+```
+
+方法的说明：
+
+```txt
+A Lock implementation will usually impose restrictions on which thread can release a lock (typically only the holder of the lock can release it) and may throw an (unchecked) exception if the restriction is violated. Any restrictions and the exception type must be documented by that Lock implementation.
+```
+
+该方法用来释放掉锁。
+
+```java
+   Condition newCondition();
+```
+
+方法的说明：
+
+```txt
+Returns a new Condition instance that is bound to this Lock instance.
+Before waiting on the condition the lock must be held by the current thread. A call to Condition.await() will atomically release the lock before waiting and re-acquire the lock before the wait returns.
+```
+
+它会返回一个新的绑定到当前Lock上的Condition实例，在等待condition之前，当前线程必须持有锁，调用Condition.await()会自动地释放掉锁。
 
