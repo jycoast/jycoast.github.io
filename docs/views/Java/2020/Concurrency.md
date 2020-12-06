@@ -2372,3 +2372,80 @@ Before waiting on the condition the lock must be held by the current thread. A c
 
 它会返回一个新的绑定到当前Lock上的Condition实例，在等待condition之前，当前线程必须持有锁，调用Condition.await()会自动地释放掉锁。
 
+接下来我们看一个有关于锁的使用的实际案例。
+
+  ```java
+public class MyTest1 {
+    // 可重入锁
+    private Lock lock = new ReentrantLock();
+
+    public void myMethod1() {
+        try {
+            lock.lock();
+            System.out.println("myMethod1 invoked");
+        } finally {
+            // 如果注释掉这行代码，程序仍然可以访问到此线程的锁，即上一行的输出会打印，但myMethod2因为获取不到锁，因此不会执行。
+            // lock.unlock();
+        }
+    }
+
+    public void myMethod2() {
+        try {
+            lock.lock();
+            System.out.println("myMethod2 invoked");
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public static void main(String[] args) {
+        MyTest1 myTest1 = new MyTest1();
+        Thread t1 = new Thread(() -> {
+            for (int i = 0; i < 10; ++i) {
+                myTest1.myMethod1();
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        Thread t2 = new Thread(() -> {
+            for (int i = 0; i < 10; ++i) {
+                myTest1.myMethod2();
+                try {
+                    Thread.sleep(300);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        t1.start();
+        t2.start();
+    }
+}
+  ```
+
+对myMethod2进行一定的改进：
+
+```java
+    public void myMethod2() {
+        boolean result;
+        try {
+            lock.tryLock(800, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+```
+
+程序就可以正常的往下执行，可以看出Lock为我们提供了一种更为优雅的方式来获取锁，本小节的最后，我们对于Lock和synchronized关键字的区别进行归纳总结。
+
+1. 锁的获取方式：Lock是通过程序代码的方式由开发者手工获取，而synchronized是通过JVM来获取的（无需开发者干预）。
+2. 具体的实现方式：Lock是通过Java代码的方式来实现，synchronized是通过JVM底层来实现（无需开发者关注）。
+3. 锁的释放方式：Lock务必通过unlock()方法在finally块中手工释放，synchronized是通过JVM来释放（无需开发者关注）。
+4. 锁的具体类型：Lock提供了多种，如公平锁、非公平锁，synchronized与Lock提供了可重入锁。
+
+### Condition
+
