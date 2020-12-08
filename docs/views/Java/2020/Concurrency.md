@@ -2449,3 +2449,5 @@ public class MyTest1 {
 
 ### Condition
 
+在Lock接口中，有一个方法的返回值是Condition，接下来我们就来了解一下这个对象的信息。
+
