@@ -2445,9 +2445,369 @@ public class MyTest1 {
 1. 锁的获取方式：Lock是通过程序代码的方式由开发者手工获取，而synchronized是通过JVM来获取的（无需开发者干预）。
 2. 具体的实现方式：Lock是通过Java代码的方式来实现，synchronized是通过JVM底层来实现（无需开发者关注）。
 3. 锁的释放方式：Lock务必通过unlock()方法在finally块中手工释放，synchronized是通过JVM来释放（无需开发者关注）。
-4. 锁的具体类型：Lock提供了多种，如公平锁、非公平锁，synchronized与Lock提供了可重入锁。
+4. 锁的具体类型：Lock提供了多种，如公平锁、非公平锁，synchronized与Lock都提供了可重入锁。
 
-### Condition
+### Condition简介
 
-在Lock接口中，有一个方法的返回值是Condition，接下来我们就来了解一下这个对象的信息。
+在Lock接口中，有一个方法的返回值是Condition，在之前的例子中，我们可以通过sychronized+wait+notify/notifyAll来实现多个线程之间的协调与通信，整个过程都是由JVM来帮助我们实现的，开发者无需（也无法）了解底层的实现细节，从JDK5开始，并发包提供了Lock，Condition(await与signal/signalAll)来实现多个线程之间的协调与通信，整个过程都是由开发者来控制的，相比于传统的方式，更加的灵活，功能也更加强大。接下来我们就来了解一下这个接口的详细信息。
 
+```txt
+Condition factors out the Object monitor methods (wait, notify and notifyAll) into distinct objects to 
+give the effect of having multiple wait-sets per object, by combining them with the use of arbitrary 
+Lock implementations. Where a Lock replaces the use of synchronized methods and statements, a Condition
+replaces the use of the Object monitor methods.
+```
+
+Condition本质上类似于Object对象的监控器的方法（wait,notify和notifyAll），可以让各种不同的对象拥有多个等待集合，是通过使用任意的一个Lock的实现将他们组合起来，我们会使用Lock来替代synchronized方法和代码块的使用，Condition来替换Object对象中的监控器方法的使用。
+
+```txt
+Conditions (also known as condition queues or condition variables) provide a means for one thread to 
+suspend execution (to "wait") until notified by another thread that some state condition may now be 
+true. Because access to this shared state information occurs in different threads, it must be protected,
+so a lock of some form is associated with the condition. The key property that waiting for a condition
+provides is that it atomically releases the associated lock and suspends the current thread, just like 
+Object.wait.
+```
+
+Conditions(也叫做条件队列或者条件变量)提供了一种让一个线程可以挂起执行（让线程进入等待状态）直到另外一个condition为true的线程通知当前线程的方式，由于对于共享的状态信息的访问是发生在不同的线程当中的，因此它必须受到保护，即Lock就一定要关联到一个某个Condition上面，一个关键的属性是，它会自动的释放掉关联的锁然后挂起当前的线程，就行Object.wait方法一样。
+
+```txt
+A Condition instance is intrinsically bound to a lock. To obtain a Condition instance for a particular Lock instance use its newCondition() method.
+```
+
+一个Condition实例会被天然的绑定到一个lock上面，要想获得一个特定的Lock实例对应的Condition实例的话，需要使用newCondition()方法。
+
+```txt
+As an example, suppose we have a bounded buffer which supports put and take methods. If a take is 
+attempted on an empty buffer, then the thread will block until an item becomes available; if a put is 
+attempted on a full buffer, then the thread will block until a space becomes available. We would like to 
+keep waiting put threads and take threads in separate wait-sets so that we can use the optimization of 
+only notifying a single thread at a time when items or spaces become available in the buffer. This can 
+be achieved using two Condition instances.
+```
+
+举个例子，加我们我们有一个有界的缓冲区，支持put和take方法，如果一个take尝试从空的缓冲区获取元素就会被阻塞，直到缓冲区中有新的元素，如果一个put尝试向一个满的缓冲区中添加元素，这个线程也会被阻塞，直到有可用的空闲空间为止，我们将会让等待的put线程和take线程放置在两个等待集合当中，这样我们就可以在条目存在或者空间存在的时候，只通知一个线程，这个是可以通过使用两个Condition实例来做到的。
+
+```java
+   class BoundedBuffer {
+     final Lock lock = new ReentrantLock();
+     final Condition notFull  = lock.newCondition(); 
+     final Condition notEmpty = lock.newCondition(); 
+  
+     final Object[] items = new Object[100];
+     int putptr, takeptr, count;
+  
+     public void put(Object x) throws InterruptedException {
+       lock.lock();
+       try {
+         while (count == items.length)
+           notFull.await();
+         items[putptr] = x;
+         if (++putptr == items.length) putptr = 0;
+         ++count;
+         notEmpty.signal();
+       } finally {
+         lock.unlock();
+       }
+     }
+  
+     public Object take() throws InterruptedException {
+       lock.lock();
+       try {
+         while (count == 0)
+           notEmpty.await();
+         Object x = items[takeptr];
+         if (++takeptr == items.length) takeptr = 0;
+         --count;
+         notFull.signal();
+         return x;
+       } finally {
+         lock.unlock();
+       }
+     }
+   }
+```
+
+```txt
+A Condition implementation can provide behavior and semantics that is different from that of the Object 
+monitor methods, such as guaranteed ordering for notifications, or not requiring a lock to be held when
+performing notifications. If an implementation provides such specialized semantics then the 
+implementation must document those semantics.
+```
+
+Condition实现可以提供与Object的monitor方法是不一样的行为，比如对于通知的确定性的排序，或者在执行通知的时候不要求持有锁，如果某一个实现提供了这样一些专门化的语义，在实现的时候，需要在文档当中记录下来。
+
+```txt
+Note that Condition instances are just normal objects and can themselves be used as the target in a 
+synchronized statement, and can have their own monitor wait and notification methods invoked. Acquiring
+the monitor lock of a Condition instance, or using its monitor methods, has no specified relationship 
+with acquiring the Lock associated with that Condition or the use of its waiting and signalling methods. 
+It is recommended that to avoid confusion you never use Condition instances in this way, except perhaps
+within their own implementation.
+```
+
+注意Condition实例仅仅就是一个普通的obeject对象，它们自己也可以使用sychronized代码块当中，并且拥有自己的monitor方法，比如wait和notification方法。使用Condition实例获取锁对象，其中的waiting和signalling方法与monitor对象中的方法是没有任何关系的，推荐的做法是避免这种混淆，永远不应该在除了内部实现的地方外使用这种方式。
+
+```txt
+When waiting upon a Condition, a "spurious wakeup" is permitted to occur, in general, as a concession to the underlying 
+platform semantics. This has little practical impact on most application programs as a Condition should always be waited upon 
+in a loop, testing the state predicate that is being waited for. An implementation is free to remove the possibility of 
+spurious wakeups but it is recommended that applications programmers always assume that they can occur and so always wait in a 
+loop.
+```
+
+当我们在等待一个Condition为真的时候，一个假的唤醒是允许发生的，通常情况下，作为平台的一种底层的语义，这种对于大多数的程序不会产生什么实际的影响，因为Condition总是在一个while循环当中去等待，去测试这个被唤醒的条件是否被满足了。实现可以自由的移除这种假的唤醒的可能性，但是推荐的做法是开发者确保程序总是能够执行的并且总是放在循环当中的。
+
+```txt
+The three forms of condition waiting (interruptible, non-interruptible, and timed) may differ in their ease of implementation
+on some platforms and in their performance characteristics. In particular, it may be difficult to provide these features and 
+maintain specific semantics such as ordering guarantees. Further, the ability to interrupt the actual suspension of the thread 
+may not always be feasible to implement on all platforms.
+```
+
+三种Condition等待的方式（可中断的、不可中断的、基于时间的）在不同的平台上的实现和性能是不一样的，特别的，我们很难去提供这些特性，并且维护具体的语义，比如说排序的保证，更进一步，这种中断进程的挂起实际是要想在所有平台都实现是难做到非常灵活的。
+
+```txt
+Consequently, an implementation is not required to define exactly the same guarantees or semantics for all three forms of 
+waiting, nor is it required to support interruption of the actual suspension of the thread
+```
+
+因此，一个实现针对于这几种方式的等待并不要求精确的定义相同的语义或者相同的保证，同样的，也不要求线程实际的挂起的中断。
+
+```txt
+An implementation is required to clearly document the semantics and guarantees provided by each of the waiting methods, and when an implementation does support interruption of thread suspension then it must obey the interruption semantics as defined in this interface.
+```
+
+实现可以被要求清晰的定义这些语义和保证由每一个等待方法，当一个实现并不支持线程中断的话，必须要遵循定义在这个接口中中断的语义。
+
+```txt
+As interruption generally implies cancellation, and checks for interruption are often infrequent, an implementation can favor 
+responding to an interrupt over normal method return. This is true even if it can be shown that the interrupt occurred after
+another action that may have unblocked the thread. An implementation should document this behavior.
+```
+
+由于中断通常暗示着一种取消，因此检查这个中断不是一个频繁的操作，实现可以自由决定，它可以去响应中断，而非正常的这种方法返回，即便是中断是发生在另一个动作之后，实现需要把这个行为记录下来。
+
+以上就是Condition类的所有的说明，接下来我们来阅读一下Condition接口中的方法。
+
+```java
+void await() throws InterruptedException;
+```
+
+方法的说明：
+
+```txt
+Causes the current thread to wait until it is signalled or interrupted.
+```
+
+这个方法会使得当前线程进入等待状态，直到signal方法被调用或者被中断。
+
+```txt
+The lock associated with this Condition is atomically released and the current thread becomes disabled for thread scheduling 
+purposes and lies dormant until one of four things happens:
+```
+
+调用了await方法之后，与Condition所关联的lock会被自动的释放，当前的线程将无法进行线程调度，并且进入休眠状态，直到下面的四种情况之一发生：
+
+```txt
+Some other thread invokes the signal method for this Condition and the current thread happens to be chosen as the thread to be 
+awakened; or
+Some other thread invokes the signalAll method for this Condition; or
+Some other thread interrupts the current thread, and interruption of thread suspension is supported; or
+A "spurious wakeup" occurs.
+```
+
+- 另外一个线程调用了当前线程的signal方法，并且当前的线程恰好是被选中的线程；
+- 另外一个线程调用了signalAll方法；
+- 另外一个线程中断了当前的线程，并且线程是可以中断的；
+- 虚假唤醒出现了。
+
+```txt
+In all cases, before this method can return the current thread must re-acquire the lock associated with this condition. When 
+the thread returns it is guaranteed to hold this lock.
+```
+
+在以上的四种情况中，在调用了await方法能够返回之前，当前的线程必须要重新获取到与这个condition对应的lock。当线程返回的时候，我们可以保证获取到了lock。
+
+如果当前的线程：
+
+```txt
+has its interrupted status set on entry to this method; or
+is interrupted while waiting and interruption of thread suspension is supported,
+```
+
+- 当前的线程在进入到这个方法的时候，已经设置了中断的状态；
+- 等待的时候被中断了，并且线程的中断是支持的。
+
+```txt
+then InterruptedException is thrown and the current thread's interrupted status is cleared. It is not specified, in the first
+case, whether or not the test for interruption occurs before the lock is released.
+```
+
+就会抛出InterruptedException异常，当前线程的状态也会被清理掉，在一种情况下，在释放锁之前，无论是否测试了中断，都是如此。
+
+```txt
+The current thread is assumed to hold the lock associated with this Condition when this method is called. It is up to the 
+implementation to determine if this is the case and if not, how to respond. Typically, an exception will be thrown (such as 
+IllegalMonitorStateException) and the implementation must document that fact.
+```
+
+当前线程在调用await方法的时候，被假定要持有与Condition相关联的锁，这个取决于具体的实现是否要满足这种条件，如果不满足，应该如何应对，典型的，可以抛出异常（IllegalMonitorStateException），实现必须要将这个情况记录下来。
+
+```txt
+An implementation can favor responding to an interrupt over normal method return in response to a signal. In that case the 
+implementation must ensure that the signal is redirected to another waiting thread, if there is one
+```
+
+实现也可以选择去响应一个中断而不是通常的方法的返回，在这种情况下，如果有的另外一个线程，实现也必须signal会重定向到另外一个线程。
+
+接下来是awaitUninterruptibly方法：
+
+```java
+  void awaitUninterruptibly();
+```
+
+awaitUninterruptibly方法会使得线程进入等待状态，直到下面三种情况之一发生：
+
+```txt
+Some other thread invokes the signal method for this Condition and the current thread happens to be chosen as the thread to be awakened; or
+Some other thread invokes the signalAll method for this Condition; or
+A "spurious wakeup" occurs.
+```
+
+与await方法唯一不同的是，这个方法并不回应中断。
+
+接下来是awaitNanos方法：
+
+```java
+    long awaitNanos(long nanosTimeout) throws InterruptedException;
+```
+
+方法的说明：
+
+```txt
+Causes the current thread to wait until it is signalled or interrupted, or the specified waiting time elapses.
+```
+
+调用awaitNanos，会导致当前的线程进入等待状态直到被signal或者被中断或者指定的时间已经过去了，直到下面五种情况有一个发生：
+
+```txt
+Some other thread invokes the signal method for this Condition and the current thread happens to be chosen as the thread to be awakened; or
+Some other thread invokes the signalAll method for this Condition; or
+Some other thread interrupts the current thread, and interruption of thread suspension is supported; or
+The specified waiting time elapses; or
+A "spurious wakeup" occurs.
+```
+
+可以看到与await方法不同的地方在于，指定的等待时间已经过去了，就会返回。
+
+```txt
+The method returns an estimate of the number of nanoseconds remaining to wait given the supplied nanosTimeout value upon
+return, or a value less than or equal to zero if it timed out. This value can be used to determine whether and how long to re-
+wait in cases where the wait returns but an awaited condition still does not hold. Typical uses of this method take the 
+following form:
+```
+
+这个方法会返回一个近似的纳秒的时间，这个时间是给定时间的剩余的时间，还有可能返回的是一个小于或者等于零的值，这意味着超时了。这个值可以用来是否以及多长时间重新的等待，典型的使用场景是这样的：
+
+```java
+ boolean aMethod(long timeout, TimeUnit unit) {
+   long nanos = unit.toNanos(timeout);
+   lock.lock();
+   try {
+     while (!conditionBeingWaitedFor()) {
+       if (nanos <= 0L)
+         return false;
+       nanos = theCondition.awaitNanos(nanos);
+     }
+     // ...
+   } finally {
+     lock.unlock();
+   }
+ }
+```
+
+```txt
+This method requires a nanosecond argument so as to avoid truncation errors in reporting remaining times. Such precision loss 
+would make it difficult for programmers to ensure that total waiting times are not systematically shorter than specified when 
+re-waits occur.
+```
+
+这个方法需要的是一个纳秒的参数来去避免一个截断上的错误再去返回剩余时间，使用它来确保整体的等待时间，这种精度的损失可能对于程序员而言是非常困难的。
+
+接下来是另外一个await方法的重载：
+
+```java
+boolean await(long time, TimeUnit unit) throws InterruptedException;
+```
+
+```txt
+Causes the current thread to wait until it is signalled or interrupted, or the specified waiting time elapses. This method is behaviorally equivalent to:
+  awaitNanos(unit.toNanos(time)) > 0
+```
+
+这个方法实际上是awaitNanos方法的一个变形，实际上的实现等价于：
+
+```java
+awaitNanos(unit.toNanos(time)) > 0
+```
+
+接下来是awaitUntil方法：
+
+```java
+ boolean awaitUntil(Date deadline) throws InterruptedException;
+```
+
+一种典型的使用：
+
+```java
+ boolean aMethod(Date deadline) {
+   boolean stillWaiting = true;
+   lock.lock();
+   try {
+     while (!conditionBeingWaitedFor()) {
+       if (!stillWaiting)
+         return false;
+       stillWaiting = theCondition.awaitUntil(deadline);
+     }
+     // ...
+   } finally {
+     lock.unlock();
+   }
+ }
+```
+
+以上都是针对于await方法的一些变形和衍生，本质上并没有什么差别。
+
+接下来是signal方法：
+
+```java
+    void signal();
+```
+
+方法的说明：
+
+```txt
+Wakes up one waiting thread.
+If any threads are waiting on this condition then one is selected for waking up. That thread must then re-acquire the lock 
+before returning from await.
+```
+
+该方法用于唤醒一个等待的线程，如果有多个线程在condition上等待，那么就会选择其中的一个进行唤醒，在返回await方法之前，被唤醒的线程必须获取到lock，而具体唤醒哪一个线程取决于具体的实现。
+
+最后是signalAll方法：
+
+```java
+void signalAll();
+```
+
+方法的说明：
+
+```txt
+Wakes up all waiting threads.
+If any threads are waiting on this condition then they are all woken up. Each thread must re-acquire the lock before it can return from await.
+```
+
+该方法会唤醒所有处于等待状态的线程，如果有多个线程在condition上等待，那么它们都会被唤醒。每个线程都要获取到lcok才能从awit方法返回。
+
+### Condition实践

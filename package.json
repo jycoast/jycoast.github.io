@@ -17,6 +17,6 @@
     "vuepress": "1.5.3",
     "vuepress-plugin-code-copy": "^1.0.6",
     "vuepress-plugin-flowchart": "1.4.3",
-    "vuepress-theme-reco": "1.5.5"
+    "vuepress-theme-reco": "1.6.0"
   }
 }
