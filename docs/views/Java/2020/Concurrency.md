@@ -16,6 +16,18 @@ author: jyc
 
 # 并发编程基础
 
+
+
+## Java并发编程
+
+在正式开始并发编程的基础内容的学习之前，有必要讨论两个核心的问题，第一是什么是并发编程，第二为什么要学习并发编程。
+
+## 线程简介
+
+在讨论什么是线程前有必要先说下什么是进程，因为线程是进程中的一个实体，线程本身是不会独立存在的。
+进程是代码在数据集合上的一次运行活动，是系统进行资源分配和调度的基本单位，线程则是进程一个执行路径，一个
+进程中至少有一个线程，进程中的多个线程共享进程的资源。
+
 ## Thread和Runnable
 
 Thread类和Runnable接口无疑是了解Java并发编程的入口，Thread类本身是实现了Runnable接口的：
@@ -1852,10 +1864,6 @@ public class MyTest6 {
 
 这种情况下就发生了：锁粗化，JIT编译器在执行动态编译时，若发现前后相邻的synchronized块使用的是同一个锁对象，那么它就会把这几个synchronized块合并为一个较大的同步块，这样做的好处在于线程在执行这些代码的时候，就无需频繁的申请与释放锁了，从而达到申请与释放锁一次，就可以执行完全部的同步代码块，从而提升了性能。
 
-# concurrent包
-
-## Lock
-
 ### 死锁及死锁检测
 
 - 死锁：线程1等待线程2互斥持有的资源，而线程2也在等待线程1互斥持有的资源，两个线程都无法继续执行；
@@ -2087,6 +2095,10 @@ Java stack information for the threads listed above:
 
 Found 1 deadlock.
 ```
+
+# concurrent并发包
+
+## Lock
 
 ### 锁的机制与原理
 
@@ -2811,3 +2823,139 @@ If any threads are waiting on this condition then they are all woken up. Each th
 该方法会唤醒所有处于等待状态的线程，如果有多个线程在condition上等待，那么它们都会被唤醒。每个线程都要获取到lcok才能从awit方法返回。
 
 ### Condition实践
+
+Thread.sleep与await（或是Object的wait方法）的本质区别：sleep方法本质上不会释放锁，而await会释放锁，并且在signal后，还需要重新获取到锁才能继续执行（该行为与Object的wait方法完全一致）。
+
+接下来我们通过一个具体的例子来了解Condition的使用。
+
+```java
+class BoundedContainer {
+
+    private String[] elements = new String[10];
+
+    private Lock lock = new ReentrantLock();
+
+    private Condition notEmptyCondition = lock.newCondition();
+
+    private Condition notFullCondition = lock.newCondition();
+
+    // 数组中已有元素的数量
+    private int elementCount;
+
+    // 放置元素索引
+    private int putIndex;
+
+    // 提取元素索引
+    private int takeIndex;
+
+    /**
+     * 放置元素的方法
+     * @param element 需要放置的目标元素
+     * @throws Exception
+     */
+    public void put(String element) throws Exception{
+        this.lock.lock();
+        try {
+            while (this.elementCount == this.elements.length) {
+                notFullCondition.await();
+            }
+            elements[putIndex] = element;
+
+            if (++putIndex == this.elements.length) {
+                putIndex = 0;
+            }
+            ++elementCount;
+            System.out.println("put method: " + Arrays.toString(elements));
+            notEmptyCondition.signal();
+        }finally {
+            this.lock.unlock();
+        }
+    }
+
+    /**
+     * 获取元素的方法
+     * @return 获取元素
+     * @throws Exception
+     */
+    public String take() throws Exception{
+        this.lock.lock();
+        try {
+            while (this.elementCount == 0) {
+                notEmptyCondition.await();
+            }
+            String element = elements[takeIndex];
+            elements[takeIndex] = null;
+            if (++takeIndex == this.elements.length) {
+                takeIndex = 0;
+            }
+            --elementCount;
+            System.out.println("take method: " + Arrays.asList(elements));
+            notFullCondition.signal();
+            return element;
+        } finally {
+            this.lock.unlock();
+        }
+    }
+}
+```
+
+编写入口类：
+
+```java
+public class MyTest1 {
+    public static void main(String[] args) {
+        BoundedContainer boundedContainer = new BoundedContainer();
+        IntStream.range(0, 10).forEach(i -> new Thread(() -> {
+            try {
+                boundedContainer.put("hello");
+            } catch (Exception exception) {
+                exception.printStackTrace();
+            }
+        }).start());
+
+        IntStream.range(0, 10).forEach(i -> new Thread(() -> {
+            try {
+                boundedContainer.take();
+            } catch (Exception exception) {
+                exception.printStackTrace();
+            }
+        }));
+    }
+}
+```
+
+控制台输出：
+
+```txt
+put method: [hello, null, null, null, null, null, null, null, null, null]
+put method: [hello, hello, null, null, null, null, null, null, null, null]
+put method: [hello, hello, hello, null, null, null, null, null, null, null]
+put method: [hello, hello, hello, hello, null, null, null, null, null, null]
+put method: [hello, hello, hello, hello, hello, null, null, null, null, null]
+put method: [hello, hello, hello, hello, hello, hello, null, null, null, null]
+put method: [hello, hello, hello, hello, hello, hello, hello, null, null, null]
+put method: [hello, hello, hello, hello, hello, hello, hello, hello, null, null]
+put method: [hello, hello, hello, hello, hello, hello, hello, hello, hello, null]
+put method: [hello, hello, hello, hello, hello, hello, hello, hello, hello, hello]
+take method: [null, hello, hello, hello, hello, hello, hello, hello, hello, hello]
+take method: [null, null, hello, hello, hello, hello, hello, hello, hello, hello]
+take method: [null, null, null, hello, hello, hello, hello, hello, hello, hello]
+take method: [null, null, null, null, hello, hello, hello, hello, hello, hello]
+take method: [null, null, null, null, null, hello, hello, hello, hello, hello]
+take method: [null, null, null, null, null, null, hello, hello, hello, hello]
+take method: [null, null, null, null, null, null, null, hello, hello, hello]
+take method: [null, null, null, null, null, null, null, null, hello, hello]
+take method: [null, null, null, null, null, null, null, null, null, hello]
+take method: [null, null, null, null, null, null, null, null, null, null]
+```
+
+### Volatile关键字
+
+volatile本身的含义的是不稳定的意思，总体而言，volitle关键字主要有三方面的作用：
+
+1. 实现long/double类型变量的原子操作
+2. 防止指令重排序
+3. 实现变量的可变性
+
+
+
