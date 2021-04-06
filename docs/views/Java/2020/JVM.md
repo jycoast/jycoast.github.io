@@ -1,6 +1,6 @@
 ---
 title: 深入理解JVM
-date: 2020-12-6
+date: 2020-12-06
 categories:
 - Java
 author: jyc

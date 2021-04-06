@@ -1,6 +1,6 @@
 ---
 title: 深入浅出Redis
-date: 2021-4-7
+date: 2021-04-07
 categories:
 - db
 author: jyc
