@@ -1159,10 +1159,10 @@
   optionalDependencies:
     prettier "^1.18.2"
 
-"@vuepress-reco/vuepress-plugin-back-to-top@^1.5.5":
-  version "1.5.5"
-  resolved "https://registry.npm.taobao.org/@vuepress-reco/vuepress-plugin-back-to-top/download/@vuepress-reco/vuepress-plugin-back-to-top-1.5.5.tgz#779e1f3ca22babe3568123760f53b0dc93869602"
-  integrity sha1-d54fPKIrq+NWgSN2D1Ow3JOGlgI=
+"@vuepress-reco/vuepress-plugin-back-to-top@^1.4.0":
+  version "1.6.0"
+  resolved "https://registry.yarnpkg.com/@vuepress-reco/vuepress-plugin-back-to-top/-/vuepress-plugin-back-to-top-1.6.0.tgz#16cf1a6844f156c11d5135c646270c6734263eb6"
+  integrity sha512-BCEv+d6UwNnI7njQx54XcsKdBvHKkp+JmyKnrxcRltyR8OAIW4qf1PQC0Ypp1GHMAL4fFgbUc9/eeAkvMPgYkg==
 
 "@vuepress-reco/vuepress-plugin-comments@^1.4.6":
   version "1.4.6"
@@ -3708,8 +3708,8 @@ feed@2.0.4:
 
 figgy-pudding@^3.5.1:
   version "3.5.2"
-  resolved "https://registry.npm.taobao.org/figgy-pudding/download/figgy-pudding-3.5.2.tgz#b4eee8148abb01dcf1d1ac34367d59e12fa61d6e"
-  integrity sha1-tO7oFIq7Adzx0aw0Nn1Z4S+mHW4=
+  resolved "https://registry.yarnpkg.com/figgy-pudding/-/figgy-pudding-3.5.2.tgz#b4eee8148abb01dcf1d1ac34367d59e12fa61d6e"
+  integrity sha512-0btnI/H8f2pavGMN8w40mlSKOfTK2SVJmBfBeVIj3kNw0swwgzyRq0d5TJVOwodFmtvpPeWPN/MCcfuWF0Ezbw==
 
 figures@^3.0.0:
   version "3.2.0"
@@ -7223,7 +7223,7 @@ slash@^2.0.0:
   resolved "https://registry.npm.taobao.org/slash/download/slash-2.0.0.tgz#de552851a1759df3a8f206535442f5ec4ddeab44"
   integrity sha1-3lUoUaF1nfOo8gZTVEL17E3eq0Q=
 
-smoothscroll-polyfill@^0.4.3, smoothscroll-polyfill@^0.4.4:
+smoothscroll-polyfill@^0.4.3:
   version "0.4.4"
   resolved "https://registry.npm.taobao.org/smoothscroll-polyfill/download/smoothscroll-polyfill-0.4.4.tgz#3a259131dc6930e6ca80003e1cb03b603b69abf8"
   integrity sha1-OiWRMdxpMObKgAA+HLA7YDtpq/g=
@@ -7391,9 +7391,9 @@ sshpk@^1.7.0:
     tweetnacl "~0.14.0"
 
 ssri@^6.0.1:
-  version "6.0.1"
-  resolved "https://registry.npm.taobao.org/ssri/download/ssri-6.0.1.tgz#2a3c41b28dd45b62b63676ecb74001265ae9edd8"
-  integrity sha1-KjxBso3UW2K2Nnbst0ABJlrp7dg=
+  version "6.0.2"
+  resolved "https://registry.yarnpkg.com/ssri/-/ssri-6.0.2.tgz#157939134f20464e7301ddba3e90ffa8f7728ac5"
+  integrity sha512-cepbSq/neFK7xB6A50KHN0xHDotYzq58wWCa5LeWqnPrHG8GzfEjO/4O8kpmcGW+oaxkvhEJCWgbgNk4/ZV93Q==
   dependencies:
     figgy-pudding "^3.5.1"
 
@@ -8361,19 +8361,12 @@ vuepress-plugin-smooth-scroll@^0.0.3:
   dependencies:
     smoothscroll-polyfill "^0.4.3"
 
-vuepress-plugin-smooth-scroll@^0.0.9:
-  version "0.0.9"
-  resolved "https://registry.npm.taobao.org/vuepress-plugin-smooth-scroll/download/vuepress-plugin-smooth-scroll-0.0.9.tgz#6c5d01db60def3d7b976b53404e56b97da9e8f39"
-  integrity sha1-bF0B22De89e5drU0BOVrl9qejzk=
+vuepress-theme-reco@1.5.3:
+  version "1.5.3"
+  resolved "https://registry.yarnpkg.com/vuepress-theme-reco/-/vuepress-theme-reco-1.5.3.tgz#937d7abcfd06c3caafef60198d9999da72d07377"
+  integrity sha512-kNsLvyuX+nkD/8sbbDBFHU5XKJlf8dz//HRZT1JALn047zliMwTe1wfsdmKseH9HQggyxD4kvcdPtruB2ezRdg==
   dependencies:
-    smoothscroll-polyfill "^0.4.4"
-
-vuepress-theme-reco@1.5.5:
-  version "1.5.5"
-  resolved "https://registry.npm.taobao.org/vuepress-theme-reco/download/vuepress-theme-reco-1.5.5.tgz#8ea5293991d0321e5f1e5e4dbbb6d94f4c8a7cc0"
-  integrity sha1-jqUpOZHQMh5fHl5Nu7bZT0yKfMA=
-  dependencies:
-    "@vuepress-reco/vuepress-plugin-back-to-top" "^1.5.5"
+    "@vuepress-reco/vuepress-plugin-back-to-top" "^1.4.0"
     "@vuepress-reco/vuepress-plugin-comments" "^1.4.6"
     "@vuepress-reco/vuepress-plugin-loading-page" "^1.4.0"
     "@vuepress-reco/vuepress-plugin-pagation" "^1.4.7"
@@ -8382,7 +8375,6 @@ vuepress-theme-reco@1.5.5:
     docsearch.js "2.6.3"
     md5 "2.2.1"
     vue-click-outside "1.1.0"
-    vuepress-plugin-smooth-scroll "^0.0.9"
 
 vuepress@1.5.3:
   version "1.5.3"
