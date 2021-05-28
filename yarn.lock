@@ -1159,10 +1159,10 @@
   optionalDependencies:
     prettier "^1.18.2"
 
-"@vuepress-reco/vuepress-plugin-back-to-top@^1.5.5":
-  version "1.5.5"
-  resolved "https://registry.npm.taobao.org/@vuepress-reco/vuepress-plugin-back-to-top/download/@vuepress-reco/vuepress-plugin-back-to-top-1.5.5.tgz#779e1f3ca22babe3568123760f53b0dc93869602"
-  integrity sha1-d54fPKIrq+NWgSN2D1Ow3JOGlgI=
+"@vuepress-reco/vuepress-plugin-back-to-top@^1.4.0":
+  version "1.6.0"
+  resolved "https://registry.yarnpkg.com/@vuepress-reco/vuepress-plugin-back-to-top/-/vuepress-plugin-back-to-top-1.6.0.tgz#16cf1a6844f156c11d5135c646270c6734263eb6"
+  integrity sha512-BCEv+d6UwNnI7njQx54XcsKdBvHKkp+JmyKnrxcRltyR8OAIW4qf1PQC0Ypp1GHMAL4fFgbUc9/eeAkvMPgYkg==
 
 "@vuepress-reco/vuepress-plugin-comments@^1.4.6":
   version "1.4.6"
@@ -3189,9 +3189,9 @@ dns-equal@^1.0.0:
   integrity sha1-s55/HabrCnW6nBcySzR1PEfgZU0=
 
 dns-packet@^1.3.1:
-  version "1.3.1"
-  resolved "https://registry.npm.taobao.org/dns-packet/download/dns-packet-1.3.1.tgz#12aa426981075be500b910eedcd0b47dd7deda5a"
-  integrity sha1-EqpCaYEHW+UAuRDu3NC0fdfe2lo=
+  version "1.3.4"
+  resolved "https://registry.yarnpkg.com/dns-packet/-/dns-packet-1.3.4.tgz#e3455065824a2507ba886c55a89963bb107dec6f"
+  integrity sha512-BQ6F4vycLXBvdrJZ6S3gZewt6rcrks9KBgM9vrhW+knGRqc8uEdT7fuCwloc7nny5xNoMJ17HGH0R/6fpo8ECA==
   dependencies:
     ip "^1.1.0"
     safe-buffer "^5.0.1"
@@ -7223,7 +7223,7 @@ slash@^2.0.0:
   resolved "https://registry.npm.taobao.org/slash/download/slash-2.0.0.tgz#de552851a1759df3a8f206535442f5ec4ddeab44"
   integrity sha1-3lUoUaF1nfOo8gZTVEL17E3eq0Q=
 
-smoothscroll-polyfill@^0.4.3, smoothscroll-polyfill@^0.4.4:
+smoothscroll-polyfill@^0.4.3:
   version "0.4.4"
   resolved "https://registry.npm.taobao.org/smoothscroll-polyfill/download/smoothscroll-polyfill-0.4.4.tgz#3a259131dc6930e6ca80003e1cb03b603b69abf8"
   integrity sha1-OiWRMdxpMObKgAA+HLA7YDtpq/g=
@@ -8361,19 +8361,12 @@ vuepress-plugin-smooth-scroll@^0.0.3:
   dependencies:
     smoothscroll-polyfill "^0.4.3"
 
-vuepress-plugin-smooth-scroll@^0.0.9:
-  version "0.0.9"
-  resolved "https://registry.npm.taobao.org/vuepress-plugin-smooth-scroll/download/vuepress-plugin-smooth-scroll-0.0.9.tgz#6c5d01db60def3d7b976b53404e56b97da9e8f39"
-  integrity sha1-bF0B22De89e5drU0BOVrl9qejzk=
+vuepress-theme-reco@1.5.3:
+  version "1.5.3"
+  resolved "https://registry.yarnpkg.com/vuepress-theme-reco/-/vuepress-theme-reco-1.5.3.tgz#937d7abcfd06c3caafef60198d9999da72d07377"
+  integrity sha512-kNsLvyuX+nkD/8sbbDBFHU5XKJlf8dz//HRZT1JALn047zliMwTe1wfsdmKseH9HQggyxD4kvcdPtruB2ezRdg==
   dependencies:
-    smoothscroll-polyfill "^0.4.4"
-
-vuepress-theme-reco@1.5.5:
-  version "1.5.5"
-  resolved "https://registry.npm.taobao.org/vuepress-theme-reco/download/vuepress-theme-reco-1.5.5.tgz#8ea5293991d0321e5f1e5e4dbbb6d94f4c8a7cc0"
-  integrity sha1-jqUpOZHQMh5fHl5Nu7bZT0yKfMA=
-  dependencies:
-    "@vuepress-reco/vuepress-plugin-back-to-top" "^1.5.5"
+    "@vuepress-reco/vuepress-plugin-back-to-top" "^1.4.0"
     "@vuepress-reco/vuepress-plugin-comments" "^1.4.6"
     "@vuepress-reco/vuepress-plugin-loading-page" "^1.4.0"
     "@vuepress-reco/vuepress-plugin-pagation" "^1.4.7"
@@ -8382,7 +8375,6 @@ vuepress-theme-reco@1.5.5:
     docsearch.js "2.6.3"
     md5 "2.2.1"
     vue-click-outside "1.1.0"
-    vuepress-plugin-smooth-scroll "^0.0.9"
 
 vuepress@1.5.3:
   version "1.5.3"
