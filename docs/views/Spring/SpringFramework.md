@@ -177,7 +177,7 @@ Spring使得你的应用开发变的更容易，它可以提供任何你想要�
 
 待定...
 
-# IoC
+# IoC简介
 
 ## IoC的发展简介
 
@@ -311,3 +311,1115 @@ java.beans.PropertyDescriptor[name=name; propertyType=class java.lang.String; re
 Spring官方推荐使用构造器注入，这样可以确保在注入时，对象不为空，但是参数过多时会影响代码的整洁性，可能需要考虑重构。
 
 Setter注入应该主要仅用于我们的可选性的注入，因为Setter的字段本身是可以为空的。
+
+而《J2EE Development without EJB》认为应该使用Setter注入，原因在于：
+
+1. JavaBean属性能够获取更好的IDE支持
+2. JavaBean属性通常是一个自文档的说明
+3. 在类型转换上有优势
+4. 大量的JavaBeans可能不经过任何修改就可以在JavaBean容器当中使用
+
+当然，Setter注入也有缺点，就是无法确定属性初始化的顺序。
+
+## 面试题
+
+### 什么是IoC？
+
+简单地说，IoC是反转控制，类似于好莱坞原则，主要有依赖查找和依赖注入两种实现。按照IoC的定义，很多方面其实都是IoC，比如JavaBeans是IoC的一个容器实现，Servlet的容器也是IoC的实现，因为Servlet可以去依赖或者反向地通过JNDI的方式进行得到一些外部的一些资源，包括DataSource或者相关的EJB的组件，于此同时SpringFramework或者Peak Container的依赖注入的框架，也能帮助我们去实现IoC，除此之外，消息也可以看作是IoC的一种实现。
+
+### 依赖查找和依赖注入的区别？
+
+依赖查找是主动或手动的依赖查找方式，通常需要依赖容器或标准API实现。而依赖注入则是手动或自动依赖绑定的方式，无需依赖特定的容器和API。
+
+### Spring作为IoC容器有什么优势？
+
+典型的IoC管理，依赖查找和依赖注入，AOP抽象，事务抽象，事件机制，SPI扩展，强大的第三方整合，易测试性，更好的面向对象。
+
+# IoC实践
+
+## Spring IoC依赖查找
+
+1. 根据Bean名称查找
+	- 实时查找
+	- 延迟查找
+2. 根据Bean类型查找
+	- 单个Bean对象
+	- 集合Bean对象
+3. 根据Bean名称+类型查找
+4. 根据Java注解查找
+
+新建一个用户类：
+
+```java
+/**
+ * 用户类
+ */
+public class User {
+    private String id;
+
+    private String name;
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "id='" + id + '\'' +
+                ", name='" + name + '\'' +
+                '}';
+    }
+}
+```
+
+新建一个超级用户类：
+
+```java
+/**
+ * 超级用户
+ */
+@Super
+public class SuperUser extends User{
+
+    private String address;
+
+    public String getAddress() {
+        return address;
+    }
+
+    @Override
+    public String toString() {
+        return "SuperUser{" +
+                "address='" + address + '\'' +
+                "} " + super.toString();
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+}
+```
+
+新建一个注解：
+
+```java
+/**
+ * 超级
+ */
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface Super {
+}
+
+```
+
+向容器中注入一些Bean：
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <bean id="user" class="org.jyc.thinking.in.spring.ioc.overview.dependency.domain.User">
+        <property name="id" value="1"/>
+        <property name="name" value="吉永超" />
+    </bean>
+
+    <bean id="SuperUser" class="org.jyc.thinking.in.spring.ioc.overview.dependency.domain.SuperUser" parent="user" primary="true">
+        <property name="address" value="深圳" />
+    </bean>
+
+    <bean id="objectFactory" class="org.springframework.beans.factory.config.ObjectFactoryCreatingFactoryBean">
+        <property name="targetBeanName" value="user"></property>
+    </bean>
+</beans>
+```
+
+依赖查找的示例：
+
+```java
+public class DependencyLookupDemo {
+    public static void main(String[] args) {
+        // 配置XML文件
+        // 启动Spring应用上下文
+        BeanFactory beanFactory = new ClassPathXmlApplicationContext("META-INF/dependency-lookup-context.xml");
+        // 实时查找
+        lookupInRealTime(beanFactory);
+        // 延迟查找
+        lookupInLazy(beanFactory);
+        // 按照类型查找
+        lookupByType(beanFactory);
+        // 按照类型查找集合对象
+        lookupCollectionType(beanFactory);
+        // 通过注解查找
+        lookupByAnnotationType(beanFactory);
+    }
+
+    /**
+     * 通过注解查找
+     * @param beanFactory
+     */
+    private static void lookupByAnnotationType(BeanFactory beanFactory) {
+        if (beanFactory instanceof ListableBeanFactory) {
+            ListableBeanFactory listableBeanFactory = (ListableBeanFactory) beanFactory;
+            Map<String, User> users = (Map)listableBeanFactory.getBeansWithAnnotation(Super.class);
+            System.out.println("查找到的所有标注@Super的User集合对象：" + users);
+        }
+    }
+
+    /**
+     * 按照类型查找集合对象
+     * @param beanFactory
+     */
+    private static void lookupCollectionType(BeanFactory beanFactory) {
+        if (beanFactory instanceof ListableBeanFactory) {
+            ListableBeanFactory listableBeanFactory = (ListableBeanFactory) beanFactory;
+            Map<String, User> users = listableBeanFactory.getBeansOfType(User.class);
+            System.out.println("查找到的所有的User集合对象：" + users);
+        }
+    }
+
+    /**
+     * 按照类型查找
+     * @param beanFactory
+     */
+    private static void lookupByType(BeanFactory beanFactory) {
+        User user = beanFactory.getBean(User.class);
+        System.out.println("按照类型查找 " + user);
+
+    }
+
+    /**
+     * 延迟查找
+     *
+     * @param beanFactory
+     */
+    private static void lookupInLazy(BeanFactory beanFactory) {
+        ObjectFactory<User> objectFactory = (ObjectFactory<User>) beanFactory.getBean("objectFactory");
+        User user = objectFactory.getObject();
+        System.out.println("延迟查找 " + user);
+    }
+
+    /**
+     * 实时查找
+     *
+     * @param beanFactory
+     */
+    private static void lookupInRealTime(BeanFactory beanFactory) {
+        User user = (User) beanFactory.getBean("user");
+        System.out.println("实时查找" + user);
+    }
+}
+```
+
+## Spring IoC依赖注入
+
+1. 根据Bean名称注入
+2. 根据Bean类型注入
+	- 单个Bean对象
+	- 集合Bean对象
+3. 注入容器内建的Bean对象
+4. 注入非Bean对象
+5. 注入类型
+	- 实时注入
+	- 延迟注入
+
+```java
+/**
+ * 用户信息仓库
+ */
+public class UserRespository {
+
+    private Collection<User> users; // 自定义Bean
+
+    private BeanFactory beanFactory; //内建的非Bean对象（对象）
+
+    private ObjectFactory<ApplicationContext> objectFactory;
+
+    public Collection<User> getUsers() {
+        return users;
+    }
+
+    public void setUsers(Collection<User> users) {
+        this.users = users;
+    }
+
+    public void setBeanFactory(BeanFactory beanFactory) {
+        this.beanFactory = beanFactory;
+    }
+
+    public ObjectFactory<ApplicationContext> getObjectFactory() {
+        return objectFactory;
+    }
+
+    public void setObjectFactory(ObjectFactory<ApplicationContext> objectFactory) {
+        this.objectFactory = objectFactory;
+    }
+
+    public BeanFactory getBeanFactory() {
+        return beanFactory;
+    }
+}
+```
+
+定义一个类似的资源：
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <!-- 通过导入复用   -->
+    <import resource="dependency-lookup-context.xml" />
+
+    <!--   Auto-wiring     -->
+    <bean id="userRespository" class="org.jyc.thinking.in.spring.ioc.overview.dependency.repository.UserRespository" autowire="byType">
+        <!--   手动配置     -->
+<!--        <property name="users">-->
+<!--            <util:list>-->
+<!--                <ref bean="user"></ref>-->
+<!--                <ref bean="SuperUser"></ref>-->
+<!--            </util:list>-->
+<!--        </property>-->
+    </bean>
+</beans>
+```
+
+测试：
+
+```java
+public class DependencyInjectionDemo {
+    public static void main(String[] args) {
+        // 配置XML文件
+        // 启动Spring应用上下文
+        BeanFactory beanFactory = new ClassPathXmlApplicationContext("META-INF/dependency-injection-context.xml");
+
+        UserRespository userRespository = beanFactory.getBean("userRespository", UserRespository.class);
+//        System.out.println(userRespository.getUsers());
+        System.out.println(userRespository.getBeanFactory());
+//        System.out.println(userRespository.getBeanFactory() == beanFactory);
+        ObjectFactory<ApplicationContext> userFactory = userRespository.getObjectFactory();
+        System.out.println(userFactory.getObject() == beanFactory);
+
+    }
+}
+```
+
+对比结果可以发现依赖查找和依赖注入的来源并不一样。
+
+## Spring依赖注入和依赖查找的来源
+
+1. 自定义Bean
+2. 容器内建Bean对象
+3. 容器内建依赖
+
+```java
+public class DependencyInjectionDemo {
+    public static void main(String[] args) {
+        // 配置XML文件
+        // 启动Spring应用上下文
+        BeanFactory beanFactory = new ClassPathXmlApplicationContext("META-INF/dependency-injection-context.xml");
+        // 自定义的Bean
+        UserRespository userRespository = beanFactory.getBean("userRespository", UserRespository.class);
+        // 依赖注入（内建依赖）
+        System.out.println(userRespository.getBeanFactory());
+        // 容器内建Bean对象
+        Environment environment = beanFactory.getBean(Environment.class);
+
+        System.out.println("获取Enviroment类型的Bean" + environment);
+
+    }
+}
+```
+
+## Spring IoC配置元信息
+
+1. Bean定义配置
+	- 基于XML文件
+	- 基于Properties文件
+	- 基于Java注解
+	- 基于Java API（专题讨论）
+2. IoC容器配置
+	- 基于XML文件
+	- 基于Java注解
+	- 基于Java API（专题讨论）
+3. 外部化属性配置
+	- 基于Java注解
+
+## BeanFactory和ApplicationContext
+
+BeanFactory和ApplicationContext谁才是Spring IoC容器？
+
+BeanFactory是一个具有基本功能的框架，而ApplicationContext添加了更多企业级的特性，总而言之，ApplicationContext是BeanFactory的超集，并且在实现上，ApplicationContext虽然继承了BeanFactory接口，但内部的BeanFactory是采用组合的方式进行的实现，默认的实现类为DefaultListableBeanFactory。
+
+ApplicationContext除了IoC容器角色，还有提供：
+
+- 面向切面（AOP）
+- 配置元信息（Configuration Metadata）
+- 资源管理（Resources）
+- 事件（Events）
+- 国际化（i18n）
+- 注解（Annotations）
+- Environment抽象（Environment Abstraction）
+
+BeanFactory的IoC容器的使用：
+
+```java
+/**
+ * BeanFactory作为IoC容器示例
+ */
+public class BeanFactoryAsIoCContainerDemo {
+    public static void main(String[] args) {
+        // 创建BeanFactory容器
+        DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
+        // 加载配置
+        XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(beanFactory);
+        // XML配置文件ClassPath路径
+        String location = "classpath:/META-INF/dependency-lookup-context.xml";
+        // 加载配置
+        int beanDefinitions = reader.loadBeanDefinitions(location);
+        System.out.println("Bean定义加载的数量: " + beanDefinitions);
+        // 依赖查找集合对象....
+        lookupCollectionType(beanFactory);
+    }
+
+    /**
+     * 按照类型查找集合对象
+     * @param beanFactory
+     */
+    private static void lookupCollectionType(BeanFactory beanFactory) {
+        if (beanFactory instanceof ListableBeanFactory) {
+            ListableBeanFactory listableBeanFactory = (ListableBeanFactory) beanFactory;
+            Map<String, User> users = listableBeanFactory.getBeansOfType(User.class);
+            System.out.println("查找到的所有的User集合对象：" + users);
+        }
+    }
+}
+```
+
+Application的IoC容器使用：
+
+ ```java
+/**
+ * ApplicationA作为IoC容器示例
+ */
+public class AnnotationApplicationAsIoCContainerDemo {
+    public static void main(String[] args) {
+        // 创建BeanFactory容器
+        AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext();
+        applicationContext.register(AnnotationApplicationAsIoCContainerDemo.class);
+        applicationContext.refresh();
+        // 依赖查找集合对象....
+        lookupCollectionType(applicationContext);
+    }
+
+    @Bean
+    public User user() {
+        User user = new User();
+        user.setId("1");
+        user.setName("吉永超");
+        return user;
+    }
+
+    /**
+     * 按照类型查找集合对象
+     * @param beanFactory
+     */
+    private static void lookupCollectionType(BeanFactory beanFactory) {
+        if (beanFactory instanceof ListableBeanFactory) {
+            ListableBeanFactory listableBeanFactory = (ListableBeanFactory) beanFactory;
+            Map<String, User> users = listableBeanFactory.getBeansOfType(User.class);
+            System.out.println("查找到的所有的User集合对象：" + users);
+        }
+    }
+}
+ ```
+
+可以看到，使用BeanFactory和ApplicationContext都可以完成依赖查找的功能。
+
+## Spring IoC容器生命周期
+
+```java
+	public void refresh() throws BeansException, IllegalStateException {
+		synchronized (this.startupShutdownMonitor) {
+			StartupStep contextRefresh = this.applicationStartup.start("spring.context.refresh");
+
+			// Prepare this context for refreshing.
+			prepareRefresh();
+
+			// Tell the subclass to refresh the internal bean factory.
+			ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
+
+			// Prepare the bean factory for use in this context.
+			prepareBeanFactory(beanFactory);
+
+			try {
+				// Allows post-processing of the bean factory in context subclasses.
+				postProcessBeanFactory(beanFactory);
+
+				StartupStep beanPostProcess = this.applicationStartup.start("spring.context.beans.post-process");
+				// Invoke factory processors registered as beans in the context.
+				invokeBeanFactoryPostProcessors(beanFactory);
+
+				// Register bean processors that intercept bean creation.
+				registerBeanPostProcessors(beanFactory);
+				beanPostProcess.end();
+
+				// Initialize message source for this context.
+				initMessageSource();
+
+				// Initialize event multicaster for this context.
+				initApplicationEventMulticaster();
+
+				// Initialize other special beans in specific context subclasses.
+				onRefresh();
+
+				// Check for listener beans and register them.
+				registerListeners();
+
+				// Instantiate all remaining (non-lazy-init) singletons.
+				finishBeanFactoryInitialization(beanFactory);
+
+				// Last step: publish corresponding event.
+				finishRefresh();
+			}
+
+			catch (BeansException ex) {
+				if (logger.isWarnEnabled()) {
+					logger.warn("Exception encountered during context initialization - " +
+							"cancelling refresh attempt: " + ex);
+				}
+
+				// Destroy already created singletons to avoid dangling resources.
+				destroyBeans();
+
+				// Reset 'active' flag.
+				cancelRefresh(ex);
+
+				// Propagate exception to caller.
+				throw ex;
+			}
+
+			finally {
+				// Reset common introspection caches in Spring's core, since we
+				// might not ever need metadata for singleton beans anymore...
+				resetCommonCaches();
+				contextRefresh.end();
+			}
+		}
+	}
+```
+
+## 面试题
+
+### 什么是Spring IoC容器
+
+Spring Framework是IoC（控制反转）的一种具体的实现，主要包括了DI（dependency injection），和DL（dependency lookup）。
+
+### BeanFactory和FactoryBean
+
+BeanFactory是IoC底层容器，FactoryBean是创建Bean的一种方式，帮助实现复杂的初始化逻辑。
+
+### Spring IoC容器启动时做了哪些准备？
+
+IoC配置元信息读取和解析、IoC容器生命周期、Spring事件发布、国际化等。
+
+# Spring Bean基础
+
+## BeanDefinition
+
+BeanDefinition时Spring Framework中定义Bean配置元信息接口，包含：
+
+1. Bean的类名（必须是全限定类名）
+2. Bean行为配置元素，如作用域、自动绑定的模式、生命周期回调等
+3. 其他Bean引用，又可称合作者（collaborators）或者依赖（dependencies）
+4. 配置设置，比如Bean属性（Properties）
+
+BeanDefinition元信息
+
+| 属性（Property）         | 说明                                         |
+| ------------------------ | -------------------------------------------- |
+| Class                    | Bean全类名，必须是具体类，不能用抽象类或接口 |
+| Name                     | Bean的名称或者ID                             |
+| Scope                    | Bean的作用域（如：singleton、prototype等）   |
+| Constructor arguments    | Bean构造器参数（用于依赖注入）               |
+| Properties               | Bean属性设置（用于依赖注入）                 |
+| Autowiring mode          | Bean自动绑定模式（如：通过名称byName）       |
+| Lazy initialization mode | Bean延迟初始化模式（延迟和非延迟）           |
+| Initialization method    | Bean初始化回调方法名称                       |
+| Destruction method       | Bean销毁回调方法名称                         |
+
+BeanDefinition的构建方式
+
+1. 通过BeanDefinitionBuilder
+2. 通过AbstactBeanDefinition以及派生类
+
+```java
+/**
+ * BeanDefinition构建示例
+ */
+public class BeanDefinitionCreationDemo {
+    public static void main(String[] args) {
+        // 1.通过BeanDefinitionBuilder
+        BeanDefinitionBuilder beanDefinitionBuilder = BeanDefinitionBuilder.genericBeanDefinition(User.class);
+        // 通过属性设置
+        beanDefinitionBuilder.addPropertyValue("name","jyc");
+        beanDefinitionBuilder.addPropertyValue("age","1");
+        // 获取BeanDefinition实例
+        AbstractBeanDefinition beanDefinition = beanDefinitionBuilder.getBeanDefinition();
+        // BeanDefinition并非Bean的终态，可以自定义修改
+
+        // 2.通过AbstactBeanDefinition以及派生类
+        GenericBeanDefinition genericBeanDefinition = new GenericBeanDefinition();
+        // 设置Bean类型
+        genericBeanDefinition.setBeanClass(User.class);
+        // 通过MutablePropertyValues批量操作属性
+        MutablePropertyValues propertyValues = new MutablePropertyValues();
+        propertyValues.addPropertyValue("id","1");
+        propertyValues.addPropertyValue("name","jyc");
+        genericBeanDefinition.setPropertyValues(propertyValues);
+    }
+}
+```
+
+## Spring Bean命名
+
+什么是Bean的名称？
+
+每个Bean拥有一个或多个标识符（identifiers），这些标识符在Bean所在的容器必须是唯一的。通常，一个Bean仅有一个标识符，如果需要额外的，可考虑使用别名（Alias）来扩充。
+
+在基于XML的配置元信息中，开发人员可用id或者name属性来规定Bean的标识符。通常Bean的标识符由字母组成，允许出现特殊字符，如果要想映入新的Bean的别名的话，可在name属性使用半角逗号（“,”）或分号（“;”）来间隔。
+
+Bean的id或name属性并非必须制定，如果留空的话，容器回味Bean自动生成一个唯一的名称。Bean的名称尽管没有限制，不过官方建议采用驼峰的方式，更符合Java的命名约定。
+
+Bean名称生成器（BeanNameGenerator）主要有两种实现：
+
+1. DefaultBeanNameGenerator（默认通用BeanNameGenerator实现）
+2. AnnotationBeanNameGenerator
+
+默认实现的核心代码：
+
+```java
+	public static String generateBeanName(
+			BeanDefinition definition, BeanDefinitionRegistry registry, boolean isInnerBean)
+			throws BeanDefinitionStoreException {
+
+		String generatedBeanName = definition.getBeanClassName();
+		if (generatedBeanName == null) {
+			if (definition.getParentName() != null) {
+				generatedBeanName = definition.getParentName() + "$child";
+			}
+			else if (definition.getFactoryBeanName() != null) {
+				generatedBeanName = definition.getFactoryBeanName() + "$created";
+			}
+		}
+		if (!StringUtils.hasText(generatedBeanName)) {
+			throw new BeanDefinitionStoreException("Unnamed bean definition specifies neither " +
+					"'class' nor 'parent' nor 'factory-bean' - can't generate bean name");
+		}
+
+		if (isInnerBean) {
+			// Inner bean: generate identity hashcode suffix.
+			return generatedBeanName + GENERATED_BEAN_NAME_SEPARATOR + ObjectUtils.getIdentityHexString(definition);
+		}
+
+		// Top-level bean: use plain class name with unique suffix if necessary.
+		return uniqueBeanName(generatedBeanName, registry);
+	}
+```
+
+如果是简单场景的Bean的名称：
+
+```java
+	public static String uniqueBeanName(String beanName, BeanDefinitionRegistry registry) {
+		String id = beanName;
+		int counter = -1;
+
+		// Increase counter until the id is unique.
+		String prefix = beanName + GENERATED_BEAN_NAME_SEPARATOR;
+		while (counter == -1 || registry.containsBeanDefinition(id)) {
+			counter++;
+			id = prefix + counter;
+		}
+		return id;
+	}
+```
+
+注解实现的核心源代码：
+
+```java
+@Override
+	public String generateBeanName(BeanDefinition definition, BeanDefinitionRegistry registry) {
+		if (definition instanceof AnnotatedBeanDefinition) {
+			String beanName = determineBeanNameFromAnnotation((AnnotatedBeanDefinition) definition);
+			if (StringUtils.hasText(beanName)) {
+				// Explicit bean name found.
+				return beanName;
+			}
+		}
+		// Fallback: generate a unique default bean name.
+		return buildDefaultBeanName(definition, registry);
+	}
+```
+
+如果是一个普通的Bean就会调用Java Beans的API：
+
+```java
+	protected String buildDefaultBeanName(BeanDefinition definition) {
+		String beanClassName = definition.getBeanClassName();
+		Assert.state(beanClassName != null, "No bean class name set");
+		String shortClassName = ClassUtils.getShortName(beanClassName);
+		return Introspector.decapitalize(shortClassName);
+	}
+```
+
+Bean别名（Alias）的价值：
+
+1. 复用现有的BeanDefinition
+
+2. 更具有场景化的命名方法，比如：
+
+	```xml
+	<alias name="myApp-dataSource" alias="subsystemA-datasource" />
+	<alias name="myApp-dataSource" alias="subsystemB-datasource" />
+	```
+
+## BeanDefinition注册到IoC容器
+
+BeanDefinition注册的不同方式：
+
+1. XML配置元信息
+	- <bean name ="..." ... />
+2. Java注解配置元信息
+	- @Bean
+	- @Component
+	- @import
+3. Java API配置元信息
+	- 命名方式：BeanDefinitionRegistry#registerBeanDefinition（String，BeanDefinition）
+	- 非命名方式：BeanDefinitionReaderUtils#registerWithGeneratedName(AbstractBeanDefinition，BeanDefinitionRegistry)
+	- 配置类方式：AnnotatedBeanDefinitionReader#register（Class）
+
+通过Java注解配置元信息：
+
+```java
+/**
+ * 注解BeanDefinition示例
+ */
+@Import(AnnotationBeanDefinitionDemo.Config.class) // 3.通过@Import方式导入
+public class AnnotationBeanDefinitionDemo {
+
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext();
+        // 注册配置类（configuration class）
+        applicationContext.register(AnnotationBeanDefinitionDemo.class);
+        applicationContext.refresh();
+        System.out.println("Config类型的所有的Beans" + applicationContext.getBeansOfType(Config.class));
+        System.out.println("user类型的所有的Beans" + applicationContext.getBeansOfType(User.class));
+        applicationContext.close();
+    }
+
+    // 2.通过Component方式
+    @Component //定义当前类作为Spring Bean（组件）
+    public static class Config {
+        // 1.通过@Bean方式定义
+        @Bean({"user", "jyc"})
+        public User user() {
+            User user = new User();
+            user.setId("1");
+            user.setName("吉永超");
+            return user;
+        }
+    }
+}
+```
+
+Java API配置元信息：
+
+```java
+/**
+     * 命名Bean的注册方式
+     *  @param registry
+     * @param beanName
+     */
+    public static void registerUserBeanDefinition(BeanDefinitionRegistry registry, String beanName) {
+        BeanDefinitionBuilder beanDefinitionBuilder = BeanDefinitionBuilder.genericBeanDefinition(User.class);
+        beanDefinitionBuilder.addPropertyValue("id", "1").addPropertyValue("name", "jiyongchao");
+        // 判断如果beanName参数存在时
+        if (StringUtils.hasText(beanName)) {
+            registry.registerBeanDefinition(beanName, beanDefinitionBuilder.getBeanDefinition());
+        } else {
+            // 非命名的Bean注册方法
+            BeanDefinitionReaderUtils.registerWithGeneratedName(beanDefinitionBuilder.getBeanDefinition(), registry);
+        }
+    }
+```
+
+## 实例化Bean的方式
+
+Bean实例化：
+
+1. 常规方式
+
+	- 通过构造器（配置元信息：XML、Java注解和Java API）
+	- 通过静态工厂方法（配置元信息：XML和Java API）
+	- 通过Bean工厂方法（配置元信息：XML和Java API）
+	- 通过FactoryBean（配置元信息：XML、Java注解和Java API）
+
+2. 特殊方式
+
+	- 通过ServiceLoaderFactoryBean（配置元信息：XML、Java注解和Java API）
+	- 通过AutowireCapableBeanFactory#createBean（java.lang.Class，int，boolean）
+	- 通过BeanDefinitionResgistry#registerBeanDefinition（String，BeanDefinition）
+
+	常规方式实例化的示例：
+
+	```xml
+	<beans xmlns="http://www.springframework.org/schema/beans"
+	       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+	
+	    <!--  静态方法实例化Bean  -->
+	    <bean id="user-by-static-method" class="org.jyc.thinking.in.spring.ioc.overview.dependency.domain.User" factory-method="createUser" />
+	    <!--  实例方法实例化Bean  -->
+	    <bean id="user-by-instance-method" factory-bean="userFactory" factory-method="createUser"/>
+	    <!--  Bean工厂实例化Bean  -->
+	    <bean id="userFactory" class="org.jyc.thinking.in.spring.bean.definition.factory.DefaultUserFactory" />
+	    <!--  FactoryBean实例化Bean  -->
+	    <bean id="user-by-factory-bean" class="org.jyc.thinking.in.spring.bean.definition.factory.UserFactoryBean"/>
+	</beans>
+	```
+
+	其中UserFactoryBean为：
+
+	```java
+	/**
+	 * User Bean的FactoryBean的实现
+	 */
+	public class UserFactoryBean implements FactoryBean {
+	    @Override
+	    public Object getObject() throws Exception {
+	        return new User();
+	    }
+	
+	    @Override
+	    public Class<?> getObjectType() {
+	        return null;
+	    }
+	}
+	```
+
+	测试输出：
+
+	```java
+	/**
+	 * Bean实例化示例
+	 */
+	public class BeanInstantiationDemo {
+	    public static void main(String[] args) {
+	        BeanFactory beanFactory = new ClassPathXmlApplicationContext("classpath:/META-INF/bean-instantiation-context.xml");
+	        User user = beanFactory.getBean("user-by-static-method", User.class);
+	        User userByInstanceMethod = beanFactory.getBean("user-by-instance-method", User.class);
+	        User userByFactoryBean = beanFactory.getBean("user-by-instance-method", User.class);
+	        System.out.println(user);
+	        System.out.println(userByInstanceMethod);
+	        System.out.println(userByFactoryBean);
+	
+	        System.out.println(user == userByInstanceMethod);
+	        System.out.println(user == userByFactoryBean);
+	    }
+	}
+	```
+
+	特殊方式的示例：
+
+	```xml
+	<?xml version="1.0" encoding="UTF-8"?>
+	<beans xmlns="http://www.springframework.org/schema/beans"
+	       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+	
+	    <bean id="userFactoryServiceLoader" class="org.springframework.beans.factory.serviceloader.ServiceLoaderFactoryBean" >
+	        <property name="serviceType" value="org.jyc.thinking.in.spring.bean.definition.factory.UserFactory" />
+	    </bean>
+	</beans>
+	```
+
+	测试输出：
+
+	```java
+	public class SpecialBeanInstantiationDemo {
+	    public static void main(String[] args) {
+	        BeanFactory beanFactory = new ClassPathXmlApplicationContext("classpath:/META-INF/special-bean-instantiation-context.xml");
+	        ServiceLoader serviceLoader = beanFactory.getBean("userFactoryServiceLoader", ServiceLoader.class);
+	        displayServiceLoader(serviceLoader);
+	        demoServiceLoader();
+	    }
+	    public static void demoServiceLoader() {
+	        ServiceLoader<UserFactory> serviceLoader = ServiceLoader.load(UserFactory.class, Thread.currentThread().getContextClassLoader());
+	        displayServiceLoader(serviceLoader);
+	    }
+	
+	    private static void displayServiceLoader(ServiceLoader<UserFactory> serviceLoader) {
+	        Iterator<UserFactory> iterator = serviceLoader.iterator();
+	        while (iterator.hasNext()) {
+	            UserFactory userFactory = iterator.next();
+	            System.out.println(userFactory.createUser());
+	        }
+	    }
+	}
+	```
+
+	通过AutowireCapableBeanFactory实例化：
+
+	```java
+	   public static void main(String[] args) {
+	        ApplicationContext applicationContext = new ClassPathXmlApplicationContext("classpath:/META-INF/special-bean-instantiation-context.xml");
+	        // 通过ApplicationContext获取AutowireCapableBeanFactory
+	        AutowireCapableBeanFactory beanFactory = applicationContext.getAutowireCapableBeanFactory();
+	        // 通过AutowireCapableBeanFactory创建UserFactory对象
+	        UserFactory userFactory = beanFactory.createBean(DefaultUserFactory.class);
+	        System.out.println(userFactory.createUser());
+	    }
+	```
+
+	## 初始化Bean的方式
+
+	
+
+	Bean的初始化（Initialization）：
+
+	1. @PostConstruct标注方法
+	2. 实现InitializingBean接口的afterPropertiesSet()方法
+	3. 自定义初始化方法
+		- XML配置：<bean init-method="init" ... />
+		- Java注解：@Bean(initMethod="init")
+		- Java API：AbstractBeanDefinition#setInitMethodName(String)
+
+
+
+初始化的示例：
+
+```java
+public class DefaultUserFactory implements UserFactory, InitializingBean {
+    // 1.基于@PostConstruct注解
+    @PostConstruct
+    public void init() {
+        System.out.println("@PostConstruct: UserFactory 初始化中....");
+    }
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        System.out.println("afterPropertiesSet: UserFactory 初始化中....");
+    }
+
+    public void initUserFactory() {
+        System.out.println("自定义初始化方法： initUserFactory： UserFactory 初始化中....");
+    }
+}
+```
+
+调用的结果：
+
+```java
+@Configuration
+public class BeanInitializationDemo {
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext();
+        applicationContext.register(BeanInitializationDemo.class);
+        applicationContext.refresh();
+        UserFactory userFactory = applicationContext.getBean(UserFactory.class);
+        applicationContext.close();
+
+    }
+
+    @Bean(initMethod = "initUserFactory")
+    public UserFactory userFactory() {
+        return new DefaultUserFactory();
+    }
+}
+```
+
+最终实际上都会调用的AbstractBeanDefinition的setInitMethodName
+
+```java
+	public void setInitMethodName(@Nullable String initMethodName) {
+		this.initMethodName = initMethodName;
+	}
+```
+
+三者的执行顺序：
+
+```java
+@PostConstruct: UserFactory 初始化中....
+afterPropertiesSet: UserFactory 初始化中....
+自定义初始化方法： initUserFactory： UserFactory 初始化中....
+```
+
+## 延迟初始化Bean
+
+Bean延迟初始化（Lazy Initialization）
+
+1. XML配置：<bean lazy-init="true" .../>
+2. Java注解：@Lazy(true)
+
+Spring容器返回的对象和非延迟的对象存在怎样的差异？
+
+非延迟初始化在Spring应用上下文启动完成后，被初始化。而延迟初始化是在依赖查找和依赖注入的时候才会进行初始化。
+
+## 销毁Bean
+
+Bean销毁（Destroy）
+
+1. @PreDestory标注方法
+2. 实现DisposableBean接口的destory()方法
+3. 自定义销毁方法
+	- XML配置：<bean destory="destory" .../>
+	- Java注解：@Bean(destory="destory")
+	- Java API: AbstractBeanDefinition#setDestoryMethodName(String)
+
+销毁的示例：
+
+```java
+public class DefaultUserFactory implements UserFactory, DisposableBean {
+
+    @PreDestroy
+    public void preDestory() {
+        System.out.println("@PreDestroy: UserFactory 销毁中....");
+    }
+
+    @Override
+    public void destroy() throws Exception {
+        System.out.println("DisposableBean#destroy: UserFactory 销毁中....");
+    }
+
+    public void doDestory() {
+        System.out.println("自定义销毁方法：doDestory()： UserFactory 销毁中....");
+    }
+}
+```
+
+调用的结果：
+
+```java
+public class BeanDestoryDemo {
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext();
+        applicationContext.register(BeanDestoryDemo.class);
+        applicationContext.refresh();
+        // 非延迟初始化在Spring应用上下文启动完成后，被初始化。
+        System.out.println("应用上下文已启动...");
+        UserFactory userFactory = applicationContext.getBean(UserFactory.class);
+        System.out.println(userFactory);
+        System.out.println("应用上下文准备关闭...");
+        applicationContext.close();
+        System.out.println("应用上下文已关闭...");
+    }
+
+    @Bean(destroyMethod = "doDestory")
+    public UserFactory userFactory() {
+        return new DefaultUserFactory();
+    }
+}
+
+```
+
+通过不同时机的打印，可以观察到Bean的销毁的时机就是在应用上下文关闭的时候。
+
+三者不同方式的执行结果：
+
+```java
+应用上下文已启动...
+应用上下文准备关闭...
+@PreDestroy: UserFactory 销毁中....
+DisposableBean#destroy: UserFactory 销毁中....
+自定义销毁方法：doDestory()： UserFactory 销毁中....
+应用上下文已关闭...
+```
+
+## 垃圾回收Spring Bean
+
+Bean垃圾回收（GC）
+
+1. 关闭Spring容器（应用上下文）
+2. 执行GC
+3. Spring Bean覆盖的finalize()方法被回调
+
+```java
+/**
+ * Bena垃圾回收的示例
+ */
+public class BeanGarbageCollectionDemo {
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext();
+        applicationContext.register(BeanInitializationDemo.class);
+        applicationContext.refresh();
+        applicationContext.close();
+        System.out.println("Spring 应用上下文已关闭");
+        // 强制触发GC
+        System.gc();
+    }
+}
+```
+
+这里我们重写了DefaultUserFactory中的finalize()方法：
+
+```java
+    @Override
+    protected void finalize() throws Throwable {
+        System.out.println("当前DefaultUserFactory 对象正在被垃圾回收");
+    }
+```
+
+## 面试题
+
+### 如何注册一个Spring Bean？
+
+通过BeanDefinition和外部单体对象来注册。
+
+```java
+/**
+ * 单体Bean注册示例
+ */
+public class SingletonBeanRegistrationDemo {
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext();
+        // 注册外部单例对象
+        UserFactory userFactory = new DefaultUserFactory();
+        // 创建一个外部UserFactory对象
+        ConfigurableListableBeanFactory beanFactory = applicationContext.getBeanFactory();
+        // 注册外部单例对象
+        beanFactory.registerSingleton("userFactory", userFactory);
+        applicationContext.refresh();
+        UserFactory userFactoryByLookup = beanFactory.getBean("userFactory", UserFactory.class);
+        System.out.println("userFactory == userFactoryByLookup: " + (userFactory == userFactoryByLookup));
+        applicationContext.close();
+    }
+}
+```
+
+### 什么是Spring BeanDefinition？
+
+BeanDefinition是关于Bean定义的元信息的接口，允许我们通过getter、setter方法方式来进行存储信息。
+
+### Spring容器是怎样管理注册Bean
+
+如IoC配置元信息读取和解析、依赖查找和注入以及Bean生命周期等。
+
+# Bean的依赖查找
+
