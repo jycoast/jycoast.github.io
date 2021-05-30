@@ -1421,5 +1421,400 @@ BeanDefinition是关于Bean定义的元信息的接口，允许我们通过gette
 
 如IoC配置元信息读取和解析、依赖查找和注入以及Bean生命周期等。
 
-# Bean的依赖查找
+# 依赖查找
+
+## 依赖查找简介
+
+1. 单一类型依赖查找
+	- JNDI - javax.naming.Context#lookup(javax.naming.Name)
+	- JavaBeans - java.beans.beancontext.BeanContext
+2. 集合类型依赖查找
+	- java.beans.beancontext.BeanContext
+3. 层次性依赖查找
+	- java.beans.beancontext.BeanContext
+
+## 单一类型依赖查找
+
+
+
+单一类型依赖查找接口-BeanFactory
+
+1. 根据Bean名称查找
+	- getBean(String)
+	- Spring 2.5 覆盖默认参数：getBean(String,Object...)
+2. 根据Bean类型查找
+	- Bean实时查找
+		- Spring 3.0 getBean(Class)
+		- Spring 4.1 覆盖默认参数：getBean(Class,Object...)
+	- Spring 5.1 Bean延迟查找
+		- getBeanProvider(Class)
+		- getBeanProvider(ResolvableType)
+3. 根据Bean名称 + 类型查找：getBean(String,Class) 
+
+利用ObejctProvider进行依赖查找：
+
+```java
+/**
+ * 通过ObjectProvider进行依赖查找
+ */
+public class ObejctProviderDemo { // @Configuration是非必须的注解
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext();
+        applicationContext.register(ObejctProviderDemo.class);
+        applicationContext.refresh();
+        lookupByObejctProvider(applicationContext);
+        applicationContext.close();
+    }
+
+    @Bean
+    public String helloworld() { // 方法名就是Bean名称 = “helloworld”
+        return "helloworld";
+    }
+
+    private static void lookupByObejctProvider(AnnotationConfigApplicationContext applicationContext) {
+        ObjectProvider<String> beanProvider = applicationContext.getBeanProvider(String.class);
+        System.out.println(beanProvider.getObject());
+    }
+}
+```
+
+## 集合类型依赖查找
+
+集合类型依赖查找接口-ListableBeanFactory
+
+1. 根据Bean类型查找
+	- 根据同类型Bean名称列表
+		- getBeanNamesForType（Class）
+		- Spring 4.2 getBeanNamesForType（ResolvableType）
+	- 获取同类型Bean实例列表
+		- getBeanOfType（Class）以及重载方法
+2. 通过注解类型查找
+	- Spring 3.0 获取标注类型Bean名称列表
+		- getBeanNamesForAnnotation（Class<? extends Annotation>）
+	- Spring 3.0 获取标注类型Bean实例列表
+		- getBeansWithAnnotation（Class<? extends Annotation>）
+	- Spring 3.0 获取指定名称 + 标注类型Bean 实例
+
+相关的示例实际上在之前就已经提到过了：
+
+```java
+  /**
+     * 通过注解查找
+     * @param beanFactory
+     */
+    private static void lookupByAnnotationType(BeanFactory beanFactory) {
+        if (beanFactory instanceof ListableBeanFactory) {
+            ListableBeanFactory listableBeanFactory = (ListableBeanFactory) beanFactory;
+            Map<String, User> users = (Map)listableBeanFactory.getBeansWithAnnotation(Super.class);
+            System.out.println("查找到的所有标注@Super的User集合对象：" + users);
+        }
+    }
+
+    /**
+     * 按照类型查找集合对象
+     * @param beanFactory
+     */
+    private static void lookupCollectionType(BeanFactory beanFactory) {
+        if (beanFactory instanceof ListableBeanFactory) {
+            ListableBeanFactory listableBeanFactory = (ListableBeanFactory) beanFactory;
+            Map<String, User> users = listableBeanFactory.getBeansOfType(User.class);
+            System.out.println("查找到的所有的User集合对象：" + users);
+        }
+    }
+```
+
+## 层次性依赖查找
+
+层次性依赖查找接口-HierachicalBeanFactory
+
+1. 双亲BeanFactory：getParentBeanFacotry
+2. 层次性查找：
+	- 根据Bean名称查找
+		- 基于containsLocalBean方法实现
+	- 根据Bean类型查找实例列表
+		- 单一类型：BeanFactoryUtils#beanOfType
+		- 集合类型BeanFactoryUtils#beanOfTypeIncludingAncestors
+	- 根据Java注解查找名称列表
+		- BeanFactoryUtils#beanNamesForTypeIncludingAncestors
+
+## 延迟依赖查找
+
+Bean延迟依赖查找接口
+
+1. org.springframework.beans.factory.ObjectFactory
+2. org.springframwork.beans.factory.ObjecyProvider
+	- Spring 5 对Java8特性扩展
+		- 函数式接口
+			- getIfAvailable(Supplier)
+			- ifAvailable(Consumer)
+		- Stream扩展-stream()
+
+相关示例：
+
+```java
+public class ObejctProviderDemo { // @Configuration是非必须的注解
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext();
+        applicationContext.register(ObejctProviderDemo.class);
+        applicationContext.refresh();
+        lookupByObejctProvider(applicationContext);
+        lookupIfAvailable(applicationContext);
+        lookupByStreamOps(applicationContext);
+        applicationContext.close();
+    }
+
+    private static void lookupByStreamOps(AnnotationConfigApplicationContext applicationContext) {
+        ObjectProvider<String> beanProvider = applicationContext.getBeanProvider(String.class);
+//        Iterable<String> stringIterable = beanProvider;
+//        for (String string : stringIterable) {
+//            System.out.println(string);
+//        }
+        beanProvider.stream().forEach(System.out::println);
+    }
+
+    private static void lookupIfAvailable(AnnotationConfigApplicationContext applicationContext) {
+        // User对象并不存在
+        ObjectProvider<User> userObjectProvider = applicationContext.getBeanProvider(User.class);
+        User user = userObjectProvider.getIfAvailable(User::createUser);
+        System.out.println("当前User对象: " + user);
+
+    }
+
+    @Bean
+    @Primary
+    public String helloworld() {
+        return "helloworld";
+    }
+
+    @Bean
+    public String message() {
+        return "Message";
+    }
+
+    private static void lookupByObejctProvider(AnnotationConfigApplicationContext applicationContext) {
+        ObjectProvider<String> beanProvider = applicationContext.getBeanProvider(String.class);
+        System.out.println(beanProvider.getObject());
+    }
+}
+```
+
+## 安全依赖查找
+
+安全性指的是没有查找到Bean的时候，是否会抛出异常。有关依赖查找安全性对比如下
+
+| 依赖查找类型 | 代表实现                           | 是否安全 |
+| ------------ | ---------------------------------- | -------- |
+| 单一类型查找 | BeanFactory#getBean                | 否       |
+|              | ObjectFactory#getObject            | 否       |
+|              | ObjectProvider#getIfAvailable      | 是       |
+|              |                                    | 是       |
+| 集合类型查找 | ListableBeanFactory#getBeansOfType | 是       |
+|              | ObjectProvider#stream              | 是       |
+
+注意：层次性依赖查找的安全性取决于其扩展的单一或集合类型的BeanFactory接口。
+
+类型安全的依赖查找的相关示例：
+
+```java
+/**
+ * 类型安全的依赖查找示例
+ */
+public class TypeSafetyDependencyLookupDemp {
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext();
+        applicationContext.register(TypeSafetyDependencyLookupDemp.class);
+        applicationContext.refresh();
+        // 演示BeanFactory#getBean方法的安全性
+        displayBeanFactoryGetBean(applicationContext);
+        // 演示ObjectFactory#getObject方法的安全性
+        displayBeanFactoryGetObject(applicationContext);
+        // 演示ObjectProvider#ifAvailable方法的安全性
+        displayObjectProviderIfAvailable(applicationContext);
+        // 演示ListableBeanFactory#getBeansOfTYpe方法的安全性
+        displayListableBeanFactoryGetBeansType(applicationContext);
+        // 演示ObjectProvider#stream方法的安全性
+        displayObjectProviderStreamOps(applicationContext);
+        applicationContext.close();
+    }
+
+    private static void displayObjectProviderStreamOps(AnnotationConfigApplicationContext applicationContext) {
+        ObjectProvider<User> userObjectProvider = applicationContext.getBeanProvider(User.class);
+        printBeansException("displayObjectProviderStreamOps", () -> userObjectProvider.stream().forEach(System.out::println));
+    }
+
+    private static void displayListableBeanFactoryGetBeansType(ListableBeanFactory beanFactory) {
+        printBeansException("displayListableBeanFactoryGetBeansType",() -> beanFactory.getBeanNamesForType(User.class));
+    }
+
+    private static void displayObjectProviderIfAvailable(AnnotationConfigApplicationContext applicationContext) {
+        ObjectProvider<User> objectProvider = applicationContext.getBeanProvider(User.class);
+        printBeansException("displayObjectProviderIfAvailable", objectProvider::getIfAvailable);
+    }
+
+    private static void displayBeanFactoryGetObject(AnnotationConfigApplicationContext applicationContext) {
+        // ObjectProvider is ObjectFactory
+        ObjectFactory<User> userObjectFactory = applicationContext.getBeanProvider(User.class);
+        printBeansException("displayBeanFactoryGetObject", userObjectFactory::getObject);
+    }
+
+    public static void displayBeanFactoryGetBean(BeanFactory beanFactory) {
+        printBeansException("displayBeanFactoryGetBean", () -> beanFactory.getBean(User.class));
+    }
+
+    private static void printBeansException(String source, Runnable runnable) {
+        System.err.println("Source from: " + source);
+        System.err.println("============================");
+        try {
+            runnable.run();
+        } catch (BeansException exception) {
+            exception.printStackTrace();
+        }
+    }
+}
+```
+
+## 内建可查找的依赖
+
+AbastractApplicationContext内建可查找的依赖：
+
+| Bean名称                    | Bena实例                        | 使用场景               |
+| --------------------------- | ------------------------------- | ---------------------- |
+| environment                 | Environment对象                 | 外部化配置以及Profiles |
+| systemProperties            | java.util.Properties对象        | Java系统属性           |
+| systemEnvironment           | java.util.Map对象               | 操作系统环境变量       |
+| messageSource               | MessageSource对象               | 国际化文案             |
+| lifecycleProcessor          | lifecycleProcessor对象          | Lifecycle Bean处理器   |
+| applicationEventMulticaster | ApplicationEventMulticaster对象 | Spring事件广播器       |
+
+注解驱动Spring应用上下文内建可查找的依赖（部分）：
+
+| Bean名称                                                     | Bean实例                                 | 使用场景                                            |
+| ------------------------------------------------------------ | ---------------------------------------- | --------------------------------------------------- |
+| org.springframework.context.event.internalConfigurationAnnotationProcessor | ConfigurationClassPostProcessor对象      | 处理Spring配置类                                    |
+| org.springframework.context.event.internalAutowiredAnnotationProcessor | AutowiredAnnotationBeanPostProcessor对象 | 处理@Autowired以及@Value注解                        |
+| org.springframework.context.event.internalCommonAnnotationProcessor | CommonAnnotationBeanPostProcessor对象    | （条件激活）处理JSR-250注解，如@PostConstruct等     |
+| org.springframework.context.event.internalEventListenerProcessor | EventListenerMethodProcessor对象         | 处理标注@EventListener的Spring事件监听方法          |
+| org.springframework.context.event.internalListenerFactory    | DefaultEventListenerFactory对象          | @EventListener事件监听方法适配为ApplicationListener |
+| org.springframework.context.event.internalPersistenceAnnotationProcessor | PersistenceAnnotationProcessor对象       | 条件激活处理JPA注解场景                             |
+
+这些内建的Bean的初始化都是在AnnotationConfigUtils中完成的。
+
+## 依赖查找中典型异常
+
+BeansException子类型
+
+| 异常类型                        | 触发条件（举例）                    | 场景举例                                         |
+| ------------------------------- | ----------------------------------- | ------------------------------------------------ |
+| NoSuchBeanDefinitionException   | 当查找Bean不存在于IoC容器时         | BeanFactory#getBean<br />ObjectFactory#getObject |
+| NoUniqueBeanDefinitionException | 类型查找时，IoC容器存在多个Bean实例 | BeanFactory#getBean(Class)                       |
+| BeanInstantiationException      | 当Bean所对应的类型非具体类时        | BeanFactory#getBean                              |
+| BeanCreationException           | 当Bean初始化过程中                  | Bean初始化方法执行异常时                         |
+| BeanDefinitionStoreException    | 当BeanDefinition配置元信息非法时    | XML配置资源无法打开时                            |
+
+NoUniqueBeanDefinitionException示例：
+
+```java
+/**
+ * NoUniqueBeanDefinitionException示例
+ */
+public class NoUniqueBeanDefinitionExceptionDemo {
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext();
+        applicationContext.register(NoUniqueBeanDefinitionExceptionDemo.class);
+        applicationContext.refresh();
+        try {
+            applicationContext.getBean(String.class);
+        } catch (NoUniqueBeanDefinitionException e) {
+            System.err.printf("Spring应用上下文存在%d 个 %s 类型的Bean,具体原因: %s%n", e.getNumberOfBeansFound(),
+                    String.class.getName(), e.getMessage());
+        }
+        applicationContext.close();
+    }
+
+    @Bean
+    public String bean1() {
+        return "bean1";
+    }
+
+    @Bean
+    public String bean2() {
+        return "bean2";
+    }
+
+    @Bean
+    public String bean3() {
+        return "bean3";
+    }
+}
+```
+
+BeanInstantiationException示例：
+
+```java
+/**
+ * BeanInstantiationException示例
+ */
+public class BeanInstantiationExceptionDemo {
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext();
+        // 注册BeanDefinition
+        BeanDefinitionBuilder beanDefinitionBuilder = BeanDefinitionBuilder.genericBeanDefinition(CharSequence.class);
+        // CharSequence是一个接口，所以实例化的时候会报错
+        applicationContext.registerBeanDefinition("errorBean", beanDefinitionBuilder.getBeanDefinition());
+        applicationContext.refresh();
+        applicationContext.close();
+    }
+}
+```
+
+BeanCreationException示例：
+
+```java
+/**
+ * BeanCreationException示例
+ */
+public class BeanCreationExceptionDemo {
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext();
+        // 注册BeanDefinition
+        BeanDefinitionBuilder beanDefinitionBuilder = BeanDefinitionBuilder.genericBeanDefinition(POJO.class);
+        applicationContext.registerBeanDefinition("errorBean", beanDefinitionBuilder.getBeanDefinition());
+        applicationContext.refresh();
+        applicationContext.close();
+    }
+
+    static class POJO implements InitializingBean {
+
+        @Bean
+        public void init() throws Throwable{
+            throw new Throwable("init(): For purposers...");
+        }
+
+        @Override
+        public void afterPropertiesSet() throws Exception {
+            throw new Exception("afterPropertiesSet(): For purposes...");
+        }
+    }
+}
+```
+
+## 面试题
+
+### ObjectFactory与BeanFactory的区别
+
+ObjectFactory与BeanFactory均提供依赖查找的能力，不过ObjectFactory仅关注一个或一种类型的Bean依赖查找，并且自身不具备依赖查找的能力，能力由BeanFactory输出。
+
+BeanFactory则提供了单一类型、集合类型以及层次性等多种依赖查找方式。
+
+### BeanFactory.getBean操作是否线程安全？
+
+BeanFactory.getBean方法的执行是线程安全的，操作过程中会增加互斥锁。
+
+### Spring的依赖查找和依赖注入在来源上有什么区别？
+
+待定...
+
+# 依赖注入
+
+## 依赖注入的模式和类型
 
