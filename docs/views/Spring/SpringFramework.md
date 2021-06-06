@@ -3237,3 +3237,266 @@ if (!registry.containsBeanDefinition(AUTOWIRED_ANNOTATION_PROCESSOR_BEAN_NAME)) 
 
 ## 依赖查找的来源
 
+查找来源：
+
+| 来源                  | 配置元数据                          |
+| --------------------- | ----------------------------------- |
+| Spring BeanDefinition | <bean id="user" class="org...User"> |
+|                       | @Bean<br />public User user(){...}  |
+|                       | BeanDefinitionBuilder               |
+| 单例对象              | API实现                             |
+
+## 依赖注入的来源
+
+注入来源：
+
+| 来源                             | 配置元数据                          |
+| -------------------------------- | ----------------------------------- |
+| Spring BeanDefinition            | <bean id="user" class="org...User"> |
+|                                  | @Bean<br />public User user(){...}  |
+|                                  | BeanDefinitionBuilder               |
+| 单例对象                         | API实现                             |
+| 非Spring容器管理对象（游离对象） |                                     |
+
+AbstractApplicationContext#refresh()方法会调用prepareBeanFactory(beanFactory)方法，这个方法中会注入一些Bean：
+
+```java
+		// BeanFactory interface not registered as resolvable type in a plain factory.
+		// MessageSource registered (and found for autowiring) as a bean.
+		beanFactory.registerResolvableDependency(BeanFactory.class, beanFactory);
+		// 注意接下来的都是当前ApplicationContext对象
+		beanFactory.registerResolvableDependency(ResourceLoader.class, this);
+		beanFactory.registerResolvableDependency(ApplicationEventPublisher.class, this);
+		beanFactory.registerResolvableDependency(ApplicationContext.class, this);
+```
+
+实际上，注入了四个类型，两个对象。
+
+```java
+/**
+ * 依赖来源示例
+ */
+public class DependencySourceDemo {
+
+    // 注入在postProcessProperties方法执行，早于setter注入，也早于PostConstruct
+    @Autowired
+    private BeanFactory beanFactory;
+
+    @Autowired
+    private ResourceLoader resourceLoader;
+
+    @Autowired
+    private ApplicationContext applicationContext;
+
+    @Autowired
+    private ApplicationEventPublisher applicationEventPublisher;
+
+    @PostConstruct
+    public void init() {
+        System.out.println("beanFactory == applicationContext: " + (beanFactory == applicationContext));
+        System.out.println("beanFactory == applicationContext.getBeanFactory: " + (beanFactory == applicationContext.getAutowireCapableBeanFactory()));
+        System.out.println("resourceLoader == applicationContext: " + (resourceLoader == applicationContext));
+        System.out.println("applicationEventMulticaster == applicationContext: " + (applicationEventPublisher == applicationContext));
+    }
+
+    @PostConstruct
+    public void initByLookup() {
+        getBean(BeanFactory.class);
+        getBean(ResourceLoader.class);
+        getBean(ApplicationContext.class);
+        getBean(ApplicationEventPublisher.class);
+    }
+
+    private <T> T getBean(Class<T> beanType) {
+        try {
+            return beanFactory.getBean(beanType);
+        } catch (NoSuchBeanDefinitionException e) {
+            System.err.println("当前类型" + beanType.getName() + "无法在BeanFactory中查找");
+            return null;
+        }
+    }
+
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext();
+        applicationContext.register(DependencySourceDemo.class);
+        applicationContext.refresh();
+
+        DependencySourceDemo demo = applicationContext.getBean(DependencySourceDemo.class);
+        applicationContext.close();
+    }
+}
+```
+
+## Spring容器管理和游离对象
+
+依赖对象：
+
+| 来源                  | Spring Bean对象 | 生命周期管理 | 配置元信息 | 使用场景           |
+| --------------------- | --------------- | ------------ | ---------- | ------------------ |
+| Spring BeanDefinition | 是              | 是           | 有         | 依赖查找、依赖注入 |
+| 单体对象              | 是              | 否           | 无         | 依赖查找、依赖注入 |
+| Resolvable Dependency | 否              | 否           | 无         | 依赖注入           |
+
+## Spring BeanDefinition作为依赖来源
+
+要素：
+
+1. 元数据：BeanDefinition
+2. 注册：BeanDefinitionRegistry#registerBeanDefinition
+3. 类型：延迟和非延迟
+4. 顺序：Bean生命周期顺序按照注册顺序
+
+BeanDefinitionRegistry有且仅有一个实现，就是DefaultListableBeanFactory，首先有这样两个属性：
+
+```java
+// Map of bean definition objects, keyed by bean name
+private final Map<String, BeanDefinition> beanDefinitionMap = new ConcurrentHashMap<>(256);
+// List of bean definition names, in registration order.
+private volatile List<String> beanDefinitionNames = new ArrayList<>(256);
+```
+
+在registerBeanDefinition方法中会这样保存数据：
+
+```java
+this.beanDefinitionMap.put(beanName, beanDefinition);
+this.beanDefinitionNames.add(beanName);
+```
+
+可以看到这里除了保存beanName和beanDefinition，还单独保存了beanName，这样做的原因就是ConcurrentHashMap是无序的，而ArrayList是有序的，后面在初始化的时候，会根据这个List里面的Bean的名称，按照次序依次进行初始化操作。
+
+## 单体对象作为依赖来源
+
+要素：
+
+1. 来源：外部普通Java对象（不一定是POJO）
+2. 注册：SingletonBeanRegistry#registerSinleton
+
+限制：
+
+1. 无生命周期管理
+2. 无法实现延迟初始化Bean
+
+## Resolvable Dependency作为依赖来源
+
+要素：
+
+- 注册：ConfigurableListableBeanFactory#registerResolvableDependency
+
+限制：
+
+1. 无生命周期管理
+2. 无法延迟初始化Bean
+3. 无法通过依赖查找
+
+```java
+/**
+ * ResolvableDependency作为依赖来源
+ */
+public class ResolvableDependencySourceDemo {
+
+    @Autowired
+    private String value;
+
+    @PostConstruct
+    public void init() {
+        System.out.println(value);
+    }
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext();
+        applicationContext.register(ResolvableDependencySourceDemo.class);
+        // 只能用于类型方面的依赖注入
+        applicationContext.addBeanFactoryPostProcessor(beanFactory -> {
+            beanFactory.registerResolvableDependency(String.class,"hello,world");
+        });
+        applicationContext.refresh();
+        applicationContext.close();
+    }
+}
+```
+
+## 外部化配置作为依赖来源
+
+要素：
+
+- 要素：非常规Spring对象依赖来源
+
+限制：
+
+1. 无生命周期管理
+2. 无法实现延迟初始化Bean
+3. 无法通过依赖查找
+
+外部化配置的示例：
+
+```java
+/**
+ * 外部化配置作为依赖来源示例
+ */
+@PropertySource(value = "META-INF/default.properties",encoding = "GBK")
+@Configuration
+public class ExternalConfigurationDependencySourceDemo {
+
+    @Value("${user.id}")
+    private String id;
+
+    @Value("${user.resource}")
+    private Resource resource;
+
+    // 如果是中文，这里会显示操作系统登录的用户名，而不是在配置文件中配置的信息。这是因为user.name是一个系统属性。
+//    @Value("${user.name}")
+//    private String name;
+    // 直接输出会显示乱码,需要设置编码
+    @Value("${usr.name}")
+    private String name;
+
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext();
+        applicationContext.register(ExternalConfigurationDependencySourceDemo.class);
+        applicationContext.refresh();
+        ExternalConfigurationDependencySourceDemo demo = applicationContext.getBean(ExternalConfigurationDependencySourceDemo.class);
+        System.out.println("id: " + demo.id);
+        System.out.println("resource: " + demo.resource);
+        System.out.println("name: " + demo.name);
+
+        applicationContext.close();
+    }
+}
+```
+
+实现原理就是DefaultListableBeanFactory#doResolveDependency中：
+
+![1622979982114](./assets/1622979982114.png)
+
+会通过接下来的方法进行替换，将属性替换为配置文件中的值：
+
+```java
+String strVal = resolveEmbeddedValue((String) value);
+```
+
+## 面试题
+
+### 依赖注入和依赖查找的依赖来源是否相同？
+
+否，依赖查找的来源仅限于Spring BeanDefinition以及单例对象，而依赖注入的来源还包括了Resolvable Dependency以及@Value所标注的外部化配置。
+
+### 单例对象能在IoC容器启动后注册吗？
+
+可以的，单例对象注册与BeanDefinition不同，BeanDefinition会被ConfigurableListableBeanFactory#freezeConfiguration()方法影响，从而冻结注册，单例对象则没有这个限制。
+
+### Spring依赖注入的来源有哪些？
+
+Spring BeanDefinition、单例对象、Resolvable Dependency、@Value外部化配置
+
+# Spring Bean作用域
+
+## 作用域简介
+
+| 来源        | 说明                                                   |
+| ----------- | ------------------------------------------------------ |
+| singleton   | 默认Spring Bean作用域，一个BeanFactory有且仅有一个实例 |
+| prototype   | 原型作用域，每次依赖查找和依赖注入生成新Bean对象       |
+| request     | 将Spring Bean存储在ServletRequest上下文中              |
+| session     | 将Spring Bean存储在HttpSession中                       |
+| application | 将Spring Bean存储在ServletContext中                    |
+
+笼统而言，我们只要记住单例和原型两种即可，其余三种主要是为了服务端模板引擎渲染，包括JSP、Velocity、FreeMarker。
