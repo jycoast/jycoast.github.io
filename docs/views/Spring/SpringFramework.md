@@ -2656,11 +2656,11 @@ public class AnnotationDependencyInjectionResolutionDemo {
 
 我们在DefaultListableBeanFactory#resolveDependency处打个断点进行观察：
 
-![1622905372372](assets/1622905372372.png)
+![1622905372372](./assets/1622905372372.png)
 
 方法会继续往下执行到doResolveDependency方法：
 
-![1622905643169](assets/1622905643169.png)
+![1622905643169](./assets/1622905643169.png)
 
 集合注入和单个类型的注入略微有点差别，首先我们增加一个成员变量：
 
@@ -3102,13 +3102,13 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 
 在InitDestroyAnnotationBeanPostProcessor中也可以看到postProcessMergedBeanDefinition这个方法：
 
-![1622945426099](assets/1622945426099.png)
+![1622945426099](./assets/1622945426099.png)
 
 这里只是元信息不太一样，这主要是LifecycleMetadata中包含了初始化和销毁两个阶段。
 
 同样CommonAnnotationBeanPostProcessor也有postProcessProperties的方法：
 
-![1622945839012](assets/1622945839012.png)
+![1622945839012](./assets/1622945839012.png)
 
 对于生命周期的注解的处理，可以从构造方法中看出：
 
