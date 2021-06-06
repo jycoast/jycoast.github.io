@@ -1818,3 +1818,1422 @@ BeanFactory.getBean方法的执行是线程安全的，操作过程中会增加�
 
 ## 依赖注入的模式和类型
 
+1. 手动模式-配置或者编程的方式，提前安排注入规则
+	- XML资源配置元信息
+	- Java注解配置元信息
+	- API配置元信息
+2. 自动模式-实现方提供依赖自动关联的方式，按照内建的注入规则
+	- Autowring(自动绑定)
+
+依赖注入类型：
+
+| 依赖注入类型 | 配置元数据举例                                    |
+| ------------ | ------------------------------------------------- |
+| Setter方法   | <proepty name="user" ref="userBean" />            |
+| 构造器       | <constructor-arg name="user" ref="userBean" />    |
+| 字段         | @Autowired<br />User user;                        |
+| 方法         | @Autowired<br />public void user(User user) {...} |
+| 接口回调     | class MyBean implements BeanFactoryAware{...}     |
+
+## 自动绑定
+
+
+
+Autowiring modes:
+
+| 模式        | 说明                                                         |
+| ----------- | ------------------------------------------------------------ |
+| no          | 默认值，未激活Autowiring，需要手动指定依赖注入对象           |
+| byName      | 根据被注入属性的名称作为Bean名称进行依赖查找，并将对象设置到该属性 |
+| byType      | 根据被注入属性的类型作为依赖类型进行查找，并将对象设置到该属性 |
+| constructor | 特殊byType类型，用于构造器参数                               |
+
+可以参考：org.springframework.beans.factory.annotation.Autowire。
+
+```java
+public enum Autowire {
+
+	/**
+	 * Constant that indicates no autowiring at all.
+	 */
+	NO(AutowireCapableBeanFactory.AUTOWIRE_NO),
+
+	/**
+	 * Constant that indicates autowiring bean properties by name.
+	 */
+	BY_NAME(AutowireCapableBeanFactory.AUTOWIRE_BY_NAME),
+
+	/**
+	 * Constant that indicates autowiring bean properties by type.
+	 */
+	BY_TYPE(AutowireCapableBeanFactory.AUTOWIRE_BY_TYPE);
+
+
+	private final int value;
+
+
+	Autowire(int value) {
+		this.value = value;
+	}
+
+	public int value() {
+		return this.value;
+	}
+
+	/**
+	 * Return whether this represents an actual autowiring value.
+	 * @return whether actual autowiring was specified
+	 * (either BY_NAME or BY_TYPE)
+	 */
+	public boolean isAutowire() {
+		return (this == BY_NAME || this == BY_TYPE);
+	}
+
+}
+```
+
+自动绑定的不足之处：
+
+1. 构造器参数以及property上面的设置通常会覆盖掉Autowiring，也不能绑定一些简单的类型，比如String、Classes、properties
+2. Autowiring无法把控注入的时候的精确性，会导致一些不确定的情况发生。
+3. wiring很难在工具上产生一些文档或者相关提示。
+4. 如果应用上下文中存在多个Bean的定义，会发生歧义性，可能会抛出NoUniqueBeanDefinitionException。
+
+## Setter注入
+
+Setter注入实现方法：
+
+1. 手动模式：
+	- XML资源配置元信息
+	- Java注解配置元信息
+	- API配置元信息
+2. 自动模式
+	- byName
+	- byType
+
+这里我们新建一个UserHolder：
+
+```java
+/**
+ * {@link User} 的holder类
+ */
+public class UserHolder {
+
+    public UserHolder() {
+
+    }
+
+    public UserHolder(User user) {
+        this.user = user;
+    }
+
+    private User user;
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+
+    @Override
+    public String toString() {
+        return "UserHolder{" +
+                "user=" + user +
+                '}';
+    }
+}
+```
+
+通过XML的方式注入：
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <import resource="classpath:/META-INF/dependency-lookup-context.xml" />
+
+    <bean class="org.jyc.thinking.in.spring.ioc.dependcy.injection.UserHolder">
+        <property name="user" ref="user" />
+    </bean>
+</beans>
+```
+
+通过XML的方式注入演示的示例：
+
+```java
+/**
+ * 基于XML资源的依赖，Setter方法注入依赖
+ */
+public class XmlDependencySetterInjectionDemo {
+    public static void main(String[] args) {
+        DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
+        XmlBeanDefinitionReader beanDefinitionReader = new XmlBeanDefinitionReader(beanFactory);
+
+        String xmlResourcePath = "classpath:/MTEA-INF/dependency-setter-injection.xml";
+        // 加载XML资源，解析并且生成BeanDefinition
+        beanDefinitionReader.loadBeanDefinitions(xmlResourcePath);
+        //依赖查找并且创建Bean
+        UserHolder userHolder = beanFactory.getBean(UserHolder.class);
+        System.out.println(userHolder);
+    }
+}
+
+```
+
+基于注解的依赖注入的演示示例：
+
+```java
+/**
+ * 基于注解的Setter方法注入依赖
+ */
+public class AnnotationDependencySetterInjectionDemo {
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext();
+        applicationContext.register(AnnotationDependencySetterInjectionDemo.class);
+        applicationContext.refresh();
+
+        XmlBeanDefinitionReader beanDefinitionReader = new XmlBeanDefinitionReader(applicationContext);
+        String xmlResourcePath = "classpath:/MTEA-INF/dependency-lookup-context.xml";
+        beanDefinitionReader.loadBeanDefinitions(xmlResourcePath);
+
+        UserHolder userHolder = applicationContext.getBean(UserHolder.class);
+        System.out.println(userHolder);
+        applicationContext.close();
+    }
+
+    @Bean
+    public UserHolder userHolder(User user) {
+        UserHolder userHolder = new UserHolder();
+        userHolder.setUser(user);
+        return userHolder;
+    }
+}
+```
+
+基于Api的依赖注入的演示：
+
+```java
+/**
+ * 基于API的Setter方法注入依赖
+ */
+public class ApiDependencySetterInjectionDemo {
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext();
+        BeanDefinition userBeanDefinition = createUserBeanDefinition();
+        // 注册UserHolder的BeanDefinition
+        applicationContext.registerBeanDefinition("UserHolder",userBeanDefinition);
+        applicationContext.refresh();
+        XmlBeanDefinitionReader beanDefinitionReader = new XmlBeanDefinitionReader(applicationContext);
+        String xmlResourcePath = "classpath:/MTEA-INF/dependency-lookup-context.xml";
+        beanDefinitionReader.loadBeanDefinitions(xmlResourcePath);
+
+        UserHolder userHolder = applicationContext.getBean(UserHolder.class);
+        System.out.println(userHolder);
+        applicationContext.close();
+    }
+
+    /**
+     * 为{@link UserHolder} 生成{@link BeanDefinition}
+     * @return
+     */
+    public static BeanDefinition createUserBeanDefinition() {
+        BeanDefinitionBuilder beanDefinitionBuilder = BeanDefinitionBuilder.genericBeanDefinition(UserHolder.class);
+        beanDefinitionBuilder.addPropertyReference("user","SuperUser");
+        return beanDefinitionBuilder.getBeanDefinition();
+    }
+}
+```
+
+自动配置的主要应用场景在XML文件当中：
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <import resource="classpath:/META-INF/dependency-lookup-context.xml" />
+	<!--这里可以通过byType或者byName进行注入-->
+    <bean class="org.jyc.thinking.in.spring.ioc.dependcy.injection.UserHolder" autowire="byType">
+	<!--        <property name="user" ref="user" />-->
+    </bean>
+</beans>
+```
+
+## 构造器注入
+
+
+
+构造器注入的实现方法：
+
+1. 手动模式
+	- XML资源配置元信息
+	- Java注解配置元信息
+	- API配置元信息
+2. 自动模式
+	- constructor
+
+XML资源配置的方式：
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <import resource="classpath:/META-INF/dependency-lookup-context.xml" />
+
+    <bean class="org.jyc.thinking.in.spring.ioc.dependcy.injection.UserHolder">
+        <constructor-arg name="user" ref="SuperUser" />
+    </bean>
+</beans>
+```
+
+XML资源配置方式的示例：
+
+```java
+/**
+ * 基于XML资源的依赖，构造器注入依赖
+ */
+public class XmlDependencyConstructorInjectionDemo {
+    public static void main(String[] args) {
+        DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
+        XmlBeanDefinitionReader beanDefinitionReader = new XmlBeanDefinitionReader(beanFactory);
+
+        String xmlResourcePath = "classpath:/META-INF/dependency-constructor-injection.xml";
+        // 加载XML资源，解析并且生成BeanDefinition
+        beanDefinitionReader.loadBeanDefinitions(xmlResourcePath);
+        //依赖查找并且创建Bean
+        UserHolder userHolder = beanFactory.getBean(UserHolder.class);
+        System.out.println(userHolder);
+    }
+}
+```
+
+Java注解方式的核心部分：
+
+```java
+    @Bean
+    public UserHolder userHolder(User user) {
+        return new UserHolder(user);
+    }
+```
+
+API配置元信息的方式的核心部分：
+
+```java
+    /**
+     * 为{@link UserHolder} 生成{@link BeanDefinition}
+     * @return
+     */
+    public static BeanDefinition createUserBeanDefinition() {
+        BeanDefinitionBuilder beanDefinitionBuilder = BeanDefinitionBuilder.genericBeanDefinition(UserHolder.class);
+        beanDefinitionBuilder.addConstructorArgReference("SuperUser");
+        return beanDefinitionBuilder.getBeanDefinition();
+    }
+```
+
+构造器自动绑定的示例：
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <import resource="classpath:/META-INF/dependency-lookup-context.xml" />
+
+    <bean class="org.jyc.thinking.in.spring.ioc.dependcy.injection.UserHolder" autowire="constructor" />
+</beans>
+```
+
+## 字段注入
+
+实现方法：
+
+1. 手动模式
+	- @Autowird
+	- @Resource
+	- @inject（可选）
+
+字段注入的示例：
+
+```java
+/**
+ * 基于注解的字段注入依赖
+ */
+public class AnnotationDependencyFiledInjectionDemo {
+
+    @Autowired 
+    private
+    //static @Autowired会忽略掉静态字段
+    UserHolder userHolder;
+    
+    @Resource
+    private UserHolder userHolder2;
+
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext();
+        // 配置Class也是 Spring Bean
+        applicationContext.register(AnnotationDependencyFiledInjectionDemo.class);
+        applicationContext.refresh();
+
+        XmlBeanDefinitionReader beanDefinitionReader = new XmlBeanDefinitionReader(applicationContext);
+        String xmlResourcePath = "classpath:/META-INF/dependency-lookup-context.xml";
+        beanDefinitionReader.loadBeanDefinitions(xmlResourcePath);
+
+        AnnotationDependencyFiledInjectionDemo demo = applicationContext.getBean(AnnotationDependencyFiledInjectionDemo.class);
+
+        // Autowired字段关联
+        UserHolder userHolder = demo.userHolder;
+        // @Resource
+        UserHolder userHolder2 = demo.userHolder2;
+        System.out.println(userHolder);
+        System.out.println(userHolder2);
+
+        System.out.println(userHolder == userHolder2);
+        applicationContext.close();
+    }
+
+    @Bean
+    public UserHolder userHolder(User user) {
+        return new UserHolder(user);
+    }
+}
+```
+
+## 方法注入
+
+1. 手动模式
+	- @Autowird
+	- @Resource
+	- @inject（可选）
+	- @Bean
+
+方法注入的示例：
+
+```java
+
+    private UserHolder userHolder;
+
+    private UserHolder userHolder2;
+
+    @Autowired
+    public void initUserHolder(UserHolder userHolder) {
+        this.userHolder = userHolder;
+    }
+
+    @Resource
+    public void initUserHolder2(UserHolder userHolder2) {
+        this.userHolder2 = userHolder2;
+    }
+
+    @Bean
+    public UserHolder userHolder(User user) {
+        return new UserHolder(user);
+    }
+```
+
+## 接口回调注入
+
+Aware系列接口回调
+
+1. 自动模式
+
+	| 内建接口                       | 说明                                                 |
+	| ------------------------------ | ---------------------------------------------------- |
+	| BeanFactoryAware               | 获取IoC容器-BeanFactory                              |
+	| ApplicationContextAware        | 获取Spring应用上下文-ApplicationConetxt对象          |
+	| EnvironmentAware               | 获取Environment对象                                  |
+	| ResourceLoaderAware            | 获取资源加载器对象-ResourceLoader                    |
+	| BeanClassLoaderAware           | 获取加载当前Bean Class的ClassLoader                  |
+	| BeanNameAware                  | 获取当前Bean名称                                     |
+| MessageSourceAware             | 获取MessageSource对象，用于Spring国际化              |
+	| ApplicationEventPublisherAware | 获取ApplicationEventPublishAware对象，用于Spring事件 |
+	| EmbeddedValueResolverAware     | 获取StringValueResolver对象，用占位符处理            |
+	
+	接口回调示例：
+	
+	```java
+	/**
+	 * 基于{@link org.springframework.beans.factory.Aware} 接口回调的示例
+	 */
+	public class AwareInterfaceDependencyInjectionDemo implements BeanFactoryAware, ApplicationContextAware {
+	
+	    private static BeanFactory beanFactory;
+	
+	    private static ApplicationContext applicationContext;
+	
+	    @Override
+	    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+	        AwareInterfaceDependencyInjectionDemo.applicationContext = applicationContext;
+	    }
+	
+	    @Override
+	    public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
+	        AwareInterfaceDependencyInjectionDemo.beanFactory = beanFactory;
+	    }
+	
+	    public static void main(String[] args) {
+	        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+	        context.register(AwareInterfaceDependencyInjectionDemo.class);
+	        context.refresh();
+	
+	        System.out.println(beanFactory == context.getBeanFactory());
+	        System.out.println(applicationContext == context);
+	        context.close();
+	    }
+	}
+	```
+
+## 依赖注入类型选择
+
+注入选型
+
+1. 低依赖：构造器注入
+2. 多以来：Setter方法注入
+3. 便利性：字段注入
+4. 声明类：方法注入
+
+## 基础类型注入
+
+基础类型
+
+1. 原生类型（Primitive）：boolean、byte、char、short、int、float、long、double
+2. 标量类型（Scalar）：Number、Character、Boolean、Enum、Locale、Charset、Currency、Properties、UUID
+3. 常规类型（General）：Object、String、TimeZone、Calendar、Optional等
+4. Spring类型：Resource、InputSource、Formatter等。
+
+## 集合类型注入
+
+集合类型
+
+1. 数组类型（Array）：原生类型、标量类型、常规类型、Spring类型
+2. 集合类型（Collection）
+	- Collection：List、Set（SortedSet、NavigableSet、EnumSet）
+	- Map：Properties
+
+
+
+## 限定注入
+
+
+
+1. 使用注解@Qualifier限定
+	- 通过Bean名称限定
+	- 通过分组限定
+2. 基于注解@Qualifier扩展限定
+	- 自定义注解，如Spring Cloud @LoadBalanced
+
+使用注解@Qualifer限定Bean的名称的示例：
+
+```java
+/**
+ * {@link org.springframework.beans.factory.annotation.Qualifier} 使用示例
+ */
+public class QualifierAnnotationDependencyInjectionDemo {
+
+    @Autowired // SuperUser -> primary = true
+    private User user;
+
+    @Autowired
+    @Qualifier("user") // 指定Bean名称或者ID
+    private User namedUser;
+
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext();
+        applicationContext.register(QualifierAnnotationDependencyInjectionDemo.class);
+        applicationContext.refresh();
+        XmlBeanDefinitionReader beanDefinitionReader = new XmlBeanDefinitionReader(applicationContext);
+        String xmlResourcePath = "classpath:/META-INF/dependency-lookup-context.xml";
+        beanDefinitionReader.loadBeanDefinitions(xmlResourcePath);
+        QualifierAnnotationDependencyInjectionDemo demo = applicationContext.getBean(QualifierAnnotationDependencyInjectionDemo.class);
+        System.out.println("demo.user = " + demo.user);
+        System.out.println("demo.namedUser = " + demo.namedUser);
+        applicationContext.close();
+    }
+}
+```
+
+还可以使用@Qulifier对注入的Bean可以进行逻辑上的分组：
+
+```java
+/**
+ * {@link org.springframework.beans.factory.annotation.Qualifier} 使用示例
+ */
+public class QualifierAnnotationDependencyInjectionDemo {
+
+    @Autowired // SuperUser -> primary = true
+    private User user;
+
+    @Autowired
+    @Qualifier("user") // 指定Bean名称或者ID
+    private User namedUser;
+
+    @Autowired
+    private Collection<User> allUsers;
+
+    @Autowired
+    @Qualifier
+    private Collection<User> qualifierUsers;
+
+    @Bean
+    @Qualifier // 进行逻辑分组
+    public User user1() {
+        User user = new User();
+        user.setId("7");
+        return user;
+    }
+
+    @Bean
+    @Qualifier
+    public User user2() {
+        User user = new User();
+        user.setId("8");
+        return user;
+    }
+
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext();
+        applicationContext.register(QualifierAnnotationDependencyInjectionDemo.class);
+        applicationContext.refresh();
+        XmlBeanDefinitionReader beanDefinitionReader = new XmlBeanDefinitionReader(applicationContext);
+        String xmlResourcePath = "classpath:/META-INF/dependency-lookup-context.xml";
+        beanDefinitionReader.loadBeanDefinitions(xmlResourcePath);
+        QualifierAnnotationDependencyInjectionDemo demo = applicationContext.getBean(QualifierAnnotationDependencyInjectionDemo.class);
+        // 输出SuperUSer Bean
+        System.out.println("demo.user = " + demo.user);
+        // 输出 user Bean
+        System.out.println("demo.namedUser = " + demo.namedUser);
+        // 输出 SuperUSer、user,注意这里输出的不是所有的user对象
+        System.out.println("demo.allUsers = " + demo.allUsers);
+        // 输出 user1、user2
+        System.out.println("demo.qualifierUsers = " + demo.qualifierUsers);
+        applicationContext.close();
+    }
+}
+```
+
+通过注解的定义我们可以看到@Qualifier注解还可以作用到注解上面，也就是说可以对这个注解进行一些自定义的扩展：
+
+```java
+@Target({ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER, ElementType.TYPE, ElementType.ANNOTATION_TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+@Inherited
+@Documented
+public @interface Qualifier {
+
+	String value() default "";
+
+}
+```
+
+接下来我们自定义一个注解：
+
+```java
+@Target({ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER, ElementType.TYPE, ElementType.ANNOTATION_TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+@Inherited
+@Documented
+@Qualifier
+public @interface UserGroup {
+
+}
+```
+
+使用自定义注解来进行分组：
+
+```java
+/**
+ * {@link org.springframework.beans.factory.annotation.Qualifier} 使用示例
+ */
+public class QualifierAnnotationDependencyInjectionDemo {
+
+    @Autowired // SuperUser -> primary = true
+    private User user;
+
+    @Autowired
+    @Qualifier("user") // 指定Bean名称或者ID
+    private User namedUser;
+
+    @Autowired
+    private Collection<User> allUsers;
+
+    @Autowired
+    @Qualifier
+    private Collection<User> qualifierUsers;
+    
+    @Autowired
+    @UserGroup
+    private Collection<User> groupedUsers;
+
+    @Bean
+    @Qualifier // 进行逻辑分组
+    public User user1() {
+        User user = new User();
+        user.setId("7");
+        return user;
+    }
+
+    @Bean
+    @Qualifier
+    public User user2() {
+        User user = new User();
+        user.setId("8");
+        return user;
+    }
+
+    @Bean
+    @UserGroup
+    public User user3() {
+        User user = new User();
+        user.setId("9");
+        return user;
+    }
+    
+    @Bean
+    @UserGroup
+    public User user4() {
+        User user = new User();
+        user.setId("10");
+        return user;
+    }
+
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext();
+        applicationContext.register(QualifierAnnotationDependencyInjectionDemo.class);
+        applicationContext.refresh();
+        XmlBeanDefinitionReader beanDefinitionReader = new XmlBeanDefinitionReader(applicationContext);
+        String xmlResourcePath = "classpath:/META-INF/dependency-lookup-context.xml";
+        beanDefinitionReader.loadBeanDefinitions(xmlResourcePath);
+        QualifierAnnotationDependencyInjectionDemo demo = applicationContext.getBean(QualifierAnnotationDependencyInjectionDemo.class);
+        // 输出SuperUSer Bean
+        System.out.println("demo.user = " + demo.user);
+        // 输出 user Bean
+        System.out.println("demo.namedUser = " + demo.namedUser);
+        // 输出 SuperUSer、user,注意这里输出的不是所有的user对象
+        System.out.println("demo.allUsers = " + demo.allUsers);
+        // 输出 user1、user2、user3和user4,这个时候这个集合元素也增加了,这种方式了类似继承
+        System.out.println("demo.qualifierUsers = " + demo.qualifierUsers);
+        // 输出 user3和user4
+        System.out.println("demo.groupedUsers = " + demo.groupedUsers);
+        applicationContext.close();
+    }
+}
+```
+
+最后我们来查看以下@LoadBalanced注解的实现：
+
+```java
+@Target({ ElementType.FIELD, ElementType.PARAMETER, ElementType.METHOD })
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Inherited
+@Qualifier
+public @interface LoadBalanced {
+}
+```
+
+## 延迟依赖注入
+
+1. 使用API ObjectFactory延迟注入
+	- 单一类型
+	- 集合类型
+2. 使用API ObjectProvider延迟注入（推荐，这里主要是基于安全性的考量）
+	- 单一类型
+	- 集合类型
+
+使用ObjectProvider延迟注入的例子：
+
+```java
+/**
+ * {@link org.springframework.beans.factory.ObjectProvider} 实现延迟依赖注入
+ */
+public class LazyAnnotationDependencyInjectionDemo {
+
+    @Autowired
+    private User user;  // 实时注入
+
+    @Autowired
+    private ObjectProvider<User> userObjectProvider; //延迟注入
+
+    @Autowired
+    private ObjectProvider<Set<User>> usersObjectFactory;
+
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext();
+        applicationContext.register(LazyAnnotationDependencyInjectionDemo.class);
+        applicationContext.refresh();
+        XmlBeanDefinitionReader beanDefinitionReader = new XmlBeanDefinitionReader(applicationContext);
+        String xmlResourcePath = "classpath:/META-INF/dependency-lookup-context.xml";
+        beanDefinitionReader.loadBeanDefinitions(xmlResourcePath);
+        LazyAnnotationDependencyInjectionDemo demo = applicationContext.getBean(LazyAnnotationDependencyInjectionDemo.class);
+        System.out.println("demo.user = " + demo.user);
+        System.out.println("demo.userObjectProvider = " + demo.userObjectProvider);
+        System.out.println("demo.usersObjectFactory" + demo.usersObjectFactory);
+        demo.userObjectProvider.forEach(System.out::println);
+        applicationContext.close();
+    }
+}
+```
+
+## 依赖处理的过程
+
+基础知识：
+
+1. 入口-DefaultListableBeanFactory#resolveDependency
+2. 依赖描述符-DependencyDescriptor
+3. 自定义绑定候选对象处理器-AutowireCandidateResolver
+
+首先观察以下依赖的描述类：
+
+```java
+public class DependencyDescriptor extends InjectionPoint implements Serializable {
+	// 被注入的容器类
+	private final Class<?> declaringClass;
+	// 方法名称
+	@Nullable
+	private String methodName;
+	// 构造器参数
+	@Nullable
+	private Class<?>[] parameterTypes;
+	// 参数索引
+	private int parameterIndex;
+	// 属性名称
+	@Nullable
+	private String fieldName;
+	// 是不是必须的
+	private final boolean required;
+	// 是不是饥饿的，@Lazy注解
+	private final boolean eager;
+	// 嵌入层次
+	private int nestingLevel = 1;
+	// 包含类
+	@Nullable
+	private Class<?> containingClass;
+	// 泛型处理
+	@Nullable
+	private transient volatile ResolvableType resolvableType;
+	// 类型描述
+	@Nullable
+	private transient volatile TypeDescriptor typeDescriptor;
+}
+```
+
+首先改造以下我们之前看到的例子：
+
+```java
+/**
+ * 注解驱动的依赖注入过程
+ */
+public class AnnotationDependencyInjectionResolutionDemo {
+
+    @Autowired
+    private User user;  // DependencyDescriptor ->
+                        // 必须（required=true）
+                        // 实时注入（eager=true）
+                        // 通过类型查找（User.class）
+                        // 字段名称（“user”）
+                        // 是否首要（primary=true）
+
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext();
+        applicationContext.register(AnnotationDependencyInjectionResolutionDemo.class);
+        applicationContext.refresh();
+        XmlBeanDefinitionReader beanDefinitionReader = new XmlBeanDefinitionReader(applicationContext);
+        String xmlResourcePath = "classpath:/META-INF/dependency-lookup-context.xml";
+        beanDefinitionReader.loadBeanDefinitions(xmlResourcePath);
+        AnnotationDependencyInjectionResolutionDemo demo = applicationContext.getBean(AnnotationDependencyInjectionResolutionDemo.class);
+        System.out.println("demo.user = " + demo.user);
+        applicationContext.close();
+    }
+}
+```
+
+我们在DefaultListableBeanFactory#resolveDependency处打个断点进行观察：
+
+![1622905372372](assets/1622905372372.png)
+
+方法会继续往下执行到doResolveDependency方法：
+
+![1622905643169](assets/1622905643169.png)
+
+集合注入和单个类型的注入略微有点差别，首先我们增加一个成员变量：
+
+```java
+ 	@Autowired          // 集合类型的依赖注入
+    private Map<String,User> users;  // user SuperUser
+```
+
+这个时候在返回的时候就会进行判断，判断返回的类型是什么，然后然后把结果放进去进行返回：
+
+```java
+	@Nullable
+	private Object resolveMultipleBeans(DependencyDescriptor descriptor, @Nullable String beanName,
+			@Nullable Set<String> autowiredBeanNames, @Nullable TypeConverter typeConverter) {
+
+		Class<?> type = descriptor.getDependencyType();
+
+		if (descriptor instanceof StreamDependencyDescriptor) {
+			Map<String, Object> matchingBeans = findAutowireCandidates(beanName, type, descriptor);
+			if (autowiredBeanNames != null) {
+				autowiredBeanNames.addAll(matchingBeans.keySet());
+			}
+			Stream<Object> stream = matchingBeans.keySet().stream()
+					.map(name -> descriptor.resolveCandidate(name, type, this))
+					.filter(bean -> !(bean instanceof NullBean));
+			if (((StreamDependencyDescriptor) descriptor).isOrdered()) {
+				stream = stream.sorted(adaptOrderComparator(matchingBeans));
+			}
+			return stream;
+		}
+		else if (type.isArray()) {
+			Class<?> componentType = type.getComponentType();
+			ResolvableType resolvableType = descriptor.getResolvableType();
+			Class<?> resolvedArrayType = resolvableType.resolve(type);
+			if (resolvedArrayType != type) {
+				componentType = resolvableType.getComponentType().resolve();
+			}
+			if (componentType == null) {
+				return null;
+			}
+			Map<String, Object> matchingBeans = findAutowireCandidates(beanName, componentType,
+					new MultiElementDescriptor(descriptor));
+			if (matchingBeans.isEmpty()) {
+				return null;
+			}
+			if (autowiredBeanNames != null) {
+				autowiredBeanNames.addAll(matchingBeans.keySet());
+			}
+			TypeConverter converter = (typeConverter != null ? typeConverter : getTypeConverter());
+			Object result = converter.convertIfNecessary(matchingBeans.values(), resolvedArrayType);
+			if (result instanceof Object[]) {
+				Comparator<Object> comparator = adaptDependencyComparator(matchingBeans);
+				if (comparator != null) {
+					Arrays.sort((Object[]) result, comparator);
+				}
+			}
+			return result;
+		}
+		else if (Collection.class.isAssignableFrom(type) && type.isInterface()) {
+			Class<?> elementType = descriptor.getResolvableType().asCollection().resolveGeneric();
+			if (elementType == null) {
+				return null;
+			}
+			Map<String, Object> matchingBeans = findAutowireCandidates(beanName, elementType,
+					new MultiElementDescriptor(descriptor));
+			if (matchingBeans.isEmpty()) {
+				return null;
+			}
+			if (autowiredBeanNames != null) {
+				autowiredBeanNames.addAll(matchingBeans.keySet());
+			}
+			TypeConverter converter = (typeConverter != null ? typeConverter : getTypeConverter());
+			Object result = converter.convertIfNecessary(matchingBeans.values(), type);
+			if (result instanceof List) {
+				if (((List<?>) result).size() > 1) {
+					Comparator<Object> comparator = adaptDependencyComparator(matchingBeans);
+					if (comparator != null) {
+						((List<?>) result).sort(comparator);
+					}
+				}
+			}
+			return result;
+		}
+        // Map类型
+		else if (Map.class == type) {
+            // 获取到users字段的Map的泛型信息
+			ResolvableType mapType = descriptor.getResolvableType().asMap();
+			Class<?> keyType = mapType.resolveGeneric(0);
+			if (String.class != keyType) {
+				return null;
+			}
+			Class<?> valueType = mapType.resolveGeneric(1);
+			if (valueType == null) {
+				return null;
+			}
+			Map<String, Object> matchingBeans = findAutowireCandidates(beanName, valueType,
+					new MultiElementDescriptor(descriptor));
+			if (matchingBeans.isEmpty()) {
+				return null;
+			}
+			if (autowiredBeanNames != null) {
+				autowiredBeanNames.addAll(matchingBeans.keySet());
+			}
+			return matchingBeans;
+		}
+		else {
+			return null;
+		}
+	}
+```
+
+当进行集合类型的注入时，定义Bean的顺序也就是加载Bean的顺序，也是初始化Bean的时候的顺序。
+
+在Java8之后，也可以注入Optional类型的字段：
+
+```java
+	@Autowired
+    private Optional<User> userOptional;
+```
+
+当注入的类型时延迟查找时，实际上会返回一个代理对象：
+
+```java
+	@Autowired
+    @Lazy
+    private User lazyUser;
+```
+
+总的来说，依赖注入的处理主要就是由以下两个方法来完成的：
+
+```java
+	@Override
+	@Nullable
+	public Object resolveDependency(DependencyDescriptor descriptor, @Nullable String requestingBeanName,
+			@Nullable Set<String> autowiredBeanNames, @Nullable TypeConverter typeConverter) throws BeansException {
+
+		descriptor.initParameterNameDiscovery(getParameterNameDiscoverer());
+        // 对于Optional类型的判断
+		if (Optional.class == descriptor.getDependencyType()) {
+			return createOptionalDependency(descriptor, requestingBeanName);
+		}
+		else if (ObjectFactory.class == descriptor.getDependencyType() ||
+				ObjectProvider.class == descriptor.getDependencyType()) {
+			return new DependencyObjectProvider(descriptor, requestingBeanName);
+		}
+		else if (javaxInjectProviderClass == descriptor.getDependencyType()) {
+			return new Jsr330Factory().createDependencyProvider(descriptor, requestingBeanName);
+		}
+		else {
+			Object result = getAutowireCandidateResolver().getLazyResolutionProxyIfNecessary(
+					descriptor, requestingBeanName);
+			if (result == null) {
+				result = doResolveDependency(descriptor, requestingBeanName, autowiredBeanNames, typeConverter);
+			}
+			return result;
+		}
+	}
+
+	@Nullable
+	public Object doResolveDependency(DependencyDescriptor descriptor, @Nullable String beanName,
+			@Nullable Set<String> autowiredBeanNames, @Nullable TypeConverter typeConverter) throws BeansException {
+
+		InjectionPoint previousInjectionPoint = ConstructorResolver.setCurrentInjectionPoint(descriptor);
+		try {
+			Object shortcut = descriptor.resolveShortcut(this);
+			if (shortcut != null) {
+				return shortcut;
+			}
+
+			Class<?> type = descriptor.getDependencyType();
+			Object value = getAutowireCandidateResolver().getSuggestedValue(descriptor);
+			if (value != null) {
+				if (value instanceof String) {
+					String strVal = resolveEmbeddedValue((String) value);
+					BeanDefinition bd = (beanName != null && containsBean(beanName) ?
+							getMergedBeanDefinition(beanName) : null);
+					value = evaluateBeanDefinitionString(strVal, bd);
+				}
+				TypeConverter converter = (typeConverter != null ? typeConverter : getTypeConverter());
+				try {
+					return converter.convertIfNecessary(value, type, descriptor.getTypeDescriptor());
+				}
+				catch (UnsupportedOperationException ex) {
+					// A custom TypeConverter which does not support TypeDescriptor resolution...
+					return (descriptor.getField() != null ?
+							converter.convertIfNecessary(value, type, descriptor.getField()) :
+							converter.convertIfNecessary(value, type, descriptor.getMethodParameter()));
+				}
+			}
+
+			Object multipleBeans = resolveMultipleBeans(descriptor, beanName, autowiredBeanNames, typeConverter);
+			if (multipleBeans != null) {
+				return multipleBeans;
+			}
+
+			Map<String, Object> matchingBeans = findAutowireCandidates(beanName, type, descriptor);
+			if (matchingBeans.isEmpty()) {
+				if (isRequired(descriptor)) {
+					raiseNoMatchingBeanFound(type, descriptor.getResolvableType(), descriptor);
+				}
+				return null;
+			}
+
+			String autowiredBeanName;
+			Object instanceCandidate;
+
+			if (matchingBeans.size() > 1) {
+				autowiredBeanName = determineAutowireCandidate(matchingBeans, descriptor);
+				if (autowiredBeanName == null) {
+					if (isRequired(descriptor) || !indicatesMultipleBeans(type)) {
+						return descriptor.resolveNotUnique(descriptor.getResolvableType(), matchingBeans);
+					}
+					else {
+						// In case of an optional Collection/Map, silently ignore a non-unique case:
+						// possibly it was meant to be an empty collection of multiple regular beans
+						// (before 4.3 in particular when we didn't even look for collection beans).
+						return null;
+					}
+				}
+				instanceCandidate = matchingBeans.get(autowiredBeanName);
+			}
+			else {
+				// We have exactly one match.
+				Map.Entry<String, Object> entry = matchingBeans.entrySet().iterator().next();
+				autowiredBeanName = entry.getKey();
+				instanceCandidate = entry.getValue();
+			}
+
+			if (autowiredBeanNames != null) {
+				autowiredBeanNames.add(autowiredBeanName);
+			}
+			if (instanceCandidate instanceof Class) {
+				instanceCandidate = descriptor.resolveCandidate(autowiredBeanName, type, this);
+			}
+			Object result = instanceCandidate;
+			if (result instanceof NullBean) {
+				if (isRequired(descriptor)) {
+					raiseNoMatchingBeanFound(type, descriptor.getResolvableType(), descriptor);
+				}
+				result = null;
+			}
+			if (!ClassUtils.isAssignableValue(type, result)) {
+				throw new BeanNotOfRequiredTypeException(autowiredBeanName, type, instanceCandidate.getClass());
+			}
+			return result;
+		}
+		finally {
+			ConstructorResolver.setCurrentInjectionPoint(previousInjectionPoint);
+		}
+	}
+```
+
+## @Autowird注入
+
+@Autowired注入总体过程：
+
+1. 元信息解析
+2. 依赖查找
+3. 依赖注入（字段、方法）
+
+核心处理方法：
+
+```java
+@Override
+		protected void inject(Object bean, @Nullable String beanName, @Nullable PropertyValues pvs) throws Throwable {
+             // 标注了@Autowired注解的字段
+			Field field = (Field) this.member;
+			Object value;
+			if (this.cached) {
+				try {
+					value = resolvedCachedArgument(beanName, this.cachedFieldValue);
+				}
+				catch (NoSuchBeanDefinitionException ex) {
+					// Unexpected removal of target bean for cached argument -> re-resolve
+					value = resolveFieldValue(field, bean, beanName);
+				}
+			}
+			else {
+				value = resolveFieldValue(field, bean, beanName);
+			}
+			if (value != null) {
+                 // 有可能时非public字段
+				ReflectionUtils.makeAccessible(field);
+                 // 最终通过反射的方式将依赖注入的对象设置到属性上
+				field.set(bean, value);
+			}
+		}
+```
+
+在XML中配置信息解析的方法：
+
+```java
+	@Override
+	public PropertyValues postProcessProperties(PropertyValues pvs, Object bean, String beanName) {
+		InjectionMetadata metadata = findAutowiringMetadata(beanName, bean.getClass(), pvs);
+		try {
+			metadata.inject(bean, beanName, pvs);
+		}
+		catch (BeanCreationException ex) {
+			throw ex;
+		}
+		catch (Throwable ex) {
+			throw new BeanCreationException(beanName, "Injection of autowired dependencies failed", ex);
+		}
+		return pvs;
+	}
+```
+
+这个方法会在set方法执行之前就执行，并且这个时候还没有进行类型转换。当这个类有父类的时候，会进行属性合并的操作，并且是在postProcessProperties之前执行的。
+
+```java
+@Override
+	public void postProcessMergedBeanDefinition(RootBeanDefinition beanDefinition, Class<?> beanType, String beanName) {
+		InjectionMetadata metadata = findAutowiringMetadata(beanName, beanType, null);
+		metadata.checkConfigMembers(beanDefinition);
+	}
+```
+
+一直会找到所有父类中的属性的方法：
+
+```java
+	@Nullable
+	private MergedAnnotation<?> findAutowiredAnnotation(AccessibleObject ao) {
+		MergedAnnotations annotations = MergedAnnotations.from(ao);
+		for (Class<? extends Annotation> type : this.autowiredAnnotationTypes) {
+			MergedAnnotation<?> annotation = annotations.get(type);
+			if (annotation.isPresent()) {
+				return annotation;
+			}
+		}
+		return null;
+	}
+```
+
+调用上述方法的地方：
+
+```java
+	ReflectionUtils.doWithLocalFields(targetClass, field -> {
+				MergedAnnotation<?> ann = findAutowiredAnnotation(field);
+				if (ann != null) {
+                      // 可以看到就是在这里排除掉了static的字段
+					if (Modifier.isStatic(field.getModifiers())) {
+						if (logger.isInfoEnabled()) {
+							logger.info("Autowired annotation is not supported on static fields: " + field);
+						}
+						return;
+					}
+					boolean required = determineRequiredStatus(ann);
+					currElements.add(new AutowiredFieldElement(field, required));
+				}
+			});
+```
+
+可以看到在postProcessMergedBeanDefinition就完成了Bean的元信息的组装，并且在postProcessProperties执行的时候会包含调用DefaultListableBeanFactory#resolveDependency方法的过程。
+
+## @Inject和@Autowired联系
+
+@Inject注入过程
+
+- 如果JSR-330存在于ClassPath中，就直接复用AutowiredAnnotationBeanPostProcessor的实现。
+
+在源代码中可以看到相关的逻辑：
+
+这里首先要关注一个属性：
+
+```java
+private final Set<Class<? extends Annotation>> autowiredAnnotationTypes = new LinkedHashSet<>(4);
+```
+
+可以看到autowiredAnnotationTypes实际上是一个有序的Set集合，接下来是具体处理的逻辑：
+
+```java
+	public AutowiredAnnotationBeanPostProcessor() {
+        // 依次插入Autowired、Value、inject
+		this.autowiredAnnotationTypes.add(Autowired.class);
+		this.autowiredAnnotationTypes.add(Value.class);
+		try {
+			this.autowiredAnnotationTypes.add((Class<? extends Annotation>)
+					ClassUtils.forName("javax.inject.Inject", AutowiredAnnotationBeanPostProcessor.class.getClassLoader()));
+			logger.trace("JSR-330 'javax.inject.Inject' annotation found and supported for autowiring");
+		}
+		catch (ClassNotFoundException ex) {
+			// JSR-330 API not available - simply skip.
+		}
+	}
+
+```
+
+可以看到实际上还可以进行复合注解，并且在处理的时候：
+
+```java
+	@Nullable
+	private MergedAnnotation<?> findAutowiredAnnotation(AccessibleObject ao) {
+		MergedAnnotations annotations = MergedAnnotations.from(ao);
+		for (Class<? extends Annotation> type : this.autowiredAnnotationTypes) {
+			MergedAnnotation<?> annotation = annotations.get(type);
+			if (annotation.isPresent()) {
+				return annotation;
+			}
+		}
+		return null;
+	}
+```
+
+因此，如果要使用@Inject注解，就需要引入依赖：
+
+```xml
+<dependency>
+    <groupId>javax.inject</groupId>
+    <artifactId>javax.inject</artifactId>
+    <version>1</version>
+</dependency>
+```
+
+可以发现@Inject和@Autowired注解在处理的上完全一样的，都是使用AutowiredAnnotationBeanPostProcessor来处理依赖注入的过程。
+
+## Java通用注解原理
+
+CommonAnnotationBeanPostProcessor
+
+1. 注入注解
+	- javax.xml.ws.WebServiceRef
+	- javax.ejb.EJB
+	- javax.annotation.Resource
+2. 生命周期注解
+	- javax.annotation.PostConstruct
+	- javax.annotation.PreDestory
+
+CommonAnnotationBeanPostProcessor和AutowiredAnnotationBeanPostProcessor大概的实现逻辑是如出一辙的，只是在细微的地方略有差别。
+
+CommonAnnotationBeanPostProcessor实现了InitDestroyAnnotationBeanPostProcessor接口
+
+```java
+public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBeanPostProcessor
+		implements InstantiationAwareBeanPostProcessor, BeanFactoryAware, Serializable {
+		// ...
+		}
+```
+
+在InitDestroyAnnotationBeanPostProcessor中也可以看到postProcessMergedBeanDefinition这个方法：
+
+![1622945426099](assets/1622945426099.png)
+
+这里只是元信息不太一样，这主要是LifecycleMetadata中包含了初始化和销毁两个阶段。
+
+同样CommonAnnotationBeanPostProcessor也有postProcessProperties的方法：
+
+![1622945839012](assets/1622945839012.png)
+
+对于生命周期的注解的处理，可以从构造方法中看出：
+
+```java
+public CommonAnnotationBeanPostProcessor() {
+    	// 优先级是倒数第四位的
+		setOrder(Ordered.LOWEST_PRECEDENCE - 3);
+		setInitAnnotationType(PostConstruct.class);
+		setDestroyAnnotationType(PreDestroy.class);
+		ignoreResourceType("javax.xml.ws.WebServiceContext");
+	}
+```
+
+CommonAnnotationBeanPostProcessor会在AutowiredAnnotationBeanPostProcessor之前进行处理，这一点，可以通过实现的PriorityOrdered接口，看到属性中定义的顺序来进行确认。
+
+## 自定义依赖注入注解
+
+1. 基于AutowiredAnnotationBeanPostProcessor实现
+2. 自定义实现
+	- 生命周期处理
+		- InstantiationAwareBeanPostProcessor
+		- MergedBeanDefinitionPostProcessor
+	- 元数据
+		- InjectedElement
+		- InjectionMetadata
+
+基于AutowiredAnnotationBeanPostProcessor实现自定义依赖注入相对比较容易，如果使用自定义实现，就比较麻烦。
+
+```java
+/**
+ * 自定义注解
+ */
+@Target({ElementType.CONSTRUCTOR, ElementType.METHOD, ElementType.FIELD})
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Autowired
+public @interface MyAutowired {
+    boolean required() default true;
+}
+
+```
+
+这里我们不对@Autowired做任何的扩展，仅仅使用它进行元标注，定义完成之后使用MyAutowired进行注入：
+
+```java
+ 	@MyAutowired
+    private Optional<User> userOptional;
+```
+
+发现依然可以正常地工作，接下来我们自定义一个注解：
+
+```java
+/**
+ * 自定义依赖注入注解
+ */
+@Target({ElementType.CONSTRUCTOR, ElementType.METHOD, ElementType.FIELD})
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+public @interface InjectedUser {
+}
+```
+
+将我们自定义的注解类型添加到AutowiredAnnotationBeanPostProcessor中：
+
+```java
+    @Bean(name = AUTOWIRED_ANNOTATION_PROCESSOR_BEAN_NAME) //注意这里是static方法，会提前初始化方法
+    public static AutowiredAnnotationBeanPostProcessor beanPostProcessor() {
+        AutowiredAnnotationBeanPostProcessor beanPostProcessor = new AutowiredAnnotationBeanPostProcessor();
+        // 替换原有注解处理，使用新注解@InjectedUser，原来的注解会失效
+//        beanPostProcessor.setAutowiredAnnotationType(InjectedUser.class);
+        // 保留原来的方式，添加新的注解，@Autowired + @InjectedUser
+        Set<Class<? extends Annotation>> autowiredAnnotationTypes = new LinkedHashSet<>(Arrays.asList(Autowired.class, Inject.class, InjectedUser.class));
+        beanPostProcessor.setAutowiredAnnotationTypes(autowiredAnnotationTypes);
+        return beanPostProcessor;
+    }
+```
+
+测试我们的注解是否生效：
+
+```java
+ 	@InjectedUser
+    private User myInjectedUser;
+```
+
+答案是肯定的。如何实现新老注解的兼容的注入方法呢？
+
+首先注入一个AutowiredAnnotationBeanPostProcessor，并设置我们自定义的注解
+
+```java
+	@Bean
+    @Order(Ordered.LOWEST_PRECEDENCE - 3)
+    public static AutowiredAnnotationBeanPostProcessor beanPostProcessor() {
+        AutowiredAnnotationBeanPostProcessor beanPostProcessor = new AutowiredAnnotationBeanPostProcessor();
+        beanPostProcessor.setAutowiredAnnotationType(InjectedUser.class);
+        return beanPostProcessor;
+    }
+```
+
+​	在AnnotationConfigUtils#registerAnnotationConfigProcessors中
+
+```java
+if (!registry.containsBeanDefinition(AUTOWIRED_ANNOTATION_PROCESSOR_BEAN_NAME)) {
+			RootBeanDefinition def = new RootBeanDefinition(AutowiredAnnotationBeanPostProcessor.class);
+			def.setSource(source);
+			beanDefs.add(registerPostProcessor(registry, def, AUTOWIRED_ANNOTATION_PROCESSOR_BEAN_NAME));
+		}
+```
+
+可以看到如果AutowiredAnnotationBeanPostProcessor这个Bean存在的话，就不注册，不存在的会注册一个默认的，因为我们这里注入AutowiredAnnotationBeanPostProcessor采用的static，就会首先使用我们注册的AutowiredAnnotationBeanPostProcessor来进行依赖注入，这时候，在应用上下文中有两个AutowiredAnnotationBeanPostProcessor来进行处理。
+
+## 面试题
+
+### 有多少种依赖注入的方式
+
+构造器注入、Setter注入、字段注入、方法注入、接口回调注入
+
+### 你偏好构造器注入还是Setter注入?
+
+两种依赖注入的方式均可以使用，如果是必须依赖的话，那么推荐使用构造器注入，Setter注入用于可选依赖。
+
+### Spring依赖注入的来源有哪些？
+
+待续...
+
+# Spring IoC依赖来源
+
+## 依赖查找的来源
+
