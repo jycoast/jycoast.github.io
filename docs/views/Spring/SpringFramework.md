@@ -3418,7 +3418,7 @@ public class ResolvableDependencySourceDemo {
 
 要素：
 
-- 要素：非常规Spring对象依赖来源
+- 类型：非常规Spring对象依赖来源
 
 限制：
 
@@ -3500,3 +3500,287 @@ Spring BeanDefinition、单例对象、Resolvable Dependency、@Value外部化�
 | application | 将Spring Bean存储在ServletContext中                    |
 
 笼统而言，我们只要记住单例和原型两种即可，其余三种主要是为了服务端模板引擎渲染，包括JSP、Velocity、FreeMarker。
+
+## singleton作用域
+
+单例模式是在一定范围内是全局共享的，但是这个范围是有限的。通过观察BeanDefinition源代码可以发现，其实只有singleton和prototype这两个作用域相关的方法：
+
+```java
+	// 是否是单例
+	boolean isSingleton();
+	// 是否是原型
+	boolean isPrototype();
+```
+
+单例模式的示例图：
+
+![img](./assets/20141217143318093)
+
+这里有一个误区就是，singleton和prototype并没有互斥的关系，是可以同时存在的，当然，如果同时存在的话，可能行为会有一些问题。
+
+## prototype作用域
+
+
+
+多例模式的示意图：
+
+![img](./assets/20141217143404577)
+
+多例和单例比较的示例：
+
+```java
+/**
+ * Bean的作用域示例
+ */
+public class BeanScopeDemo {
+
+    @Bean
+    // 默认的scop就是“singleton”
+    public static User singletonUser() {
+        return createUser();
+    }
+
+    @Bean
+    @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+    public static User prototypeUser() {
+        return createUser();
+    }
+
+    private static User createUser() {
+        User user = new User();
+        user.setId(String.valueOf(System.nanoTime()));
+        return user;
+    }
+
+    @Autowired
+    @Qualifier("singletonUser")
+    private User singletonUser;
+
+    @Autowired
+    @Qualifier("singletonUser")
+    private User singletonUser1;
+
+    @Autowired
+    @Qualifier("prototypeUser")
+    private User prototypeUser;
+
+    @Autowired
+    @Qualifier("prototypeUser")
+    private User prototypeUser1;
+
+    @Autowired
+    @Qualifier("prototypeUser")
+    private User prototypeUser2;
+
+    @Autowired
+    private Map<String,User> users;
+
+
+    private static void scopedBeansByInjection(AnnotationConfigApplicationContext applicationContext) {
+        BeanScopeDemo beanScopeDemo = applicationContext.getBean(BeanScopeDemo.class);
+        System.out.println("beanScopeDemo.singletonUser = " + beanScopeDemo.singletonUser);
+        System.out.println("beanScopeDemo.singletonUser1 = " + beanScopeDemo.singletonUser1);
+        System.out.println("beanScopeDemo.prototypeUser1 = " + beanScopeDemo.prototypeUser);
+        System.out.println("beanScopeDemo.prototypeUser2 = " + beanScopeDemo.prototypeUser1);
+        System.out.println("beanScopeDemo.prototypeUser3 = " + beanScopeDemo.prototypeUser2);
+        System.out.println("beanScopeDemo.users = " + beanScopeDemo.users);
+    }
+
+    private static void scopedBeansByLookup(AnnotationConfigApplicationContext applicationContext) {
+        for (int i = 0; i < 3; i++) {
+            User singletonUser = applicationContext.getBean("singletonUser", User.class);
+            // singletonUser是共享的Bean对象
+            System.out.println("singletonUser = " + singletonUser.getId());
+            // prototypeUser是每次依赖查找都会生成新的Bean对象
+            User prototypeUser = applicationContext.getBean("prototypeUser", User.class);
+            System.out.println("prototypeUser = " + prototypeUser.getId());
+
+        }
+    }
+
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext();
+        applicationContext.register(BeanScopeDemo.class);
+        applicationContext.refresh();
+        // 结论一：
+        // singleton Bean无论依赖查找还是依赖注入均为同一个对象
+        // prototype Bean无论依赖查找还是依赖注入均为新生成的对象
+        // 结论二：
+        // 如果依赖注入集合类型的对象，singleton Bean和prototype Bean均会存在一个
+        // prototype Bean有别于其他地方的依赖注入
+        scopedBeansByLookup(applicationContext);
+        scopedBeansByInjection(applicationContext);
+        applicationContext.close();
+    }
+}
+```
+
+注意事项：
+
+Spring容器没有办法管理prototype Bean的完整生命周期，也没有办法记录实例的存在。销毁回调方法将不会执行，可以利用BeanPostProcess进行清扫工作。
+
+```java
+public class User implements BeanNameAware {
+    private String id;
+
+    private String name;
+
+    private transient String beanName;
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "id='" + id + '\'' +
+                ", name='" + name + '\'' +
+                '}';
+    }
+    public static User createUser() {
+        User user = new User();
+        user.setName("createUser");
+        user.setId("123");
+        return user;
+    }
+
+    @PostConstruct
+    public void init() {
+        System.out.println("User Bean [" + beanName + "]初始化...");
+    }
+
+    @PreDestroy
+    public void destory() {
+        System.out.println("User Bean [" + beanName + "]销毁化...");
+    }
+
+    @Override
+    public void setBeanName(String name) {
+        this.beanName = name;
+    }
+}
+```
+
+运行刚才的例子不难看出，初始化的方法每次还是会被调用，但是销毁方法只有单例的Bean才会调用，那么如何销毁prototype的Bean呢？一种做法就是前面提到的BeanPostProcess：
+
+```java
+        applicationContext.addBeanFactoryPostProcessor(beanFactory -> {
+            beanFactory.addBeanPostProcessor(new BeanPostProcessor() {
+                @Override
+                public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+                    System.out.printf("%s Bean名称: %s 在初始化后回调...%n", bean.getClass().getName(), beanName);
+                    return bean;
+                }
+            });
+        });
+```
+
+在这个方法里面可以执行一些销毁的逻辑，但是使用这种方式，可能会有一些意想不到的结果，因为创建好的prototype的Bean通常而言都是马上要使用的，而不需要在它上面增加一些额外的操作，更为推荐的方式，是在维护prototype的Bean的类中，利用它的生命周期方法，对于所管理的prototype类型的类进行销毁：
+
+```java
+public class BeanScopeDemo implements DisposableBean {
+
+    @Bean
+    // 默认的scop就是“singleton”
+    public static User singletonUser() {
+        return createUser();
+    }
+
+    @Bean
+    @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+    public static User prototypeUser() {
+        return createUser();
+    }
+
+    private static User createUser() {
+        User user = new User();
+        user.setId(String.valueOf(System.nanoTime()));
+        return user;
+    }
+
+    @Autowired
+    @Qualifier("singletonUser")
+    private User singletonUser;
+
+    @Autowired
+    @Qualifier("singletonUser")
+    private User singletonUser1;
+
+    @Autowired
+    @Qualifier("prototypeUser")
+    private User prototypeUser;
+
+    @Autowired
+    @Qualifier("prototypeUser")
+    private User prototypeUser1;
+
+    @Autowired
+    @Qualifier("prototypeUser")
+    private User prototypeUser2;
+
+    @Autowired
+    private Map<String, User> users;
+
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext();
+        applicationContext.register(BeanScopeDemo.class);
+        applicationContext.refresh();
+        applicationContext.close();
+    }
+
+    @Override
+    public void destroy() {
+        System.out.println("当前BeanScopeDemo Bean 正在销毁中");
+        this.prototypeUser.destory();
+        this.prototypeUser1.destory();
+        this.prototypeUser2.destory();
+        for (Map.Entry<String, User> entry : this.users.entrySet()) {
+            String beanName = entry.getKey();
+            BeanDefinition beanDefinition = beanFactory.getBeanDefinition(beanName);
+            if (beanDefinition.isPrototype()) {
+                User user = entry.getValue();
+                user.destory();
+            }
+        }
+        System.out.println("当前BeanScopeDemo Bean 销毁已完成...");
+    }
+}
+
+```
+
+## request作用域
+
+1. 配置
+	- XML
+
+## 面试题
+
+### Spring内建的Bean的作用域有几种？
+
+sington、prototype、request、session、application以及websocket
+
+### singleton Bean是否在一个应用中是唯一的？
+
+否，singleton bean仅在当前Spring IoC容器（BeanFactory）中是单例对象。
+
+### "application" Bean是否被其他方案他替代？
+
+可以的，实际上，"application" Bean与"singleton" Bean没有本质区别。
+
+# Spring Bean 生命周期
+
+
+
