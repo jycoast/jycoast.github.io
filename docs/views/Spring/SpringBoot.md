@@ -557,3 +557,303 @@ Spotify Maven 插件是一个目前比较普遍的选择。它要求应用程序
 
 优点是不需要本地Docker环境，而且支持分层构建、镜像瘦身，上手容易；缺点是定制化比较困难。
 
+# SpringBoot项目docker打包体积优化
+
+## 修改之前
+
+最开始使用的dockerfile：
+
+```dockerfile
+FROM java:8
+
+# 环境变量
+ENV WORK_PATH /home/project/cmp
+ENV APP_NAME @project.build.finalName@.@project.packaging@
+ENV APP_VERSION @project.version@
+
+EXPOSE 8080
+
+#VOLUME
+VOLUME ["/home/project", "/tmp/data"]
+
+#COPY
+COPY $APP_NAME $WORK_PATH/
+
+# WORKDIR
+WORKDIR $WORK_PATH
+
+RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+RUN echo 'Asia/Shanghai' >/etc/timezone
+
+COPY SIMSUN.TTC  /usr/share/fonts/SIMSUN.TTC
+RUN cd  /usr/share/fonts
+RUN fc-cache -fsv
+
+# ENTRYPOINT
+ENTRYPOINT ["java","-Djava.security.egd=file:/dev/./urandom"]
+
+CMD ["-jar", "-Xmx512m", "@project.build.finalName@.@project.packaging@"]
+```
+
+由于这里直接使用java8的镜像，本身就有600多M，加上业务模块本身的大小，大约有了800多M，这样每次打包构建，非常的耗时，也很占用磁盘空间。
+
+![image-20210609163709373](./assets/image-20210609163709373.png)
+
+## 使用Alpine镜像
+
+`Alpine Linux`操作系统是一个面向安全的轻型 `Linux` 发行版，`Alpine Docker` 镜像也继承了`Alpine Linux`发行版的这些优势，相比于其他Docker镜像，它的容量非常小，并且拥有自己的包管理机制，可以使用`apk` 包管理器替换 `apt` 工具，例如：
+
+```shell
+$ apk add --no-cache <package>
+```
+
+这里我们使用Alpine提供的docker镜像：
+
+![image-20210609165237674](./assets/image-20210609165237674.png)
+
+因此这里我们使用`Alpine`镜像，并且将RUN的指令合并在一起，减少构建的层数，修改之后的dockerfile，：
+
+```dockerfile
+FROM openjdk:8-jdk-alpine
+
+# 环境变量
+ENV WORK_PATH /home/project/cmp
+# 这里的都是maven内置的变量
+ENV APP_NAME @project.build.finalName@.@project.packaging@
+
+COPY $APP_NAME $WORK_PATH/
+
+# WORKDIR
+WORKDIR $WORK_PATH
+# 根据实际需求添加字体
+COPY simsun.ttc  /usr/share/fonts/simsun.ttc
+# 为了解决docker容器内的时间和宿主机时间不一致的问题，并且安装了fontconfig，方便安装字体
+RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && echo 'Asia/Shanghai' >/etc/timezone && apk add --update ttf-dejavu fontconfig && rm -rf /var/cache/apk/*
+
+# ENTRYPOINT
+ENTRYPOINT ["java","-Djava.security.egd=file:/dev/./urandom"]
+
+CMD ["-jar", "-Xmx512m", "@project.build.finalName@.@project.packaging@"]
+```
+
+## 分层构建镜像
+
+使用了`Alpine`镜像之后，项目的体积有了比较明显的改善，但是每次打包的时候还是会全量构建项目中的所有内容，构建的时间还是比较长，这里我们使用分层的机制来进行打包，这里要注意的是，使用的`SpringBoot`的版本必须要大于2.3.X。
+
+```dockerfile
+FROM openjdk:8-jdk-alpine as builder
+ENV APP_NAME @project.build.finalName@.@project.packaging@
+WORKDIR application
+# 注意这里对应的是编译后的dockerfile的目录，如果对应不上，可能会提示找不到文件
+COPY $APP_NAME application.jar
+# 指定构建Jar的模式，并从Jar包中提取构建镜像所需的内容
+RUN java -Djarmode=layertools -jar application.jar extract
+
+FROM openjdk:8-jdk-alpine
+WORKDIR application
+# 拷贝字体，这里安装宋体字体，alpine镜像会自动检测/usr/share/fonts是否含有字体
+COPY simsun.ttc  /usr/share/fonts/simsun.ttc
+COPY --from=builder application/dependencies/ ./
+COPY --from=builder application/snapshot-dependencies/ ./
+COPY --from=builder application/spring-boot-loader/ ./
+COPY --from=builder application/application/ ./
+ENV TZ="Asia/Shanghai"
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+# 设置虚拟机参数
+ENV JVM_OPTS="-XX:MaxRAMPercentage=80.0"
+ENV JAVA_OPTS=""
+ENTRYPOINT ["sh","-c","java $JVM_OPTS $JAVA_OPTS org.springframework.boot.loader.JarLauncher"]
+```
+
+配置pom.xml文件：
+
+```xml
+<plugin>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-maven-plugin</artifactId>
+    <!--引用本地Jar包-->
+    <configuration>
+        <includeSystemScope>true</includeSystemScope>
+        <layers>
+            <enabled>
+                true
+            </enabled>
+        </layers>
+    </configuration>
+</plugin>
+```
+
+## Maven中内置变量
+
+- `${basedir}` 项目根目录
+- `${project.build.directory}` 构建目录，缺省为target
+- `${project.build.outputDirectory}` 构建过程输出目录，缺省为target/classes
+- `${project.build.finalName}` 产出物名称，缺省为{project.artifactId}-${project.version}
+- `${project.packaging}` 打包类型，缺省为jar
+- `${project.xxx}` 当前pom文件的任意节点的内容
+
+## 可能存在的问题
+
+1. 如果本身项目`SpringBoot`版本较低，不建议升级，推荐通过使用`Alpine`镜像以及优化dockerfile写法减少镜像体积，特别的，如果是使用的`Spring Cloud`，升级会出现组件版本不兼容的情况，可能需要升级诸多依赖的版本，并且需要投入精力进行测试验证。
+
+2. 如果项目不需要字体，可以跳过：
+
+   ```shell
+   RUN apk add --update ttf-dejavu fontconfig && rm -rf /var/cache/apk/*
+   ```
+
+3. 如果项目中只需要宋体，可以只复制字体文件到镜像内，而不需要安装fontconfig，`alpine`镜像会自动检测`/usr/share/fonts`是否含有字体：
+
+   ```shell
+   COPY simsun.ttc  /usr/share/fonts/simsun.ttc
+   ```
+
+4. 如果项目中既需要宋体又需要其他字体（例如图片验证码），这是时候，拷贝宋体字体文件和安装fontconfig都需要：
+
+   ```shell
+   COPY simsun.ttc  /usr/share/fonts/simsun.ttc
+   RUN apk add --update ttf-dejavu fontconfig && rm -rf /var/cache/apk/*
+   ```
+
+5. 如果镜像打包的体积还是过大，可以使用`docker history image_name --no-trunc=true`命令来查看构建的详情。
+
+附完整的pom文件：
+
+```xml
+  <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>application-${profiles.active}.yml</include>
+                    <include>bootstrap.yml</include>
+                    <include>application.yml</include>
+                </includes>
+            </resource>
+            <!--这里实我们的dockerfile文件所在的目录-->
+            <resource>
+                <directory>src/main/docker</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>**/Dockerfile</include>
+                </includes>
+                <targetPath>../docker</targetPath>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>static/**</include>
+                    <include>**/*.jar</include>
+                    <include>bootstrap.yml</include>
+                    <include>*.yml</include>
+                    <include>*.xml</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/java</directory>
+                <includes>
+                    <include>**/*.xml</include>
+                    <include>**/*.json</include>
+                    <include>**/*.ftl</include>
+                </includes>
+            </resource>
+        </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <!--引用本地Jar包-->
+                <configuration>
+                    <includeSystemScope>true</includeSystemScope>
+                    <layers>
+                        <enabled>
+                            true
+                        </enabled>
+                    </layers>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+            <!-- 打包跳过测试 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <skipTests>true</skipTests>
+                </configuration>
+            </plugin>
+            <!-- 避免font文件的二进制文件格式压缩破坏 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <configuration>
+                    <nonFilteredFileExtensions>
+                        <nonFilteredFileExtension>woff</nonFilteredFileExtension>
+                        <nonFilteredFileExtension>woff2</nonFilteredFileExtension>
+                        <nonFilteredFileExtension>eot</nonFilteredFileExtension>
+                        <nonFilteredFileExtension>ttf</nonFilteredFileExtension>
+                        <nonFilteredFileExtension>svg</nonFilteredFileExtension>
+                    </nonFilteredFileExtensions>
+                    <delimiters>
+                        <delimiter>@</delimiter>
+                    </delimiters>
+                    <useDefaultDelimiters>false</useDefaultDelimiters>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>com.spotify</groupId>
+                <artifactId>docker-maven-plugin</artifactId>
+                <version>1.1.0</version>
+                <executions>
+                    <execution>
+                        <id>build-image</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>build</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>push-image</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>push</goal>
+                        </goals>
+                        <configuration>
+                            <imageName>
+                                ${docker.repostory}/${docker.registry.name}/${project.artifactId}:${profiles.active}-${project.version}
+                            </imageName>
+                        </configuration>
+                    </execution>
+                </executions>
+                <configuration>
+                    <serverId>harbor</serverId>
+                    <dockerDirectory>${project.build.directory}/docker</dockerDirectory>
+                    <imageName>
+                        ${docker.repostory}/${docker.registry.name}/${project.artifactId}
+                    </imageName>
+                    <imageTags>
+                        <!--docker的tag为项目版本号、latest-->
+                        <imageTag>${profiles.active}-${project.version}</imageTag>
+                    </imageTags>
+                    <resources>
+                        <rescource><!-- 将打包文件放入dockerDirectory指定的位置 -->
+                            <targetPath>/</targetPath>
+                            <directory>${project.build.directory}</directory>
+                            <include>${project.artifactId}-${project.version}.jar</include>
+                        </rescource>
+                    </resources>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+```
+
