@@ -3764,7 +3764,159 @@ public class BeanScopeDemo implements DisposableBean {
 ## request作用域
 
 1. 配置
-	- XML
+	- XML - `<bean class="..." scope="request">`
+	- Java注解 - @RequestScope或@Scope（WebApplicationContext.SCOPE_REQUEST）
+2. 实现
+   - API - RequestScope
+
+## session作用域
+
+1. 配置
+   - XML - `<bean class="..." scope="session">`
+   - Java注解 - @SessionScope或@Scope（WebApplicationContext.SCOPE_SESSION）
+2. 实现
+   - API - SessionScope
+
+request作用域的对象，每次请求都会返回一个新的对象，并且对象会经历初始化和销毁两个过程，而session作用域，在同一个cookie的情况下，每次返回的都是同一个对象，这个时候对象只会经历初始化的过程，而不会对Bean进行销毁。无论是request还是session，返回的对象都是经过cglib代理的对象。
+
+## application作用域
+
+1. 配置
+   - XML - `<bean class="..." scope="application">`
+   - Java注解 - @ApplicationScope或@Scope（WebApplicationContext.APPLICATION）
+2. 实现
+   - API - ApplicationScope
+
+application作用域的Bean可以在ServletContext中直接获取到。一个JavaWeb应用只创建一个ServletContext对象，应用在启动的时候创建ServletContext对象，在服务器关闭的时候销毁，使用ServletContext获取到的Bean对象也是经过cglib代理的对象，Bean的名称为`scopedTarget.beanName`
+
+## 自定义Bean作用域
+
+1. 实现Scope
+
+   - org.springframework.beans.factory.config.Scope
+
+2. 注册Scope
+
+   - API - org.springframework.beans.factory.config.ConfigurableBeanFactory#registerScope
+
+   - 配置：
+
+     ```xml
+     <bean class="org.springframework.beans.factory.config.CustomScopeConfigurer">
+          <property name="scopes">
+               <map>
+                    <entry key="...">
+                    </entry>
+               </map>
+          </property>
+     </bean>
+     ```
+
+自定义作用的相关示例，首先进行定义：
+
+```java
+public class ThreadLocalScope implements Scope {
+
+    public static final String SCOP_NAME = "thread-local";
+
+    private final NamedThreadLocal<Map<String, Object>> threadLocal = new NamedThreadLocal("thread-local-scope") {
+        @Override
+        public Map<String, Object> initialValue() {
+            return new HashMap<>();
+        }
+    };
+
+    @Override
+    public Object get(String name, ObjectFactory<?> objectFactory) {
+        // 非空
+        Map<String, Object> context = getContext();
+        Object object = context.get(name);
+        if (object == null) {
+            object = objectFactory.getObject();
+            context.put(name, object);
+        }
+        return object;
+    }
+
+    private Map<String, Object> getContext() {
+        return threadLocal.get();
+    }
+
+    @Override
+    public Object remove(String name) {
+        Map<String, Object> context = getContext();
+        return context.remove(name);
+    }
+
+    @Override
+    public void registerDestructionCallback(String name, Runnable callback) {
+        // TODO
+    }
+
+    @Override
+    public Object resolveContextualObject(String key) {
+        Map<String, Object> context = getContext();
+        return context.get(key);
+    }
+
+    @Override
+    public String getConversationId() {
+        Thread thread = Thread.currentThread();
+        return String.valueOf(thread.getId());
+    }
+}
+```
+
+接下来进行注册并且测试是否成功：
+
+```java
+public class ThreadLocalScopeDemo {
+    @Bean
+    @Scope(ThreadLocalScope.SCOP_NAME)
+    public User user() {
+        return createUser();
+    }
+
+    private static User createUser() {
+        User user = new User();
+        user.setId(String.valueOf(System.nanoTime()));
+        return user;
+    }
+
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext();
+        applicationContext.register(ThreadLocalScopeDemo.class);
+        applicationContext.addBeanFactoryPostProcessor(beanFactory -> {
+                    beanFactory.registerScope(ThreadLocalScope.SCOP_NAME, new ThreadLocalScope());
+                }
+        );
+        applicationContext.refresh();
+        scopedBeansByLookup(applicationContext);
+        applicationContext.close();
+    }
+
+    private static void scopedBeansByLookup(AnnotationConfigApplicationContext applicationContext) {
+        // 单个线程下，返回的永远是同一个Bean
+//        for (int i = 0; i < 3; i++) {
+//            User user = applicationContext.getBean("user", User.class);
+//            System.out.println("user = " + user.getId());
+//        }
+        for (int i = 0; i < 3; i++) {
+            Thread thread = new Thread(() -> {
+                User user = applicationContext.getBean("user", User.class);
+                System.out.printf("[Thread id: %d] user = %s%n", Thread.currentThread().getId(), user);
+            });
+            thread.start();
+            // 强制线程执行完成
+            try {
+                thread.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+}
+```
 
 ## 面试题
 
@@ -3782,5 +3934,13 @@ sington、prototype、request、session、application以及websocket
 
 # Spring Bean 生命周期
 
+## 元信息配置阶段
 
+BeanDefinition的配置方式：
+
+1. 面向资源
+   - XML配置
+   - Properties资源配置
+2. 面向注解
+3. 面向API
 
