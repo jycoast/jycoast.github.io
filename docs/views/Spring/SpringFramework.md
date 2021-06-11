@@ -2252,7 +2252,7 @@ Aware系列接口回调
 	| ResourceLoaderAware            | 获取资源加载器对象-ResourceLoader                    |
 	| BeanClassLoaderAware           | 获取加载当前Bean Class的ClassLoader                  |
 	| BeanNameAware                  | 获取当前Bean名称                                     |
-| MessageSourceAware             | 获取MessageSource对象，用于Spring国际化              |
+	| MessageSourceAware             | 获取MessageSource对象，用于Spring国际化              |
 	| ApplicationEventPublisherAware | 获取ApplicationEventPublishAware对象，用于Spring事件 |
 	| EmbeddedValueResolverAware     | 获取StringValueResolver对象，用占位符处理            |
 	
@@ -3514,7 +3514,7 @@ Spring BeanDefinition、单例对象、Resolvable Dependency、@Value外部化�
 
 单例模式的示例图：
 
-![img](./assets/20141217143318093)
+![img](./assets/20141217143318093.png)
 
 这里有一个误区就是，singleton和prototype并没有互斥的关系，是可以同时存在的，当然，如果同时存在的话，可能行为会有一些问题。
 
@@ -3524,7 +3524,7 @@ Spring BeanDefinition、单例对象、Resolvable Dependency、@Value外部化�
 
 多例模式的示意图：
 
-![img](./assets/20141217143404577)
+![img](./assets/20141217143404577.png)
 
 多例和单例比较的示例：
 
