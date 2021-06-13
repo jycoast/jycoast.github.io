@@ -3944,3 +3944,398 @@ BeanDefinition的配置方式：
 2. 面向注解
 3. 面向API
 
+这里除了Properties资源配置我们没有见到过外，其他的都有相关的示例。
+
+```properties
+# 注意这里必须这么写，不能写user.class
+user.(class) = org.jyc.thinking.in.spring.ioc.overview.dependency.domain.User
+user.id = 001
+user.name = 吉永超
+user.city = HANGZHOU
+```
+
+相关的演示示例：
+
+```java
+public class BeanMetadataConfigurationDemo {
+    public static void main(String[] args) {
+        DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
+        // 实例化PropertiesBeanDefinitionReader
+        PropertiesBeanDefinitionReader propertiesBeanDefinitionReader = new PropertiesBeanDefinitionReader(beanFactory);
+        String location = "classpath:/META-INF/user.properties";
+        int beanNumbers = propertiesBeanDefinitionReader.loadBeanDefinitions(location);
+        System.out.println("已加载的BeanDefinitiond的数量：" + beanNumbers);
+        // 通过Bean ID和类型进行依赖查找
+        User user = beanFactory.getBean("user", User.class);
+        System.out.println(user.toString());
+    }
+}
+```
+
+## 元信息解析阶段
+
+主要分为两种：
+
+1. 面向资源BeanDefinition解析
+	- BeanDefinitionReader
+	- XML解析器 - BeanDefinitionParser
+2. 面向注解BeanDefinition解析
+	- AnnotatedBeanDefinitionReader
+
+面向资源的情况我们在之前也有过相关的讨论，这里只介绍面向注解的BeanDefinition解析：
+
+```java
+public class AnnotatedBeanDefinitionParsingDemo {
+    public static void main(String[] args) {
+        DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
+        // 基于Java 注解的 AnnotatedBeanDefinitionReader的实现
+        AnnotatedBeanDefinitionReader beanDefinitionReader = new AnnotatedBeanDefinitionReader(beanFactory);
+        int beanDefinitionCountBefore = beanFactory.getBeanDefinitionCount();
+        // 注册当前类（非Componenet Class）
+        beanDefinitionReader.registerBean(AnnotatedBeanDefinitionParsingDemo.class);
+        int beanDefinitionCountAfter = beanFactory.getBeanDefinitionCount();
+        int beanDefinitionCount = beanDefinitionCountAfter - beanDefinitionCountBefore;
+        System.out.println("已加载的BeanDefinitiond的数量：" + beanDefinitionCount);
+        // 普通Class作为Component注册到Spring IoC容器后，通常Bean的名称为类名的首字母小写（annotatedBeanDefinitionParsingDemo）
+        // Bean名称生成来自于BeanNameGenerator，注解实现AnnotationBeanNameGenerator
+        AnnotatedBeanDefinitionParsingDemo demo = beanFactory.getBean("annotatedBeanDefinitionParsingDemo", AnnotatedBeanDefinitionParsingDemo.class);
+        System.out.println(demo);
+    }
+}
+```
+
+默认生成Bean的名称的部分代码：
+
+```java
+	protected String buildDefaultBeanName(BeanDefinition definition) {
+		String beanClassName = definition.getBeanClassName();
+		Assert.state(beanClassName != null, "No bean class name set");
+		String shortClassName = ClassUtils.getShortName(beanClassName);
+		return Introspector.decapitalize(shortClassName);
+	}
+
+```
+
+## 注册阶段
+
+BeanDefinition注册的核心接口：BeanDefinitionRegistry，它有且仅有一个实现类就是DefaultListableBeanFactory。DefaultListableBeanFactory#registerBeanDefinition的逻辑如下：
+
+```java
+public void registerBeanDefinition(String beanName, BeanDefinition beanDefinition)
+			throws BeanDefinitionStoreException {
+
+		Assert.hasText(beanName, "Bean name must not be empty");
+		Assert.notNull(beanDefinition, "BeanDefinition must not be null");
+
+		if (beanDefinition instanceof AbstractBeanDefinition) {
+			try {
+				((AbstractBeanDefinition) beanDefinition).validate();
+			}
+			catch (BeanDefinitionValidationException ex) {
+				throw new BeanDefinitionStoreException(beanDefinition.getResourceDescription(), beanName,
+						"Validation of bean definition failed", ex);
+			}
+		}
+
+		BeanDefinition existingDefinition = this.beanDefinitionMap.get(beanName);
+    	// 当已经存在BeanDefinition的时候
+		if (existingDefinition != null) {
+              // 允许Bean重复注册
+			if (!isAllowBeanDefinitionOverriding()) {
+				throw new BeanDefinitionOverrideException(beanName, beanDefinition, existingDefinition);
+			}
+			else if (existingDefinition.getRole() < beanDefinition.getRole()) {
+				// e.g. was ROLE_APPLICATION, now overriding with ROLE_SUPPORT or ROLE_INFRASTRUCTURE
+				if (logger.isInfoEnabled()) {
+					logger.info("Overriding user-defined bean definition for bean '" + beanName +
+							"' with a framework-generated bean definition: replacing [" +
+							existingDefinition + "] with [" + beanDefinition + "]");
+				}
+			}
+			else if (!beanDefinition.equals(existingDefinition)) {
+				if (logger.isDebugEnabled()) {
+					logger.debug("Overriding bean definition for bean '" + beanName +
+							"' with a different definition: replacing [" + existingDefinition +
+							"] with [" + beanDefinition + "]");
+				}
+			}
+			else {
+				if (logger.isTraceEnabled()) {
+					logger.trace("Overriding bean definition for bean '" + beanName +
+							"' with an equivalent definition: replacing [" + existingDefinition +
+							"] with [" + beanDefinition + "]");
+				}
+			}
+			this.beanDefinitionMap.put(beanName, beanDefinition);
+		}
+		else {
+             // 注册一个新的BeanDefinition
+			if (hasBeanCreationStarted()) {
+				// Cannot modify startup-time collection elements anymore (for stable iteration)
+				synchronized (this.beanDefinitionMap) {
+                      // 这里的beanDefinitionMap的类型是Map<String, BeanDefinition>,key就是Bean的名称，value就是对应的BeanDefinition
+					this.beanDefinitionMap.put(beanName, beanDefinition);
+                      // 这里之所以还要维护一个beanDefinitionNames是为了记住注册时候的Bean的顺序。
+					List<String> updatedDefinitions = new ArrayList<>(this.beanDefinitionNames.size() + 1);
+					updatedDefinitions.addAll(this.beanDefinitionNames);
+					updatedDefinitions.add(beanName);
+					this.beanDefinitionNames = updatedDefinitions;
+					removeManualSingletonName(beanName);
+				}
+			}
+			else {
+				// Still in startup registration phase
+				this.beanDefinitionMap.put(beanName, beanDefinition);
+				this.beanDefinitionNames.add(beanName);
+				removeManualSingletonName(beanName);
+			}
+			this.frozenBeanDefinitionNames = null;
+		}
+
+		if (existingDefinition != null || containsSingleton(beanName)) {
+			resetBeanDefinition(beanName);
+		}
+		else if (isConfigurationFrozen()) {
+			clearByTypeCache();
+		}
+	}
+```
+
+## BeanDefinition合并阶段
+
+
+
+BeanDefinition合并：
+
+1. 父子BeanDefinition合并
+	- 当前BeanFactory查找
+	- 层次性BeanFactory查找
+
+相关的示例：
+
+```java
+public class MergedBeanDefinitionDemo {
+    public static void main(String[] args) {
+        DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
+        // 基于XML资源BeanDefinitionReader 实现
+        XmlBeanDefinitionReader xmlBeanDefinitionReader = new XmlBeanDefinitionReader(beanFactory);
+        String location = "META-INF/dependency-lookup-context.xml";
+        Resource resource = new ClassPathResource(location);
+        EncodedResource encodedResource = new EncodedResource(resource, "UTF-8");
+        int beanNumbers = xmlBeanDefinitionReader.loadBeanDefinitions(encodedResource);
+        System.out.println("已加载的BeanDefinitiond的数量：" + beanNumbers);
+
+        // 不需要合并BeanDefinition
+        User user = beanFactory.getBean("user", User.class);
+        System.out.println(user.toString());
+        // 需要合并BeanDefinition
+        SuperUser superUser = beanFactory.getBean("SuperUser", SuperUser.class);
+        System.out.println(superUser.toString());
+    }
+}
+```
+
+递归查找
+
+```java
+	@Override
+	public BeanDefinition getMergedBeanDefinition(String name) throws BeansException {
+		String beanName = transformedBeanName(name);
+		// Efficiently check whether bean definition exists in this factory.
+		if (!containsBeanDefinition(beanName) && getParentBeanFactory() instanceof ConfigurableBeanFactory) {
+			return ((ConfigurableBeanFactory) getParentBeanFactory()).getMergedBeanDefinition(beanName);
+		}
+		// Resolve merged bean definition locally.
+        // 当前的BeanFactory
+		return getMergedLocalBeanDefinition(beanName);
+	}
+```
+
+合并的核心代码：
+
+```java
+	protected RootBeanDefinition getMergedBeanDefinition(
+			String beanName, BeanDefinition bd, @Nullable BeanDefinition containingBd)
+			throws BeanDefinitionStoreException {
+
+		synchronized (this.mergedBeanDefinitions) {
+			RootBeanDefinition mbd = null;
+			RootBeanDefinition previous = null;
+
+			// Check with full lock now in order to enforce the same merged instance.
+			if (containingBd == null) {
+				mbd = this.mergedBeanDefinitions.get(beanName);
+			}
+
+			if (mbd == null || mbd.stale) {
+				previous = mbd;
+				if (bd.getParentName() == null) {
+					// Use copy of given root bean definition.
+					if (bd instanceof RootBeanDefinition) {
+						mbd = ((RootBeanDefinition) bd).cloneBeanDefinition();
+					}
+					else {
+						mbd = new RootBeanDefinition(bd);
+					}
+				}
+				else {
+					// Child bean definition: needs to be merged with parent.
+					BeanDefinition pbd;
+					try {
+						String parentBeanName = transformedBeanName(bd.getParentName());
+						if (!beanName.equals(parentBeanName)) {
+							pbd = getMergedBeanDefinition(parentBeanName);
+						}
+						else {
+							BeanFactory parent = getParentBeanFactory();
+							if (parent instanceof ConfigurableBeanFactory) {
+								pbd = ((ConfigurableBeanFactory) parent).getMergedBeanDefinition(parentBeanName);
+							}
+							else {
+								throw new NoSuchBeanDefinitionException(parentBeanName,
+										"Parent name '" + parentBeanName + "' is equal to bean name '" + beanName +
+												"': cannot be resolved without a ConfigurableBeanFactory parent");
+							}
+						}
+					}
+					catch (NoSuchBeanDefinitionException ex) {
+						throw new BeanDefinitionStoreException(bd.getResourceDescription(), beanName,
+								"Could not resolve parent bean definition '" + bd.getParentName() + "'", ex);
+					}
+					// Deep copy with overridden values.
+					mbd = new RootBeanDefinition(pbd);
+					mbd.overrideFrom(bd);
+				}
+
+				// Set default singleton scope, if not configured before.
+				if (!StringUtils.hasLength(mbd.getScope())) {
+					mbd.setScope(SCOPE_SINGLETON);
+				}
+
+				// A bean contained in a non-singleton bean cannot be a singleton itself.
+				// Let's correct this on the fly here, since this might be the result of
+				// parent-child merging for the outer bean, in which case the original inner bean
+				// definition will not have inherited the merged outer bean's singleton status.
+				if (containingBd != null && !containingBd.isSingleton() && mbd.isSingleton()) {
+					mbd.setScope(containingBd.getScope());
+				}
+
+				// Cache the merged bean definition for the time being
+				// (it might still get re-merged later on in order to pick up metadata changes)
+				if (containingBd == null && isCacheBeanMetadata()) {
+					this.mergedBeanDefinitions.put(beanName, mbd);
+				}
+			}
+			if (previous != null) {
+				copyRelevantMergedBeanDefinitionCaches(previous, mbd);
+			}
+			return mbd;
+		}
+	}
+```
+
+## Bean Class加载阶段
+
+1. ClassLoader类加载
+2. Java Security安全控制
+3. ConfigurableBeanFactory临时ClassLoader（场景比较有限）
+
+加载的核心代码代码：
+
+```java
+	public Class<?> resolveBeanClass(@Nullable ClassLoader classLoader) throws ClassNotFoundException {
+		String className = getBeanClassName();
+		if (className == null) {
+			return null;
+		}
+		Class<?> resolvedClass = ClassUtils.forName(className, classLoader);
+		this.beanClass = resolvedClass;
+		return resolvedClass;
+	}
+```
+
+最开始的beanClass实际上是一个String类型，然后通过AppClassLoader加载到Class对象并赋值给beanClass这个属性，这个属性本身是一个Object类型的：
+
+```java
+	@Nullable
+	private volatile Object beanClass;
+```
+
+## 实例化
+
+### 实例化前阶段
+
+非主流生命周期-Bena实例化前阶段
+
+- InstantiationAwareBeanPostProcessor#postProcessBeforeInstantiation
+
+首先我们给出这个接口的使用示例：
+
+```java
+public class BeanInstantiationLifecycleDemo {
+    public static void main(String[] args) {
+        DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
+        // 添加BeanPostProcesssor实现
+        beanFactory.addBeanPostProcessor(new MyInstantiationAwareBeanPostProcessor());
+        // 基于XML资源BeanDefinitionReader 实现
+        XmlBeanDefinitionReader xmlBeanDefinitionReader = new XmlBeanDefinitionReader(beanFactory);
+        String location = "META-INF/dependency-lookup-context.xml";
+        Resource resource = new ClassPathResource(location);
+        EncodedResource encodedResource = new EncodedResource(resource, "UTF-8");
+        int beanNumbers = xmlBeanDefinitionReader.loadBeanDefinitions(encodedResource);
+        System.out.println("已加载的BeanDefinitiond的数量：" + beanNumbers);
+
+        // 不需要合并BeanDefinition
+        User user = beanFactory.getBean("user", User.class);
+        System.out.println(user.toString());
+        // 需要合并BeanDefinition
+        SuperUser superUser = beanFactory.getBean("SuperUser", SuperUser.class);
+        System.out.println(superUser.toString());
+    }
+
+    static class MyInstantiationAwareBeanPostProcessor implements InstantiationAwareBeanPostProcessor {
+        @Override
+        public Object postProcessBeforeInstantiation(Class<?> beanClass, String beanName) throws BeansException {
+            if (ObjectUtils.nullSafeEquals("SuperUser",beanName) && SuperUser.class.equals(beanClass)) {
+                // 把配置好的SuperUser Bean覆盖
+                return new SuperUser();
+            }
+            return null; // 保持Spring IoC容器的实例化操作
+        }
+    }
+}
+```
+
+通过源码分析，可以看到postProcessBeforeInstantiation方法被调用之后返回了这个对象。
+
+```java
+protected Object applyBeanPostProcessorsBeforeInstantiation(Class<?> beanClass, String beanName) {
+		for (InstantiationAwareBeanPostProcessor bp : getBeanPostProcessorCache().instantiationAware) {
+			Object result = bp.postProcessBeforeInstantiation(beanClass, beanName);
+			if (result != null) {
+				return result;
+			}
+		}
+		return null;
+	}
+```
+
+通过调用关系，不难看出，在实例化Bean的时候，如果上述的方法返回的不是一个空对象，就直接返回，不在进行实例化的操作。
+
+```java
+Object bean = resolveBeforeInstantiation(beanName, mbdToUse);
+if (bean != null) {
+    return bean;
+}
+```
+
+### 实例化阶段
+
+Spring中实例化方式：
+
+1. 传统实例化方式
+	- 实例化策略 - InstantiationStrategy
+2. 构造器注入
+
+
+
