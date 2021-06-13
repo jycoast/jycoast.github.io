@@ -3241,7 +3241,7 @@ if (!registry.containsBeanDefinition(AUTOWIRED_ANNOTATION_PROCESSOR_BEAN_NAME)) 
 
 | 来源                  | 配置元数据                          |
 | --------------------- | ----------------------------------- |
-| Spring BeanDefinition | <bean id="user" class="org...User"> |
+| Spring BeanDefinition | `<bean id="user" class="org...User">` |
 |                       | @Bean<br />public User user(){...}  |
 |                       | BeanDefinitionBuilder               |
 | 单例对象              | API实现                             |
@@ -3252,7 +3252,7 @@ if (!registry.containsBeanDefinition(AUTOWIRED_ANNOTATION_PROCESSOR_BEAN_NAME)) 
 
 | 来源                             | 配置元数据                          |
 | -------------------------------- | ----------------------------------- |
-| Spring BeanDefinition            | <bean id="user" class="org...User"> |
+| Spring BeanDefinition            | `<bean id="user" class="org...User">` |
 |                                  | @Bean<br />public User user(){...}  |
 |                                  | BeanDefinitionBuilder               |
 | 单例对象                         | API实现                             |

@@ -1,22 +1,14 @@
 {
-  "name": "afternoon-grocery-store",
+  "name": "jycoder",
   "version": "1.0.0",
-  "description": "recoluan's blog",
-  "main": "index.js",
-  "repository": "http://recoluan.gitlab.io",
   "author": "reco_luan",
-  "license": "MIT",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "vuepress dev docs --temp .temp",
-    "build": "vuepress build docs"
+    "dev": "vuepress dev . --open --host \"localhost\"",
+    "build": "vuepress build ."
   },
-  "dependencies": {
-    "@vuepress/plugin-medium-zoom": "1.5.3",
-    "@vuepress/plugin-pwa": "1.5.3",
-    "vuepress": "1.5.3",
-    "vuepress-plugin-code-copy": "^1.0.6",
-    "vuepress-plugin-flowchart": "1.4.3",
-    "vuepress-theme-reco": "1.5.3"
-  }
+  "devDependencies": {
+    "vuepress": "1.8.2",
+    "vuepress-theme-reco": "1.6.6"
+  },
+  "description": "jycoder"
 }

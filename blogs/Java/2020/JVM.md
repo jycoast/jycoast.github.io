@@ -142,7 +142,7 @@ Java语言规范，Java虚拟机规范
 
 用描述符描述方法时，按照先参数列表，后返回值的顺序来描述。参数列表按照参数的严格顺序放在一组()之内，如方法：String getRealnamebyIdaAndNickname(int id,String name)的描述符为：（I，Ljava/lang/String;）Ljava/langString;
 
-<init>表示构造方法
+`<init>`表示构造方法
 
 ![img](assets/clipboard.png)
 
@@ -278,7 +278,7 @@ JVM助记符：
 
 2、invokestatic：调用静态方法；
 
-3、invokespecial：调用自己的私有方法、构造方法（<init>）以及父类的方法；
+3、invokespecial：调用自己的私有方法、构造方法（`<init>`）以及父类的方法；
 
 4、invokevirtual：调用虚方法，运行期间动态查找的过程；
 

@@ -4275,7 +4275,7 @@ Map<String, String> map = set.stream().sequential().collect(new MySetCollector2<
     }
 ```
 
-这里的(Supplier<List<T>>) ArrayList::new也可以写成ArrayList<T>::new，这里的第四个参数是：
+这里的(Supplier<List<T>>) ArrayList::new也可以写成`ArrayList<T>::new`，这里的第四个参数是：
 
 ```java
     static final Set<Collector.Characteristics> CH_ID
@@ -4482,7 +4482,7 @@ groupingBy和partitioningBy是整个Collectors类中比较难以理解的两部�
     }
 ```
 
-T类型表示流中元素的类型，？表示的是中间结果容器的类型，Map是最终的结果类型，K表示分类的时候的key的类型，List<T>就表示根据分类依据K分类之后的列表集合，方法本身的参数并没有直接使用T和K，而是使用T类型以及T以上的类型，K类型以及K类型以下的类型，并且只接受一个参数，调用了另一个重载的groupingBy方法：
+T类型表示流中元素的类型，？表示的是中间结果容器的类型，Map是最终的结果类型，K表示分类的时候的key的类型，`List<T>`就表示根据分类依据K分类之后的列表集合，方法本身的参数并没有直接使用T和K，而是使用T类型以及T以上的类型，K类型以及K类型以下的类型，并且只接受一个参数，调用了另一个重载的groupingBy方法：
 
 ```java
     public static <T, K, A, D>
@@ -4845,7 +4845,7 @@ public interface BaseStream<T, S extends BaseStream<T, S>>
 public interface Stream<T> extends BaseStream<T, Stream<T>> 
 ```
 
-对照BaseStream的定义不难发现，这里的泛型S指的就是Stream<T>,而Stream<T>又正好继承了BaseStream，所以这个泛型是成立的。
+对照BaseStream的定义不难发现，这里的泛型S指的就是`Stream<T>`,而`Stream<T>`又正好继承了BaseStream，所以这个泛型是成立的。
 
 关于关闭处理器可以举一个简单的例子：
 
