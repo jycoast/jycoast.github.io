@@ -77,6 +77,10 @@ module.exports = {
       }],
     "logo": "/logo.png",
     "search": true,
+     // 自动形成侧边导航
+    "subSidebar": 'auto',
+    "sidebarDepth": 1,
+    "displayAllHeaders": false,
     "searchMaxSuggestions": 10,
     "lastUpdated": "Last Updated",
     "author": null,
