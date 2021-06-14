@@ -4337,5 +4337,851 @@ Spring中实例化方式：
 	- 实例化策略 - InstantiationStrategy
 2. 构造器注入
 
+传统的方式可以在AbstractAutowireCapableBeanFactory#instantiateBean
 
+```java
+beanInstance = getInstantiationStrategy().instantiate(mbd, beanName, this);
+```
+
+构造器注入，我们可以构造一个例子来进行测试：
+
+```java
+public class UserHolder {
+
+    private final User user;
+
+    @Override
+    public String toString() {
+        return "UserHolder{" +
+                "user=" + user +
+                '}';
+    }
+
+    public UserHolder(User user) {
+        this.user = user;
+    }
+}
+```
+
+可以在之前的例子上稍作修改：
+
+```java
+public class BeanInstantiationLifecycleDemo {
+    public static void main(String[] args) {
+        DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
+        // 添加BeanPostProcesssor实现
+        beanFactory.addBeanPostProcessor(new MyInstantiationAwareBeanPostProcessor());
+        // 基于XML资源BeanDefinitionReader 实现
+        XmlBeanDefinitionReader xmlBeanDefinitionReader = new XmlBeanDefinitionReader(beanFactory);
+        String[] locations = {"META-INF/dependency-lookup-context.xml","META-INF/bean-constructor-dependency-injection.xml"};
+        int beanNumbers = xmlBeanDefinitionReader.loadBeanDefinitions(locations);
+        System.out.println("已加载的BeanDefinitiond的数量：" + beanNumbers);
+        // 不需要合并BeanDefinition
+        User user = beanFactory.getBean("user", User.class);
+        System.out.println(user.toString());
+        // 需要合并BeanDefinition
+        SuperUser superUser = beanFactory.getBean("SuperUser", SuperUser.class);
+        System.out.println(superUser.toString());
+        // 构造器注入式按照类型注入，底层resolveDependency
+        UserHolder userHolder = beanFactory.getBean("userHolder", UserHolder.class);
+        System.out.println(userHolder.toString());
+    }
+
+    static class MyInstantiationAwareBeanPostProcessor implements InstantiationAwareBeanPostProcessor {
+        @Override
+        public Object postProcessBeforeInstantiation(Class<?> beanClass, String beanName) throws BeansException {
+            if (ObjectUtils.nullSafeEquals("SuperUser",beanName) && SuperUser.class.equals(beanClass)) {
+                // 把配置好的SuperUser Bean覆盖
+                return new SuperUser();
+            }
+            return null; // 保持Spring IoC容器的实例化操作
+        }
+    }
+}
+```
+
+这里我们可以总结一下，Bean的实例化主要有两种类型，并且使用构造器注入的时候，是按照类型来进行注入的，底层是使用的我们在依赖注入章节中介绍过的resolveDependency方法来实现的。
+
+### Bean实例化后阶段
+
+对于Spring Bean实例化后阶段，我们可以理解为是Bean属性赋值（Populate）的判断：InstantiationAwareBeanPostProcessor#postProcessAfterInstantiation。可以结合Bean实例化前阶段一起对照查看：
+
+```java
+  static class MyInstantiationAwareBeanPostProcessor implements InstantiationAwareBeanPostProcessor {
+        @Override
+        public Object postProcessBeforeInstantiation(Class<?> beanClass, String beanName) throws BeansException {
+            if (ObjectUtils.nullSafeEquals("SuperUser", beanName) && SuperUser.class.equals(beanClass)) {
+                // 把配置好的SuperUser Bean覆盖
+                return new SuperUser();
+            }
+            return null; // 保持Spring IoC容器的实例化操作
+        }
+
+        @Override
+        public boolean postProcessAfterInstantiation(Object bean, String beanName) throws BeansException {
+            if (ObjectUtils.nullSafeEquals("user", beanName) && User.class.equals(bean.getClass())) {
+                User user = (User) bean;
+                user.setId("33");
+                user.setName("jjjjjj");
+                // "user"对象不允许属性赋值（填入）（配置元信息 -> 属性值）
+                return false;
+            }
+            return true;
+        }
+    }
+```
+
+这里相当于可以拦截掉所有的属性赋值，并且可以进行一些自定义的赋值，此时Bean的实例化已经完成了，但是属性赋值还没进行。
+
+## 属性赋值前阶段
+
+Bean属性值信息的类：
+
+- PropertyValues
+
+Bean属性赋值前回调
+
+- Spring1.2-5.0：InstantiationAwareBeanPostProcessor#postProcessPropertyValues
+- Spring 5.1：InstantiationAwareBeanPostProcessor#postProcessProperties
+
+他们都是在BeanFactory赋值之前的回调操作，PropertyValues就是从配置文件里面读入的值，这个方法的作用就是可以修改从配置文件里面读入的值，默认情况下不做任何修改。
+
+```java
+default PropertyValues postProcessPropertyValues(
+			PropertyValues pvs, PropertyDescriptor[] pds, Object bean, String beanName) throws BeansException {
+
+		return pvs;
+	}
+```
+
+> 需要注意的是，这里的返回值是null。
+
+```java
+default PropertyValues postProcessProperties(PropertyValues pvs, Object bean, String beanName)
+			throws BeansException {
+
+		return null;
+	}
+```
+
+还在在我们之前的例子上稍作修改：
+
+```java
+       // 要注意如果postProcessAfterInstantiation返回的是false的话，这个方法不会被调用，因为相当于返回的Bean已经被替换了。
+        @Override
+        public PropertyValues postProcessProperties(PropertyValues pvs, Object bean, String beanName)
+                throws BeansException {
+            if (ObjectUtils.nullSafeEquals("userHolder", beanName) && UserHolder.class.equals(bean.getClass())) {
+                // 假设<property name="number" value="1" />配置的话，那么在PropertyValues中就包含一个PropertyValues(number=1)
+                final MutablePropertyValues propertyValues;
+                if (pvs instanceof MutablePropertyValues) {
+                    propertyValues = (MutablePropertyValues) pvs;
+                } else {
+                    propertyValues = new MutablePropertyValues();
+                }
+                // 等价于<property name="number" value="1" />
+                propertyValues.addPropertyValue("number", "1");
+                //
+                if (propertyValues.contains("description")) {
+                    // PropertyValue是不可变的
+//                    PropertyValue description = propertyValues.getPropertyValue("description");
+                    propertyValues.removePropertyValue("description");
+                    propertyValues.addPropertyValue("description", "The user holder V2");
+                }
+                return propertyValues;
+            }
+            return null;
+        }
+```
+
+这里我们演示了两种情况，一种是number这个属性本来是没有值的，通过这个Api的拦截，我们手动给他赋上了值，而description这个属性，是我们在XML文件中，定义好了属性值，从结果来看，这个属性值也成功的被修改了。
+
+```xml
+<bean id="userHolder" class="org.jyc.thinking.in.spring.bean.lifecycle.UserHolder" autowire="constructor">
+<!--        <property name="number" value="1"/>-->
+     <property name="description" value="The user holder" />
+</bean>
+```
+
+修改后的UserHolder类：
+
+```java
+public class UserHolder {
+
+    private final User user;
+
+    private Integer number;
+
+    private String description;
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    @Override
+    public String toString() {
+        return "UserHolder{" +
+                "user=" + user +
+                ", number=" + number +
+                ", description='" + description + '\'' +
+                '}';
+    }
+
+    public Integer getNumber() {
+        return number;
+    }
+
+    public void setNumber(Integer number) {
+        this.number = number;
+    }
+
+
+    public UserHolder(User user) {
+        this.user = user;
+    }
+}
+
+```
+
+相应的源码：
+
+![image-20210614105732908](./SpringFramework.assets/image-20210614105732908.png)
+
+最后将准备好的pvs对象赋值给BeanWrapper：
+
+```java
+if (pvs != null) {
+	applyPropertyValues(beanName, mbd, bw, pvs);
+}
+```
+
+## 初始化
+
+### 接口回调阶段
+
+Spring Aware接口：
+
+- BeanNameAware
+- BeanClassLoaderAware
+- BeanFactoryAware
+- EnvironmentAware
+- EmbeddedValueResolverAware
+- ResourceLoaderAware
+- ApplicationEventPublisherAware
+- MessageSourceAware
+- ApplicationContextAware
+
+>这里列出的顺序同时也是调用时候的顺序，这一点，源代码中也有体现：
+
+```java
+private void invokeAwareMethods(String beanName, Object bean) {
+		if (bean instanceof Aware) {
+			if (bean instanceof BeanNameAware) {
+				((BeanNameAware) bean).setBeanName(beanName);
+			}
+			if (bean instanceof BeanClassLoaderAware) {
+				ClassLoader bcl = getBeanClassLoader();
+				if (bcl != null) {
+					((BeanClassLoaderAware) bean).setBeanClassLoader(bcl);
+				}
+			}
+			if (bean instanceof BeanFactoryAware) {
+				((BeanFactoryAware) bean).setBeanFactory(AbstractAutowireCapableBeanFactory.this);
+			}
+		}
+	}
+```
+
+另外一些相关的方法在ApplicationContextAwareProcessor#invokeAwareInterfaces：
+
+```java
+private void invokeAwareInterfaces(Object bean) {
+		if (bean instanceof EnvironmentAware) {
+			((EnvironmentAware) bean).setEnvironment(this.applicationContext.getEnvironment());
+		}
+		if (bean instanceof EmbeddedValueResolverAware) {
+			((EmbeddedValueResolverAware) bean).setEmbeddedValueResolver(this.embeddedValueResolver);
+		}
+		if (bean instanceof ResourceLoaderAware) {
+			((ResourceLoaderAware) bean).setResourceLoader(this.applicationContext);
+		}
+		if (bean instanceof ApplicationEventPublisherAware) {
+			((ApplicationEventPublisherAware) bean).setApplicationEventPublisher(this.applicationContext);
+		}
+		if (bean instanceof MessageSourceAware) {
+			((MessageSourceAware) bean).setMessageSource(this.applicationContext);
+		}
+		if (bean instanceof ApplicationStartupAware) {
+			((ApplicationStartupAware) bean).setApplicationStartup(this.applicationContext.getApplicationStartup());
+		}
+		if (bean instanceof ApplicationContextAware) {
+			((ApplicationContextAware) bean).setApplicationContext(this.applicationContext);
+		}
+	}
+```
+
+但是第二部分的回调接口无法通过BeanFacotry的方式得到回调，我们需要对之前的代码进行一定的重构：
+
+```java
+public class BeanInstantiationLifecycleDemo {
+    public static void main(String[] args) {
+        executeBeanFactory();
+
+        System.out.println("=============");
+
+        executApplicationContext();
+    }
+
+    public static void executeBeanFactory() {
+        DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
+        // 方法一：添加BeanPostProcesssor实现InstantiationAwareBeanPostProcessor
+        // 方法二：将MyInstantiationAwareBeanPostProcessor作为Bean注册
+//        beanFactory.addBeanPostProcessor(new MyInstantiationAwareBeanPostProcessor());
+        // 基于XML资源BeanDefinitionReader 实现
+        XmlBeanDefinitionReader xmlBeanDefinitionReader = new XmlBeanDefinitionReader(beanFactory);
+        String[] locations = {"META-INF/dependency-lookup-context.xml", "META-INF/bean-constructor-dependency-injection.xml"};
+        int beanNumbers = xmlBeanDefinitionReader.loadBeanDefinitions(locations);
+        System.out.println("已加载的BeanDefinitiond的数量：" + beanNumbers);
+        // 不需要合并BeanDefinition
+        User user = beanFactory.getBean("user", User.class);
+        System.out.println(user.toString());
+        // 需要合并BeanDefinition
+        SuperUser superUser = beanFactory.getBean("SuperUser", SuperUser.class);
+        System.out.println(superUser.toString());
+        // 构造器注入式按照类型注入，底层resolveDependency
+        UserHolder userHolder = beanFactory.getBean("userHolder", UserHolder.class);
+        System.out.println(userHolder.toString());
+    }
+
+    public static void executApplicationContext() {
+        ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext();
+        String[] locations = {"META-INF/dependency-lookup-context.xml", "META-INF/bean-constructor-dependency-injection.xml"};
+        applicationContext.setConfigLocations(locations);
+        applicationContext.refresh();
+        User user = applicationContext.getBean("user", User.class);
+        System.out.println(user.toString());
+        SuperUser superUser = applicationContext.getBean("SuperUser", SuperUser.class);
+        System.out.println(superUser.toString());
+        UserHolder userHolder = applicationContext.getBean("userHolder", UserHolder.class);
+        System.out.println(userHolder.toString());
+        applicationContext.close();
+    }
+}
+```
+
+在XML文件中，注入MyInstantiationAwareBeanPostProcessor：
+
+```xml
+<bean class="org.jyc.thinking.in.spring.bean.lifecycle.MyInstantiationAwareBeanPostProcessor" />
+```
+
+我们可以在UserHolder中实现这些接口，进行观察：
+
+```java
+public class UserHolder implements BeanNameAware, BeanClassLoaderAware, BeanFactoryAware, EnvironmentAware {
+
+    private final User user;
+
+    private Integer number;
+
+    private String description;
+
+    private ClassLoader classLoader;
+
+    private BeanFactory beanFactory;
+
+    private String beanName;
+
+    private Environment environment;
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    @Override
+    public String toString() {
+        return "UserHolder{" +
+                "user=" + user +
+                ", number=" + number +
+                ", description='" + description + '\'' +
+                ", beanName='" + beanName + '\'' +
+                '}';
+    }
+
+    public Integer getNumber() {
+        return number;
+    }
+
+    public void setNumber(Integer number) {
+        this.number = number;
+    }
+
+
+    public UserHolder(User user) {
+        this.user = user;
+    }
+
+    @Override
+    public void setBeanClassLoader(ClassLoader classLoader) {
+        this.classLoader = classLoader;
+    }
+
+    @Override
+    public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
+        this.beanFactory = beanFactory;
+    }
+
+    @Override
+    public void setBeanName(String name) {
+        this.beanName = name;
+    }
+
+    @Override
+    public void setEnvironment(Environment environment) {
+        this.environment = environment;
+    }
+}
+```
+
+不难发现，通过BeanFacotry的方式，无法获取到EnvironmentAware对象的回调，而ApplicationContext则可以，这是因为在AbstractApplicationContext#prepareBeanFactory中，BeanFactory注册了ApplicationContextAwareProcessor这个接口：
+
+```java
+beanFactory.addBeanPostProcessor(new ApplicationContextAwareProcessor(this));
+```
+
+而我们前面提到过，第二部分的接口的回调，需要执行ApplicationContextAwareProcessor#invokeAwareInterfaces方法，而ApplicationContextAwareProcessor又是一个非public的类，因此，在我们创建的BeanFactory无法操作这个类。总来的来说，通过BeanFactory可以获取到BeanNameAware、BeanClassLoaderAware、BeanFactoryAware这三个接口的回调，而如果使用AppliactionContext来进行操作，就可以获取到更多的回调，这也从另一个角度说明了AppliacitonContext和BeanFactory的区别。
+
+### 初始化前阶段
+
+方法回调：
+
+- BeanPostProcessor#postProcessBeforeInitialization
+
+因为InstantiationAwareBeanPostProcessor继承了BeanPostProcessor，因此我们还是调整MyInstantiationAwareBeanPostProcessor的方法来进行观察：
+
+```java
+	@Override
+    public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+        if (ObjectUtils.nullSafeEquals("userHolder", beanName) && UserHolder.class.equals(bean.getClass())) {
+            UserHolder userHolder = (UserHolder) bean;
+            userHolder.setDescription("The user holder V3");
+            return userHolder;
+        }
+        return null;
+    }
+```
+
+为了跟前面加以区别，这里我们增加一个调用的示例：
+
+```java
+public class BeanInitilzationLifecycleDemo {
+    public static void main(String[] args) {
+        executeBeanFactory();
+    }
+
+    public static void executeBeanFactory() {
+        DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
+        // 方法一：添加BeanPostProcesssor实现InstantiationAwareBeanPostProcessor
+        // 方法二：将MyInstantiationAwareBeanPostProcessor作为Bean注册
+        beanFactory.addBeanPostProcessor(new MyInstantiationAwareBeanPostProcessor());
+        // 基于XML资源BeanDefinitionReader 实现
+        XmlBeanDefinitionReader xmlBeanDefinitionReader = new XmlBeanDefinitionReader(beanFactory);
+        String[] locations = {"META-INF/dependency-lookup-context.xml", "META-INF/bean-constructor-dependency-injection.xml"};
+        int beanNumbers = xmlBeanDefinitionReader.loadBeanDefinitions(locations);
+        System.out.println("已加载的BeanDefinitiond的数量：" + beanNumbers);
+        // 不需要合并BeanDefinition
+        User user = beanFactory.getBean("user", User.class);
+        System.out.println(user.toString());
+        // 需要合并BeanDefinition
+        SuperUser superUser = beanFactory.getBean("SuperUser", SuperUser.class);
+        System.out.println(superUser.toString());
+        // 构造器注入式按照类型注入，底层resolveDependency
+        UserHolder userHolder = beanFactory.getBean("userHolder", UserHolder.class);
+        System.out.println(userHolder.toString());
+    }
+}
+```
+
+可以看到userHolder的description属性成功的变成了v3，相关的源码的实现在AbstractAutowireCapableBeanFactory#pplyBeanPostProcessorsBeforeInitialization：
+
+```java
+	@Override
+	public Object applyBeanPostProcessorsBeforeInitialization(Object existingBean, String beanName)
+			throws BeansException {
+
+		Object result = existingBean;
+		for (BeanPostProcessor processor : getBeanPostProcessors()) {
+			Object current = processor.postProcessBeforeInitialization(result, beanName);
+			if (current == null) {
+				return result;
+			}
+             // 可能返回的是一个代理对象，并不是原有的对象
+			result = current;
+		}
+		return result;
+	}
+```
+
+### 初始化阶段
+
+在之前，我们有提到过Bean初始化操作：
+
+- @PostConstruct标注方法
+- 实现InitializingBean接口的afterPropertiesSet()方法
+- 自定义初始化方法
+
+> @PostConstruct标注方法需要注解驱动，因为这种方式需要依赖于ApplicationContext的，并且所依赖的ApplicationContext是需要有注解驱动能力的。
+
+我们在UserHolder中添加它的初始化方法：
+
+```java
+ /**
+     * 依赖于注解驱动，当前场景：BeanFactory，因此直接运行，并不会执行
+     */
+    @PostConstruct
+    public void initPostConstruct() {
+        this.description = "The user holder V4";
+        System.out.println("initPostConstruct() = " + description);
+    }
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        this.description = "The user holder V5";
+        System.out.println("afterPropertiesSet() = " + description);
+    }
+
+    public void init() {
+        this.description = "The user holder V6";
+        System.out.println("init() = " + description);
+    }
+```
+
+这里因为我们是BeanFactory的场景，因此需要手动添加：
+
+```java
+ beanFactory.addBeanPostProcessor(new CommonAnnotationBeanPostProcessor());
+```
+
+相应的源码在AbstractAutowireCapableBeanFactory#invokeInitMethods方法当中：
+
+```java
+protected void invokeInitMethods(String beanName, Object bean, @Nullable RootBeanDefinition mbd)
+			throws Throwable {
+		// afterPropertiesSet方法：
+		boolean isInitializingBean = (bean instanceof InitializingBean);
+		if (isInitializingBean && (mbd == null || !mbd.isExternallyManagedInitMethod("afterPropertiesSet"))) {
+			if (logger.isTraceEnabled()) {
+				logger.trace("Invoking afterPropertiesSet() on bean with name '" + beanName + "'");
+			}
+			if (System.getSecurityManager() != null) {
+				try {
+					AccessController.doPrivileged((PrivilegedExceptionAction<Object>) () -> {
+						((InitializingBean) bean).afterPropertiesSet();
+						return null;
+					}, getAccessControlContext());
+				}
+				catch (PrivilegedActionException pae) {
+					throw pae.getException();
+				}
+			}
+			else {
+				((InitializingBean) bean).afterPropertiesSet();
+			}
+		}
+		// 自定义初始化方法
+		if (mbd != null && bean.getClass() != NullBean.class) {
+			String initMethodName = mbd.getInitMethodName();
+			if (StringUtils.hasLength(initMethodName) &&
+					!(isInitializingBean && "afterPropertiesSet".equals(initMethodName)) &&
+					!mbd.isExternallyManagedInitMethod(initMethodName)) {
+				invokeCustomInitMethod(beanName, bean, mbd);
+			}
+		}
+	}
+```
+
+### 初始化后阶段
+
+方法的回调：
+
+- BeanPostProcessor#postProcessAfterInitialization
+
+还是对我们的MyInstantiationAwareBeanPostProcessor进行添加：
+
+```java
+ 	@Override
+    public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+        if (ObjectUtils.nullSafeEquals("userHolder", beanName) && UserHolder.class.equals(bean.getClass())) {
+            UserHolder userHolder = (UserHolder) bean;
+            userHolder.setDescription("The user holder V7");
+            return userHolder;
+        }
+        return null;
+    }
+```
+
+总的来说，关于Bean的初始化操作，总共可以分为下面几个阶段：
+
+```java
+	protected Object initializeBean(String beanName, Object bean, @Nullable RootBeanDefinition mbd) {
+		if (System.getSecurityManager() != null) {
+			AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
+				invokeAwareMethods(beanName, bean);
+				return null;
+			}, getAccessControlContext());
+		}
+		else {
+            // 接口回调
+			invokeAwareMethods(beanName, bean);
+		}
+
+		Object wrappedBean = bean;
+		if (mbd == null || !mbd.isSynthetic()) {
+            // 初始化前方法
+			wrappedBean = applyBeanPostProcessorsBeforeInitialization(wrappedBean, beanName);
+		}
+
+		try {
+            // 初始化方法
+			invokeInitMethods(beanName, wrappedBean, mbd);
+		}
+		catch (Throwable ex) {
+			throw new BeanCreationException(
+					(mbd != null ? mbd.getResourceDescription() : null),
+					beanName, "Invocation of init method failed", ex);
+		}
+		if (mbd == null || !mbd.isSynthetic()) {
+            // 初始化后方法
+			wrappedBean = applyBeanPostProcessorsAfterInitialization(wrappedBean, beanName);
+		}
+
+		return wrappedBean;
+	}
+```
+
+### 初始化完成阶段
+
+方法回调：
+
+- SmartInitializingSingleton#afterSingletonsInstantiated
+
+ 同样的，还是操作Userholder类：
+
+```java
+	@Override
+    public void afterSingletonsInstantiated() {
+        this.description = "The user holder V8";
+        System.out.println("afterSingletonsInstantiated() = " + description);
+
+    }
+```
+
+直接去运行，发现并没有打印出我们预期的结果，这是因为这个方法调用的地方在DefaultListableBeanFactory#preInstantiateSingletons，而这个方法需要显示的调用才会执行：
+
+```java
+ // SmartInitializingSingleton 通常在Spring AppliactionContext场景使用
+ // preInstantiateSingletons将已注册的BeanDefinition初始化成Spring Bean
+ beanFactory.preInstantiateSingletons();
+```
+
+在AbstractApplicationContext#finishBeanFactoryInitialization方法中，我们可以看到这里就调用了preInstantiateSingletons方法：
+
+```java
+protected void finishBeanFactoryInitialization(ConfigurableListableBeanFactory beanFactory) {
+		// Instantiate all remaining (non-lazy-init) singletons.
+		beanFactory.preInstantiateSingletons();
+	}
+```
+
+提供这个方法的主要原因是之前的BeanPostProcessor接口提供的回调，可能Bean会存在初始化不完全的情况，使用这个方法的时候就不用担心有Bean初始化不完全的情况发生。
+
+## 销毁阶段
+
+### 销毁前阶段
+
+方法回调：
+
+- DestructionAwareBeanPostProcessor#postProcessBeforeDestruction
+
+实现一下这个接口：
+
+```java
+public class MyDestructionAwareBeanPostProcessor implements DestructionAwareBeanPostProcessor {
+    @Override
+    public void postProcessBeforeDestruction(Object bean, String beanName) throws BeansException {
+        if (ObjectUtils.nullSafeEquals("userHolder", beanName) && UserHolder.class.equals(bean.getClass())) {
+            UserHolder userHolder = (UserHolder) bean;
+            userHolder.setDescription("The user holder V9");
+        }
+    }
+}
+```
+
+关于Bean生命周期的完整的演示示例：
+
+```java
+public class BeanLifeCycleDemo {
+    public static void main(String[] args) {
+        DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
+        // 方法一：添加BeanPostProcesssor实现InstantiationAwareBeanPostProcessor
+        // 方法二：将MyInstantiationAwareBeanPostProcessor作为Bean注册
+        beanFactory.addBeanPostProcessor(new MyInstantiationAwareBeanPostProcessor());
+        beanFactory.addBeanPostProcessor(new CommonAnnotationBeanPostProcessor());
+        // 添加MyDestructionAwareBeanPostProcessor执行销毁前回调
+        beanFactory.addBeanPostProcessor(new MyDestructionAwareBeanPostProcessor());
+        // 基于XML资源BeanDefinitionReader 实现
+        XmlBeanDefinitionReader xmlBeanDefinitionReader = new XmlBeanDefinitionReader(beanFactory);
+        String[] locations = {"META-INF/dependency-lookup-context.xml", "META-INF/bean-constructor-dependency-injection.xml"};
+        int beanNumbers = xmlBeanDefinitionReader.loadBeanDefinitions(locations);
+        System.out.println("已加载的BeanDefinitiond的数量：" + beanNumbers);
+        beanFactory.preInstantiateSingletons();
+        // 不需要合并BeanDefinition
+        User user = beanFactory.getBean("user", User.class);
+        System.out.println(user.toString());
+        // 需要合并BeanDefinition
+        SuperUser superUser = beanFactory.getBean("SuperUser", SuperUser.class);
+        System.out.println(superUser.toString());
+        // 构造器注入式按照类型注入，底层resolveDependency
+        UserHolder userHolder = beanFactory.getBean("userHolder", UserHolder.class);
+        // SmartInitializingSingleton 通常在Spring AppliactionContext场景使用
+        System.out.println(userHolder.toString());
+
+        beanFactory.destroyBean("userHolder", userHolder);
+        // Bean销毁并不意味这Bean垃圾回收了
+        System.out.println(userHolder.toString());
+    }
+}
+```
+
+> 特别需要注意的是，这里的销毁并不是这个对象被GC掉了，GC和Bean的销毁是两个不同的概念。
+
+### 销毁阶段
+
+Bean销毁（Destory）：
+
+- @PreDestory标注方法
+- 实现DisposableBean接口的destory()方法
+- 自定义销毁方法
+
+```java
+	@PreDestroy
+    public void preDestory() {
+        this.description = "The user holder V10";
+        System.out.println("PreDestroy() = " + description);
+    }
+
+    @Override
+    public void destroy() throws Exception {
+        this.description = "The user holder V11";
+        System.out.println("PreDestroy() = " + description);
+    }
+
+    public void doDestory() {
+        this.description = "The user holder V12";
+        System.out.println("PreDestroy() = " + description);
+    }
+```
+
+在XML中指定自定义的销毁方法：
+
+```xml
+<bean id="userHolder" class="org.jyc.thinking.in.spring.bean.lifecycle.UserHolder" autowire="constructor" init-method="init" destroy-method="doDestory">
+<!--        <property name="number" value="1"/>-->
+        <property name="description" value="The user holder" />
+ </bean>
+```
+
+在BeanFactory场景下还是需要手动进行调用，而在ApplicationContext中，是会自动调用的：
+
+```java
+beanFactory.destroyBean("userHolder", userHolder);
+```
+
+## Bean垃圾收集
+
+Bean垃圾回收（GC）的过程：
+
+1. 关闭Spring容器（应用上下文）
+2. 执行GC
+3. Spring Bean覆盖的finalize()方法被回调
+
+首先在UserHolder中重写finalize()方法：
+
+```java
+@Override
+protected void finalize() throws Throwable {
+    System.out.println("UserHolder is finalized ...");
+    super.finalize();
+}
+```
+
+然后执行销毁方法：
+
+```java
+   		// 销毁BeanFactory中的单例Bean
+        beanFactory.destroySingletons();
+        // 强制GC
+        System.gc();
+        // 等待一段时间
+        try {
+            Thread.sleep(3000);
+        } catch (InterruptedException exception) {
+            exception.printStackTrace();
+        }
+
+        System.gc();
+```
+
+## 面试题
+
+### BeanPostProcess使用场景有哪些？
+
+BeanPostProcess提供了Spring Bean初始化前和初始化后的生命周期回调，分别对应postProcessBeforeInitialization以及postProcessAfterInitialization方法，允许对关心的Bean进行扩展，甚至是替换，
+
+其中ApplicationContext相关的Aware回调也是基于BeanPostProcess实现，即ApplicationContextAwareProcessor。
+
+### BeanFactoryPostProcess与BeanPostProcess的区别
+
+BeanFactroyPostProcessor是Spring BeanFacrtory（实际为ConfigurableListableBeanFactory）的后置处理器，用于扩展BeanFacotry，或通过BeanFactory进行依赖查找和依赖注入。
+
+BeanFactroyPostProcessor必须有Spring ApplicationContext执行，BeanFactory无法与其直接交互。而BeanPostProcess直接与BeanFactory关联，属于N对1的关系。
+
+### BeanFactory是怎样处理Bean生命周期？
+
+BeanFactory的默认实现为DefaultListableBeanFactory，其中Bean生命周期与方法映射如下：
+
+- BeanDefinition注册阶段 - regsiterBeanDefinition
+- BeanDefinition合并阶段 - getMergedBeanDefinition
+- Bean实例化前阶段 - resolveBeforeInstantiation
+- Bean实例化阶段 - createBeanInstance
+- Bean实例化后阶段- populateBean
+- Bean属性赋值前阶段 - populateBean
+- Bean属性赋值阶段 - populateBean
+- Bean Aware接口回调阶段 - initializeBean
+- Bean初始化前阶段- initializeBean
+- Bean初始化阶段- initializeBean
+- Bean初始化后阶段- initializeBean
+- Bean初始化完成阶段 - preInstantiateSingtons
+- Bean销毁前阶段- destoryBean
+- Bean销毁阶段 - destoryBean
+
+# Spring 配置元信息
+
+## Spring Bean配置元信息
 
