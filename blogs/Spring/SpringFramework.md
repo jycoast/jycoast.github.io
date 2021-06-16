@@ -5183,5 +5183,677 @@ BeanFactory的默认实现为DefaultListableBeanFactory，其中Bean生命周期
 
 # Spring 配置元信息
 
+配置元信息主要可以分为以下五个方面：
+
+1. Spring Bean配置元信息 - BeanDefinition
+2. Spring Bean属性元信息 - PropertyValues
+3. Spring 容器配置元信息
+4. Spring 外部化配置元信息 - PropertySource
+5. Spring Profile 元信息 - @Profile
+
 ## Spring Bean配置元信息
+
+Bean的配置元信息 - BeanDefinition主要包括了：
+
+- GenericBeanDefinition：通用型BeanDefinition
+- RootBeanDefinition：无parent的BeanDefinition或者合并后BeanDefinition
+- AnnotatedBeanDefinition：注解标注的BeanDefinition
+
+> AnnotatedBeanDefinition中的AnnotationMetadata有两种具体的实现，StandardAnnotationMetadata是基于Java注解实现的，SimpleAnnotationMetadata是基于ASM实现的。
+
+## Spring Bean属性元信息
+
+1. Bean属性元信息 - PropertyValues
+   - 可修改实现 - MutablePropertyValues
+   - 元素成员 - PropertyValue
+2. Bean属性上下文存储 - AttributeAccessor
+3. Bean元信息元素 - BeanMetadataElement
+
+其中第一种我们已经见过很多次了，这里主要演示第二种和第三种。
+
+```java
+public class BeanConfigurationMetadataDemo {
+    public static void main(String[] args) {
+        // BeanDefinition 的定义（声明）
+        BeanDefinitionBuilder beanDefinitionBuilder = BeanDefinitionBuilder.genericBeanDefinition(User.class);
+        beanDefinitionBuilder.addPropertyValue("name", "jycoder");
+        // 获取AbstractBeanDefinition
+        AbstractBeanDefinition beanDefinition = beanDefinitionBuilder.getBeanDefinition();
+        // 声明BeanDefinition
+        // 附件属性(不影响Bean 实例化、属性赋值、初始化)
+        beanDefinition.setAttribute("name", "jiyongchao");
+        // 当前BeanDefinition来自何方,也是起存储的作用
+        beanDefinition.setSource(BeanConfigurationMetadataDemo.class);
+        DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
+        beanFactory.addBeanPostProcessor(new BeanPostProcessor() {
+            @Override
+            public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+                if (ObjectUtils.nullSafeEquals("user", beanName) && User.class.equals(bean.getClass())) {
+                    BeanDefinition bd = beanFactory.getBeanDefinition(beanName);
+                    if (BeanConfigurationMetadataDemo.class.equals(bd.getSource())) { // 通过source来判断
+                        // TODO
+                    }
+                    // 属性（存储）上下文
+                    String name = (String) bd.getAttribute("jiyongchao"); // 这里的name就是jiyongchao
+                    User user = (User) bean;
+                    user.setName(name);
+                }
+                return null;
+            }
+        });
+        beanFactory.registerBeanDefinition("user", beanDefinition);
+
+        User user = beanFactory.getBean("user", User.class);
+        System.out.println(user);
+    }
+}
+```
+
+## Spring容器配置元信息
+
+Spring XML配置元信息 - Beans元素相关
+
+| Beans元素属性               | 默认直       | 使用场景                                                     |
+| --------------------------- | ------------ | ------------------------------------------------------------ |
+| profile                     | null（留空） | Spring Profiles配置值                                        |
+| default-lazt-init           | default      | 当outter beans "default-lazy-init"属性存在时，继承该值，否则为"false" |
+| default-merge               | default      | 当outter beans "default-merge"属性存在时，继承该值，否则为"false" |
+| default-autowire            | default      | 当outter beans "default-autowire"属性存在时，继承该值，否则为"false" |
+| default-autowire-candidates | null（留空） | 默认Spring Beans 名称pattern                                 |
+| default-init-method         | null（留空） | 默认Spring Beans 自定义初始化方法                            |
+| default-destory-method      | null（留空） | 默认Spring Beans 自定义销毁方法                              |
+
+> outter beans指的是在XML文件中通过import导入资源的方法注册Bean，导入方就是外部，被导入方就是内部。
+
+Spring XML配置元信息 - 应用上下文
+
+| XML元素                          | 使用场景                             |
+| -------------------------------- | ------------------------------------ |
+| <context:annotation-config />    | 激活Spring注解驱动                   |
+| <context:componenet-scan />      | Spring@Component以及自定义注解扫描   |
+| <context:load-time-weaver />     | 激活Spring LoadTimeWeaver            |
+| <context:mbean-export />         | 暴露Spring Beans作为JMX Beans        |
+| <context:mbean-server />         | 将当前平台作为MBeanServer            |
+| <context:property-placeholder /> | 加载外部化配置资源作为Spring属性配置 |
+| <context:property-override />    | 利用外部化配置资源覆盖Spring属性值   |
+
+> mbean：Java Management Extensions
+
+关于Beans的元素相关的配置可以在`BeanDefinitionParserDelegate#populateDefaults`中看到。
+
+## 基于XML资源装载Spring Bean配置元信息
+
+Spring Bean配置元信息
+
+| XML元素          | 使用场景                                    |
+| ---------------- | ------------------------------------------- |
+| <beans:beans />  | 单XML资源下的多个Spring Beans配置           |
+| <beans:bean />   | 单个Spring Bean定义（BeanDefinition）配置   |
+| <beans:alias />  | 为Spring Bean定义（BeanDefinition）映射别名 |
+| <beans:import /> | 加载外部Spring XML配置资源                  |
+
+> 通常情况下我们会使用默认的namespace，这里使用beans来更加明确的说明，这里的底层实现都是XmlBeanDefinitionReader。
+
+装在的核心方法在XmlBeanDefinitionReader#registerBeanDefinitions：
+
+```java
+public int registerBeanDefinitions(Document doc, Resource resource) throws BeanDefinitionStoreException {
+		BeanDefinitionDocumentReader documentReader = createBeanDefinitionDocumentReader();
+		int countBefore = getRegistry().getBeanDefinitionCount();
+		documentReader.registerBeanDefinitions(doc, createReaderContext(resource));
+		return getRegistry().getBeanDefinitionCount() - countBefore;
+	}
+```
+
+## 基于Properties资源装载Spring Bean配置元信息
+
+Spring Bean 配置元信息
+
+| Properties属性名 | 使用场景                      |
+| ---------------- | ----------------------------- |
+| (class)          | Bean类全称限定名              |
+| (abstract)       | 是否为抽象的BeanDefinition    |
+| (parent)         | 指定parent BeanDefinition名称 |
+| (lazy-init)      | 是否为延迟初始化              |
+| (ref)            | 应用其他Bean的名称            |
+| (scope)          | 设置Bean的scope属性           |
+| ${n}             | n表示第n+1个构造器参数        |
+
+> 底层实现：PropertiesBeanDefinitionReader
+
+接下来我们定义一个properties文件：
+
+```java
+# User BeanDefinition 定义
+user.(class) = org.jyc.thinking.in.spring.ioc.overview.dependency.domain.User
+user.id = 1
+user.name = jiyongchao
+user.city = HANGZHOU
+```
+
+尝试获取解析：
+
+```java
+public class PropertiesBeanDefinitionReaderDemo {
+    public static void main(String[] args) {
+        DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
+        PropertiesBeanDefinitionReader beanDefinitionReader = new PropertiesBeanDefinitionReader(beanFactory);
+        String location = "classpath:/META-INF/users-config-definitions.properties";
+        // 默认通过ISO-8859-1
+        ResourceLoader resourceLoader = new DefaultResourceLoader();
+        // 通过指定的Classpath获取Resource对象
+        Resource resource = resourceLoader.getResource(location);
+        // 转换成带字符编码的EncodedResource对象
+        EncodedResource encodedResource = new EncodedResource(resource, "UTF-8");
+        int i = beanDefinitionReader.loadBeanDefinitions(encodedResource);
+        System.out.printf("已加载%d 个BeanDefinition\n", i);
+
+        User user = beanFactory.getBean(User.class);
+        System.out.println(user);
+    }
+}
+```
+
+相关核心代码在PropertiesBeanDefinitionReader#loadBeanDefinitions：
+
+```java
+	public int loadBeanDefinitions(EncodedResource encodedResource, @Nullable String prefix)
+			throws BeanDefinitionStoreException {
+
+		if (logger.isTraceEnabled()) {
+			logger.trace("Loading properties bean definitions from " + encodedResource);
+		}
+
+		Properties props = new Properties();
+		try {
+			try (InputStream is = encodedResource.getResource().getInputStream()) {
+				if (encodedResource.getEncoding() != null) {
+					getPropertiesPersister().load(props, new InputStreamReader(is, encodedResource.getEncoding()));
+				}
+				else {
+					getPropertiesPersister().load(props, is);
+				}
+			}
+
+			int count = registerBeanDefinitions(props, prefix, encodedResource.getResource().getDescription());
+			if (logger.isDebugEnabled()) {
+				logger.debug("Loaded " + count + " bean definitions from " + encodedResource);
+			}
+			return count;
+		}
+		catch (IOException ex) {
+			throw new BeanDefinitionStoreException("Could not parse properties from " + encodedResource.getResource(), ex);
+		}
+	}
+```
+
+> 使用properties的方式读取BeanDefinition的时候，如果出现Bean重复定义的情况，Spring会忽略后面定义的Bean的相关信息。
+
+## 基于Java注解的Spring Bean配置元信息
+
+Spring模式注解：
+
+| Spring注解     | 场景说明          | 起始版本 |
+| -------------- | ----------------- | -------- |
+| @Repository    | 数据仓储模式注解  | 2.0      |
+| @Component     | 通用组件模式注解  | 2.5      |
+| @Service       | 服务模式注解      | 2.5      |
+| @Controller    | Web控制器模式注解 | 2.5      |
+| @Configuration | 配置类模式注解    | 3.0      |
+
+由于注解是不能集成的，所以采用元注解（元标注的方式来实现），其他注解都可以看成是`@Component`的"派生"注解。
+
+Spring Bean依赖注入注解：
+
+| Spring注解 | 场景说明                             | 起始版本 |
+| ---------- | ------------------------------------ | -------- |
+| @Autowired | Bean依赖注入，支持多种依赖查找的方式 | 2.5      |
+| @Qualifier | 细粒度的@Autowired依赖查找           | 2.5      |
+
+| Java注解  | 场景说明         | 起始版本 |
+| --------- | ---------------- | -------- |
+| @Resource | 类似于@Autowired | 2.5      |
+| @Inject   | 类似于@Autowired | 2.5      |
+
+Spring Bean条件装配注解：
+
+| Spring注解   | 场景说明       | 起始版本 |
+| ------------ | -------------- | -------- |
+| @Profile     | 配置化条件装配 | 3.1      |
+| @Conditional | 编程条件装配   | 4.0      |
+
+我们可以看一下@Profile注解的@Conditional：
+
+```java
+class ProfileCondition implements Condition {
+
+	@Override
+	public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
+		MultiValueMap<String, Object> attrs = metadata.getAllAnnotationAttributes(Profile.class.getName());
+		if (attrs != null) {
+			for (Object value : attrs.get("value")) {
+				if (context.getEnvironment().acceptsProfiles(Profiles.of((String[]) value))) {
+					return true;
+				}
+			}
+			return false;
+		}
+		return true;
+	}
+
+}
+```
+
+最后是Spring Bean声明周期回调注解：
+
+| Spring注解     | 场景说明                | 起始版本 |
+| -------------- | ----------------------- | -------- |
+| @PostConstruct | 替换XML标签或者实现接口 | 2.5      |
+| @PreDestory    | 替换XML标签或者实现接口 | 2.5      |
+
+## Spring Bean配置元信息底层实现
+
+Spring BeanDefinition解析与注册的方式：
+
+| 实现场景   | 实现类                         | 起始版本 |
+| ---------- | ------------------------------ | -------- |
+| XML资源    | XmlBeanDefinitionReader        | 1.0      |
+| Properties | PropertiesBeanDefinitionReader | 1.0      |
+| Java注解   | AnnotatedBeanDefinitionReader  | 3.0      |
+
+> 需要注意的是AnnotatedBeanDefinitionReader与BeanDefinition并没有任何直接的关系，而XmlBeanDefinitionReader和PropertiesBeanDefinitionReader都继承了AbstractBeanDefinitionReader。
+
+### XML资源的方式
+
+Spring XML资源BeanDefinition解析与注册：
+
+- 核心API - XmlBeanDefinitionReader
+- 底层 - BeanDefinitionDocumentReader
+  - XML解析 - Java DOM Level 3 API
+  - BeanDefinition 解析  - BeanDefinitionParserDelegate
+  - BeanDefinition注册 - BeanDefinitionRegistry
+
+> BeanDefinitionDocumentReader有且仅有一个实现，DefaultBeanDefinitionDocumentReader，它里面的preProcessXml和postProcessXml方法都是空实现，可以让我们在加载XML资源的前后做一些自定义的操作，使用的时候只需要继承DefaultBeanDefinitionDocumentReader，然后设置XmlBeanDefinitionReader所使用的加载类。
+
+```java
+private Class<? extends BeanDefinitionDocumentReader> documentReaderClass =
+			DefaultBeanDefinitionDocumentReader.class;
+```
+
+### Properties资源的方式
+
+Spring Properties资源BeanDefinition解析与注册：
+
+- 核心API - PropertiesBeanDefinitionReader
+  - 资源
+    - 字节流 - Resource
+    - 字符流 - EncodedResource
+  - 底层
+    - 存储 - java.util.Properties
+    - BeanDefinition解析 - API内部实现
+    - BeanDefinition注册 - BeanDefinitionRegistry
+
+> 通过这种方式装在的Bean的名称就是"."之前的字符。
+
+### Java注解的方式
+
+Spring Java注册BeanDefintiion解析与注册：
+
+- 核心API - AnnotatedBeanDefinitionReader
+  - 资源
+    - 类对象 - java.lang.Class
+  - 底层
+    - 条件评估 - ConditionEvaluator
+    - Bean范围解析 - ScopeMetadataResolver
+    - BeanDefinition解析 - 内部API实现
+    - BeanDefinition处理 - AnnotationConfigUtils.processCommonDefinitionAnnotations
+    - BeanDefinition注册 - BeanDefinitionRegistry
+
+实现的核心源代码：
+
+```java
+private <T> void doRegisterBean(Class<T> beanClass, @Nullable String name,
+			@Nullable Class<? extends Annotation>[] qualifiers, @Nullable Supplier<T> supplier,
+			@Nullable BeanDefinitionCustomizer[] customizers) {
+
+		AnnotatedGenericBeanDefinition abd = new AnnotatedGenericBeanDefinition(beanClass);
+		if (this.conditionEvaluator.shouldSkip(abd.getMetadata())) {
+			return;
+		}
+
+		abd.setInstanceSupplier(supplier);
+		ScopeMetadata scopeMetadata = this.scopeMetadataResolver.resolveScopeMetadata(abd);
+		abd.setScope(scopeMetadata.getScopeName());
+		String beanName = (name != null ? name : this.beanNameGenerator.generateBeanName(abd, this.registry));
+		// 如果Bean上面有@Lazy或者@Primary等等，这个方法会把相关的信息赋值给BeanDefinition
+		AnnotationConfigUtils.processCommonDefinitionAnnotations(abd);
+		if (qualifiers != null) {
+			for (Class<? extends Annotation> qualifier : qualifiers) {
+				if (Primary.class == qualifier) {
+					abd.setPrimary(true);
+				}
+				else if (Lazy.class == qualifier) {
+					abd.setLazyInit(true);
+				}
+				else {
+					abd.addQualifier(new AutowireCandidateQualifier(qualifier));
+				}
+			}
+		}
+		if (customizers != null) {
+			for (BeanDefinitionCustomizer customizer : customizers) {
+				customizer.customize(abd);
+			}
+		}
+
+		BeanDefinitionHolder definitionHolder = new BeanDefinitionHolder(abd, beanName);
+		definitionHolder = AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, this.registry);
+		BeanDefinitionReaderUtils.registerBeanDefinition(definitionHolder, this.registry);
+	}
+```
+
+## 基于XML资源装载Spring 容器配置元信息
+
+Spring IoC容器相关XML配置：
+
+| 命名空间 | 所属模块       | Schema资源URL                                                |
+| -------- | -------------- | ------------------------------------------------------------ |
+| beans    | spring-beans   | http://www.springframework.org/schema/beans/spring-beans.xsd |
+| context  | spring-context | http://www.springframework.org/schema/context/beans/spring-context.xsd |
+| aop      | spring-aop     | http://www.springframework.org/schema/aop/spring-aop.xsd     |
+| tx       | spring-tx      | http://www.springframework.org/schema/tx/spring-tx.xsd       |
+| util     | spring-util    | http://www.springframework.org/schema/util/spring-util.xsd   |
+| tool     | spring-beans   | http://www.springframework.org/schema/tool/spring-tool.xsd   |
+
+> 如果需要支持事务，需要单独引入spring-tx。
+
+## 基于Java注解配置Spring 容器配置元信息
+
+Spring IoC容器装配注解：
+
+| Spring注解      | 场景说明                                | 起始版本 |
+| --------------- | --------------------------------------- | -------- |
+| @ImportResource | 替换XML元素<import>                     | 3.0      |
+| @Import         | 导入Configuration Class                 | 3.0      |
+| @ComponenetScan | 扫描指定package下标注Spring模式注解的类 | 3.1      |
+
+相关的示例：
+
+```java
+@ImportResource("classpath:/META-INF/dependency-lookup-context.xml")
+@Import(User.class)
+public class AnnotatedSpringIoCContainerConfigurationDemo {
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+        context.register(AnnotatedSpringIoCContainerConfigurationDemo.class);
+        context.refresh();
+        Map<String, User> userMap = context.getBeansOfType(User.class);
+        for (Map.Entry<String, User> entry : userMap.entrySet()) {
+            System.out.printf("User Bean name:%s,content: %s \n", entry.getKey(), entry.getValue());
+        }
+        context.close();
+    }
+}
+```
+
+Spring IoC配置属性注解：
+
+| Spring注解       | 场景说明                       | 起始版本 |
+| ---------------- | ------------------------------ | -------- |
+| @PropertySource  | 配置属性抽象PropertySource注解 | 3.1      |
+| @PropertySources | @PropertySource集合注解        | 4.0      |
+
+```java
+@PropertySource("classpath:/META-INF/users-config-definitions.properties") //Java8 + @Repeatable
+@PropertySource("classpath:/META-INF/users-config-definitions.properties")
+//@PropertySources(@PropertySource(value = "1"))
+```
+
+## 基于Extensible XML authoring扩展Spring XML元素
+
+Spring XML扩展的步骤：
+
+1. 编写XML Schema文件：定义XML结构
+2. 自定义NamespaceHandler实现：命名空间绑定
+3. 定义BeanDefinitionParser实现：XML元素与BeanDefinition解析
+4. 注册XML扩展：命名空间与XML Schema映射
+
+定义XML结构：
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:users="http://jycoder.org/schema/users"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://jycoder.org/schema/users">
+
+    <users:user id="1" name="jiyongchao" city="SHANGHAI" />
+
+</beans>
+```
+
+命名空间绑定：
+
+```java
+public class UsersNamespaceHandler extends NamespaceHandlerSupport {
+
+    @Override
+    public void init() {
+        // 将"user"元素注册对应的BeanDefinitionParser实现
+        registerBeanDefinitionParser("user",new UserBeanDefinitionParser());
+    }
+}
+```
+
+XML元素与BeanDefinition解析：
+
+```java
+public class UserBeanDefinitionParser extends AbstractSingleBeanDefinitionParser {
+    @Override
+    protected Class<?> getBeanClass(Element element) {
+        return User.class;
+    }
+
+    @Override
+    protected void doParse(Element element, ParserContext parserContext, BeanDefinitionBuilder builder) {
+        setPropertyValue("id", element, builder);
+        setPropertyValue("name", element, builder);
+        setPropertyValue("City", element, builder);
+    }
+
+    private void setPropertyValue(String attributeName, Element element, BeanDefinitionBuilder builder) {
+        String attributeValue = element.getAttribute(attributeName);
+        if (StringUtils.hasText(attributeValue)) {
+            builder.addPropertyValue(attributeName, attributeValue);
+        }
+    }
+}
+```
+
+命名空间与XML Schema映射：
+
+```properties
+#定义namespacehanlder
+http\://jycoder.org/schema/users=org.jyc.thinking.in.spring.bean.metadata.UsersNamespaceHandler
+```
+
+```properties
+http\://jycoder.org/schema/users.xsd=org/jyc/thinking/in/spring/bean/metadata/users.xsd
+```
+
+测试我们编写的案例：
+
+```java
+public class ExtensibleXmlAuthoringDemo {
+    public static void main(String[] args) {
+        DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
+        XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(beanFactory);
+        reader.loadBeanDefinitions("classpath:/META-INF/users-context.xml");
+        // 获取User Bean对象
+        User user = beanFactory.getBean(User.class);
+        System.out.println(user);
+    }
+}
+```
+
+## 基于Properties资源装载外部化配置
+
+1. 注解驱动：
+   - org.springframework.context.annotation.PropertySource
+   - org.springframework.context.annotation.PropertySources
+2. API编程：
+   - org.springframework.core.env.PropertySource
+   - org.springframework.core.env.PropertySources
+
+```java
+@PropertySource("classpath:/META-INF/users-config-definitions.properties")
+public class PropertySourceDemo {
+    @Bean
+    public User user(@Value("${user.id}") String id, @Value("${user.name}") String name) {
+        User user = new User();
+        user.setId(id);
+        user.setName(name);
+        return user;
+    }
+
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+        // 扩展Environment中的PropertySources
+        // 添加PropertySources操作必须在refresh方法之前完成
+        Map<String, Object> propertiesSource = new HashMap<>();
+        propertiesSource.put("user.name", "xiao ji");
+        org.springframework.core.env.PropertySource propertySource = new MapPropertySource("first-property-source", propertiesSource);
+        context.getEnvironment().getPropertySources().addFirst(propertySource);
+        context.register(AnnotatedSpringIoCContainerConfigurationDemo.class);
+        context.refresh();
+        Map<String, User> userMap = context.getBeansOfType(User.class);
+        for (Map.Entry<String, User> entry : userMap.entrySet()) {
+            System.out.printf("User Bean name:%s,content: %s \n", entry.getKey(), entry.getValue());
+        }
+        System.out.println(context.getEnvironment().getPropertySources());
+        context.close();
+    }
+}
+```
+
+## 基于yml资源装载外部化配置
+
+使用API编程：
+
+- org.springframework.beans.factory.config.YamlProcessor
+  - org.springframework.beans.factory.config.YamlMapFactoryBean
+  - org.springframework.beans.factory.config.YamlPropertiesFactoryBean
+
+定义YAML文件：
+
+```yaml
+user:
+  id: 100
+  name: 吉永超
+```
+
+定义XML文件：
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <bean id="yamlMap" class="org.springframework.beans.factory.config.YamlMapFactoryBean">
+        <property name="resources" value="classpath:/META-INF/user.yaml" />
+    </bean>
+
+</beans>
+```
+
+测试我们的例子：
+
+```java
+public class XmlBasedYamlPropertySourceDemo {
+
+    public static void main(String[] args) {
+
+        DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
+        XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(beanFactory);
+        reader.loadBeanDefinitions("classpath:/META-INF/yaml-property-source-context.xml");
+        // 获取User Bean对象
+        User user = beanFactory.getBean("user", User.class);
+        System.out.println(user);
+    }
+}
+```
+
+PropertySource默认是没有yaml格式的实现的，我们可以自己实现一个：
+
+```java
+public class YamlPropertySourceFactory implements PropertySourceFactory {
+    @Override
+    public PropertySource<?> createPropertySource(String name, EncodedResource resource) throws IOException {
+        YamlPropertiesFactoryBean yamlPropertiesFactoryBean = new YamlPropertiesFactoryBean();
+        yamlPropertiesFactoryBean.setResources(resource.getResource());
+        Properties yamlProperties = yamlPropertiesFactoryBean.getObject();
+        return new PropertiesPropertySource(name, yamlProperties);
+    }
+}
+```
+
+然后使用YAML的方式装载外部化配置：
+
+```java
+@PropertySource(name = "yamlPropertySource",
+        value = "classpath:/META-INF/user.yaml",
+        factory = YamlPropertySourceFactory.class)
+public class AnnotatedYamlPropertySourceDemo {
+
+    @Bean
+    public User user(@Value("${user.id}") String id, @Value("${user.name}") String name) {
+        User user = new User();
+        user.setId(id);
+        user.setName(name);
+        return user;
+    }
+
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+        context.register(AnnotatedYamlPropertySourceDemo.class);
+        context.refresh();
+        User user = context.getBean("user", User.class);
+        System.out.println(user);
+        context.close();
+    }
+}
+```
+
+## 面试题
+
+### Spring内建的XML Schema常见有哪些？
+
+见基于XML资源装载Spring 容器配置元信息章节表格。
+
+### Spring配置元信息有哪些？
+
+- Bean配置元信息：通过媒介（如XML、Properties）等，解析BeanDefinition
+- IoC容器配置元信息：通过媒介（如XML、Properties等），控制IoC容器行为，比如注解驱动，AOP等
+- 外部化配置：通过资源抽象（如Properties、YAML等），控制PropertySource
+- Spring Profile：通过外部化配置，提供条件分支流程
+
+### Extensible XML authoring的缺点？
+
+- 高复杂度：开发人员需要熟悉XML schema、Spring.handlers，Spring.schemas以及Spring API
+- 嵌套元素支持较弱：通常需要使用方法递归或者嵌套解析的方式处理嵌套（子）元素
+- XML处理性能较差：Spring XML基于DOM Levels API 实现，该API便于理解，然而性能较差
+- XML框架移植性较差：很难适配高性能和便利性的XML框架，如JAXB。
+
+# Spring资源管理
+
+> 为什么Spring不使用Java标准资源管理，而选择重新发明轮子？
+>
+> - Java标准资源管理强大，然而扩展复杂，资源存储方式并不统一
+> - Spring要自立门户
+> - Spring “抄”、“超”、“潮”
+
+## Java标准资源管理
 
