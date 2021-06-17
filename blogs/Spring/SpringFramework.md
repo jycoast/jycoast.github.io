@@ -5857,3 +5857,92 @@ public class AnnotatedYamlPropertySourceDemo {
 
 ## Java标准资源管理
 
+Java标准资源定位：
+
+| 职责         | 说明                                                         |
+| ------------ | ------------------------------------------------------------ |
+| 面向资源     | 文件系统、artifact（jar、war、ear文件）以及远程资源（HTTP、FTP等） |
+| API整合      | java.lang.ClassLoader#getResource、java.io.File或java.net.URL |
+| 资源定位     | java.net.URL或java.net.URI                                   |
+| 面向流失存储 | java.net.URLConnection                                       |
+| 协议扩展     | java.net.URLStreamHandler或java.net.URLStreamHandleFactory   |
+
+## Resource接口
+
+资源接口：
+
+| 类型       | 接口                                                |
+| ---------- | --------------------------------------------------- |
+| 输入流     | org.springframework.core.io.InputStreamResource     |
+| 只读资源   | org.springframework.core.io.Resource                |
+| 可写资源   | org.springframework.core.io.WritableResource        |
+| 编码资源   | org.springframework.core.io.support.EncodedResource |
+| 上下文资源 | org.springframework.core.io.ContextResource         |
+
+## 内建的Resource实现
+
+内建实现：
+
+| 资源来源       | 资源协议      | 实现类                                                       |
+| -------------- | ------------- | ------------------------------------------------------------ |
+| Bean定义       | 无            | org.springframework.beans.factory.support.BeanDefinitionResource |
+| 数组           | 无            | org.springframework.core.io.ByteArrayResource                |
+| 类路径         | classpath:/   | org.springframework.core.io.ClassPathResource                |
+| 文件系统       | file:/        | org.springframework.core.io.FileSystemResource               |
+| URL            | URL支持的协议 | org.springframework.core.io.UrlResource                      |
+| ServletContext | 无            | org.springframework.web.context.support.ServletContextResource |
+
+## Resource接口扩展
+
+1. 可写资源接口
+   - org.springframework.core.io.WritableResource
+     - org.springframework.core.io.FileSystemResource
+     - org.springframework.core.io.FileUrlResource（@since 5.0.2）
+     - org.springframework.core.io.PathResource（@since 4.0 & @Deprecated）
+2. 编码资源接口
+   - org.springframework.core.io.support.EncodedResource
+
+使用编码资源接口进行操作的示例：
+
+```java
+public class EncodedFileSystemResourceDemo {
+    public static void main(String[] args) throws Exception {
+        String currentJavaFilePath = System.getProperty("user.dir") + "/bean-resource/src/main/java/org/jyc/thinking/in/spring/resource/EncodedFileSystemResourceDemo.java";
+        File currentJavaFile = new File(currentJavaFilePath);
+        FileSystemResource fileSystemResource = new FileSystemResource(currentJavaFile);
+        EncodedResource encodedResource = new EncodedResource(fileSystemResource, "UTF-8");
+        // 字符输入流
+        try (Reader reader = encodedResource.getReader()) {
+            System.out.println(IOUtils.toString(reader));
+        }
+    }
+}
+```
+
+## Spring资源加载器
+
+Resource加载器：
+
+- org.springframework.core.io.ResourceLoader
+  - org.springframework.core.io.DefaultResourceLoader
+  - org.springframework.core.io.FileSystemResourceLoader
+  - org.springframework.core.io.ClassRelativeResourceLoader
+  - org.springframework.context.support.AbstractApplicationContext
+
+使用示例：
+
+```java
+public class EncodedFileSystemResourceLoaderDemo {
+    public static void main(String[] args) throws Exception {
+        String currentJavaFilePath = System.getProperty("user.dir") + "/bean-resource/src/main/java/org/jyc/thinking/in/spring/resource/EncodedFileSystemResourceLoaderDemo.java";
+        FileSystemResourceLoader resourceLoader = new FileSystemResourceLoader();
+        Resource fileSystemResource = resourceLoader.getResource(currentJavaFilePath);
+        EncodedResource encodedResource = new EncodedResource(fileSystemResource, "UTF-8");
+        // 字符输入流
+        try (Reader reader = encodedResource.getReader()) {
+            System.out.println(IOUtils.toString(reader));
+        }
+    }
+}
+```
+
