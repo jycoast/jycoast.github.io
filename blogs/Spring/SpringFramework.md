@@ -5946,3 +5946,704 @@ public class EncodedFileSystemResourceLoaderDemo {
 }
 ```
 
+## Spring通配路径资源加载器
+
+1. 通配路径ResourceLoader
+   - org.springframework.core.io.support.ResourcePatternResolver
+   - org.springframework.core.io.support.PathMatchingResourcePatternResolver
+2. 路径匹配器
+   - org.springframework.util.PathMatcher
+     - Ant模式匹配实现 - org.springframework.util.AntPathMatcher
+
+## Spring通配路径资源扩展
+
+1. 实现org.springframework.util.PathMatcher
+2. 重置PathMatcher
+   - PathMatchingResourcePatternResolver#setPathMatcher
+
+相关的示例：
+
+```java
+public class CustomizedResourcePatternResolver {
+    public static void main(String[] args) throws Exception {
+        // 读取当前package对应的所有的.java文件
+        // *.java
+        String currentPackagePath = System.getProperty("user.dir") + "/bean-resource/src/main/java/org/jyc/thinking/in/spring/resource/";
+        String locationPattern = currentPackagePath + "*.java";
+        PathMatchingResourcePatternResolver resourcePatternResolver = new PathMatchingResourcePatternResolver(new FileSystemResourceLoader());
+
+        resourcePatternResolver.setPathMatcher(new JavaFilePathMatcher());
+        Resource[] resources = resourcePatternResolver.getResources(locationPattern);
+        Stream.of(resources).map(ResourceUtils::getContent).forEach(System.out::println);
+    }
+
+    static class JavaFilePathMatcher implements PathMatcher {
+        @Override
+        public boolean isPattern(String path) {
+            return path.endsWith(".java");
+        }
+
+        @Override
+        public boolean match(String pattern, String path) {
+            return path.endsWith(".java");
+        }
+
+        @Override
+        public boolean matchStart(String pattern, String path) {
+            return false;
+        }
+
+        @Override
+        public String extractPathWithinPattern(String pattern, String path) {
+            return null;
+        }
+
+        @Override
+        public Map<String, String> extractUriTemplateVariables(String pattern, String path) {
+            return null;
+        }
+
+        @Override
+        public Comparator<String> getPatternComparator(String path) {
+            return null;
+        }
+
+        @Override
+        public String combine(String pattern1, String pattern2) {
+            return null;
+        }
+    }
+}
+```
+
+其中使用到的工具类：
+
+```java
+public interface ResourceUtils {
+
+    static String getContent(Resource resource) {
+        try {
+            return getContent(resource, "UTF-8");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    static String getContent(Resource resource, String encoding) throws IOException {
+        EncodedResource encodedResource = new EncodedResource(resource, encoding);
+        try (Reader reader = encodedResource.getReader()) {
+            return IOUtils.toString(reader);
+        }
+    }
+}
+```
+
+## 依赖注入Spring Resource
+
+可以基于@Value实现：
+
+```java
+@Value("classpath:/...")
+private Resource resource;
+```
+
+相关的示例：
+
+```java
+public class InjectResourceDemo {
+
+    @Value("classpath:/META-INF/default.properties")
+    private Resource defaultPropertiesResource;
+
+    @Value("classpath*:/META-INF/*.properties")
+    private Resource[] PropertiesResources;
+
+    @Value("${user.dir}")
+    private String currentProjectRootPath;
+
+    @PostConstruct
+    public void init() {
+        System.out.println(ResourceUtils.getContent(defaultPropertiesResource));
+        System.out.println(currentProjectRootPath);
+        Stream.of(PropertiesResources).map(ResourceUtils::getContent).forEach(System.out::println);
+    }
+
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext();
+        applicationContext.register(InjectResourceDemo.class);
+        applicationContext.refresh();
+        // 关闭应用上下文
+        applicationContext.close();
+    }
+}
+```
+
+## 依赖注入ResourceLoader
+
+有多种方式可以依赖注入ResourceLoader：
+
+1. 实现ResourceLoaderAware回调
+2. @Autowired注入ResourceLoader
+3. 注入ApplicationContext作为ResourceLoader
+
+```java
+public class InjectResourceLoaderDemo implements ResourceLoaderAware {
+
+    private ResourceLoader awareResourceLoader;
+
+    @Autowired
+    ResourceLoader autowiredResourceLoader;
+
+    @Autowired
+    private AbstractApplicationContext applicationContext;
+
+    @PostConstruct
+    public void init() {
+        System.out.println("awareResourceLoader == autowiredResourceLoader: " + (autowiredResourceLoader == awareResourceLoader));
+        System.out.println("autowiredResourceLoader == applicationContext: " + (awareResourceLoader == applicationContext));
+    }
+
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext();
+        applicationContext.register(InjectResourceLoaderDemo.class);
+        applicationContext.refresh();
+        // 关闭应用上下文
+        applicationContext.close();
+    }
+
+    @Override
+    public void setResourceLoader(ResourceLoader resourceLoader) {
+        this.awareResourceLoader = resourceLoader;
+    }
+}
+```
+
+> 这三种不同的方式最终注入的是相同的对象，都是AbstractApplicationContext。
+
+## 面试题
+
+### Spring配置资源中有哪些常见类型？
+
+XML资源、Properties资源、YAML资源。
+
+### 请举例不同类型的Spring配置资源
+
+XML资源：
+
+1. 普通的BeanDefinition XML资源配置 - *.xml
+2. Spring Schema资源 - *.xsd
+
+Properties资源：
+
+1. 普通Properties格式资源 - *.properties
+2. Spring Handler实现类映射文件 - META/spring.handlers
+3. Spring Schema资源映射文件 - META-INF/spring.schemas
+
+YAML资源：
+
+1. 普通YAML资源配置 - *.yaml或 *.yml
+
+### Java标准资源管理扩展的步骤
+
+简易实现：
+
+- 实现URLStreamHandler并放置再sun.net.www.protocol.${protocol}.Handler包下
+
+自定义实现：
+
+- 实现URLStreamHandler
+- 添加 -Djava.protocol.handler.pkgs启动参数，指向URLStreamHandler实现类的包下
+
+高级实现：
+
+- 实现URLStreamHandlerFactory并传递到URL之中
+
+# Spring国际化
+
+Spring国际化使用场景：
+
+- 普通国际化文案
+- Bean Validation校验国际化文案
+- Web站点页面渲染
+- Web MVC错误消息提示
+
+## Spring国际化接口
+
+核心接口：
+
+- org.springframework.context.MessageSource
+
+主要概念：
+
+- 文案模板编码（code）
+- 文案模板参数（args）
+- 区域（Locale）
+
+## 层次性的MessageSource
+
+Spring层次性国际化接口：
+
+- org.springframework.context.HierarchicalMessageSource
+
+## Java国际化标准实现
+
+核心接口：
+
+- 抽象实现 - java.util.ResourceBundle
+- Properties资源实现 - java.util.PropertyResourceBundle
+- 列举实现 - java.util.ListResourceBundle
+
+ResourceBundle核心特性：
+
+- Key - Value设计
+- 层次性设计
+- 缓存设计
+- 字符编码控制 - java.util.ResourceBundle.Control（@since 1.6）
+- Control SPI扩展 - java.util.spi.ResourceBundleControlProvider（@since 1.8）
+
+## Java文本格式化
+
+核心接口：
+
+- java.text.MessageFormat
+
+基本用法：
+
+- 设置消息格式模式 - new MessageFormat(...)
+- 格式化 - format(new Objectp[]{...})
+
+消息格式模式：
+
+- 格式元素：{ArgumentIndex（,FormatType,（FormatStyle））}
+- FormatType：消息格式类型，可选项，每种类型在number、date、time和choice类型选其一
+- FormatStyle：消息格式风格，可选项，包括：short、medium、long、full、integer、currency、percent
+
+```java
+public class MessageFormatDemo {
+    public static void main(String[] args) {
+        int planet = 7;
+        String event = "a disturbance in the Force";
+
+        String result = MessageFormat.format(
+                "At {1,time,long} on {1,date}, there was {2} on planet {0,number,integer}.",
+                planet, new Date(), event);
+        System.out.println(result);
+    }
+}
+```
+
+Java文本格式化还有一些高级特性：
+
+- 重置消息格式模板
+- 重置java.util.Locale
+- 重置java.text.Format
+
+使用的示例：
+
+```java
+public class MessageFormatDemo {
+    public static void main(String[] args) {
+        int planet = 7;
+        String event = "a disturbance in the Force";
+
+        String messageFormatPattern = "At {1,time,long} on {1,date}, there was {2} on planet {0,number,integer}.";
+        MessageFormat messageFormat = new MessageFormat(messageFormatPattern);
+        String result = messageFormat.format(new Object[]{planet, new Date(), event});
+        System.out.println(result);
+
+        // 重置MessageFormatPattern
+        messageFormatPattern = "This is a text: {0},{1},{2}";
+        messageFormat.applyPattern(messageFormatPattern);
+        result = messageFormat.format(new Object[]{"hello,world", "666"});
+        System.out.println(result);
+
+        // 重置Locale
+        messageFormat.setLocale(Locale.ENGLISH);
+        messageFormatPattern = "At {1,time,long} on {1,date}, there was {2} on planet {0,number,integer}.";
+        messageFormat.applyPattern(messageFormatPattern);
+        result = messageFormat.format(new Object[]{planet, new Date(), event});
+        System.out.println(result);
+
+        // 重置Format
+        // 根据参数索引来设置 Pattern
+        messageFormat.setFormat(1, new SimpleDateFormat("YYYY-MM-dd HH:mm:ss"));
+        result = messageFormat.format(new Object[]{planet, new Date(), event});
+        System.out.println(result);
+    }
+}
+```
+
+## MessageSource开箱实现
+
+基于ResourceBundle + MessageFormat组合MessageSource实现：
+
+- org.springframework.context.support.ResourceBundleMessageSource
+
+可重载Properties + MessageFormat组合MessageSource实现：
+
+- org.springframework.context.support.ReloadableResourceBundleMessageSource
+
+## Message的内建依赖
+
+MessageSource内建Bean可能来源：
+
+- 预注册Bean名称为："messageSource"，类型为：MessageSource Bean
+- 默认内建实现 - DelegatingMessageSource
+  - 层次性查找MessageSource对象
+
+相关的代码实现：
+
+```java
+protected void initMessageSource() {
+		ConfigurableListableBeanFactory beanFactory = getBeanFactory();
+		if (beanFactory.containsLocalBean(MESSAGE_SOURCE_BEAN_NAME)) {
+			this.messageSource = beanFactory.getBean(MESSAGE_SOURCE_BEAN_NAME, MessageSource.class);
+			// Make MessageSource aware of parent MessageSource.
+			if (this.parent != null && this.messageSource instanceof HierarchicalMessageSource) {
+				HierarchicalMessageSource hms = (HierarchicalMessageSource) this.messageSource;
+				if (hms.getParentMessageSource() == null) {
+					// Only set parent context as parent MessageSource if no parent MessageSource
+					// registered already.
+					hms.setParentMessageSource(getInternalParentMessageSource());
+				}
+			}
+			if (logger.isTraceEnabled()) {
+				logger.trace("Using MessageSource [" + this.messageSource + "]");
+			}
+		}
+		else {
+			// Use empty MessageSource to be able to accept getMessage calls.
+			DelegatingMessageSource dms = new DelegatingMessageSource();
+			dms.setParentMessageSource(getInternalParentMessageSource());
+			this.messageSource = dms;
+			beanFactory.registerSingleton(MESSAGE_SOURCE_BEAN_NAME, this.messageSource);
+			if (logger.isTraceEnabled()) {
+				logger.trace("No '" + MESSAGE_SOURCE_BEAN_NAME + "' bean, using [" + this.messageSource + "]");
+			}
+		}
+	}
+```
+
+## SpringBoot为什么要新建MessageSource Bean?
+
+1. AbstractApplicationContext的实现决定了MessageSource内建实现
+2. Spring Boot通过外部化配置简化了MessageSource Bean构建
+3. SPring Boot基于Bean Validation校验非常普遍
+
+实际上我们可以覆盖SpringBoot中自动装配的MessageSource Bean：
+
+```java
+@EnableAutoConfiguration
+public class CustomizedMessageSourceBeanDemo {
+
+    /**
+     * 在Spring Boot场景中，Primary Configure Sources（Classes）高于*AutoConfiguration
+     *
+     * @return
+     */
+    @Bean
+    public MessageSource messageSource() {
+        return new ReloadableResourceBundleMessageSource();
+    }
+
+    public static void main(String[] args) {
+        ConfigurableApplicationContext applicationContext = SpringApplication.run(CustomizedMessageSourceBeanDemo.class, args);
+        ConfigurableListableBeanFactory beanFactory = applicationContext.getBeanFactory();
+        if (beanFactory.containsBean(AbstractApplicationContext.MESSAGE_SOURCE_BEAN_NAME)) {
+            beanFactory.getBean(AbstractApplicationContext.MESSAGE_SOURCE_BEAN_NAME);
+            // 查找MessageSource Bean
+            MessageSource messageSource = applicationContext.getBean(AbstractApplicationContext.MESSAGE_SOURCE_BEAN_NAME, MessageSource.class);
+            System.out.println(messageSource);
+        }
+    }
+}
+```
+
+## 面试题
+
+### Spring国际化接口有哪些？
+
+1. 核心接口 - MessageSource
+2. 层次性接口 - org.springframework.context.HierarchicalMessageSource
+
+### Spring有哪些MessageSource的内建实现？
+
+- org.springframework.context.support.ResourceBundleMessageSource
+- org.springframework.context.support.ReloadableResourceBundleMessageSource
+- org.springframework.context.support.StaticMessageSource
+- org.springframework.context.support.DelegatingMessageSource
+
+### 如何实现配置自动更新MessageSource？
+
+主要技术：
+
+- Java NIO 2：java.nio.file.watchService
+- Java Concurrency：java.util.concurrent.ExecutorService
+- Spring：org.springframework.context.support.AbstractMessageSource
+
+# Spring校验
+
+Spring校验使用场景：
+
+- Spring 常规校验（Validator）
+- Spring 数据绑定（DataBinder）
+- Spring Web参数绑定（WebDataBinder）
+- Spring WebMVC/WebFlux处理方法参数校验
+
+## Validator接口设计
+
+接口职责：
+
+- Spring内部校验接口，通过编程的方式校验目标对象
+
+核心方法：
+
+- supports（Class）：校验目标类能否校验
+- validate（Object，Errors）：校验目标对象，并将校验失败的内容输出至Errors对象
+
+配套组件：
+
+- 错误收集器：org.springframework.validation.Errors
+- Validator工具类：org.springframework.validation.ValidationUtils
+
+在Java Doc中的例子：
+
+```java
+public class UserLoginValidator implements Validator {
+  
+      private static final int MINIMUM_PASSWORD_LENGTH = 6;
+  
+      public boolean supports(Class clazz) {
+         return UserLogin.class.isAssignableFrom(clazz);
+      }
+  
+      public void validate(Object target, Errors errors) {
+         ValidationUtils.rejectIfEmptyOrWhitespace(errors, "userName", "field.required");
+         ValidationUtils.rejectIfEmptyOrWhitespace(errors, "password", "field.required");
+         UserLogin login = (UserLogin) target;
+         if (login.getPassword() != null
+               && login.getPassword().trim().length() < MINIMUM_PASSWORD_LENGTH) {
+            errors.rejectValue("password", "field.min.length",
+                  new Object[]{Integer.valueOf(MINIMUM_PASSWORD_LENGTH)},
+                  "The password must be at least [" + MINIMUM_PASSWORD_LENGTH + "] characters in length.");
+         }
+      }
+   }
+```
+
+## Errors接口设计
+
+接口职责：
+
+- 数据绑定和校验错误收集接口，与Java Bean和其属性有强关联性。
+
+核心方法：
+
+- reject方法（重载）：收集错误文案
+- rejectValue方法（重载）：收集对象字段中的错误文案
+
+配套组件：
+
+- Java Bean错误描述：org.springframework.validation.ObjectError
+- Java Bean属性错误描述：org.springframework.validation.FieldError
+
+## Errors的文案来源
+
+Errors文案生成步骤：
+
+1. 选择Errors实现（org.springframework.validation.BeanPropertyBindingResult）
+2. 调用reject方法或rejectValue方法
+3. 获取Errors对象中ObjectError或FieldError
+4. 将ObjectError或FieldError中的code和args，关联MessageSource实现（如：ResourceBundleMessageSource）
+
+使用的示例：
+
+```java
+public class ErrorMessageDemo {
+    public static void main(String[] args) {
+        // 1.创建User对象
+        User user = new User();
+        // 2.选择Errors - BeanPropertyBindingResult
+        Errors errors = new BeanPropertyBindingResult(user, "user");
+        // 3.调用reject或者rejectValue
+        // reject生成ObjectError
+        // reject生成 FildError
+        errors.reject("user.properties.not.null");
+        errors.rejectValue("name", "name.required");
+        //4.FieldError is ObjectError
+        List<ObjectError> globalErrors = errors.getGlobalErrors();
+        FieldError fieldError = errors.getFieldError();
+        List<ObjectError> allErrors = errors.getAllErrors();
+        // 5.通过ObjectError和FieldError中的code和args关联MessageSource实现
+        MessageSource messageSource = createMessageSource();
+
+        for (ObjectError error : allErrors) {
+            messageSource.getMessage(error.getCode(), error.getArguments(), Locale.getDefault());
+            System.out.println(messageSource);
+        }
+    }
+
+    private static MessageSource createMessageSource() {
+        StaticMessageSource staticMessageSource = new StaticMessageSource();
+        staticMessageSource.addMessage("user.properties.not.null", Locale.getDefault(), "User 属性不能为空");
+        staticMessageSource.addMessage("name.required", Locale.getDefault(), "name is not null");
+        return staticMessageSource;
+    }
+}
+```
+
+## 自定义Validator
+
+实现org.springframework.validation.Validator接口，具体操作如下：
+
+- 实现supports方法
+- 实现validate方法
+  - 通过Errors对象收集错误
+    - ObjectError：对象（Bean）错误：
+    - FieldError：对象（Bean）属性（Property）错误
+  - 通过ObjectError和FieldError关联MessageSource实现获取最终文案
+
+自定义Validator的示例：
+
+```java
+public class ValidatorDemo {
+
+    public static void main(String[] args) {
+        // 1.创建Validator
+        Validator validator = new UserValodator();
+        // 2.判断是否支持目标对象的类型
+        User user = new User();
+        System.out.println(validator.supports(user.getClass()));
+        // 3.创建Errors对象
+        Errors errors = new BeanPropertyBindingResult(user, "user");
+        validator.validate(user, errors);
+        // 4.获取MessageSource对象
+        MessageSource messageSource = createMessageSource();
+        // 5.输出所有的错误文案
+        for (ObjectError error : errors.getAllErrors()) {
+            String message = messageSource.getMessage(error.getCode(), error.getArguments(), Locale.getDefault());
+            System.out.println(message);
+        }
+    }
+
+    static class UserValodator implements Validator {
+        @Override
+        public boolean supports(Class<?> clazz) {
+            return User.class.equals(clazz);
+        }
+
+        @Override
+        public void validate(Object target, Errors errors) {
+            User user = (User) target;
+            ValidationUtils.rejectIfEmptyOrWhitespace(errors, "id", "id.required");
+            ValidationUtils.rejectIfEmptyOrWhitespace(errors, "name", "name.required");
+            String name = user.getName();
+            // ...
+        }
+    }
+}
+```
+
+## Bean Validation
+
+Bean Validation 与 Validator适配：
+
+- 核心组件 - org.springframework.validation.beanvalidation.LocalValidatorFactoryBean
+- 依赖Bean Validation - JSR - 303 or JSR - 349 provider
+- Bean方法参数校验 - org.springframework.validation.beanvalidation.MethodValidationPostProcessor
+
+使用示例：
+
+```java
+public class SpringBeanValidationDemo {
+    public static void main(String[] args) {
+        ConfigurableApplicationContext applicationContext = new ClassPathXmlApplicationContext("classpath:/META-INF/bean-validation-context.xml");
+
+//        Validator validator = applicationContext.getBean(Validator.class);
+//        System.out.println(validator instanceof LocalValidatorFactoryBean);
+        UserProcessor userProcessor = applicationContext.getBean(UserProcessor.class);
+        userProcessor.processUser(new User());
+        applicationContext.close();
+    }
+
+    @Component
+    @Validated
+    static class UserProcessor {
+        public void processUser(@Valid User user) {
+            System.out.println(user);
+        }
+    }
+     
+    @Validated
+    static class User {
+
+        public String getName() {
+            return name;
+        }
+
+        @Override
+        public String toString() {
+            return "User{" +
+                    "name='" + name + '\'' +
+                    '}';
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        @NotNull
+        private String name;
+    }
+}
+```
+
+其中的XML文件：
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd">
+
+    <context:component-scan base-package="org.jyc.thinking.in.spring.validation" />
+     
+    <bean id = "validator" class="org.springframework.validation.beanvalidation.LocalValidatorFactoryBean" />
+
+    <bean class="org.springframework.validation.beanvalidation.MethodValidationPostProcessor">
+        <property name="validator" ref="validator" />
+    </bean>
+</beans>
+```
+
+可以看到使用这种方式方便了很多，并且可以根据实际的需求对其进行扩展。
+
+## 面试题
+
+### Spring校验接口是哪个？
+
+org.springframework.validation.Validator
+
+### Spring有哪些校验核心组件？
+
+- 校验器：org.springframework.validation.Validator
+- 错误收集器：org.springframework.validation.Errors
+- Java Bean错误描述：org.springframework.validation.ObjectError
+- Java Bean属性错误描述：org.springframework.validation.FieldError
+- Bean Validation适配：org.springframework.validation.beanvalidation.LocalValidatorFactoryBean
+
+### 请通过示例演示Spring Bean的校验？
+
+// 待续...
+
+# Spring数据绑定
+
+Spring数据绑定的使用场景：
+
+1. Spring BeanDefinition到Bean实例创建
+2. Spring数据绑定（DataBinder）
+3. Spring Web参数绑定（WebDataBinder）
+
+## Spring数据绑定组件
