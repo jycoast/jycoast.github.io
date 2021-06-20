@@ -6647,3 +6647,157 @@ Spring数据绑定的使用场景：
 3. Spring Web参数绑定（WebDataBinder）
 
 ## Spring数据绑定组件
+
+1. 标准组件：
+	- org.springframework.validation.DataBinder
+2. Web组件：
+	- org.springframework.web.bind.WebDataBinder
+	- org.springframework.web.bind.ServletRequestDataBinder
+	- org.springframework.web.bind.support.WebRequestDataBinder
+	- org.springframework.web.bind.support.WebExchangeDataBinder
+
+DataBinder的核心属性：
+
+| 属性                 | 说明                         |
+| -------------------- | ---------------------------- |
+| target               | 关联目标Bean                 |
+| objectName           | 目标Bean名称                 |
+| bindingResult        | 属性绑定结果                 |
+| typeConverter        | 类型转化器                   |
+| conversionService    | 类型转化服务                 |
+| messageCodesResolver | 校验错误文案Code处理器       |
+| validators           | 关联的Bean Validator实例集合 |
+
+DataBinder绑定方法bind（PropertyValues），会将PropertyValues key-Value内容映射到关联Bean（target）中的属性上。
+
+## DataBinder元数据
+
+DataBinder元数据 - PropertyValues：
+
+| 特征         | 说明                                                         |
+| ------------ | ------------------------------------------------------------ |
+| 数据来源     | BeanDefinition，主要来源XML资源配置BeanDefinition            |
+| 数据结构     | 由一个或多个PropertyValue组成                                |
+| 成员结构     | PropertyValue包含属性名称，以及属性值（包括原始值、类型转换后的值） |
+| 常见实现     | MutablePropertyValue                                         |
+| Web扩展实现  | ServletConfigPropertyValue，ServletRequestParameterPropertyValues |
+| 相关生命周期 | InstantiationAwareBeanPostProcessor#postProcessProperties    |
+
+## DataBinder绑定控制参数
+
+DataBinder绑定特殊场景分析：
+
+- 当PropertyValues中包含名称的x的PropertyValue，目标对象B不存在x属性，当bind方法执行时，会发生什么？
+- 当PropertyValues中包含名称的x的PropertyValue，目标对象B中存在x属性，当bind方法执行时，如何避免B属性x不被绑定？
+- 当PropertyValues中包含x.y的PropertyValue，目标对象B中存在x属性（嵌套y属性），当bind方法执行时，会发生什么？
+
+相关的示例代码：
+
+```java
+	public class DataBinderDemo {
+    public static void main(String[] args) {
+        // 创建空白对象
+        User user = new User();
+        // 1.创建DataBinder
+        DataBinder dataBinder = new DataBinder(user, "user");
+
+        // 2.创建PropertyValues
+        HashMap<String, Object> source = new HashMap<>();
+        source.put("id","1");
+        source.put("name","吉永超");
+
+        // a.PropertyValues存在user中不存在的属性值
+        // DataBinder特性一：忽略了未知的属性
+        source.put("age",18);
+
+        // b.PropertyValues存在一个嵌套属性，company.name
+        // DataBinder特性二：支持嵌套属性
+        source.put("company.name","jjjj");
+
+        MutablePropertyValues propertyValues = new MutablePropertyValues(source);
+
+        dataBinder.bind(propertyValues);
+
+        // 3.输出user
+        System.out.println(user);
+    }
+}
+```
+
+DataBinder绑定控制参数：
+
+| 参数名称            | 说明                               |
+| ------------------- | ---------------------------------- |
+| ignoreUnknownFields | 是否忽略未知字段，默认值：true     |
+| ignoreInvalidFields | 是否忽略非法字段，默认值：false    |
+| autoGrowNestedPaths | 是否自动增加嵌套路径，默认值：true |
+| allowedFields       | 绑定字段白名单                     |
+| disallowedFields    | 绑定字段黑名单                     |
+| requiredFields      | 必须绑定字段                       |
+
+相关的示例：
+
+```java
+public class DataBinderDemo {
+    public static void main(String[] args) {
+        // 创建空白对象
+        User user = new User();
+        // 1.创建DataBinder
+        DataBinder dataBinder = new DataBinder(user, "user");
+
+        // 2.创建PropertyValues
+        HashMap<String, Object> source = new HashMap<>();
+        source.put("id", "1");
+        source.put("name", "吉永超");
+
+        // a.PropertyValues存在user中不存在的属性值
+        // DataBinder特性一：忽略了未知的属性
+        source.put("age", 18);
+
+        // b.PropertyValues存在一个嵌套属性，company.name
+        // DataBinder特性二：支持嵌套属性
+        source.put("company.name", "jjjj");
+
+//        source.put("company", new Company());
+//        source.put("company.name","jjjj");
+
+        MutablePropertyValues propertyValues = new MutablePropertyValues(source);
+
+        // 1.调整ignoreUnknownFields true（默认） -> false
+//        dataBinder.setIgnoreUnknownFields(false);
+
+        // 2.调整自动增加嵌套路径true（默认） -> false
+        dataBinder.setAutoGrowNestedPaths(false);
+
+        // 3.调整ignoreInvalidFields false（默认） -> true
+        dataBinder.setIgnoreInvalidFields(true);
+
+        // 4.白名单
+        dataBinder.setRequiredFields("id", "name", "city");
+
+        dataBinder.bind(propertyValues);
+        // 输出user
+        System.out.println(user);
+
+        // 5.获取绑定结果（结果包含错误文案code，不会抛出异常）
+        BindingResult result = dataBinder.getBindingResult();
+        System.out.println(result);
+    }
+}
+```
+
+## Spring底层Java Beans替换实现
+
+1. Java Beans核心实现 - java.beans.BeanInfo
+	- 属性（Property）
+		- java.beans.PropertyEditor
+	- 方法（Method）
+	- 事件（Event）
+	- 表达式（Expression）
+2. Spring替代实现 - org.springframework.beans.BeanWrapper
+	- 属性（Property）
+		- java.beans.PropertyEditor
+	- 嵌套属性路径（nested path）
+
+## BeanWrapper使用场景
+
