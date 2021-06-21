@@ -5847,7 +5847,7 @@ public class AnnotatedYamlPropertySourceDemo {
 - XML处理性能较差：Spring XML基于DOM Levels API 实现，该API便于理解，然而性能较差
 - XML框架移植性较差：很难适配高性能和便利性的XML框架，如JAXB。
 
-# Spring资源管理
+# Spring 资源管理
 
 > 为什么Spring不使用Java标准资源管理，而选择重新发明轮子？
 >
@@ -6158,7 +6158,7 @@ YAML资源：
 
 - 实现URLStreamHandlerFactory并传递到URL之中
 
-# Spring国际化
+# Spring 国际化
 
 Spring国际化使用场景：
 
@@ -6381,7 +6381,7 @@ public class CustomizedMessageSourceBeanDemo {
 - Java Concurrency：java.util.concurrent.ExecutorService
 - Spring：org.springframework.context.support.AbstractMessageSource
 
-# Spring校验
+# Spring 校验
 
 Spring校验使用场景：
 
@@ -6638,7 +6638,7 @@ org.springframework.validation.Validator
 
 // 待续...
 
-# Spring数据绑定
+# Spring 数据绑定
 
 Spring数据绑定的使用场景：
 
@@ -6646,7 +6646,7 @@ Spring数据绑定的使用场景：
 2. Spring数据绑定（DataBinder）
 3. Spring Web参数绑定（WebDataBinder）
 
-## Spring数据绑定组件
+## Spring 数据绑定组件
 
 1. 标准组件：
 	- org.springframework.validation.DataBinder
@@ -6800,4 +6800,461 @@ public class DataBinderDemo {
 	- 嵌套属性路径（nested path）
 
 ## BeanWrapper使用场景
+
+- Spring底层JavaBeans基础设施的中心化接口
+- 通常不会直接使用，间接用于BeanFactory和DataBinder
+- 提供标准JavaBeans分析和操作，能够单独或批量存储Java Bean的属性（properties）
+- 支持嵌套属性路径（nested path）
+- 实现类 org.springframework.beans.BeanWrapperImpl
+
+## JavaBeans操作属性
+
+标准的JavaBeans是如何操作属性的？
+
+| API                           | 说明                     |
+| ----------------------------- | ------------------------ |
+| java.beans.Introspector       | JavaBeans 内省API        |
+| java.beans.BeanInfo           | Java Bean 元信息API      |
+| java.beans.BeanDescriptor     | Java Bean 信息描述符     |
+| java.beans.PropertyDescriptor | Java Bean 属性描述符     |
+| java.beans.MethodDescriptor   | Java Bean 方法描述符     |
+| java.beans.EventSetDescriptor | Java Bean 事件集合描述符 |
+
+> PropertyDescriptor并不要求setter、getter方法均存在。
+
+可以使用如下示例进行观察：
+
+```java
+public class JavaBeansDemo {
+    public static void main(String[] args) throws Exception {
+        // stopClass排除（截止）类
+        BeanInfo beanInfo = Introspector.getBeanInfo(User.class, Object.class);
+
+        // 属性描述符 PropertyDescriptor
+        // 所有的Java类均继承 java.lang.Object方法
+        // Class属性来自于Object#getClass() 方法
+        Stream.of(beanInfo.getPropertyDescriptors()).forEach(propertyDescriptor -> {
+            propertyDescriptor.getReadMethod(); // Getter方法
+            propertyDescriptor.getWriteMethod(); // Setter方法
+            System.out.println(propertyDescriptor);
+        });
+        // 输出User定义的方法 MethodDescriptor
+        Stream.of(beanInfo.getMethodDescriptors()).forEach(System.out::println);
+    }
+}
+```
+
+## DataBinder数据校验
+
+DataBinder与BeanWrapper的联系：
+
+- bind方法生成BeanPropertyBindingResult
+- BeanPropertyBindingResult关联BeanWrapper
+
+## 面试题
+
+### Spring数据绑定API是什么？
+
+org.springframework.validation.DataBinder
+
+### BeanWrapper与JavaBeans之间的关系是？
+
+BeanWrapper是Spring底层JavaBeans基础设施的中心化接口。
+
+### DataBinder是怎么完成属性类型转换的？
+
+// ...
+
+# Spring 类型转换
+
+Spring类型转换的实现方案：
+
+1. 基于JavaBeans接口的类型转换实现
+   - 基于java.beans.PropertyEditor扩展
+2. Spring 3.0+ 通用类型转换实现
+
+## 使用场景
+
+场景分析：
+
+| 场景               | 基于JavaBeans接口的类型转换实现 | Spring 3.0+通用类型转换实现 |
+| ------------------ | ------------------------------- | --------------------------- |
+| 数据绑定           | YES                             | YES                         |
+| BeanWrapper        | YES                             | YES                         |
+| Bean属性类型转换   | YES                             | YES                         |
+| 外部化属性类型转换 | NO                              | YES                         |
+
+## 基于JavaBeans接口的类型转换
+
+1. 核心职责：
+   - 将String类型转化为目标类型的对象
+2. 扩展原理：
+   - Spring框架将文本内容传递到PropertyEditor实现的setAsText(String)方法
+   - PropertyEditor#setAsText(String)方法实现将String类型转化为目标类型的对象
+   - 将目标类型的对象传入PropertyEditor#setAsValue(Object)方法
+   - PropertyEditor#setAsValue(Object)方法实现需要临时存储传入对象
+   - Spring框架将通过PropertyEditor#getValue()获取类型转换后的对象
+
+我们可以模拟一下整个过程：
+
+```java
+public class StringToPropertiesPropertyEditor extends PropertyEditorSupport implements PropertyEditor {
+
+    // 1.实现setAsText方法
+    @Override
+    public void setAsText(String text) throws IllegalArgumentException {
+        // 2.将String类型转换成Properties类型
+        Properties properties = new Properties();
+        try {
+            properties.load(new StringReader(text));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        // 3.临时存储Properties对象
+        setValue(properties);
+        // next 获取临时Properties对象 # getValue
+    }
+}
+```
+
+然后观察输出：
+
+```java
+public class PropertyEditorDemo {
+    public static void main(String[] args) {
+        // 模拟Spring Framework的操作
+        // 有一段文本name = "吉永超";
+        String text = "name = 吉永超";
+        PropertyEditor propertyEditor = new StringToPropertiesPropertyEditor();
+        propertyEditor.setAsText(text);
+        System.out.println(propertyEditor.getValue());
+    }
+}
+```
+
+## Spring内建PropertyEditor扩展
+
+内建扩展（org.springframework.beans.propertyeditors）：
+
+| 转换场景            | 实现类                                                       |
+| ------------------- | ------------------------------------------------------------ |
+| String -> Byte数组  | org.springframework.beans.propertyeditors.ByteArrayPropertyEditor |
+| String -> Char      | org.springframework.beans.propertyeditors.CharacterEditor    |
+| String -> Char 数组 | org.springframework.beans.propertyeditors.CharArrayPropertyEditor |
+| String -> Charset   | org.springframework.beans.propertyeditors.CharsetEditor      |
+| String -> Class     | org.springframework.beans.propertyeditors.ClassEditor        |
+| String -> Currency  | org.springframework.beans.propertyeditors.CurrencyEditor     |
+| ...                 | ...                                                          |
+
+## 自定义PropertyEditor扩展
+
+实现步骤如下：
+
+1. 扩展模式：
+   - 扩展java.beans.PropertyEditorSupport类
+2. 实现org.springframework.beans.PropertyEditorRegistrar
+   - 实现registerCustomEditor（org.springframework.beans.PropertyEditorRegistry）方法
+   - 将PropertyEditorRegistry实现注册为Spring Bean
+3. 向org.springframework.beans.PropertyEditorRegistry注册自定义PropertyEditor实现
+   - 通用类型实现：registerCustomEditor(Class<?> requiredType, PropertyEditor propertyEditor);
+   - Java Bean属性类型实现：registerCustomEditor(Class<?> requiredType,  String propertyPath, PropertyEditor propertyEditor);
+
+相关的示例，第一步：
+
+```java
+public class StringToPropertiesPropertyEditor extends PropertyEditorSupport implements PropertyEditor {
+
+    // 1.实现setAsText方法
+    @Override
+    public void setAsText(String text) throws IllegalArgumentException {
+        // 2.将String类型转换成Properties类型
+        Properties properties = new Properties();
+        try {
+            properties.load(new StringReader(text));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        // 3.临时存储Properties对象
+        setValue(properties);
+        // next 获取临时Properties对象 # getValue
+    }
+
+    @Override
+    public String getAsText() {
+        Properties properties = (Properties) getValue();
+        StringBuilder textBuilder = new StringBuilder();
+        for (Map.Entry<Object, Object> entry : properties.entrySet()) {
+            textBuilder.append(entry.getKey()).append("=").append(entry.getValue()).append(System.getProperty("line.separator"));
+        }
+        return textBuilder.toString();
+    }
+}
+```
+
+第二步和第三步：
+
+```java
+// @Component // 3.将其声明为Spring Bean
+public class CustomizedPropertyEditorRegistrar implements PropertyEditorRegistrar {
+    @Override
+    public void registerCustomEditors(PropertyEditorRegistry registry) {
+        // 1.通用类型转换
+        // 2.Java Bean属性类型转换
+        registry.registerCustomEditor(User.class, "context", new StringToPropertiesPropertyEditor());
+
+    }
+}
+```
+
+这里我们不采用注解的方式，而是采用XML的方式进行配置，将CustomizedPropertyEditorRegistrar声明为Spring Bean：
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean id="user" class="org.jyc.thinking.in.spring.ioc.overview.dependency.domain.User">
+        <property name="id" value="1"/>
+        <property name="name" value="吉永超"/>
+        <property name="context"> <!-- Properties类型 -->
+            <value>
+                id = 1
+                name = 吉永超
+            </value>
+        </property>
+    </bean>
+
+    <bean class="org.jyc.thinking.in.spring.conversion.CustomizedPropertyEditorRegistrar"/>
+</beans>
+```
+
+测试类：
+
+```java
+public class SpringCustomizedPropertyEditorDemo {
+    public static void main(String[] args) {
+        ConfigurableApplicationContext applicationContext = new ClassPathXmlApplicationContext("classpath:/META-INF/property-editors-context.xml");
+        User user = applicationContext.getBean("user", User.class);
+        System.out.println(user);
+        // 关闭应用上下文
+        applicationContext.close();
+    }
+}
+```
+
+## PropertyEditor的局限性
+
+- 违反单一原则
+  - java.beans.PropertyEditor接口职责太多，除了类型转换，还包括Java Beans事件和Java GUI交互
+- java.beans.PropertyEditor实现类型局限
+  - 来源类型只能为java.lang.String类型
+- java.beans.PropertyEditor实现缺少类型安全
+  - 除了实现类名可以表达语义，实现类无法感知目标转换类型
+
+## Spring3 通用类型转换接口
+
+1. 类型转换接口 - org.springframework.core.convert.converter.Converter<S, T>
+   - 泛型参数S：来源类型，参数T：目标类型
+   - 核心方法：T convert(S)
+2. 通用类型转换接口 - org.springframework.core.convert.converter.GenericConverter
+   - 核心方法：convert(Object source, TypeDescriptor sourceType, TypeDescriptor targetType);
+   - 配对类型：org.springframework.core.convert.converter.GenericConverter.ConvertiblePair
+   - 类型描述：org.springframework.core.convert.TypeDescriptor
+
+## Spring内建类型转换器
+
+| 转换场景             | 实现类所在包名(package)                      |
+| -------------------- | -------------------------------------------- |
+| 日期/时间相关        | org.springframework.format.datetime          |
+| Java 8 日期/时间相关 | org.springframework.format.datetime.standard |
+| 通用实现             | org.springframework.core.convert.support     |
+
+## Converter接口的局限性
+
+- 局限一：缺少Source Type和Target Type前置判断
+  - 应对：增加org.springframework.core.convert.converter.ConditionalConverter实现
+- 局限二：仅能转换单一的Source Type和Target Type
+  - 应对：使用org.springframework.core.convert.converter.GenericConverter代替
+
+## GenericConverter接口
+
+org.springframework.core.convert.converter.GenericConverter的介绍：
+
+| 核心要素 | 说明                                                         |
+| -------- | ------------------------------------------------------------ |
+| 使用场景 | 用于"复合"类型转换场景，比如Collection、Map、数组等          |
+| 转换范围 | Set<ConvertiblePair> getConvertibleTypes()                   |
+| 配对类型 | org.springframework.core.convert.converter.GenericConverter.ConvertiblePair |
+| 转换方法 | convert(Object source, TypeDescriptor sourceType, TypeDescriptor targetType) |
+| 类型描述 | org.springframework.core.convert.TypeDescriptor              |
+
+> "复合"类型在进行转换的时候，可以利用Converter接口，对集合（或其他类型）中的元素进行转换。
+
+## 优化GenericConverter接口
+
+GenericConverter局限性：
+
+- 缺少Source TYpe和Target Type前置判断
+- 单一类型转换实现复杂
+
+GenericConverter优化接口 - ConditionalGenericConverter
+
+- 复合类型转换 ：org.springframework.core.convert.converter.GenericConverter
+- 类型条件判断：org.springframework.core.convert.converter.ConditionalConverter
+
+## 扩展Spring类型转换器
+
+扩展的步骤：
+
+1. 实现转换器接口
+   - org.springframework.core.convert.converter.Converter
+   - org.springframework.core.convert.converter.ConverterFatory
+   - org.springframework.core.convert.converter.GenericConverter
+2. 注册转换器实现
+   - 通过ConversionServiceFactoryBean（Spring Bean）
+   - 通过org.springframework.core.convert.ConversionService（API）
+
+相关的示例如下，步骤一：
+
+```java
+public class PropertiesToStringConverter implements ConditionalGenericConverter {
+    @Override
+    public boolean matches(TypeDescriptor sourceType, TypeDescriptor targetType) {
+        return Properties.class.equals(sourceType.getObjectType()) && String.class.equals(targetType.getObjectType());
+    }
+
+    @Override
+    public Set<ConvertiblePair> getConvertibleTypes() {
+        return Collections.singleton(new ConvertiblePair(Properties.class, String.class));
+    }
+
+    @Override
+    public Object convert(Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {
+        Properties properties = (Properties) source;
+        StringBuilder textBuilder = new StringBuilder();
+        for (Map.Entry<Object, Object> entry : properties.entrySet()) {
+            textBuilder.append(entry.getKey()).append("=").append(entry.getValue()).append(System.getProperty("line.separator"));
+        }
+        return textBuilder.toString();
+    }
+}
+```
+
+步骤二：
+
+```java
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd'
+       http://www.springframework.org/schema/util
+       http://www.springframework.org/schema/util/spring-util.xsd">
+
+    <bean id="user" class="org.jyc.thinking.in.spring.ioc.overview.dependency.domain.User">
+        <property name="id" value="1"/>
+        <property name="name" value="吉永超"/>
+        <property name="context"> <!-- Properties类型 -->
+            <value>
+                id = 1
+                name = 吉永超
+            </value>
+        </property>
+        <property name="contextAsText" ref="context"/> <!--properties类型要转成String -->
+    </bean>
+
+    <util:properties id="context">
+        <prop key="id">1</prop>
+        <prop key="name">jiyongchao</prop>
+    </util:properties>
+
+    <!-- 声明ConversionServiceFactoryBean-->
+    <bean id="conversionService" class="org.springframework.context.support.ConversionServiceFactoryBean">
+        <property name="converters" value="org.jyc.thinking.in.spring.conversion.PropertiesToStringConverter"/>
+    </bean>
+</beans>
+```
+
+> 需要格外注意的是，在注册ConversionServiceFactoryBean的时候，一定要指定名称为conversionService，因为在beanFactory进行查找的时候，会根据名称和类型共同查找，名称固定为conversionService。
+
+## 统一类型转换服务
+
+org.springframework.core.convert.ConversionService说明：
+
+| 实现类型                           | 说明                                                         |
+| ---------------------------------- | ------------------------------------------------------------ |
+| GenericConversionService           | 通用ConversionService模板实现，不内置转化器实现              |
+| DefaultConversionService           | 基础ConversionService实现，内置常用转化器实现                |
+| FormattingConversionService        | 通用Formatter + GenericConversionService实现，不内置转化器和Formatter实现 |
+| DefaultFormattingConversionService | DefaultConversionService + 格式化 实现（如：JSR-354 Money & Currency，JSR-310 Date-Time） |
+
+## ConversionService作为依赖
+
+类型转换器底层接口 - org.springframework.beans.TypeConverter
+
+- 起始版本：Spring 2.0
+- 核心方法 - convertlfNecessary重载方法
+- 抽象实现 - org.springframework.beans.TypeConverterSupport
+- 简单实现 - org.springframework.beans.SimpleTypeConverter
+
+类型转换器底层抽象实现 - org.springframework.beans.TypeConverterSupport
+
+- 实现接口 - org.springframework.beans.TypeConverter
+- 扩展实现 - org.springframework.beans.PropertyEditorRegistrySupport
+- 委派实现 - org.springframework.beans.TypeConverterDelegate
+
+类型转换器底层委派实现 - org.springframework.beans.TypeConverterDelegate
+
+- 构造来源 - org.springframework.beans.AbstractNestablePropertyAccessor实现
+  - org.springframework.beans.BeanWrapperImpl
+- 依赖 - java.beans.PropertyEditor实现
+  - 默认内建时间 - org.springframework.beans.PropertyEditorRegistrySupport#registerDefaultEditors
+- 可选依赖 - org.springframework.core.convert.ConversionService实现
+
+整体的流程关键节点如下：
+
+> AbstractApplicationContext -> "conversionService" ConversionService Bean -> configurableBeanFactory#setConversionService(conversionService) -> AbstractAutowireCapableBeanFactory#instantiateBean -> AbstractBeanFactory#getConversionServicee -> BeanDefinition -> BeanWrapper -> 属性转换(数据来源：PropertyValues) -> setPropertyValues(PropertyValues) -> TypeConvert#convertIfNecessnary -> TypeConverterDelegate -> PropertyEditor or ConversionService
+
+## 面试题
+
+### Spring类型转换实现有哪些？
+
+1. 基于JavaBeans PropertyEditor接口实现
+2. Spring 3.0+通用类型转换实现
+
+### Spring类型转换器接口有哪些？
+
+- 类型转换接口 - org.springframework.core.convert.converter.Converter
+- 通用类型转换接口 - org.springframework.core.convert.converter.GenericConverter
+- 类型条件接口 - org.springframework.core.convert.converter.ConditionalConverter
+- 综合类型转换接口 - org.springframework.core.convert.converter.ConditionalGenericConverter
+
+### TypeDescriptor是如何处理泛型？
+
+// ...
+
+# Spring 泛型
+
+## Java泛型基础
+
+泛型类型：
+
+- 泛型类型是在类型上参数化的泛型类或接口
+
+泛型的使用场景：
+
+- 编译时强制类型检查
+- 避免类型强转
+- 实现通用算法
+
+泛型类型擦写：
+
+- 泛型被引入到Java语言中，以便在编译时提供更严格的类型检查并支持泛型编程。类型擦除确保不会为参数化类型创建新类；因此，泛型不会产生运行时开销。为了实现泛型，编译器将类型擦除应用于：
+  - 将泛型类型中的所有类型参数替换为其边界，如果类型参数是无边界的，则将其替换为"Object"。因为，生成的字节码只包含普通类、接口和方法
+  - 必要时插入类型转换以保持类型安全
+  - 生成桥方法以保留扩展泛型类中的多态性
+
+## Java 5类型接口
 
