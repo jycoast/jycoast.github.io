@@ -67,7 +67,7 @@ module.exports = {
         title: '文集',
         desc: '随感',
         logo: "book.jpg",
-        link: 'https://www.wolai.com/smgsY5TKrjotmjQ4EA5H33?theme=dark'
+        link: 'https://www.wolai.com/p7EcXEWp3EsR9BeGRZWNgf?theme=dark'
       },
       {
         title: '掘金',
