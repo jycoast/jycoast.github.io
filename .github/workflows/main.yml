@@ -1,41 +1,42 @@
-name: Deploy
+name: Deployment
 
 on:
   push:
-    branches:
-      - gh-pages
+    branches: gh-pages
 
 jobs:
-  build:
+  hexo-deployment:
     runs-on: ubuntu-latest
-    name: A job to deploy blog.
+    env:
+      TZ: Asia/Shanghai
+
     steps:
-    - name: Checkout
-      uses: actions/checkout@v1
+    - name: Checkout source
+      uses: actions/checkout@v2
       with:
-        submodules: true # Checkout private submodules(themes or something else).
-    
-    # Caching dependencies to speed up workflows. (GitHub will remove any cache entries that have not been accessed in over 7 days.)
-    - name: Cache node modules
-      uses: actions/cache@v1
-      id: cache
+        submodules: true
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v1
       with:
-        path: node_modules
-        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-node-
-    - name: Install Dependencies
-      if: steps.cache.outputs.cache-hit != 'true'
-      run: npm ci
-    
-    # Deploy hexo blog website.
-    - name: Deploy
-      id: deploy
-      uses: sma11black/hexo-action@v1.0.3
-      with:
-        deploy_key: ${{ secrets.DEPLOY_KEY }}
-        BRANCH: master
-    # Use the output from the `deploy` step(use for test action)
-    - name: Get the output
+        node-version: '12.x'
+
+    - name: Install dependencies & Generate static files
       run: |
-        echo "${{ steps.deploy.outputs.notify }}"
+        node -v
+        npm i -g hexo-cli
+        npm i
+        hexo clean
+        hexo g
+    - name: Deploy to Github Pages
+      env:
+        GIT_NAME: jiyongchao-qf
+        GIT_EMAIL: ${{ secrets.GIT_EMAIL }}
+        REPO: github.com/jiyongchao-qf/jiyongchao-qf.github.io
+        GH_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+      run: |
+        cd ./public && git init && git add .
+        git config --global user.name $GIT_NAME
+        git config --global user.email $GIT_EMAIL
+        git commit -m "Site deployed by GitHub Actions"
+        git push --force --quiet "https://$GH_TOKEN@$REPO" master:master

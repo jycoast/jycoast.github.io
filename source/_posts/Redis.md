@@ -6,9 +6,9 @@ categories:
 author: 吉永超
 ---
 
-==Redis==
+Redis 是完全开源免费的，遵守BSD协议，是一个高性能的key-value数据库。
 <!-- more -->
-## 一、Nosql概述
+## Nosql概述
 
 ### 为什么使用Nosql
 
@@ -177,7 +177,7 @@ NoSQL泛指非关系型数据库，随着web2.0互联网的诞生，传统的关
 | **文档型数据库**        | CouchDB, MongoDb                                   | Web应用（与Key-Value类似，Value是结构化的，不同的是数据库能够了解Value的内容） | Key-Value对应的键值对，Value为结构化数据        | 数据结构要求不严格，表结构可变，不需要像关系型数据库一样需要预先定义表结构 | 查询性能不高，而且缺乏统一的查询语法。                       |
 | **图形(Graph)数据库**   | Neo4J, InfoGrid, Infinite Graph                    | 社交网络，推荐系统等。专注于构建关系图谱                     | 图结构                                          | 利用图结构相关算法。比如最短路径寻址，N度关系查找等          | 很多时候需要对整个图做计算才能得出需要的信息，而且这种结构不太好做分布式的集群 |
 
-## 二、Redis入门
+## Redis入门
 
 ### 概述
 
@@ -354,7 +354,7 @@ OK
 
 核心：Redis是将所有的数据放在内存中的，所以说使用单线程去操作效率就是最高的，多线程（CPU上下文会切换：耗时的操作！），对于内存系统来说，如果没有上下文切换效率就是最高的，多次读写都是在一个CPU上的，在内存存储数据情况下，单线程就是最佳的方案。
 
-## 三、五大数据类型
+## 五大数据类型
 
  Redis是一个开源（BSD许可），内存存储的数据结构服务器，可用作**数据库**，**高速缓存**和**消息队列代理**。它支持[字符串](https://www.redis.net.cn/tutorial/3508.html)、[哈希表](https://www.redis.net.cn/tutorial/3509.html)、[列表](https://www.redis.net.cn/tutorial/3510.html)、[集合](https://www.redis.net.cn/tutorial/3511.html)、[有序集合](https://www.redis.net.cn/tutorial/3512.html)，[位图](https://www.redis.net.cn/tutorial/3508.html)，[hyperloglogs](https://www.redis.net.cn/tutorial/3513.html)等数据类型。内置复制、[Lua脚本](https://www.redis.net.cn/tutorial/3516.html)、LRU收回、[事务](https://www.redis.net.cn/tutorial/3515.html)以及不同级别磁盘持久化功能，同时通过Redis Sentinel提供高可用，通过Redis Cluster提供自动[分区](https://www.redis.net.cn/tutorial/3524.html)。
 
@@ -1024,7 +1024,7 @@ OK
 - 普通消息，1.重要消息 2.带权重进行判断
 - 排行榜应用实现，取Top N测试
 
-## 四、三种特殊数据类型
+## 三种特殊数据类型
 
 ### Geospatial(地理位置)
 
@@ -1178,7 +1178,7 @@ string
 
 这样设置以后你能get到的值是：**\xA2\x80**，所以bitmaps是一串从左到右的二进制串
 
-## 五、事务
+## 事务
 
 Redis的单条命令是保证原子性的，但是redis事务不能保证原子性
 
@@ -1367,7 +1367,7 @@ QUEUED
 
 注意：每次提交执行exec后都会自动释放锁，不管是否成功
 
-## 六、Jedis
+## Jedis
 
 使用Java来操作Redis，Jedis是Redis官方推荐使用的Java连接redis的客户端。
 
@@ -1484,7 +1484,7 @@ QUEUED
    }
    ```
 
-## 七、SpringBoot整合
+## SpringBoot整合
 
 1. 导入依赖
 
@@ -1654,7 +1654,7 @@ springboot 2.x后 ，原来使用的 Jedis 被 lettuce 替换。
 
    [外链图片转存失败,源站可能有防盗链机制,建议将图片保存下来直接上传(img-oc8kJP08-1597890996523)(狂神说 Redis.assets/image-20200817175638086.png)]
 
-## 八、自定义Redis工具类
+## 自定义Redis工具类
 
 使用RedisTemplate需要频繁调用`.opForxxx`然后才能进行对应的操作，这样使用起来代码效率低下，工作中一般不会这样使用，而是将这些常用的公共API抽取出来封装成为一个工具类，然后直接使用工具类来间接操作Redis,不但效率高并且易用。
 
@@ -1664,7 +1664,7 @@ https://www.cnblogs.com/zeng1994/p/03303c805731afc9aa9c60dbbd32a323.html
 
 https://www.cnblogs.com/zhzhlong/p/11434284.html
 
-## 九、Redis.conf
+## Redis.conf
 
 > 容量单位不区分大小写，G和GB有区别
 
@@ -1748,7 +1748,7 @@ config set maxmemory-policy volatile-lru
 
 ![在这里插入图片描述](https://img-blog.csdnimg.cn/20200513215047999.png)
 
-## 十、持久化—RDB
+## 持久化—RDB
 
 RDB：Redis Databases
 
@@ -1836,7 +1836,7 @@ RDB：Redis Databases
 1. 需要一定的时间间隔进行操作，如果redis意外宕机了，这个最后一次修改的数据就没有了。
 2. fork进程的时候，会占用一定的内容空间。
 
-## 十一、持久化AOF
+## 持久化AOF
 
 **Append Only File**
 
@@ -1884,7 +1884,7 @@ appendfsync everysec # 每秒执行一次 sync 可能会丢失这一秒的数据
 1. 相对于数据文件来说，aof远远大于rdb，修复速度比rdb慢！
 2. Aof运行效率也要比rdb慢，所以我们redis默认的配置就是rdb持久化
 
-## 十二、RDB和AOP选择
+## RDB和AOP选择
 
 ### RDB 和 AOF 对比
 
@@ -1903,7 +1903,7 @@ appendfsync everysec # 每秒执行一次 sync 可能会丢失这一秒的数据
 
 有很多用户都只使用 AOF 持久化， 但并不推荐这种方式： 因为定时生成 RDB 快照（snapshot）非常便于进行数据库备份， 并且 RDB 恢复数据集的速度也要比 AOF 恢复的速度要快。
 
-## 十三、Redis发布与订阅
+## Redis发布与订阅
 
 Redis 发布订阅(pub/sub)是一种消息通信模式：发送者(pub)发送消息，订阅者(sub)接收消息。
 
@@ -1975,7 +1975,7 @@ Reading messages... (press Ctrl-C to quit) # 等待接收消息
 
 稍微复杂的场景，我们就会使用消息中间件MQ处理。
 
-## 十四、Redis主从复制
+## Redis主从复制
 
 ### 概念
 

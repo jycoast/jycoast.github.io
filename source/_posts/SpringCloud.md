@@ -6,7 +6,7 @@ categories:
 author: 吉永超
 ---
 
-==SpringCloud==
+系统介绍SpringCloud的各种组件的使用和实现原理。
 <!-- more -->
 # Feign中使用动态服务名
 

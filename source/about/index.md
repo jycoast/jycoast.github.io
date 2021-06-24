@@ -1,4 +1,5 @@
 ---
-title: about
+title: 
 date: 2021-06-24 14:07:22
+type: "about"
 ---

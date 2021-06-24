@@ -6,7 +6,8 @@ categories:
 author: 吉永超
 ---
 
-==SpringBoot==
+SpringBoot是基于SpringFramework的企业级应用开发框架，有了SpringFramework的基础，相信理解SpringBoot并不是一件难事。
+
 <!-- more -->
 # SpringBoot启动原理
 
