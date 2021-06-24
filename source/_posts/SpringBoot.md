@@ -84,9 +84,7 @@ public class Application {
 
 @EnableAutoConfiguration也是通过@Import将所有符合自动装配条件的Bean定义加载到IoC容器，会根据类路径中的jar依赖为项目进行自动配置，如：添加了spring-boot-starter-web依赖，会自动添加Tomcat和Spring MVC的依赖，SpringBoot会对Tomcat和Spring MVC进行自动配置。
 
-![图片](https://mmbiz.qpic.cn/mmbiz_png/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQeiaPHgzp5kO2TicvJwMicpfTpsvPcOaNGobPWQoTUywEicPlgiabMIavTNA/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1)
-
-@EnableAutoConfiguration作为一个复合Annotation，其自身定义关键信息如下：
+@EnableAutoConfiguration作为一个组合注解，其自身定义关键信息如下：
 
 ```java
 @SuppressWarnings("deprecation")
@@ -123,8 +121,6 @@ public abstract class SpringFactoriesLoader {
 
 配合@EnableAutoConfiguration使用的话，它更多提供了一种配置查找的功能支持，即根据@EnableAutoConfiguration的完整类名org.springframework.boot.autoconfigure.EnableAutoConfiguration作为查找key，获取对应一组的@Configure类。
 
-![图片](https://mmbiz.qpic.cn/mmbiz_jpg/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQeU3e08gDViaUrnokSZHP6zpQnticuQc0EbZrZK2FSJ7W5rLTA4rF9eNw/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1)
-
 总的来说，@EnaleAutoConfiguration的作用是从classpath中搜寻所有的META-INF/spring.factories配置文件，并将其中org.springframework.boot.autoconfigure.EnableAutoConfiguration对应的配置项，通过反射实例化为标注了@Configuration的JavaConfig形式的IoC容器配置类，然后加载到IoC容器当中。
 
 ## 启动执行流程
@@ -151,7 +147,7 @@ public abstract class SpringFactoriesLoader {
 
 去掉事件通知点后，整体流程大体如下：
 
-![图片](https://mmbiz.qpic.cn/mmbiz_jpg/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQbNicaeuHicrIdruCcP5eQ981LjIgb8vSv7PbI3XSRCEs07jq6bUBvoSw/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1)
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210624210942919.png" alt="image-20210624210942919" style="zoom:50%;" />
 
 简单一点，也可以将启动流程分为三个部分：
 
@@ -371,7 +367,7 @@ public ConfigurableApplicationContext run(String... args) {
 
 自动配置流程如下：
 
-![图片](https://mmbiz.qpic.cn/mmbiz_jpg/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQFztFbwUteZ16sVKv9RoEl7o63sT4buwBdBBFQ82w7Q581ntceUqx8w/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1)
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210624211216303.png" alt="image-20210624211216303" style="zoom:50%;" />
 
 `mybatis-spring-boot-starter`、`spring-boot-starter-web`等组件的META-INF文件下均含有`spring.factories`文件，自动配置模块中，`SpringFactoriesLoader`收集到文件中的类全名并返回一个类全名的数组，返回的类全名通过反射被实例化，就形成了具体的工厂实例，工厂实例来生成组件具体需要的bean。
 
@@ -600,7 +596,7 @@ CMD ["-jar", "-Xmx512m", "@project.build.finalName@.@project.packaging@"]
 
 由于这里直接使用java8的镜像，本身就有600多M，加上业务模块本身的大小，大约有了800多M，这样每次打包构建，非常的耗时，也很占用磁盘空间。
 
-![image-20210609163709373](./assets/image-20210609163709373.png)
+![image-20210624210110566](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210624210110566.png)
 
 ## 使用Alpine镜像
 
@@ -612,7 +608,7 @@ $ apk add --no-cache <package>
 
 这里我们使用Alpine提供的docker镜像：
 
-![image-20210609165237674](./assets/image-20210609165237674.png)
+![image-20210624210052799](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210624210052799.png)
 
 因此这里我们使用`Alpine`镜像，并且将RUN的指令合并在一起，减少构建的层数，修改之后的dockerfile，：
 

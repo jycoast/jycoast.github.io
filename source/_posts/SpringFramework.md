@@ -84,7 +84,7 @@ Spring毫无疑问是当下Web开发的事实标准，而大部分开发人员�
 
 [仓库链接](https://github.com/spring-projects/spring-framework)
 
-![1618239964959](./assets/1618239964959.png)
+![image-20210624205130273](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210624205130273.png)
 
 ## Spring编程模型
 
@@ -2659,11 +2659,11 @@ public class AnnotationDependencyInjectionResolutionDemo {
 
 我们在DefaultListableBeanFactory#resolveDependency处打个断点进行观察：
 
-![1622905372372](./assets/1622905372372.png)
+![image-20210624205345978](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210624205345978.png)
 
 方法会继续往下执行到doResolveDependency方法：
 
-![1622905643169](./assets/1622905643169.png)
+![image-20210624205434583](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210624205434583.png)
 
 集合注入和单个类型的注入略微有点差别，首先我们增加一个成员变量：
 
@@ -3105,13 +3105,13 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 
 在InitDestroyAnnotationBeanPostProcessor中也可以看到postProcessMergedBeanDefinition这个方法：
 
-![1622945426099](./assets/1622945426099.png)
+![image-20210624205533354](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210624205533354.png)
 
 这里只是元信息不太一样，这主要是LifecycleMetadata中包含了初始化和销毁两个阶段。
 
 同样CommonAnnotationBeanPostProcessor也有postProcessProperties的方法：
 
-![1622945839012](./assets/1622945839012.png)
+![image-20210624205605481](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210624205605481.png)
 
 对于生命周期的注解的处理，可以从构造方法中看出：
 
@@ -3468,7 +3468,7 @@ public class ExternalConfigurationDependencySourceDemo {
 
 实现原理就是DefaultListableBeanFactory#doResolveDependency中：
 
-![1622979982114](./assets/1622979982114.png)
+![image-20210624205723539](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210624205723539.png)
 
 会通过接下来的方法进行替换，将属性替换为配置文件中的值：
 
@@ -3517,7 +3517,7 @@ Spring BeanDefinition、单例对象、Resolvable Dependency、@Value外部化�
 
 单例模式的示例图：
 
-![img](./assets/20141217143318093.png)
+![image-20210624205747975](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210624205747975.png)
 
 这里有一个误区就是，singleton和prototype并没有互斥的关系，是可以同时存在的，当然，如果同时存在的话，可能行为会有一些问题。
 
@@ -3527,7 +3527,7 @@ Spring BeanDefinition、单例对象、Resolvable Dependency、@Value外部化�
 
 多例模式的示意图：
 
-![img](./assets/20141217143404577.png)
+![image-20210624205818521](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210624205818521.png)
 
 多例和单例比较的示例：
 

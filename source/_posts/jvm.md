@@ -143,7 +143,7 @@ Java语言规范，Java虚拟机规范
 
 `<init>`表示构造方法
 
-![img](assets/clipboard.png)
+<img src="D:/%E6%9C%89%E9%81%93%E4%BA%91/jiyongchaowy@163.com/21f2549ed47442b6889c6197a4c3994c/clipboard.png" alt="img" style="zoom: 67%;" />
 
 深入理解Java字节码结构：https://blog.csdn.net/u011810352/article/details/80316870
 
@@ -165,9 +165,9 @@ Access_Flag访问标志:
 
 访问标志信息包括该Class文件是类还是接口，是否被定位成public，是否是abstract，如果是类，是否被声明为final。
 
+[clipboard.png (1046×658) (gitee.com)](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/clipboard.png)
 
 
-![img](assets/clipboard.png)
 
 0x0021：是0x0020和0x0001的并集，表示ACC_PUBLIC与ACC_SUPER的并集
 
