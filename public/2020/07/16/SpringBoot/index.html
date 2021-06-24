@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.loli.net/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jycoder.club","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="&#x3D;&#x3D;SpringBoot&#x3D;&#x3D;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SpringBoot">
+<meta property="og:url" content="https://jycoder.club/2020/07/16/SpringBoot/index.html">
+<meta property="og:site_name" content="吉永超">
+<meta property="og:description" content="&#x3D;&#x3D;SpringBoot&#x3D;&#x3D;">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://mmbiz.qpic.cn/mmbiz_png/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQeiaPHgzp5kO2TicvJwMicpfTpsvPcOaNGobPWQoTUywEicPlgiabMIavTNA/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1">
+<meta property="og:image" content="https://mmbiz.qpic.cn/mmbiz_jpg/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQzmAj46icFN8ATeAbRhibHNmvNLt8zniczDnVPEIvBHEDSv8WZ38hoSkXg/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1">
+<meta property="og:image" content="https://mmbiz.qpic.cn/mmbiz_jpg/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQeU3e08gDViaUrnokSZHP6zpQnticuQc0EbZrZK2FSJ7W5rLTA4rF9eNw/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1">
+<meta property="og:image" content="https://mmbiz.qpic.cn/mmbiz_jpg/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQbNicaeuHicrIdruCcP5eQ981LjIgb8vSv7PbI3XSRCEs07jq6bUBvoSw/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1">
+<meta property="og:image" content="https://mmbiz.qpic.cn/mmbiz_png/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQurfYCoiaPsiaBBeBrCWOHMTHwl7mQ6iaYqKYMoRbT2bz6270LohsDndIg/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1">
+<meta property="og:image" content="https://mmbiz.qpic.cn/mmbiz_png/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQn8nK36PPIsEBpXXjQmX8ibniaohz5ahOYM5WnyicjgdYFa0Libxaztg6CQ/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1">
+<meta property="og:image" content="https://mmbiz.qpic.cn/mmbiz_png/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQu9QicvqeO7RicwHibtCVtibnQHLmGxuKm0jw1ttR5mjBrqCIolBibRRo3icw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1">
+<meta property="og:image" content="https://mmbiz.qpic.cn/mmbiz_jpg/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQFztFbwUteZ16sVKv9RoEl7o63sT4buwBdBBFQ82w7Q581ntceUqx8w/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1">
+<meta property="og:image" content="https://mmbiz.qpic.cn/mmbiz_png/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQr8IZpibDYUkTRzFA4j2WWw7YFiciaZevFuxH1oSxMd0Jr7drDmILq3YMw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1">
+<meta property="og:image" content="https://mmbiz.qpic.cn/mmbiz_jpg/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQticdcJNNcF5hWVAA4a5xib1D3qhoRf1lW9xQibDxiavYj2Ieicvzq7od95w/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1">
+<meta property="og:image" content="https://mmbiz.qpic.cn/mmbiz_jpg/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQ7W4R5zDIcXoGv7Z12BlbAoqGQPGoR19rSFahPsiaqWfTLRqh7pZUQyA/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1">
+<meta property="og:image" content="https://mmbiz.qpic.cn/mmbiz_jpg/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQGplWq8vdg5cDrXzLPyKPUZxgG5f1mN7eDYFaqrPfygKGib9QCWsmFTQ/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1">
+<meta property="og:image" content="https://mmbiz.qpic.cn/mmbiz_jpg/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQBR85MD5HgVeib7Juia527ia5DedXvMDoZwibXtUvwIcIib3UsA1Z6eFKWgQ/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1">
+<meta property="og:image" content="https://mmbiz.qpic.cn/mmbiz_jpg/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQvDDF5STJSTOC9e5Nvou7NoyvgkdZHiam1ic8Hnz1cknuRM8lMLmVWicxw/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1">
+<meta property="og:image" content="https://mmbiz.qpic.cn/mmbiz_png/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQKZibKhZCCVt3rXV9LD20lGHnKkLVfVjicblW5KJUQJnjHicxDicjB1WGYQ/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1">
+<meta property="og:image" content="https://mmbiz.qpic.cn/mmbiz_png/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQTkmkxUoCMn3p5VBepEyVVA9YMKEiaJibrLsSDSeb1tibd20HiciauZx0S2w/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1">
+<meta property="og:image" content="https://mmbiz.qpic.cn/sz_mmbiz_png/zuF5sJGRDCvwCLZQv6fq6zEjyuBXHd9C5licH3DdoibYfYXGaQOZMiaibyQdeoyHGibNRfiab5Z2Z9Es2jX8DickH4hJw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1">
+<meta property="og:image" content="https://jycoder.club/2020/07/16/SpringBoot/assets/image-20210609163709373.png">
+<meta property="og:image" content="https://jycoder.club/2020/07/16/SpringBoot/assets/image-20210609165237674.png">
+<meta property="article:published_time" content="2020-07-15T16:00:00.000Z">
+<meta property="article:modified_time" content="2021-06-24T07:04:46.016Z">
+<meta property="article:author" content="吉永超">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://mmbiz.qpic.cn/mmbiz_png/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQeiaPHgzp5kO2TicvJwMicpfTpsvPcOaNGobPWQoTUywEicPlgiabMIavTNA/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1">
+
+<link rel="canonical" href="https://jycoder.club/2020/07/16/SpringBoot/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>SpringBoot | 吉永超</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">吉永超</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-schedule">
+
+    <a href="/schedule/" rel="section"><i class="fa fa-calendar fa-fw"></i>日程表</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+  <a href="https://github.com/jiyongchao-qf" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jycoder.club/2020/07/16/SpringBoot/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="吉永超">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="吉永超">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          SpringBoot
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-07-16 00:00:00" itemprop="dateCreated datePublished" datetime="2020-07-16T00:00:00+08:00">2020-07-16</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-06-24 15:04:46" itemprop="dateModified" datetime="2021-06-24T15:04:46+08:00">2021-06-24</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Spring/" itemprop="url" rel="index"><span itemprop="name">Spring</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>26k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>23 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>==SpringBoot==</p>
+<span id="more"></span>
+<h1 id="SpringBoot启动原理"><a href="#SpringBoot启动原理" class="headerlink" title="SpringBoot启动原理"></a>SpringBoot启动原理</h1><h2 id="SpringBootApplication"><a href="#SpringBootApplication" class="headerlink" title="@SpringBootApplication"></a>@SpringBootApplication</h2><p>在SpringBoot项目中，一般情况下都有且仅有一个启动类：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@SpringBootApplication</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Application</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        SpringApplication.run(Application.class, args);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>其中@SpringBootApplication注解是SpringBoot的核心注解，它其实是一个组合注解：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Target(ElementType.TYPE)</span></span><br><span class="line"><span class="meta">@Retention(RetentionPolicy.RUNTIME)</span></span><br><span class="line"><span class="meta">@Documented</span></span><br><span class="line"><span class="meta">@Inherited</span></span><br><span class="line"><span class="meta">@SpringBootConfiguration</span></span><br><span class="line"><span class="meta">@EnableAutoConfiguration</span></span><br><span class="line"><span class="meta">@ComponentScan(excludeFilters = &#123;</span></span><br><span class="line"><span class="meta">		@Filter(type = FilterType.CUSTOM, classes = TypeExcludeFilter.class),</span></span><br><span class="line"><span class="meta">		@Filter(type = FilterType.CUSTOM, classes = AutoConfigurationExcludeFilter.class) &#125;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="meta">@interface</span> SpringBootApplication &#123;</span><br><span class="line">    <span class="comment">// ....</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>其中重要的有三个Annotation：</p>
+<ol>
+<li>@Configuration（@SpringBootConfiguration也是应用了@Configuration）</li>
+<li>@EnableAutoConfiguration</li>
+<li>@ComponentScan</li>
+</ol>
+<p>即SpringBoot项目的启动类也可以这么写（优化SpringBoot项目的启动时间就可以将注解拆开来写，缩小包扫描的范围）：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="meta">@EnableAutoConfiguration</span></span><br><span class="line"><span class="meta">@ComponentScan</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Application</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        SpringApplication.run(Application.class, args);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="注解解析"><a href="#注解解析" class="headerlink" title="注解解析"></a>注解解析</h2><h3 id="Configuration"><a href="#Configuration" class="headerlink" title="@Configuration"></a>@Configuration</h3><p>这里的@Configuration与JavaConfig形式的Spring IoC容器的配置类使用的@Configuration注解作用相同，启动类加上这个注解之后，本身就变成了IoC容器的配置类。</p>
+<p>@Configuration的注解类标识这个类可以使用Spring IoC容器作为Bean定义的来源。@Bean注解告诉Spring，一个带有@Bean的注解方法将返回一个对象，该对象应该被注册为在Spring应用程序上下文中的Bean。</p>
+<h3 id="ComponentScan"><a href="#ComponentScan" class="headerlink" title="@ComponentScan"></a>@ComponentScan</h3><p>@ComponentScan的功能是自动扫描并加载符合条件的组件（比如@Component和@Repository以及其他衍生注解）或者Bean定义，最终将这些Bean定义加载到IoC容器当中。</p>
+<p>可以通过@ComponentScan的一些属性来进行细粒度的定制自动扫描的范围，如果不指定，Spring框架实现默认会从启动类所在的类的包进行扫描，所以启动类最好是放在所有的业务代码的外层，但如果要放在根目录（com包）下需要谨慎，低版本的SpringBoot会有一些兼容性的问题。</p>
+<h3 id="EnableAutoConfiguration"><a href="#EnableAutoConfiguration" class="headerlink" title="@EnableAutoConfiguration"></a>@EnableAutoConfiguration</h3><p>@EnableAutoConfiguration借助@Import的支持，收集和注册特定场景相关的Bean定义，在SpringBoot中还有一些与之类似的注解：</p>
+<ul>
+<li>@EnableScheduling是通过@Import将Spring调度框架相关的Bean定义都加载到IoC容器</li>
+<li>@EnableMBeanExport是通过@Import将JMX相关的Bean定义加载到IoC容器</li>
+<li>@EnableCaching是通过@Impotr将将缓存相关的Bean定义加载到IoC容器</li>
+</ul>
+<p>@EnableAutoConfiguration也是通过@Import将所有符合自动装配条件的Bean定义加载到IoC容器，会根据类路径中的jar依赖为项目进行自动配置，如：添加了spring-boot-starter-web依赖，会自动添加Tomcat和Spring MVC的依赖，SpringBoot会对Tomcat和Spring MVC进行自动配置。</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQeiaPHgzp5kO2TicvJwMicpfTpsvPcOaNGobPWQoTUywEicPlgiabMIavTNA/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="图片"></p>
+<p>@EnableAutoConfiguration作为一个复合Annotation，其自身定义关键信息如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@SuppressWarnings(&quot;deprecation&quot;)</span></span><br><span class="line"><span class="meta">@Target(ElementType.TYPE)</span></span><br><span class="line"><span class="meta">@Retention(RetentionPolicy.RUNTIME)</span></span><br><span class="line"><span class="meta">@Documented</span></span><br><span class="line"><span class="meta">@Inherited</span></span><br><span class="line"><span class="meta">@AutoConfigurationPackage</span></span><br><span class="line"><span class="meta">@Import(AutoConfigurationImportSelector.class)</span></span><br><span class="line"><span class="keyword">public</span> <span class="meta">@interface</span> EnableAutoConfiguration &#123;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>借助AutoConfigurationImportSelector，SpringBoot可以将所有符合条件的@Configuration配置都加载到当前SpringBoot创建并使用的IoC容器，借助Spring框架的一个工具类SpringFactoriesLoader，@EnableAutoConfiguration可以智能的完成自动配置的功能。</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_jpg/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQzmAj46icFN8ATeAbRhibHNmvNLt8zniczDnVPEIvBHEDSv8WZ38hoSkXg/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="图片"></p>
+<p>在这其中，SpringFactoriesLoader扮演者十分重要的角色：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">SpringFactoriesLoader</span> </span>&#123;</span><br><span class="line">    <span class="comment">//...</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> &lt;T&gt; <span class="function">List&lt;T&gt; <span class="title">loadFactories</span><span class="params">(Class&lt;T&gt; factoryClass, ClassLoader classLoader)</span> </span>&#123;</span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> List&lt;String&gt; <span class="title">loadFactoryNames</span><span class="params">(Class&lt;?&gt; factoryClass, ClassLoader classLoader)</span> </span>&#123;</span><br><span class="line">        ....</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>配合@EnableAutoConfiguration使用的话，它更多提供了一种配置查找的功能支持，即根据@EnableAutoConfiguration的完整类名org.springframework.boot.autoconfigure.EnableAutoConfiguration作为查找key，获取对应一组的@Configure类。</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_jpg/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQeU3e08gDViaUrnokSZHP6zpQnticuQc0EbZrZK2FSJ7W5rLTA4rF9eNw/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="图片"></p>
+<p>总的来说，@EnaleAutoConfiguration的作用是从classpath中搜寻所有的META-INF/spring.factories配置文件，并将其中org.springframework.boot.autoconfigure.EnableAutoConfiguration对应的配置项，通过反射实例化为标注了@Configuration的JavaConfig形式的IoC容器配置类，然后加载到IoC容器当中。</p>
+<h2 id="启动执行流程"><a href="#启动执行流程" class="headerlink" title="启动执行流程"></a>启动执行流程</h2><h3 id="流程概览"><a href="#流程概览" class="headerlink" title="流程概览"></a>流程概览</h3><ol>
+<li>使用SpringApplication的静态的run方法，而这个静态的run方法最终会调用SpringApplication实例的run方法，因此首先需要创建一个SpringApplication对象实例，然后调用这个创建号的SpringApplication的实例方法，在SpringApplication实例初始化的时候，它会提前做几件事情：<ul>
+<li>根据classpath里面是否存在某个特征类org.springframework.boot.ConfigurableWebApplicationContext来决定是否应该创建一个Web应用使用的ApplicationContext类型</li>
+<li>使用SpringFactoriesLoader在应用的classpath中查找并加载所有可能的ApplicationContextInitializer</li>
+<li>使用SpringFactories在应用的classpath中查找并加载所有可能的ApplicationListener</li>
+<li>推断并设置main方法的定义类</li>
+</ul>
+</li>
+<li>SpringApplication实例初始化完成并且完成设置后，就可以开始执行run方法的逻辑了，首先遍历执行所有通过SpringFactories可以查找到并加载的SpringApplicationRunListener，调用他们的started()方法</li>
+<li>创建并配置当前SpringBoot应用将要使用的Environment（包括要使用的PropertySource以及Profile）、</li>
+<li>调用所有的SpringApplicationRunListener的environmentPrepared()的方法</li>
+<li>如果SpringApplication的showBanner属性被设置为true，则打印banner</li>
+<li>根据用户是否明确设置了applicationContextClass类型以及初始化阶段的推断结果，决定该为当前SpringBoot应用创建什么类型的ApplicationContext并创建完成，然后根据条件决定是否添加ShutdownHook，决定是否使用自定义的BeanNameGenerator，决定是否使用自定义的ResourceLoader，并且将之前准备好的Environment设置给创建好的ApplicationContext使用</li>
+<li>ApplicationContext创建好之后，SpringApplication会再次借助Spring-FactoriesLoader，查找并加载classpath中所有可用的ApplicationContext-Initializer，然后遍历调用这些ApplicationContextInitializer的initialize（applicationContext）方法来对已经创建好的ApplicationContext进行进一步的处理</li>
+<li>遍历所有SpringApplicationRunListener的contextPrepared()方法</li>
+<li>最核心的一步，将之前通过@EnableAutoConfiguration获取的所有配置以及其他形式的IoC容器配置加载到已经准备完毕的ApplicationContext</li>
+<li>遍历调用所有SpringApplicationRunListener的contextLoaded()方法</li>
+<li>调用ApplicationContext的refresh()方法，完成IoC容器可用的最后一道工序</li>
+<li>查找当前ApplicationContext中是否注册有CommandLineRunner，如果有，则遍历执行它们</li>
+<li>正常情况下，遍历执行SpringApplicationListener的finished()方法（如果整个过程出现异常，则依然调用所有SpringApplicationRunListener的finished()方法，只不过这种情况下会将一场信息一并传入处理</li>
+</ol>
+<p>去掉事件通知点后，整体流程大体如下：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_jpg/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQbNicaeuHicrIdruCcP5eQ981LjIgb8vSv7PbI3XSRCEs07jq6bUBvoSw/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="图片"></p>
+<p>简单一点，也可以将启动流程分为三个部分：</p>
+<ol>
+<li>第一部分进行SpringApplication的初始化模块，配置一些基本的环境变量、资源、构造器、监听器</li>
+<li>第二部分实现了应用具体的启动方案，包括启动流程的监听模块、加载配置环境模块、及核心的创建上下文环境模块</li>
+<li>第三部分是自动化配置模块，该模块是SpringBoot自动配置的核心。</li>
+</ol>
+<h3 id="启动详情"><a href="#启动详情" class="headerlink" title="启动详情"></a>启动详情</h3><p>首先进入run方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> ConfigurableApplicationContext <span class="title">run</span><span class="params">(Class&lt;?&gt; primarySource,</span></span></span><br><span class="line"><span class="params"><span class="function">		String... args)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">return</span> run(<span class="keyword">new</span> Class&lt;?&gt;[] &#123; primarySource &#125;, args);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到调用了重载的run方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> ConfigurableApplicationContext <span class="title">run</span><span class="params">(Class&lt;?&gt;[] primarySources,</span></span></span><br><span class="line"><span class="params"><span class="function">		String[] args)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">return</span> <span class="keyword">new</span> SpringApplication(primarySources).run(args);</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>依然是一个静态方法，这里首先要构造一个SpringApplication实例，然后再调用实例的run方法，这里的构造方法也有重载的版本，最终调用的构造方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">SpringApplication</span><span class="params">(ResourceLoader resourceLoader, Class&lt;?&gt;... primarySources)</span> </span>&#123;</span><br><span class="line">   <span class="keyword">this</span>.resourceLoader = resourceLoader;</span><br><span class="line">   Assert.notNull(primarySources, <span class="string">&quot;PrimarySources must not be null&quot;</span>);</span><br><span class="line">   <span class="keyword">this</span>.primarySources = <span class="keyword">new</span> LinkedHashSet&lt;&gt;(Arrays.asList(primarySources));</span><br><span class="line">   <span class="keyword">this</span>.webApplicationType = WebApplicationType.deduceFromClasspath();</span><br><span class="line">   setInitializers((Collection) getSpringFactoriesInstances(</span><br><span class="line">         ApplicationContextInitializer.class));</span><br><span class="line">   setListeners((Collection) getSpringFactoriesInstances(ApplicationListener.class));</span><br><span class="line">   <span class="keyword">this</span>.mainApplicationClass = deduceMainApplicationClass();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里主要是为SpringApplication对象赋一些初值。构造函数执行完毕后，我们回到run方法:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> ConfigurableApplicationContext <span class="title">run</span><span class="params">(String... args)</span> </span>&#123;</span><br><span class="line">		StopWatch stopWatch = <span class="keyword">new</span> StopWatch();</span><br><span class="line">		stopWatch.start();</span><br><span class="line">		ConfigurableApplicationContext context = <span class="keyword">null</span>;</span><br><span class="line">		Collection&lt;SpringBootExceptionReporter&gt; exceptionReporters = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">		configureHeadlessProperty();</span><br><span class="line">		SpringApplicationRunListeners listeners = getRunListeners(args);</span><br><span class="line">		listeners.starting();</span><br><span class="line">		<span class="keyword">try</span> &#123;</span><br><span class="line">			ApplicationArguments applicationArguments = <span class="keyword">new</span> DefaultApplicationArguments(</span><br><span class="line">					args);</span><br><span class="line">			ConfigurableEnvironment environment = prepareEnvironment(listeners,</span><br><span class="line">					applicationArguments);</span><br><span class="line">			configureIgnoreBeanInfo(environment);</span><br><span class="line">			Banner printedBanner = printBanner(environment);</span><br><span class="line">			context = createApplicationContext();</span><br><span class="line">			exceptionReporters = getSpringFactoriesInstances(</span><br><span class="line">					SpringBootExceptionReporter.class,</span><br><span class="line">					<span class="keyword">new</span> Class[] &#123; ConfigurableApplicationContext.class &#125;, context);</span><br><span class="line">			prepareContext(context, environment, listeners, applicationArguments,</span><br><span class="line">					printedBanner);</span><br><span class="line">			refreshContext(context);</span><br><span class="line">			afterRefresh(context, applicationArguments);</span><br><span class="line">			stopWatch.stop();</span><br><span class="line">			<span class="keyword">if</span> (<span class="keyword">this</span>.logStartupInfo) &#123;</span><br><span class="line">				<span class="keyword">new</span> StartupInfoLogger(<span class="keyword">this</span>.mainApplicationClass)</span><br><span class="line">						.logStarted(getApplicationLog(), stopWatch);</span><br><span class="line">			&#125;</span><br><span class="line">			listeners.started(context);</span><br><span class="line">			callRunners(context, applicationArguments);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">catch</span> (Throwable ex) &#123;</span><br><span class="line">			handleRunFailure(context, ex, exceptionReporters, listeners);</span><br><span class="line">			<span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(ex);</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">try</span> &#123;</span><br><span class="line">			listeners.running(context);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">catch</span> (Throwable ex) &#123;</span><br><span class="line">			handleRunFailure(context, ex, exceptionReporters, <span class="keyword">null</span>);</span><br><span class="line">			<span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(ex);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span> context;</span><br><span class="line">	&#125;</span><br></pre></td></tr></table></figure>
+
+<p>该方法中有几个关键步骤：</p>
+<ol>
+<li><p>创建了应用的见同期SpringApplicationRunListeners并开始监听</p>
+</li>
+<li><p>加载SpringBoot配置环境（ConfigurableEnvironment），如果是通过Web容器发布，会加载StandardEnvironment，其最终也是集成了ConfigurableEnvironment，类图如下</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQurfYCoiaPsiaBBeBrCWOHMTHwl7mQ6iaYqKYMoRbT2bz6270LohsDndIg/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="图片"></p>
+</li>
+<li><p>配置环境（Environment）加入到监听器对象中（SpringApplicationRunListeners）</p>
+</li>
+<li><p>创建run方法的返回对象：ConfigurableApplicationContext（应用配置上下文），创建方法如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> ConfigurableApplicationContext <span class="title">createApplicationContext</span><span class="params">()</span> </span>&#123;</span><br><span class="line">	Class&lt;?&gt; contextClass = <span class="keyword">this</span>.applicationContextClass;</span><br><span class="line">	<span class="keyword">if</span> (contextClass == <span class="keyword">null</span>) &#123;</span><br><span class="line">		<span class="keyword">try</span> &#123;</span><br><span class="line">			<span class="keyword">switch</span> (<span class="keyword">this</span>.webApplicationType) &#123;</span><br><span class="line">			<span class="keyword">case</span> SERVLET:</span><br><span class="line">				contextClass = Class.forName(DEFAULT_SERVLET_WEB_CONTEXT_CLASS);</span><br><span class="line">				<span class="keyword">break</span>;</span><br><span class="line">			<span class="keyword">case</span> REACTIVE:</span><br><span class="line">				contextClass = Class.forName(DEFAULT_REACTIVE_WEB_CONTEXT_CLASS);</span><br><span class="line">				<span class="keyword">break</span>;</span><br><span class="line">			<span class="keyword">default</span>:</span><br><span class="line">				contextClass = Class.forName(DEFAULT_CONTEXT_CLASS);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">catch</span> (ClassNotFoundException ex) &#123;</span><br><span class="line">			<span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(</span><br><span class="line">					<span class="string">&quot;Unable create a default ApplicationContext, &quot;</span></span><br><span class="line">							+ <span class="string">&quot;please specify an ApplicationContextClass&quot;</span>,</span><br><span class="line">					ex);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> (ConfigurableApplicationContext) BeanUtils.instantiateClass(contextClass);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>方法会先获取显示设置的应用上下文（appcationContextClass），如果不存在，再加载默认的环境配置（通过是否是web environment判断），默认选择AnnotationConfigApplicationContext注解上下文（通过扫描所有注解类来加载Bean），最后通过BeanUtils实例化上下文对象，并返回。</p>
+</li>
+<li><p>回到run方法内，prepareContext方法将listeners、enviroment、applicationArguments、banner等重要组件与上下文对象关联</p>
+</li>
+<li><p>加下来的refreshContext(context)方法（方法如下）是实现spring-boot-starter-*等自动化配置的关键，包括spring.factories的加载，bean的实例化等核心工作</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">refresh</span><span class="params">()</span> <span class="keyword">throws</span> BeansException, IllegalStateException </span>&#123;</span><br><span class="line">	<span class="keyword">synchronized</span> (<span class="keyword">this</span>.startupShutdownMonitor) &#123;</span><br><span class="line">		<span class="comment">// Prepare this context for refreshing.</span></span><br><span class="line">		prepareRefresh();</span><br><span class="line">   </span><br><span class="line">		<span class="comment">// Tell the subclass to refresh the internal bean factory.</span></span><br><span class="line">		ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();</span><br><span class="line">   </span><br><span class="line">		<span class="comment">// Prepare the bean factory for use in this context.</span></span><br><span class="line">		prepareBeanFactory(beanFactory);</span><br><span class="line">   </span><br><span class="line">		<span class="keyword">try</span> &#123;</span><br><span class="line">			<span class="comment">// Allows post-processing of the bean factory in context subclasses.</span></span><br><span class="line">			postProcessBeanFactory(beanFactory);</span><br><span class="line">   </span><br><span class="line">			<span class="comment">// Invoke factory processors registered as beans in the context.</span></span><br><span class="line">			invokeBeanFactoryPostProcessors(beanFactory);</span><br><span class="line">   </span><br><span class="line">			<span class="comment">// Register bean processors that intercept bean creation.</span></span><br><span class="line">			registerBeanPostProcessors(beanFactory);</span><br><span class="line">   </span><br><span class="line">			<span class="comment">// Initialize message source for this context.</span></span><br><span class="line">			initMessageSource();</span><br><span class="line">   </span><br><span class="line">			<span class="comment">// Initialize event multicaster for this context.</span></span><br><span class="line">			initApplicationEventMulticaster();</span><br><span class="line">   </span><br><span class="line">			<span class="comment">// Initialize other special beans in specific context subclasses.</span></span><br><span class="line">			onRefresh();</span><br><span class="line">   </span><br><span class="line">			<span class="comment">// Check for listener beans and register them.</span></span><br><span class="line">			registerListeners();</span><br><span class="line">   </span><br><span class="line">			<span class="comment">// Instantiate all remaining (non-lazy-init) singletons.</span></span><br><span class="line">			finishBeanFactoryInitialization(beanFactory);</span><br><span class="line">   </span><br><span class="line">			<span class="comment">// Last step: publish corresponding event.</span></span><br><span class="line">			finishRefresh();</span><br><span class="line">		&#125;</span><br><span class="line">   </span><br><span class="line">		<span class="keyword">catch</span> (BeansException ex) &#123;</span><br><span class="line">			<span class="keyword">if</span> (logger.isWarnEnabled()) &#123;</span><br><span class="line">				logger.warn(<span class="string">&quot;Exception encountered during context initialization - &quot;</span> +</span><br><span class="line">						<span class="string">&quot;cancelling refresh attempt: &quot;</span> + ex);</span><br><span class="line">			&#125;</span><br><span class="line">   </span><br><span class="line">			<span class="comment">// Destroy already created singletons to avoid dangling resources.</span></span><br><span class="line">			destroyBeans();</span><br><span class="line">   </span><br><span class="line">			<span class="comment">// Reset &#x27;active&#x27; flag.</span></span><br><span class="line">			cancelRefresh(ex);</span><br><span class="line">   </span><br><span class="line">			<span class="comment">// Propagate exception to caller.</span></span><br><span class="line">			<span class="keyword">throw</span> ex;</span><br><span class="line">		&#125;</span><br><span class="line">   </span><br><span class="line">		<span class="keyword">finally</span> &#123;</span><br><span class="line">			<span class="comment">// Reset common introspection caches in Spring&#x27;s core, since we</span></span><br><span class="line">			<span class="comment">// might not ever need metadata for singleton beans anymore...</span></span><br><span class="line">			resetCommonCaches();</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+</ol>
+<p>配置结束后，SpringBoot做了一些基本的收尾工作，返回了应用环境上下文。总体而言，SpringBoot的启动，主要创建了配置环境（environment）、事件监听（listener）、应用上下文（applicationContex），并基于以上条件，在容器中开始实例化我们需要的Bean，最终完成SpringBoot的启动，这里面有一个核心就是自动化装配。</p>
+<h3 id="自动装配"><a href="#自动装配" class="headerlink" title="自动装配"></a>自动装配</h3><p>在整个SpringBoot启动过程中，多出都调用了SpringBoot的自动装配模块</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQn8nK36PPIsEBpXXjQmX8ibniaohz5ahOYM5WnyicjgdYFa0Libxaztg6CQ/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="图片"></p>
+<p>该配置模块主要使用到了SpringFactoriesLoader，即Spring工厂加载器，该对象提供了loadFactoryNames方法，入参为factoryClass和classLoader，即需要传入上图中的工厂类名称对应的类加载器，方法会根据指定的classLoader，加载该类加载器搜索路径下的指定文件，即spring.factories文件，传入的工厂类为接口，而文件中对应的类则是接口的实现类，或最终作为实现类，所以文件中一般为下入这种一对多的类型集合，或者到这些实现类的类名后，loadFactoryNames方法返回类名集合，方法调用方得到这些集合后，再通过反射获取这些类的类对象、构造方法，最终生成实例。</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQu9QicvqeO7RicwHibtCVtibnQHLmGxuKm0jw1ttR5mjBrqCIolBibRRo3icw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="图片"></p>
+<p>自动配置流程如下：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_jpg/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQFztFbwUteZ16sVKv9RoEl7o63sT4buwBdBBFQ82w7Q581ntceUqx8w/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="图片"></p>
+<p><code>mybatis-spring-boot-starter</code>、<code>spring-boot-starter-web</code>等组件的META-INF文件下均含有<code>spring.factories</code>文件，自动配置模块中，<code>SpringFactoriesLoader</code>收集到文件中的类全名并返回一个类全名的数组，返回的类全名通过反射被实例化，就形成了具体的工厂实例，工厂实例来生成组件具体需要的bean。</p>
+<p>之前我们提到了<code>EnableAutoConfiguration</code>注解，其类图如下：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQr8IZpibDYUkTRzFA4j2WWw7YFiciaZevFuxH1oSxMd0Jr7drDmILq3YMw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="图片"></p>
+<p>可以发现其最终实现了<code>ImportSelector</code>(选择器)和<code>BeanClassLoaderAware</code>(bean类加载器中间件)，重点关注一下<code>AutoConfigurationImportSelector</code>的<code>selectImports</code>方法。</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_jpg/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQticdcJNNcF5hWVAA4a5xib1D3qhoRf1lW9xQibDxiavYj2Ieicvzq7od95w/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="图片"></p>
+<p>该方法在springboot启动流程——bean实例化前被执行，返回要实例化的类信息列表。我们知道，如果获取到类信息，spring自然可以通过类加载器将类加载到jvm中，现在我们已经通过spring-boot的starter依赖方式依赖了我们需要的组件，那么这些组建的类信息在select方法中也是可以被获取到的，不要急我们继续向下分析。</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_jpg/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQ7W4R5zDIcXoGv7Z12BlbAoqGQPGoR19rSFahPsiaqWfTLRqh7pZUQyA/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="图片"></p>
+<p>该方法中的<code>getCandidateConfigurations</code>方法，通过方法注释了解到，其返回一个自动配置类的类名列表，方法调用了<code>loadFactoryNames</code>方法，查看该方法</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_jpg/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQGplWq8vdg5cDrXzLPyKPUZxgG5f1mN7eDYFaqrPfygKGib9QCWsmFTQ/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="图片"></p>
+<p>在上面的代码可以看到自动配置器会根据传入的<code>factoryClass.getName()</code>到项目系统路径下所有的<code>spring.factories</code>文件中找到相应的key，从而加载里面的类。我们就选取这个<code>mybatis-spring-boot-autoconfigure</code>下的<code>spring.factories</code>文件</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_jpg/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQBR85MD5HgVeib7Juia527ia5DedXvMDoZwibXtUvwIcIib3UsA1Z6eFKWgQ/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="图片"></p>
+<p>进入<code>org.mybatis.spring.boot.autoconfigure.MybatisAutoConfiguration</code>中，主要看一下类头：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_jpg/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQvDDF5STJSTOC9e5Nvou7NoyvgkdZHiam1ic8Hnz1cknuRM8lMLmVWicxw/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="图片"></p>
+<p>发现Spring的<code>@Configuration</code>，俨然是一个通过注解标注的springBean，继续向下看</p>
+<ul>
+<li><code>@ConditionalOnClass(&#123; SqlSessionFactory.class, SqlSessionFactoryBean.class&#125;)</code>：当存在<code>SqlSessionFactory.class</code>, <code>SqlSessionFactoryBean.class</code>这两个类时才解析<code>MybatisAutoConfiguration</code>配置类，否则不解析这一个配置类，make sence，我们需要mybatis为我们返回会话对象，就必须有会话工厂相关类</li>
+<li><code>@CondtionalOnBean(DataSource.class)</code>：只有处理已经被声明为bean的dataSource</li>
+<li><code>@ConditionalOnMissingBean(MapperFactoryBean.class)</code>这个注解的意思是如果容器中不存在name指定的bean则创建bean注入，否则不执行（该类源码较长，篇幅限制不全粘贴）</li>
+</ul>
+<p>以上配置可以保证<code>sqlSessionFactory、sqlSessionTemplate、dataSource</code>等mybatis所需的组件均可被自动配置，<code>@Configuration</code>注解已经提供了Spring的上下文环境，所以以上组件的配置方式与Spring启动时通过mybatis.xml文件进行配置起到一个效果。</p>
+<p>通过分析我们可以发现，只要一个基于SpringBoot项目的类路径下存在<code>SqlSessionFactory.class</code>, <code>SqlSessionFactoryBean.class</code>，并且容器中已经注册了dataSourceBean，就可以触发自动化配置，意思说我们只要在maven的项目中加入了mybatis所需要的若干依赖，就可以触发自动配置，但引入mybatis原生依赖的话，每集成一个功能都要去修改其自动化配置类，那就得不到开箱即用的效果了。</p>
+<p>所以Spring-boot为我们提供了统一的starter可以直接配置好相关的类，触发自动配置所需的依赖(mybatis)如下：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQKZibKhZCCVt3rXV9LD20lGHnKkLVfVjicblW5KJUQJnjHicxDicjB1WGYQ/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="图片"></p>
+<p>这里是截取的<code>mybatis-spring-boot-starter</code>的源码中pom.xml文件中所有依赖：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQTkmkxUoCMn3p5VBepEyVVA9YMKEiaJibrLsSDSeb1tibd20HiciauZx0S2w/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="图片"></p>
+<p>因为maven依赖的传递性，我们只要依赖starter就可以依赖到所有需要自动配置的类，实现开箱即用的功能。也体现出Springboot简化了Spring框架带来的大量XML配置以及复杂的依赖管理，让开发人员可以更加关注业务逻辑的开发。</p>
+<h1 id="SpringBoot打包"><a href="#SpringBoot打包" class="headerlink" title="SpringBoot打包"></a>SpringBoot打包</h1><h2 id="打包过程"><a href="#打包过程" class="headerlink" title="打包过程"></a>打包过程</h2><p>在Spring Boot应用中，我们可以约定不同的标识来定义不同的环境。例如 <code>dev</code> 表示开发环境、<code>test</code>表示测试环境，对应的配置文件为<code>application-dev.yaml</code>、<code>application-test.yaml</code>。我们通过声明<code>spring.profiles.active</code>来激活对应的环境配置，例如激活<code>dev</code>环境时<code>spring.profiles.active=dev</code>。完整的启动命令为：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -Djava.security.egd=file:/dev/./urandom  -Dspring.profiles.active=dev -jar spring-boot-app.jar </span><br></pre></td></tr></table></figure>
+
+<p>根据上面的命令编写一个能够适应多环境的<strong>Dockerfile</strong>：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 引入 openjdk 镜像</span></span><br><span class="line">FROM adoptopenjdk/openjdk8</span><br><span class="line"><span class="meta">#</span><span class="bash"> 声明作者</span></span><br><span class="line">LABEL AUTHOR=felord OG=felord.cn</span><br><span class="line"><span class="meta">#</span><span class="bash"> 挂载几个有用的文件夹 比如日志</span></span><br><span class="line">VOLUME [&quot;/tmp&quot;,&quot;/logs&quot;]</span><br><span class="line"><span class="meta">#</span><span class="bash"> 声明一个环境参数用来动态启用配置文件 默认dev</span></span><br><span class="line">ENV ACTIVE=dev</span><br><span class="line"><span class="meta">#</span><span class="bash"> 暴露端口</span></span><br><span class="line">EXPOSE 8080</span><br><span class="line"><span class="meta">#</span><span class="bash"> 复制并修改应用打包后的jar文件名称</span></span><br><span class="line">ADD /target/flyway-spring-boot-1.0.0.jar app.jar</span><br><span class="line"><span class="meta">#</span><span class="bash"> 容器启动时第一个运行的命令 用来启动应用</span></span><br><span class="line">ENTRYPOINT [&quot;java&quot;,&quot;-Djava.security.egd=file:/dev/./urandom&quot;,&quot;-Dspring.profiles.active=$&#123;ACTIVE&#125;&quot;,&quot;-jar&quot;,&quot;app.jar&quot;]</span><br></pre></td></tr></table></figure>
+
+<p>这样打包的Docker镜像就可以通过<code>docker run</code>添加额外的<code>--env ACTIVE=test</code> 来动态的改变环境。单纯的编写<strong>Dockerfile</strong>不方便我们DevOps。</p>
+<p><img src="https://mmbiz.qpic.cn/sz_mmbiz_png/zuF5sJGRDCvwCLZQv6fq6zEjyuBXHd9C5licH3DdoibYfYXGaQOZMiaibyQdeoyHGibNRfiab5Z2Z9Es2jX8DickH4hJw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="图片"></p>
+<p>我们需要能够自动地构建、推送到仓库、拉取镜像、运行一系列流水线操作。好在市面上有很多工具来帮助我们实现这一过程。</p>
+<h2 id="构建工具"><a href="#构建工具" class="headerlink" title="构建工具"></a>构建工具</h2><h3 id="spring-boot-maven-plugin"><a href="#spring-boot-maven-plugin" class="headerlink" title="spring-boot-maven-plugin"></a>spring-boot-maven-plugin</h3><p>这个是Spring Boot官方的插件，在2.x的某个版本提供了Docker镜像构建能力。</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">project</span>&gt;</span></span><br><span class="line"> <span class="tag">&lt;<span class="name">build</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">plugins</span>&gt;</span></span><br><span class="line">   <span class="tag">&lt;<span class="name">plugin</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-maven-plugin<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line">     <span class="tag">&lt;<span class="name">image</span>&gt;</span></span><br><span class="line">     <span class="tag">&lt;<span class="name">name</span>&gt;</span>docker.repo.com/library/$&#123;project.artifactId&#125;:$&#123;project.version&#125;<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">publish</span>&gt;</span>true<span class="tag">&lt;/<span class="name">publish</span>&gt;</span></span><br><span class="line">     <span class="tag">&lt;/<span class="name">image</span>&gt;</span></span><br><span class="line">     <span class="tag">&lt;<span class="name">docker</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">publishRegistry</span>&gt;</span></span><br><span class="line">       <span class="tag">&lt;<span class="name">username</span>&gt;</span>user<span class="tag">&lt;/<span class="name">username</span>&gt;</span></span><br><span class="line">       <span class="tag">&lt;<span class="name">password</span>&gt;</span>secret<span class="tag">&lt;/<span class="name">password</span>&gt;</span></span><br><span class="line">       <span class="tag">&lt;<span class="name">url</span>&gt;</span>https://docker.repo.com/v1/<span class="tag">&lt;/<span class="name">url</span>&gt;</span></span><br><span class="line">       <span class="tag">&lt;<span class="name">email</span>&gt;</span>user@example.com<span class="tag">&lt;/<span class="name">email</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;/<span class="name">publishRegistry</span>&gt;</span></span><br><span class="line">     <span class="tag">&lt;/<span class="name">docker</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br><span class="line">   <span class="tag">&lt;/<span class="name">plugin</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">plugins</span>&gt;</span></span><br><span class="line"> <span class="tag">&lt;/<span class="name">build</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">project</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>配置好Docker私仓后就可以通过<code>mvn clean spring-boot:build-image</code> 进行构建镜像了，这种方式好处就是无额外依赖，缺点就是需要从github下载构建元件，网络如果不好就容易失败。</p>
+<h3 id="Spotify-Maven-Plugin"><a href="#Spotify-Maven-Plugin" class="headerlink" title="Spotify Maven Plugin"></a>Spotify Maven Plugin</h3><p>Spotify Maven 插件是一个目前比较普遍的选择。它要求应用程序开发人员编写<strong>Dockerfile</strong>，并把<code>Dockerfile</code>放在项目<code>src/main/docker</code>目录下。然后你就可以通过引入：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"> <span class="tag">&lt;<span class="name">plugin</span>&gt;</span></span><br><span class="line">     <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.spotify<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">     <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>dockerfile-maven-plugin<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">     <span class="tag">&lt;<span class="name">version</span>&gt;</span>1.4.8<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line">     <span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line">         <span class="tag">&lt;<span class="name">repository</span>&gt;</span>repo.com/$&#123;project.artifactId&#125;<span class="tag">&lt;/<span class="name">repository</span>&gt;</span></span><br><span class="line">     <span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">plugin</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>这个插件提供了<code>mvn dockerfile:build</code>、<code>mvn dockerfile:tag</code>、<code>mvn dockerfile:push</code>三个命令分别用来构建、打标签、发布到远端私有仓库，非常简单。</p>
+<p>这个是一个非常容易上手的插件，唯一的要求就是需要会编写Dockerfile，对定制化要求高的可以使用这个。</p>
+<h3 id="Jib-Maven-Plugin"><a href="#Jib-Maven-Plugin" class="headerlink" title="Jib Maven Plugin"></a>Jib Maven Plugin</h3><p>它是谷歌开源的OCI镜像打包工具，可以用来打包Docker镜像，大部分情况下已经满足需要。但是如果你要定制化的话还是不容易的，需要阅读官方给的文档。最开始的<strong>Dockerfile</strong>如果使用<strong>JIb</strong>的话需要这样配置：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">plugin</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.google.cloud.tools<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>jib-maven-plugin<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>3.0.0<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">from</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">image</span>&gt;</span>adoptopenjdk/openjdk8<span class="tag">&lt;/<span class="name">image</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">from</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">to</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">image</span>&gt;</span>docker.repo.com/library/$&#123;project.artifactId&#125;<span class="tag">&lt;/<span class="name">image</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">auth</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;<span class="name">username</span>&gt;</span>felord<span class="tag">&lt;/<span class="name">username</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;<span class="name">password</span>&gt;</span>xxxxxx<span class="tag">&lt;/<span class="name">password</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;/<span class="name">auth</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">tags</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;<span class="name">tag</span>&gt;</span>$&#123;project.version&#125;<span class="tag">&lt;/<span class="name">tag</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;/<span class="name">tags</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">to</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">extraDirectories</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">paths</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;<span class="name">path</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;<span class="name">from</span>&gt;</span>target/$&#123;project.artifactId&#125;-$&#123;project.version&#125;.jar<span class="tag">&lt;/<span class="name">from</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;<span class="name">includes</span>&gt;</span>*.jar<span class="tag">&lt;/<span class="name">includes</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;<span class="name">into</span>&gt;</span>/app.jar<span class="tag">&lt;/<span class="name">into</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;/<span class="name">path</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;/<span class="name">paths</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">extraDirectories</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">containerizingMode</span>&gt;</span>packaged<span class="tag">&lt;/<span class="name">containerizingMode</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">container</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">volumes</span>&gt;</span>/tmp,/logs<span class="tag">&lt;/<span class="name">volumes</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">ports</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;<span class="name">port</span>&gt;</span>8080<span class="tag">&lt;/<span class="name">port</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;/<span class="name">ports</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">environment</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;<span class="name">active</span>&gt;</span>dev<span class="tag">&lt;/<span class="name">active</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;/<span class="name">environment</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">entrypoint</span>&gt;</span></span><br><span class="line">                java,-Djava.security.egd=file:/dev/./urandom,-Dspring.profiles.active=$&#123;active&#125;,-jar,/app.jar</span><br><span class="line">            <span class="tag">&lt;/<span class="name">entrypoint</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">creationTime</span>&gt;</span>USE_CURRENT_TIMESTAMP<span class="tag">&lt;/<span class="name">creationTime</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">container</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">plugin</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>优点是不需要本地Docker环境，而且支持分层构建、镜像瘦身，上手容易；缺点是定制化比较困难。</p>
+<h1 id="SpringBoot项目docker打包体积优化"><a href="#SpringBoot项目docker打包体积优化" class="headerlink" title="SpringBoot项目docker打包体积优化"></a>SpringBoot项目docker打包体积优化</h1><h2 id="修改之前"><a href="#修改之前" class="headerlink" title="修改之前"></a>修改之前</h2><p>最开始使用的dockerfile：</p>
+<figure class="highlight dockerfile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">FROM</span> java:<span class="number">8</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 环境变量</span></span><br><span class="line"><span class="keyword">ENV</span> WORK_PATH /home/project/cmp</span><br><span class="line"><span class="keyword">ENV</span> APP_NAME @project.build.finalName@.@project.packaging@</span><br><span class="line"><span class="keyword">ENV</span> APP_VERSION @project.version@</span><br><span class="line"></span><br><span class="line"><span class="keyword">EXPOSE</span> <span class="number">8080</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#VOLUME</span></span><br><span class="line"><span class="keyword">VOLUME</span><span class="bash"> [<span class="string">&quot;/home/project&quot;</span>, <span class="string">&quot;/tmp/data&quot;</span>]</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#COPY</span></span><br><span class="line"><span class="keyword">COPY</span><span class="bash"> <span class="variable">$APP_NAME</span> <span class="variable">$WORK_PATH</span>/</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># WORKDIR</span></span><br><span class="line"><span class="keyword">WORKDIR</span><span class="bash"> <span class="variable">$WORK_PATH</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> <span class="built_in">echo</span> <span class="string">&#x27;Asia/Shanghai&#x27;</span> &gt;/etc/timezone</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">COPY</span><span class="bash"> SIMSUN.TTC  /usr/share/fonts/SIMSUN.TTC</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> <span class="built_in">cd</span>  /usr/share/fonts</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> fc-cache -fsv</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># ENTRYPOINT</span></span><br><span class="line"><span class="keyword">ENTRYPOINT</span><span class="bash"> [<span class="string">&quot;java&quot;</span>,<span class="string">&quot;-Djava.security.egd=file:/dev/./urandom&quot;</span>]</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">CMD</span><span class="bash"> [<span class="string">&quot;-jar&quot;</span>, <span class="string">&quot;-Xmx512m&quot;</span>, <span class="string">&quot;@project.build.finalName@.@project.packaging@&quot;</span>]</span></span><br></pre></td></tr></table></figure>
+
+<p>由于这里直接使用java8的镜像，本身就有600多M，加上业务模块本身的大小，大约有了800多M，这样每次打包构建，非常的耗时，也很占用磁盘空间。</p>
+<p><img src="./assets/image-20210609163709373.png" alt="image-20210609163709373"></p>
+<h2 id="使用Alpine镜像"><a href="#使用Alpine镜像" class="headerlink" title="使用Alpine镜像"></a>使用Alpine镜像</h2><p><code>Alpine Linux</code>操作系统是一个面向安全的轻型 <code>Linux</code> 发行版，<code>Alpine Docker</code> 镜像也继承了<code>Alpine Linux</code>发行版的这些优势，相比于其他Docker镜像，它的容量非常小，并且拥有自己的包管理机制，可以使用<code>apk</code> 包管理器替换 <code>apt</code> 工具，例如：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> apk add --no-cache &lt;package&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>这里我们使用Alpine提供的docker镜像：</p>
+<p><img src="./assets/image-20210609165237674.png" alt="image-20210609165237674"></p>
+<p>因此这里我们使用<code>Alpine</code>镜像，并且将RUN的指令合并在一起，减少构建的层数，修改之后的dockerfile，：</p>
+<figure class="highlight dockerfile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">FROM</span> openjdk:<span class="number">8</span>-jdk-alpine</span><br><span class="line"></span><br><span class="line"><span class="comment"># 环境变量</span></span><br><span class="line"><span class="keyword">ENV</span> WORK_PATH /home/project/cmp</span><br><span class="line"><span class="comment"># 这里的都是maven内置的变量</span></span><br><span class="line"><span class="keyword">ENV</span> APP_NAME @project.build.finalName@.@project.packaging@</span><br><span class="line"></span><br><span class="line"><span class="keyword">COPY</span><span class="bash"> <span class="variable">$APP_NAME</span> <span class="variable">$WORK_PATH</span>/</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># WORKDIR</span></span><br><span class="line"><span class="keyword">WORKDIR</span><span class="bash"> <span class="variable">$WORK_PATH</span></span></span><br><span class="line"><span class="comment"># 根据实际需求添加字体</span></span><br><span class="line"><span class="keyword">COPY</span><span class="bash"> simsun.ttc  /usr/share/fonts/simsun.ttc</span></span><br><span class="line"><span class="comment"># 为了解决docker容器内的时间和宿主机时间不一致的问题，并且安装了fontconfig，方便安装字体</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime &amp;&amp; <span class="built_in">echo</span> <span class="string">&#x27;Asia/Shanghai&#x27;</span> &gt;/etc/timezone &amp;&amp; apk add --update ttf-dejavu fontconfig &amp;&amp; rm -rf /var/cache/apk/*</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># ENTRYPOINT</span></span><br><span class="line"><span class="keyword">ENTRYPOINT</span><span class="bash"> [<span class="string">&quot;java&quot;</span>,<span class="string">&quot;-Djava.security.egd=file:/dev/./urandom&quot;</span>]</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">CMD</span><span class="bash"> [<span class="string">&quot;-jar&quot;</span>, <span class="string">&quot;-Xmx512m&quot;</span>, <span class="string">&quot;@project.build.finalName@.@project.packaging@&quot;</span>]</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="分层构建镜像"><a href="#分层构建镜像" class="headerlink" title="分层构建镜像"></a>分层构建镜像</h2><p>使用了<code>Alpine</code>镜像之后，项目的体积有了比较明显的改善，但是每次打包的时候还是会全量构建项目中的所有内容，构建的时间还是比较长，这里我们使用分层的机制来进行打包，这里要注意的是，使用的<code>SpringBoot</code>的版本必须要大于2.3.X。</p>
+<figure class="highlight dockerfile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">FROM</span> openjdk:<span class="number">8</span>-jdk-alpine as builder</span><br><span class="line"><span class="keyword">ENV</span> APP_NAME @project.build.finalName@.@project.packaging@</span><br><span class="line"><span class="keyword">WORKDIR</span><span class="bash"> application</span></span><br><span class="line"><span class="comment"># 注意这里对应的是编译后的dockerfile的目录，如果对应不上，可能会提示找不到文件</span></span><br><span class="line"><span class="keyword">COPY</span><span class="bash"> <span class="variable">$APP_NAME</span> application.jar</span></span><br><span class="line"><span class="comment"># 指定构建Jar的模式，并从Jar包中提取构建镜像所需的内容</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> java -Djarmode=layertools -jar application.jar extract</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">FROM</span> openjdk:<span class="number">8</span>-jdk-alpine</span><br><span class="line"><span class="keyword">WORKDIR</span><span class="bash"> application</span></span><br><span class="line"><span class="comment"># 拷贝字体，这里安装宋体字体，alpine镜像会自动检测/usr/share/fonts是否含有字体</span></span><br><span class="line"><span class="keyword">COPY</span><span class="bash"> simsun.ttc  /usr/share/fonts/simsun.ttc</span></span><br><span class="line"><span class="keyword">COPY</span><span class="bash"> --from=builder application/dependencies/ ./</span></span><br><span class="line"><span class="keyword">COPY</span><span class="bash"> --from=builder application/snapshot-dependencies/ ./</span></span><br><span class="line"><span class="keyword">COPY</span><span class="bash"> --from=builder application/spring-boot-loader/ ./</span></span><br><span class="line"><span class="keyword">COPY</span><span class="bash"> --from=builder application/application/ ./</span></span><br><span class="line"><span class="keyword">ENV</span> TZ=<span class="string">&quot;Asia/Shanghai&quot;</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> ln -snf /usr/share/zoneinfo/<span class="variable">$TZ</span> /etc/localtime &amp;&amp; <span class="built_in">echo</span> <span class="variable">$TZ</span> &gt; /etc/timezone</span></span><br><span class="line"><span class="comment"># 设置虚拟机参数</span></span><br><span class="line"><span class="keyword">ENV</span> JVM_OPTS=<span class="string">&quot;-XX:MaxRAMPercentage=80.0&quot;</span></span><br><span class="line"><span class="keyword">ENV</span> JAVA_OPTS=<span class="string">&quot;&quot;</span></span><br><span class="line"><span class="keyword">ENTRYPOINT</span><span class="bash"> [<span class="string">&quot;sh&quot;</span>,<span class="string">&quot;-c&quot;</span>,<span class="string">&quot;java <span class="variable">$JVM_OPTS</span> <span class="variable">$JAVA_OPTS</span> org.springframework.boot.loader.JarLauncher&quot;</span>]</span></span><br></pre></td></tr></table></figure>
+
+<p>配置pom.xml文件：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">plugin</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-maven-plugin<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="comment">&lt;!--引用本地Jar包--&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">includeSystemScope</span>&gt;</span>true<span class="tag">&lt;/<span class="name">includeSystemScope</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">layers</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">enabled</span>&gt;</span></span><br><span class="line">                true</span><br><span class="line">            <span class="tag">&lt;/<span class="name">enabled</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">layers</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">plugin</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="Maven中内置变量"><a href="#Maven中内置变量" class="headerlink" title="Maven中内置变量"></a>Maven中内置变量</h2><ul>
+<li><code>$&#123;basedir&#125;</code> 项目根目录</li>
+<li><code>$&#123;project.build.directory&#125;</code> 构建目录，缺省为target</li>
+<li><code>$&#123;project.build.outputDirectory&#125;</code> 构建过程输出目录，缺省为target/classes</li>
+<li><code>$&#123;project.build.finalName&#125;</code> 产出物名称，缺省为{project.artifactId}-${project.version}</li>
+<li><code>$&#123;project.packaging&#125;</code> 打包类型，缺省为jar</li>
+<li><code>$&#123;project.xxx&#125;</code> 当前pom文件的任意节点的内容</li>
+</ul>
+<h2 id="可能存在的问题"><a href="#可能存在的问题" class="headerlink" title="可能存在的问题"></a>可能存在的问题</h2><ol>
+<li><p>如果本身项目<code>SpringBoot</code>版本较低，不建议升级，推荐通过使用<code>Alpine</code>镜像以及优化dockerfile写法减少镜像体积，特别的，如果是使用的<code>Spring Cloud</code>，升级会出现组件版本不兼容的情况，可能需要升级诸多依赖的版本，并且需要投入精力进行测试验证。</p>
+</li>
+<li><p>如果项目不需要字体，可以跳过：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">RUN apk add --update ttf-dejavu fontconfig &amp;&amp; rm -rf /var/cache/apk/*</span><br></pre></td></tr></table></figure></li>
+<li><p>如果项目中只需要宋体，可以只复制字体文件到镜像内，而不需要安装fontconfig，<code>alpine</code>镜像会自动检测<code>/usr/share/fonts</code>是否含有字体：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">COPY simsun.ttc  /usr/share/fonts/simsun.ttc</span><br></pre></td></tr></table></figure></li>
+<li><p>如果项目中既需要宋体又需要其他字体（例如图片验证码），这是时候，拷贝宋体字体文件和安装fontconfig都需要：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">COPY simsun.ttc  /usr/share/fonts/simsun.ttc</span><br><span class="line">RUN apk add --update ttf-dejavu fontconfig &amp;&amp; rm -rf /var/cache/apk/*</span><br></pre></td></tr></table></figure></li>
+<li><p>如果镜像打包的体积还是过大，可以使用<code>docker history image_name --no-trunc=true</code>命令来查看构建的详情。</p>
+</li>
+</ol>
+<p>附完整的pom文件：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">build</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">resources</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">resource</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">directory</span>&gt;</span>src/main/resources<span class="tag">&lt;/<span class="name">directory</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">filtering</span>&gt;</span>true<span class="tag">&lt;/<span class="name">filtering</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">includes</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">include</span>&gt;</span>application-$&#123;profiles.active&#125;.yml<span class="tag">&lt;/<span class="name">include</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">include</span>&gt;</span>bootstrap.yml<span class="tag">&lt;/<span class="name">include</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">include</span>&gt;</span>application.yml<span class="tag">&lt;/<span class="name">include</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;/<span class="name">includes</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;/<span class="name">resource</span>&gt;</span></span><br><span class="line">          <span class="comment">&lt;!--这里实我们的dockerfile文件所在的目录--&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">resource</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">directory</span>&gt;</span>src/main/docker<span class="tag">&lt;/<span class="name">directory</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">filtering</span>&gt;</span>true<span class="tag">&lt;/<span class="name">filtering</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">includes</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">include</span>&gt;</span>**/Dockerfile<span class="tag">&lt;/<span class="name">include</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;/<span class="name">includes</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">targetPath</span>&gt;</span>../docker<span class="tag">&lt;/<span class="name">targetPath</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;/<span class="name">resource</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">resource</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">directory</span>&gt;</span>src/main/resources<span class="tag">&lt;/<span class="name">directory</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">filtering</span>&gt;</span>true<span class="tag">&lt;/<span class="name">filtering</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">includes</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">include</span>&gt;</span>static/**<span class="tag">&lt;/<span class="name">include</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">include</span>&gt;</span>**/*.jar<span class="tag">&lt;/<span class="name">include</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">include</span>&gt;</span>bootstrap.yml<span class="tag">&lt;/<span class="name">include</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">include</span>&gt;</span>*.yml<span class="tag">&lt;/<span class="name">include</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">include</span>&gt;</span>*.xml<span class="tag">&lt;/<span class="name">include</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;/<span class="name">includes</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;/<span class="name">resource</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">resource</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">directory</span>&gt;</span>src/main/java<span class="tag">&lt;/<span class="name">directory</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">includes</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">include</span>&gt;</span>**/*.xml<span class="tag">&lt;/<span class="name">include</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">include</span>&gt;</span>**/*.json<span class="tag">&lt;/<span class="name">include</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">include</span>&gt;</span>**/*.ftl<span class="tag">&lt;/<span class="name">include</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;/<span class="name">includes</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;/<span class="name">resource</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;/<span class="name">resources</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">plugins</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">plugin</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-maven-plugin<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">              <span class="comment">&lt;!--引用本地Jar包--&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">includeSystemScope</span>&gt;</span>true<span class="tag">&lt;/<span class="name">includeSystemScope</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">layers</span>&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">enabled</span>&gt;</span></span><br><span class="line">                          true</span><br><span class="line">                      <span class="tag">&lt;/<span class="name">enabled</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;/<span class="name">layers</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;/<span class="name">plugin</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">plugin</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.apache.maven.plugins<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>maven-compiler-plugin<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">source</span>&gt;</span>1.8<span class="tag">&lt;/<span class="name">source</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">target</span>&gt;</span>1.8<span class="tag">&lt;/<span class="name">target</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">encoding</span>&gt;</span>UTF-8<span class="tag">&lt;/<span class="name">encoding</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;/<span class="name">plugin</span>&gt;</span></span><br><span class="line">          <span class="comment">&lt;!-- 打包跳过测试 --&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">plugin</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.apache.maven.plugins<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>maven-surefire-plugin<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">skipTests</span>&gt;</span>true<span class="tag">&lt;/<span class="name">skipTests</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;/<span class="name">plugin</span>&gt;</span></span><br><span class="line">          <span class="comment">&lt;!-- 避免font文件的二进制文件格式压缩破坏 --&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">plugin</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.apache.maven.plugins<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>maven-resources-plugin<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">nonFilteredFileExtensions</span>&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">nonFilteredFileExtension</span>&gt;</span>woff<span class="tag">&lt;/<span class="name">nonFilteredFileExtension</span>&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">nonFilteredFileExtension</span>&gt;</span>woff2<span class="tag">&lt;/<span class="name">nonFilteredFileExtension</span>&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">nonFilteredFileExtension</span>&gt;</span>eot<span class="tag">&lt;/<span class="name">nonFilteredFileExtension</span>&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">nonFilteredFileExtension</span>&gt;</span>ttf<span class="tag">&lt;/<span class="name">nonFilteredFileExtension</span>&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">nonFilteredFileExtension</span>&gt;</span>svg<span class="tag">&lt;/<span class="name">nonFilteredFileExtension</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;/<span class="name">nonFilteredFileExtensions</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">delimiters</span>&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">delimiter</span>&gt;</span>@<span class="tag">&lt;/<span class="name">delimiter</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;/<span class="name">delimiters</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">useDefaultDelimiters</span>&gt;</span>false<span class="tag">&lt;/<span class="name">useDefaultDelimiters</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;/<span class="name">plugin</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">plugin</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.spotify<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>docker-maven-plugin<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">version</span>&gt;</span>1.1.0<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">executions</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">execution</span>&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">id</span>&gt;</span>build-image<span class="tag">&lt;/<span class="name">id</span>&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">phase</span>&gt;</span>package<span class="tag">&lt;/<span class="name">phase</span>&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">goals</span>&gt;</span></span><br><span class="line">                          <span class="tag">&lt;<span class="name">goal</span>&gt;</span>build<span class="tag">&lt;/<span class="name">goal</span>&gt;</span></span><br><span class="line">                      <span class="tag">&lt;/<span class="name">goals</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;/<span class="name">execution</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">execution</span>&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">id</span>&gt;</span>push-image<span class="tag">&lt;/<span class="name">id</span>&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">phase</span>&gt;</span>package<span class="tag">&lt;/<span class="name">phase</span>&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">goals</span>&gt;</span></span><br><span class="line">                          <span class="tag">&lt;<span class="name">goal</span>&gt;</span>push<span class="tag">&lt;/<span class="name">goal</span>&gt;</span></span><br><span class="line">                      <span class="tag">&lt;/<span class="name">goals</span>&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line">                          <span class="tag">&lt;<span class="name">imageName</span>&gt;</span></span><br><span class="line">                              $&#123;docker.repostory&#125;/$&#123;docker.registry.name&#125;/$&#123;project.artifactId&#125;:$&#123;profiles.active&#125;-$&#123;project.version&#125;</span><br><span class="line">                          <span class="tag">&lt;/<span class="name">imageName</span>&gt;</span></span><br><span class="line">                      <span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;/<span class="name">execution</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;/<span class="name">executions</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">serverId</span>&gt;</span>harbor<span class="tag">&lt;/<span class="name">serverId</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">dockerDirectory</span>&gt;</span>$&#123;project.build.directory&#125;/docker<span class="tag">&lt;/<span class="name">dockerDirectory</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">imageName</span>&gt;</span></span><br><span class="line">                      $&#123;docker.repostory&#125;/$&#123;docker.registry.name&#125;/$&#123;project.artifactId&#125;</span><br><span class="line">                  <span class="tag">&lt;/<span class="name">imageName</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">imageTags</span>&gt;</span></span><br><span class="line">                      <span class="comment">&lt;!--docker的tag为项目版本号、latest--&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">imageTag</span>&gt;</span>$&#123;profiles.active&#125;-$&#123;project.version&#125;<span class="tag">&lt;/<span class="name">imageTag</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;/<span class="name">imageTags</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">resources</span>&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">rescource</span>&gt;</span><span class="comment">&lt;!-- 将打包文件放入dockerDirectory指定的位置 --&gt;</span></span><br><span class="line">                          <span class="tag">&lt;<span class="name">targetPath</span>&gt;</span>/<span class="tag">&lt;/<span class="name">targetPath</span>&gt;</span></span><br><span class="line">                          <span class="tag">&lt;<span class="name">directory</span>&gt;</span>$&#123;project.build.directory&#125;<span class="tag">&lt;/<span class="name">directory</span>&gt;</span></span><br><span class="line">                          <span class="tag">&lt;<span class="name">include</span>&gt;</span>$&#123;project.artifactId&#125;-$&#123;project.version&#125;.jar<span class="tag">&lt;/<span class="name">include</span>&gt;</span></span><br><span class="line">                      <span class="tag">&lt;/<span class="name">rescource</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;/<span class="name">resources</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;/<span class="name">plugin</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;/<span class="name">plugins</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">build</span>&gt;</span></span><br></pre></td></tr></table></figure>
+    </div>
+
+    
+    
+    
+        <div class="reward-container">
+  <div>感谢您的支持！</div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/images/wechatpay.jpg" alt="吉永超 微信支付">
+        <p>微信支付</p>
+      </div>
+
+  </div>
+</div>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>jyc
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://jycoder.club/2020/07/16/SpringBoot/" title="SpringBoot">https://jycoder.club/2020/07/16/SpringBoot/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/07/16/SpringFramework/" rel="prev" title="SpringFramework">
+      <i class="fa fa-chevron-left"></i> SpringFramework
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/07/16/SpringCloud/" rel="next" title="SpringCloud">
+      SpringCloud <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#SpringBoot%E5%90%AF%E5%8A%A8%E5%8E%9F%E7%90%86"><span class="nav-number">1.</span> <span class="nav-text">SpringBoot启动原理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#SpringBootApplication"><span class="nav-number">1.1.</span> <span class="nav-text">@SpringBootApplication</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B3%A8%E8%A7%A3%E8%A7%A3%E6%9E%90"><span class="nav-number">1.2.</span> <span class="nav-text">注解解析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Configuration"><span class="nav-number">1.2.1.</span> <span class="nav-text">@Configuration</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ComponentScan"><span class="nav-number">1.2.2.</span> <span class="nav-text">@ComponentScan</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#EnableAutoConfiguration"><span class="nav-number">1.2.3.</span> <span class="nav-text">@EnableAutoConfiguration</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8%E6%89%A7%E8%A1%8C%E6%B5%81%E7%A8%8B"><span class="nav-number">1.3.</span> <span class="nav-text">启动执行流程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%81%E7%A8%8B%E6%A6%82%E8%A7%88"><span class="nav-number">1.3.1.</span> <span class="nav-text">流程概览</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8%E8%AF%A6%E6%83%85"><span class="nav-number">1.3.2.</span> <span class="nav-text">启动详情</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%87%AA%E5%8A%A8%E8%A3%85%E9%85%8D"><span class="nav-number">1.3.3.</span> <span class="nav-text">自动装配</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#SpringBoot%E6%89%93%E5%8C%85"><span class="nav-number">2.</span> <span class="nav-text">SpringBoot打包</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%89%93%E5%8C%85%E8%BF%87%E7%A8%8B"><span class="nav-number">2.1.</span> <span class="nav-text">打包过程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9E%84%E5%BB%BA%E5%B7%A5%E5%85%B7"><span class="nav-number">2.2.</span> <span class="nav-text">构建工具</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#spring-boot-maven-plugin"><span class="nav-number">2.2.1.</span> <span class="nav-text">spring-boot-maven-plugin</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Spotify-Maven-Plugin"><span class="nav-number">2.2.2.</span> <span class="nav-text">Spotify Maven Plugin</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Jib-Maven-Plugin"><span class="nav-number">2.2.3.</span> <span class="nav-text">Jib Maven Plugin</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#SpringBoot%E9%A1%B9%E7%9B%AEdocker%E6%89%93%E5%8C%85%E4%BD%93%E7%A7%AF%E4%BC%98%E5%8C%96"><span class="nav-number">3.</span> <span class="nav-text">SpringBoot项目docker打包体积优化</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9%E4%B9%8B%E5%89%8D"><span class="nav-number">3.1.</span> <span class="nav-text">修改之前</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8Alpine%E9%95%9C%E5%83%8F"><span class="nav-number">3.2.</span> <span class="nav-text">使用Alpine镜像</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E5%B1%82%E6%9E%84%E5%BB%BA%E9%95%9C%E5%83%8F"><span class="nav-number">3.3.</span> <span class="nav-text">分层构建镜像</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Maven%E4%B8%AD%E5%86%85%E7%BD%AE%E5%8F%98%E9%87%8F"><span class="nav-number">3.4.</span> <span class="nav-text">Maven中内置变量</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%AF%E8%83%BD%E5%AD%98%E5%9C%A8%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">3.5.</span> <span class="nav-text">可能存在的问题</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">吉永超</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">吉永超</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">618k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">9:22</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
