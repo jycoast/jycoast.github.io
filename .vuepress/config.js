@@ -64,10 +64,10 @@ module.exports = {
     },
     "friendLink": [
       {
-        title: '简书',
-        desc: '不是前端的后端不是好全栈',
-        logo: "jianshu.jpg",
-        link: 'https://www.jianshu.com/u/8f5d90376485'
+        title: '文集',
+        desc: '随感',
+        logo: "book.jpg",
+        link: 'https://www.wolai.com/p7EcXEWp3EsR9BeGRZWNgf?theme=dark'
       },
       {
         title: '掘金',
