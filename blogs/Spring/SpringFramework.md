@@ -6,7 +6,7 @@ categories:
 author: jyc
 ---
 
-# Spring基础
+# Spring 基础
 
 ## Spring特性总览
 
@@ -7257,4 +7257,1040 @@ org.springframework.core.convert.ConversionService说明：
   - 生成桥方法以保留扩展泛型类中的多态性
 
 ## Java 5类型接口
+
+Java 5类型接口 - java.lang.reflect.Type
+
+| 派生类或接口                        | 说明                                |
+| ----------------------------------- | ----------------------------------- |
+| java.lang.Class                     | Java类API，如java.lang.String       |
+| java.lang.reflect.GenericArrayType  | 泛型数组类型                        |
+| java.lang.reflect.ParameterizedType | 泛型参数类型                        |
+| java.lang.reflect.TypeVariable      | 泛型类型变量，如Collection<E> 中的E |
+| java.lang.reflect.WildcardType      | 泛型统配类型                        |
+
+Java泛型反射API：
+
+| 类型     | API                                  |
+| -------- | ------------------------------------ |
+| 泛型信息 | java.lang.Class#getGenericInfo       |
+| 泛型参数 | java.lang.reflect#ParameterizedType  |
+| 泛型父类 | java.lang.Class#getGenericSuperclass |
+| 泛型接口 | java.lang.Class#getGenericInterfaces |
+| 泛型声明 | java.lang.reflect#GenericDeclaration |
+
+相关的示例：
+
+```java
+public class GenericAPIDemo {
+    public static void main(String[] args) {
+        // 原生类型 int long float
+        Class intClass = int.class;
+        // 数组类型 int[],Object[]
+        Class objectArrayClass = Object[].class;
+        // 原始类型 raw types: java.lang.String
+        Class rawClass = String.class;
+
+        // 泛型参数类型 parameterized Type
+        ParameterizedType parameterizedType = (ParameterizedType) ArrayList.class.getGenericSuperclass();
+
+        // parameterizedType.getRawType() = java.util.AbstractList;
+
+        //泛型类型变量 Type Variable
+
+        System.out.println(parameterizedType.toString());
+
+        // <E>
+        Type[] typeVariables = parameterizedType.getActualTypeArguments();
+//        Stream.of(parameterizedType.getActualTypeArguments()).forEach(System.out::println);
+        Stream.of(typeVariables).map(TypeVariable.class::cast).forEach(System.out::println);
+    }
+}
+```
+
+## Spring泛型类型辅助类
+
+核心API - org.springframework.core.GenericTypeResolver
+
+- 版本支持[2.5.2,）
+
+- 处理类型相关（Type）相关方法
+
+  - resolveReturnType
+  - resolveType
+
+- 处理泛型参数类型（ParameterizedType）相关方法
+
+  - resolveReturnTypeArgument
+  - resolveTypeArgument
+  - resolveTypeArguments
+
+- 处理泛型类型变量（TypeVariable）相关方法
+
+  - getTypeVariableMap
+
+  
+
+相关的示例：
+
+```java
+public class GenericTypeResolverDemo {
+    public static void main(String[] args) throws Exception {
+        // String Comparable<String> 具体化
+        displayReturnTypeGenericInfo(GenericTypeResolverDemo.class, Comparable.class, "getString");
+        // ArrayList<Object>是List泛型参数类型的具体化
+        displayReturnTypeGenericInfo(GenericTypeResolverDemo.class, List.class, "getList");
+        // StringList也是List泛型类型的具体化
+        displayReturnTypeGenericInfo(GenericTypeResolverDemo.class, List.class, "getStringList");
+        // 具备 ParameterizedType返回。否则null
+        // TypeVariable
+        Map<TypeVariable, Type> typeVariableMap = GenericTypeResolver.getTypeVariableMap(StringList.class);
+        System.out.println(typeVariableMap);
+    }
+
+    public static StringList getStringList() {
+        return null;
+    }
+
+    public static ArrayList<Object> getList() { // 泛型参数具体化（字节码有记录）
+        return null;
+    }
+
+    public static String getString() {
+        return null;
+    }
+
+    private static void displayReturnTypeGenericInfo(Class<?> containingClass, Class<?> generic, String methodName, Class... argumentTypes) throws Exception {
+        Method method = containingClass.getMethod(methodName, argumentTypes);
+
+        Class<?> returnType = GenericTypeResolver.resolveReturnType(method, containingClass);
+
+        Class<?> returnTypeArgument = GenericTypeResolver.resolveReturnTypeArgument(method, generic);
+
+        // 常规类作为方法返回值
+        System.out.printf("GenericTypeResolver.resolveReturnType(%s,%s) = %s\n", methodName, containingClass.getSimpleName(), returnType);
+        // 常规类型不具备泛型参数类型List<E>
+        System.out.printf("GenericTypeResolver.resolveReturnTypeArgument(%s,%s) = %s\n", methodName, containingClass.getSimpleName(), returnTypeArgument);
+    }
+
+    static class StringList extends ArrayList<String> { // 泛型参数具体化（字节码有记录）
+
+    }
+}
+```
+
+## 泛型集合类型辅助类
+
+核心API - org.springframework.core.GenericCollectionTypeSolver
+
+- 版本支持：[2.0,4.3]
+
+  - 替换实现：org.springframework.core.ResolvableType
+
+- 处理Collection相关
+
+  - getCollection*Type
+  - getMapValue*Type
+
+  > GenericCollectionTypeSolver在高版本的Spring中已经移除，建议使用它的替换实现ResolvableType。
+
+## Spring方法参数封装
+
+核心API - org.springframework.core.MethodParameter
+
+- 起始版本：[2.0,)
+
+- 元信息
+
+  - 关联的方法 - Method
+  - 关联的构造器 - Constuctor
+  - 构造器或方法参数索引 - parameterIndex
+  - 构造器或方法参数类型 - parameterType
+  - 构造器或方法参数泛型类型 - genericParameterType
+  - 构造器或方法参数名称 - parameterName
+  - 所在的类 - containingClass
+
+  > parameterName是java8之后才存在。
+
+## ResolvableType
+
+核心API - org.springframework.core.ResolvableType
+
+- 起始版本：[4.0,)
+- 扮演角色：GenericTypeResolver和GenericCollectionTypeResolver替代者
+- 工厂方法：for*方法
+- 转换方法：as*方法
+- 处理方法：resolve*方法
+
+官方给出的示例：
+
+```java
+ private HashMap<Integer, List<String>> myMap;
+  
+   public void example() {
+       ResolvableType t = ResolvableType.forField(getClass().getDeclaredField("myMap"));
+       t.getSuperType(); // AbstractMap<Integer, List<String>>
+       t.asMap(); // Map<Integer, List<String>>
+       t.getGeneric(0).resolve(); // Integer
+       t.getGeneric(1).resolve(); // List
+       t.getGeneric(1); // List<String>
+       t.resolveGeneric(1, 0); // String
+   }
+```
+
+我们来使用相关的API：
+
+```java
+public class ResolvableTypeDemo {
+    public static void main(String[] args) throws Exception {
+        // 工厂创建
+        // StringList <- ArrayList <- AbstractList <- list
+        ResolvableType resolvableType = ResolvableType.forClass(GenericTypeResolverDemo.StringList.class);
+        resolvableType.getSuperType(); //ArrayList
+        resolvableType.getSuperType().getSuperType(); // AbstractList
+
+        System.out.println(resolvableType.asCollection().resolve()); //获取Raw Type
+        System.out.println(resolvableType.asCollection().resolveGeneric(0)); // 获取泛型参数类型
+    }
+}
+```
+
+> ResolvableType也有两个局限性，第一，ResolvableType无法处理泛型擦写，第二，ResolvableType无法处理非具体化的ParameterizedType。
+
+## 面试题
+
+### Java泛型擦写是发生在编译时，还是运行时？
+
+运行时。
+
+### 请介绍Java 5 Type类型的派生类或接口?
+
+见Java5 类型接口
+
+### 请说明ResolvableType的设计优势
+
+- 简化Java5 Type API开发，屏蔽复杂API的运用，如ParameterizedType
+- 不变性设计（Immutability）
+- Fluent API设计（Builder模式），链式（流式）编程
+
+# Spring 事件
+
+## Java事件/监听器编程模型
+
+- 设计模式 - 观察者模式扩展
+  - 可观者对象（消息发送者） - java.util.Observable
+  - 观察者 -  java.util.Observer
+- 标准化接口
+  - 事件对象 - java.util.EventObject
+  - 事件监听器 - java.util.EventListener
+
+使用的示例：
+
+```java
+public class ObserverDemo {
+    public static void main(String[] args) {
+        Observable observable = new EventObservable();
+        // 添加观察者（监听者）
+        observable.addObserver(new EventObserver());
+        observable.notifyObservers("hello world");
+    }
+
+    static class EventObservable extends Observable {
+        @Override
+        public synchronized void setChanged() {
+            super.setChanged();
+        }
+
+        @Override
+        public void notifyObservers(Object arg) {
+            setChanged();
+            super.notifyObservers(new EventObject(arg));
+            clearChanged();
+        }
+    }
+
+    static class EventObserver implements Observer, EventListener {
+        @Override
+        public void update(Observable o, Object event) {
+            EventObject eventObject = (EventObject) event;
+            System.out.println("收到事件" + eventObject);
+        }
+    }
+}
+```
+
+> 这里由于Observable的setChanged是protected，所以需要实现子类，重写这个方法，并且为了更方便的操作，我们一般也会扩充notifyObservers的实现逻辑。
+
+## 面向接口的事件/监听器设计模式
+
+事件/监听器场景举例
+
+| Java技术规范    | 事件接口                              | 监听器接口                               |
+| --------------- | ------------------------------------- | ---------------------------------------- |
+| JavaBeans       | java.beans.PropertyChangeEvent        | java.beans.PropertyChangeListener        |
+| Java AWT        | java.awt.event.MouseEvent             | java.awt.event.MouseListener             |
+| Java Swing      | javax.swing.event.MenuEvent           | javax.swing.event.MenuListener           |
+| Java Preference | java.util.prefs.PreferenceChangeEvent | java.util.prefs.PreferenceChangeListener |
+
+## 面向注解的事件/监听器设计模式
+
+事件/监听器注解场景举例
+
+| Java 技术规范 | 事件注解                       | 监听器注解                            |
+| ------------- | ------------------------------ | ------------------------------------- |
+| Servlet 3.0+  |                                | @javax.servlet.annotation.WebListener |
+| JPA 1.0+      | @javax.persistence.PostPersist |                                       |
+| Java Common   | @PostConstruct                 |                                       |
+| EJB 3.0+      | @javax.ejb.PrePassivate        |                                       |
+| JSF 2.0+      | @javax.faces.event.ListenerFor |                                       |
+
+## Spring标准事件 ApplicationEvent
+
+Java标准事件 java.util.EventObject扩展：
+
+- 扩展特性：事件发生事件戳
+
+Spring应用上下文ApplicationEvent扩展 - ApplicationContextEvent
+
+- Spring应用上下文（ApplicationContext作为事件源）
+- 具体实现：
+  - org.springframework.context.event.ContextClosedEvent
+  - org.springframework.context.event.ContextRefreshedEvent
+  - org.springframework.context.event.ContextStartedEvent
+  - org.springframework.context.event.ContextStoppedEvent
+
+## 基于接口的Spring事件监听器
+
+Java标准事件监听器java.util.EventListener扩展
+
+- 扩展接口 - org.springframework.context.ApplicationListener
+- 设计特点：单一类型事件处理
+- 处理方法：onApplicationEvent(ApplicationEvent event);
+- 事件类型：org.springframework.context.ApplicationEvent
+
+相关的示例：
+
+```java
+public class ApplicationListenerDemo {
+    public static void main(String[] args) {
+        GenericApplicationContext context = new GenericApplicationContext();
+        // 向Spring应用上下文注册事件
+        context.addApplicationListener(new ApplicationListener<ApplicationEvent>() {
+            @Override
+            public void onApplicationEvent(ApplicationEvent event) {
+                System.out.println("接收到Spring事件： " + event);
+            }
+        });
+        context.refresh();
+        context.start();
+        context.close();
+    }
+}
+```
+
+## 基于注解的Spring事件监听器
+
+Spring注解 - @org.springframework.context.event.EventListener
+
+| 特性                 | 说明                                     |
+| -------------------- | ---------------------------------------- |
+| 设计特点             | 支持多ApplicationEvent类型，无需接口约束 |
+| 注解目标             | 方法                                     |
+| 是否支持异步执行     | 支持                                     |
+| 是否支持泛型类型事件 | 支持                                     |
+| 是指支持顺序控制     | 支持，配合@Order注解控制                 |
+
+相关的示例：
+
+```java
+@EnableAsync
+public class ApplicationListenerDemo {
+    public static void main(String[] args) {
+//        GenericApplicationContext context = new GenericApplicationContext();
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+        // 将引导类作为配置类
+        context.register(ApplicationListenerDemo.class);
+        // 方法一：基于Spring接口：向Spring应用上下文注册事件
+        context.addApplicationListener(new ApplicationListener<ApplicationEvent>() {
+            @Override
+            public void onApplicationEvent(ApplicationEvent event) {
+                println("ApplicationListene接收到Spring事件： " + event);
+            }
+        });
+        // 方法二：基于Spring注解@EventListener
+
+        context.refresh();
+        context.start();
+        context.close();
+    }
+
+    @EventListener
+    @Order(1)
+    public void onApplicationEvent(ContextRefreshedEvent event) {
+       println("@EventListener1接收到Spring事件");
+    }
+
+    @EventListener
+    @Order(2)
+    public void onApplicationEvent1(ContextRefreshedEvent event) {
+        println("@EventListener2接收到Spring事件");
+    }
+
+    @EventListener
+    @Async
+    public void onApplicationEvent(ContextStartedEvent event) {
+        println("@EventListener接收到Spring事件（异步）");
+    }
+
+    @EventListener
+    public void onApplicationEvent(ContextClosedEvent event) {
+       println("@EventListener接收到Spring事件");
+    }
+
+    private static void println(Object printable) {
+        System.out.printf("[线程：%s] : %s\n", Thread.currentThread(), printable);
+    }
+}
+```
+
+## 注册Spring ApplicationListener
+
+1. 方法一：ApplicationListener作为Spring Bean注册
+2. 方法二：通过ConfigurableApplicationContext API注册
+
+第二种方式在之前我们已经讨论过了，这里第一种方式也比较容易：
+
+```java
+ static class MyApplicationListener implements ApplicationListener {
+        @Override
+        public void onApplicationEvent(ApplicationEvent event) {
+            println("MyApplicationListener接收到Spring事件");
+        }
+    }
+```
+
+然后将MyApplicationListener标注为Spring Bean即可。
+
+## Spring事件发布器
+
+- 方法一：通过ApplicationEventPublisher发布Spring事件
+  - 获取ApplicationEventPublisher
+    - 依赖注入
+- 方法二：通过ApplicationEventPublisher发布Spring事件
+  - 获取ApplicationEventMulticaster
+    - 依赖注入
+    - 依赖查找
+
+使用ApplicationListenerDemo实现ApplicationEventPublisherAware接口：
+
+```java
+    @Override
+    public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
+        applicationEventPublisher.publishEvent(new ApplicationEvent("hello world") {
+        });
+        applicationEventPublisher.publishEvent("hello world");
+    }
+```
+
+## Spring层次性上下文事件传播
+
+- 发生说明
+
+  当Spring应用出现多层次Spring应用上下文（ApplicationContext）时，如Spring WebMVC、Spring Boot或Spring Cloud场景下，由子ApplicationContext发起Spring事件可能会传递到其Parent ApplicationContext（直到Root）的过程。
+
+- 如何避免
+
+  定位Spring事件源（ApplicationContext）进行过滤处理
+
+```java
+public class HierarchicalSpringEventPropagateDemo {
+    public static void main(String[] args) {
+        // 1.创建parent Spring应用上下文
+        AnnotationConfigApplicationContext parentContent = new AnnotationConfigApplicationContext();
+        // 2.创建current Spring应用上下文
+        parentContent.setId("parent-context");
+        parentContent.register(MyListener.class);
+
+        // 3.current -> parent
+        AnnotationConfigApplicationContext currentContent = new AnnotationConfigApplicationContext();
+        parentContent.setId("current-context");
+        currentContent.setParent(parentContent);
+        currentContent.register(MyListener.class);
+
+        parentContent.refresh();
+        // 这里会触发两次，因为会出发父应用上下文的事件
+        currentContent.refresh();
+
+        // 注意这里的顺序，不能颠倒
+        currentContent.close();
+        parentContent.close();
+    }
+
+    static class MyListener implements ApplicationListener<ApplicationContextEvent> {
+        // 这里必须是静态字段
+        private static Set<ApplicationEvent> processedEvents = new LinkedHashSet<>();
+
+        @Override
+        public void onApplicationEvent(ApplicationContextEvent event) {
+            if (processedEvents.add(event)) {
+                System.out.printf("监听到 Spring应用上下文[ID：%s]事件： %s\n", event.getApplicationContext().getId(), event.getClass().getSimpleName());
+            }
+        }
+    }
+}
+```
+
+## Spring内建事件
+
+ApplicationContextEvent派生事件：
+
+- ContextRefreshedEvent：Spring应用上下文就绪事件
+- ContextStartedEvent：Spring应用上下文启动事件
+- ContextStoppedEvent：Spring应用上下文停止事件
+- ContextClosedEvent：Spring应用上下文关闭事件
+
+## Payload事件
+
+Spring Payload事件 - org.springframework.context.PayloadApplicationEvent
+
+- 使用场景：简化Spring事件发送，关注事件源主体
+- 发送方法：ApplicationEventPublisher#publishEvent(Object event)
+
+> 这个事件使用的很少，并且对于泛型的处理还存在Bug，可以使用ApplicationEventPublisher#publishEvent方法。
+
+## 自定义Spring事件
+
+1. 扩展 org.springframework.context.ApplicationEvent
+2. 实现 org.springframework.context.ApplicationListener
+3. 注册 org.springframework.context.ApplicationListener
+
+我们来实现一个自定义的Spring事件，第一步：
+
+```java
+public class MySpringEvent extends ApplicationEvent {
+
+    public MySpringEvent(String message) {
+        super(message);
+    }
+
+    @Override
+    public Object getSource() {
+        return (String) super.getSource();
+    }
+
+    @Override
+    public String toString() {
+        return super.toString();
+    }
+}
+```
+
+第二步，实现自定义的事件监听器：
+
+```java
+public class MySpringEventListener implements ApplicationListener<MySpringEvent> {
+    @Override
+    public void onApplicationEvent(MySpringEvent event) {
+        System.out.printf("[线程：%s] :监听到事件 %s\n", Thread.currentThread().getName(), event);
+    }
+}
+```
+
+第三步，注册自定义事件监听器：
+
+```java
+public class CustomizedSpringEventDemo {
+    public static void main(String[] args) {
+        GenericApplicationContext context = new GenericApplicationContext();
+
+        context.addApplicationListener(new MySpringEventListener());
+
+        context.refresh();
+
+        context.publishEvent(new MySpringEvent("hello,world"));
+
+        context.close();
+    }
+}
+```
+
+## 依赖注入ApplicationEventPublisher
+
+1. 通过ApplicationEventPublisherAware回调接口
+2. 通过@Autowired ApplicationEventPublisher
+
+相关的示例：
+
+```java
+public class InjectingApplicationEventPublisherDemo implements ApplicationEventPublisherAware {
+
+    @Autowired
+    private ApplicationEventPublisher applicationEventPublisher;
+
+    @Autowired
+    private ApplicationContext applicationContext;
+
+    @PostConstruct
+    public void init() {
+        // #3
+        applicationEventPublisher.publishEvent(new MySpringEvent("the event from @Autowired ApplicationEventPublisher"));
+        // #4
+        applicationContext.publishEvent(new MySpringEvent("the event from @Autowired ApplicationContext"));
+    }
+
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+
+        context.register(InjectingApplicationEventPublisherDemo.class);
+
+        context.addApplicationListener(new MySpringEventListener());
+
+        context.refresh();
+
+        context.close();
+    }
+
+    @Override
+    public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
+        applicationEventPublisher.publishEvent(new MySpringEvent("the event from ApplicationEventPublisher")); //#1
+    }
+
+    public void setApplicationContext(ApplicationContext applicationContext) { //#2
+        applicationEventPublisher.publishEvent("the event from ApplicationContext");
+    }
+}
+```
+
+## 依赖查找ApplicationEventMulticaster
+
+查找条件：
+
+- Bean名称："applicationEventMulticaster"
+- Bean类型：org.springframework.context.event.ApplicationEventMulticaster
+
+依赖查找的细节可以在AbstractApplicationContext#initApplicationEventMulticaster中看到：
+
+```java
+protected void initApplicationEventMulticaster() {
+		ConfigurableListableBeanFactory beanFactory = getBeanFactory();
+		if (beanFactory.containsLocalBean(APPLICATION_EVENT_MULTICASTER_BEAN_NAME)) {
+			this.applicationEventMulticaster =
+					beanFactory.getBean(APPLICATION_EVENT_MULTICASTER_BEAN_NAME, ApplicationEventMulticaster.class);
+			if (logger.isTraceEnabled()) {
+				logger.trace("Using ApplicationEventMulticaster [" + this.applicationEventMulticaster + "]");
+			}
+		}
+		else {
+               // 如果不存在会直接new一个，也就是说初始化之后，ApplicationEventMulticaster不会为空
+			this.applicationEventMulticaster = new SimpleApplicationEventMulticaster(beanFactory);
+			beanFactory.registerSingleton(APPLICATION_EVENT_MULTICASTER_BEAN_NAME, this.applicationEventMulticaster);
+			if (logger.isTraceEnabled()) {
+				logger.trace("No '" + APPLICATION_EVENT_MULTICASTER_BEAN_NAME + "' bean, using " +
+						"[" + this.applicationEventMulticaster.getClass().getSimpleName() + "]");
+			}
+		}
+	}
+```
+
+## ApplicationEventPublisher底层实现
+
+底层实现：
+
+- 接口：org.springframework.context.event.ApplicationEventMulticaster
+- 抽象类：org.springframework.context.event.AbstractApplicationEventMulticaster
+- 实现类：org.springframework.context.event.SimpleApplicationEventMulticaster
+
+> 早期的Spring，ApplicationEventPublisherAware与BeanPostProcessor不能同时使用，后面的版本采用了事件回放的机制修复了这个BUG。
+
+## 同步和异步Spring事件广播
+
+基本实现类 - org.springframework.context.event.SimpleApplicationEventMulticaster
+
+- 模式切换： setTaskExecutor(Executor taskExecutor)
+  - 默认模式：同步
+  - 异步模式：如java.util.concurrent.ThreadPoolExecutor
+- 设计缺陷：非基于接口契约编程
+
+基于编码的同步和异步事件广播示例：
+
+```java
+public class AsyncEventHandlerDemo {
+
+    public static void main(String[] args) {
+        GenericApplicationContext context = new GenericApplicationContext();
+
+        context.addApplicationListener(new MySpringEventListener());
+
+        context.refresh(); // 初始化 ApplicationEventMulticaster
+
+        // 依赖查找 ApplicationEventMulticaster
+        ApplicationEventMulticaster applicationEventMulticaster = context.getBean(AbstractApplicationContext.APPLICATION_EVENT_MULTICASTER_BEAN_NAME, ApplicationEventMulticaster.class);
+
+        if (applicationEventMulticaster instanceof SimpleApplicationEventMulticaster) {
+            SimpleApplicationEventMulticaster simpleApplicationEventMulticaster = (SimpleApplicationEventMulticaster) applicationEventMulticaster;
+            //切换 taskExecutor
+            ExecutorService taskExecutor = Executors.newSingleThreadExecutor(new CustomizableThreadFactory("my-spring-event-thread-pool"));
+            // 同步 -> 异步
+            simpleApplicationEventMulticaster.setTaskExecutor(taskExecutor);
+
+            // 添加ContextClosedEvent事件处理
+            applicationEventMulticaster.addApplicationListener(new ApplicationListener<ContextClosedEvent>() {
+                @Override
+                public void onApplicationEvent(ContextClosedEvent event) {
+                    if (!taskExecutor.isShutdown()) {
+                        taskExecutor.shutdown();
+                    }
+                }
+            });
+        }
+
+        context.publishEvent(new MySpringEvent("hello,world"));
+
+        context.close();
+    }
+}
+```
+
+除了这种编码的方式，还可以通过注解的方式。
+
+基于注解 - org.springframework.context.event.EventListener
+
+- 模式切换
+  - 默认模式：同步
+  - 异步模式：标注@org.springframework.scheduling.annotation.Async
+- 实现限制：无法直接实现同步/异步动态切换
+
+基于注解方式的示例：
+
+```java
+@EnableAsync // 激活Spring异步特性
+public class AnnotatedAsyncEventHandlerDemo {
+
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+
+        context.register(AnnotatedAsyncEventHandlerDemo.class);
+
+        context.addApplicationListener(new MySpringEventListener());
+
+        context.refresh(); // 初始化 ApplicationEventMulticaster
+        context.publishEvent(new MySpringEvent("hello,world"));
+
+        context.close();
+    }
+
+    @EventListener
+    @Async
+    public void onEvent(MySpringEvent event) {
+        System.out.printf("[线程：%s] : %s\n", Thread.currentThread().getName(), event);
+    }
+
+    @Bean
+    public Executor taskExecutor() {
+        ExecutorService taskExecutor = newSingleThreadExecutor(new CustomizableThreadFactory("my-spring-event-thread-pool-a"));
+        return taskExecutor;
+    }
+}
+```
+
+## Spring事件异常处理
+
+Spring3.0错误处理接口 - org.springframework.util.ErrorHandler
+
+使用场景：
+
+- Spring事件（Events）
+  - SimpleApplicationEventMulticaster Spring 4.1开始支持
+- Spring本地调度（Scheduling）
+  - org.springframework.scheduling.concurrent.ConcurrentTaskScheduler
+  - org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
+
+实现的核心代码在SimpleApplicationEventMulticaster#invokeListener：
+
+```java
+protected void invokeListener(ApplicationListener<?> listener, ApplicationEvent event) {
+		ErrorHandler errorHandler = getErrorHandler();
+		if (errorHandler != null) {
+			try {
+				doInvokeListener(listener, event);
+			}
+			catch (Throwable err) {
+				errorHandler.handleError(err);
+			}
+		}
+		else {
+			doInvokeListener(listener, event);
+		}
+	}
+```
+
+## Spring事件/监听实现原理
+
+核心类 - org.springframework.context.event.SimpleApplicationEventMulticaster
+
+- 设计模式：观察者模式扩展
+  - 被观察者 - org.springframework.context.ApplicationListener
+    - API添加
+    - 依赖查找
+  - 通知对象 - org.springframework.context.ApplicationEvent
+- 执行模式：同步/异步
+- 异常处理：org.springframework.util.ErrorHandler
+- 泛型处理：org.springframework.core.ResolvableType
+
+> 监听事件的时候，Spring还会处理ApplicationEvent的子孙类，包含所有层次的事件。
+
+## SpringBoot事件
+
+SpringBoot事件
+
+| 事件类型                            | 发生时机                             |
+| ----------------------------------- | ------------------------------------ |
+| ApplicationStartingEvent            | 当SpringBoot应用已启动时             |
+| ApplicationStartedEvent             | 当SpringBoot应用已启动时             |
+| ApplicationEnvironmentPreparedEvent | 当SpringBoot Environment实例已准备时 |
+| ApplicationPreparedEvent            | 当SpringBoot应用预备时               |
+| ApplicationReadyEvent               | 当SpringBoot应用完全可用时           |
+| ApplicationFailedEvent              | 当SpringBoot应用启动失败时           |
+
+SpringCloud事件
+
+| 事件类型                    | 发生时机                            |
+| --------------------------- | ----------------------------------- |
+| EnvironmentChangeEvent      | 当Environment示例配置属性发生变化时 |
+| HeartbeatEvent              | 当DiscoveryClient客户端发送心跳时   |
+| InstancePreRegisteredEvent  | 当服务实例注册前                    |
+| InstanceRegisteredEvent     | 当服务实例注册后                    |
+| RefreshEvent                | 当RefreshEndpoint被调用时           |
+| RefreshScopedRefreshedEvent | 当Refresh Scope Bean刷新后          |
+
+##  面试题
+
+### Spring事件核心接口/组件？
+
+- Spring事件 - org.springframework.context.ApplicationEvent
+- Spring事件监听器 -  org.springframework.context.ApplicationListener
+- Spring事件发布器 - org.springframework.context.ApplicationEventPublisher
+- Spring事件广播器 - org.springframework.context.event.ApplicationEventMulticaster
+
+## Spring同步和异步事件处理的使用场景？
+
+- Spring同步事件 - 绝大部分Spring使用场景，如ContextRefreshedEvent
+- Spring异步事件 - 主要  @EventListener与@Async配合，实现异步处理，不阻塞主线程，比如长时间的数据计算任务等。不要轻易调整SimpleApplicationEventMulticaster中关联的taskExecutor对象，除非使用者非常了解Spring事件机制，否则容易出现异常行为。
+
+## @EventListener的工作原理
+
+// ...
+
+# Spring 注解驱动
+
+Spring注解驱动的编程发展的大概历程：
+
+1. 注解驱动的启蒙时代：Spring Framework 1.x
+2. 注解驱动的过渡时代：Spring Framework 2.x
+3. 注解驱动的黄金时代：Spring Framework 3.x
+4. 注解驱动的完善时代：Spring Framework 4.x
+5. 注解驱动的当下时代：Spring Framework 5.x
+
+## Spring核心注解场景分类
+
+Spring模式注解：
+
+| Spring注解     | 场景说明          | 起始版本 |
+| -------------- | ----------------- | -------- |
+| @Repository    | 数据仓库模式注解  | 2.0      |
+| @Component     | 通用组件模式注解  | 2.5      |
+| @Service       | 服务模式注解      | 2.5      |
+| @Controller    | Web控制器模式注解 | 2.5      |
+| @Configuration | 配置类模式注解    | 3.0      |
+
+装配注解：
+
+| Spring注解      | 场景说明                                | 起始版本 |
+| --------------- | --------------------------------------- | -------- |
+| @ImportResource | 替换XML元素<import>                     | 2.5      |
+| @Import         | 导入Configuration类                     | 2.5      |
+| @ComponentScan  | 扫描指定package下标注Spring模式注解的类 | 3.1      |
+
+依赖注入注解：
+
+| Spring注解 | 场景说明                           | 起始版本 |
+| ---------- | ---------------------------------- | -------- |
+| @Autowired | Bean依赖注入，支持多种依赖查找方式 | 2.5      |
+| @Qualifer  | 细粒度的@Autowired依赖查找         | 2.5      |
+
+## Spring注解编程模型
+
+编程模型概览：
+
+- 元注解（Meta-Annotations）
+- Spring模式注解（Stereotype Annotations）
+- Spring组合注解（Composed Annotations）
+- Spring注解属性别名和覆盖（Attribute Aliases and Overrides）
+
+## Spring元注解
+
+除了直接使用JDK 定义好的注解，我们还可以自定义注解，在JDK 1.5中提供了4个标准的用来对注解类型进行注解的注解类，我们称之为 meta-annotation（元注解），他们分别是：
+
+- @Target
+- @Retention
+- @Documented
+- @Inherited
+
+ Target注解的作用是描述注解的使用范围。Reteniton注解的作用是，描述注解保留的时间范围（即：被描述的注解在它所修饰的类中可以被保留到何时）。Documented注解的作用是，描述在使用 javadoc 工具为类生成帮助文档时是否要保留其注解信息。Inherited注解的作用是，使被它修饰的注解具有继承性（如果某个类使用了被@Inherited修饰的注解，则其子类将自动具有该注解）。
+
+除了以上四种标准，还有我们之前提到过的@Repeatable。
+
+## Spring模式注解
+
+模式注解是一种注解，这种注解是用于去声明应用中扮演"组件"角色的类，@Component是一种通用的组件注解，标注这个注解的类会被Spring扫描。
+
+> 由于注解无法像接口或者类一样继承，因此只能采用使用注解描述注解的方式。
+
+@Component"派生性"原理：
+
+- 核心组件 - org.springframework.context.annotation.ClassPathBeanDefinitionScanner
+  - org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider
+- 资源处理 - org.springframework.core.io.support.ResourcePatternResolver
+- 资源 - 类元信息
+  - org.springframework.core.type.classreading.MetadataReaderFactory
+- 类元信息 - org.springframework.core.type.ClassMetadata
+  - ASM实现 - org.springframework.core.type.classreading.ClassMetadataReadingVisitor
+  - 反射实现 - org.springframework.core.type.StandardAnnotationMetadata
+- 注解元信息 - org.springframework.core.type.AnnotationMetadata
+  - ASM实现 - org.springframework.core.type.classreading.AnnotationMetadataReadingVisitor
+  - 反射实现 - org.springframework.core.type.StandardAnnotationMetadata
+
+我们定义一个测试类：
+
+```java
+@MyComponent
+public class TestClass {
+}
+```
+
+定义一个具有"派生性"的注解：
+
+```java
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+@Component // 元注解，实现@Component
+public @interface MyComponent {
+}
+```
+
+测试是否生效：
+
+```java
+@ComponentScan(basePackages = "org.jyc.thinking.in.spring.annotation")
+public class ComponentScanDemo {
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+
+        context.register(ComponentScanDemo.class);
+
+        context.refresh();
+        // 从Spring 4.0开始支持多层次@Component派生
+        TestClass bean = context.getBean(TestClass.class);
+        System.out.println(bean);
+        context.close();
+    }
+}
+```
+
+## Spring 组合注解
+
+Spring组合注解（Composed Annotations）中的元注允许是Spring模式注解（Stereotype Annotation）与其他Spring功能性注解的任意组合。
+
+比较典型的例子就是在SpringBoot场景中的SpringBootApplication：
+
+```java
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Inherited
+@SpringBootConfiguration
+@EnableAutoConfiguration
+@ComponentScan(excludeFilters = { @Filter(type = FilterType.CUSTOM, classes = TypeExcludeFilter.class),
+		@Filter(type = FilterType.CUSTOM, classes = AutoConfigurationExcludeFilter.class) })
+public @interface SpringBootApplication {
+}
+```
+
+## Spring注解属性别名
+
+注解属性的别名实际上总共有两种，一种是显性的别名，一种是隐性的别名。
+
+显性的别名比较容易理解，在@ComponentScan中：
+
+```java
+	@AliasFor("basePackages")
+	String[] value() default {};
+
+	@AliasFor("value")
+	String[] basePackages() default {};
+```
+
+此时basePackages和value就互为显性别名，下面是隐性别名的例子：
+
+```java
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@ComponentScan
+public @interface MyComponentScan {
+    /**
+     * 隐形别名,当被元标注的注解中的属性无法表达语义的时候，就需要额外增加attribute属性，如果没有attribute属性，就表示"继承" @AliasFor中的注解的属性
+     * <p>
+     * 是注解的一种"多态"，子注解提供了新的属性方法引用"父"（元）注解中的属性方法
+     *
+     * @return
+     */
+    @AliasFor(annotation = ComponentScan.class, attribute = "basePackages")
+    String[] scanBasePackages() default {};
+
+    /**
+     * scanBasePackages -> @AliasFor ComponentScan.basePackages.value(显性别名)
+     *
+     * @AliasFor ComponentScan.basePackages.value 传递隐形别名,而且这种方式是支持多层次的
+     */
+//    @AliasFor(annotation = ComponentScan.class, attribute = "value")
+//    String[] scanBasePackages() default {};
+}
+```
+
+## Spring注解属性覆盖
+
+属性覆盖也有两种，一种是显性覆盖，一种是隐形覆盖：
+
+```java
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@MyComponentScan
+public @interface MyComponentScan2 {
+
+    @AliasFor(annotation = MyComponentScan.class, attribute = "scanBasePackages")
+    String[] BasePackages() default {};
+
+    /**
+     * 隐形覆盖
+     * 在@MyComponentScan中也有scanBasePackages属性，如果注解中存在同名的就会覆盖掉元标注注解中的属性
+     *
+     * @return
+     */
+    String[] scanBasePackages() default {};
+
+    /**
+     * 显性覆盖
+     * packages覆盖了scanBasePackages 同时覆盖了@MyComponentScan.scanBasePackages
+     *
+     * @return
+     */
+    @AliasFor("scanBasePackages")
+    String[] packages() default {};
+}
+```
+
+## Spring @Enable模块驱动
+
+
 
