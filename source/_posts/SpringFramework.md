@@ -8295,5 +8295,479 @@ public @interface MyComponentScan2 {
 
 ## Spring @Enable模块驱动
 
+@Eanable模块驱动是以@Enabke为前缀的注解驱动编程模型。所谓"模块"是指具备相同领域的功能组件的集合，组合形成一个独立的单元，比如Web MVC模块、AspectJ代理模块、Caching（缓存）模块、JMX（Java 扩展模块）、Async（异步处理）模块等。
+
+举例说明：
+
+- @EnableWebMvc
+- @EnableTranscationManagement
+- @EnableCaching
+- @EnableMBeanExport
+- @EnaleAsync
+
+除了框架内建的这些实现，我们还可以自定义@Eanable模块：
+
+1. 驱动注解：@Enable***
+2. 导入注解：@Import具体实现
+3. 具体以下三种实现均可：
+   - 基于Configuration Class
+   - 基于@ImportSelector
+   - 基于@ImportBeanDefinitionRegistar接口实现
+
+首先演示第一种基于配置类实现，首先定义一个注解：
+
+```java
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Import(HelloWorldConfiguration.class)
+public @interface EnableHelloWorld {
+}
+```
+
+然后定义相对应的配置类：
+
+```java
+@Configuration
+public class HelloWorldConfiguration {
+    @Bean
+    public String helloWorld() {
+        return "HelloWorld";
+    }
+}
+```
+
+最后进行测试：
+
+```java
+@EnableHelloWorld
+public class EnableModuleDemo { // 第一步：通过@Enable**命名
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+
+        context.register(EnableModuleDemo.class);
+
+        context.refresh();
+
+        String bean = context.getBean("helloWorld", String.class);
+        System.out.println(bean);
+        context.close();
+    }
+}
+```
+
+第二种实现，首先定义ImportSelector的实现类：
+
+```java
+public class HelloWorldImportSelector implements ImportSelector {
+    @Override
+    public String[] selectImports(AnnotationMetadata importingClassMetadata) {
+        return new String[]{"org.jyc.thinking.in.spring.annotation.HelloWorldConfiguration"};
+    }
+}
+```
+
+添加到@Enable注解：
+
+```java
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+// 第二步：通过@Import注解导入具体实现
+//@Import(HelloWorldConfiguration.class)
+// 方法二：通过@ImportSelector接口实现
+@Import(HelloWorldImportSelector.class)
+public @interface EnableHelloWorld {
+}
+```
+
+第三种实现：
+
+```java
+public class HelloWorldImportBeanDefinitionRegistrar implements ImportBeanDefinitionRegistrar {
+    @Override
+    public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
+        AnnotatedGenericBeanDefinition beanDefinition = new AnnotatedGenericBeanDefinition(HelloWorldConfiguration.class);
+        BeanDefinitionReaderUtils.registerWithGeneratedName(beanDefinition,registry);
+    }
+}
+```
+
+同样的，添加到@Enable注解上面：
+
+```java
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+// 第二步：通过@Import注解导入具体实现
+//@Import(HelloWorldConfiguration.class)
+// 方法二：通过@ImportSelector接口实现
+//@Import(HelloWorldImportSelector.class)
+//方法三：通过 ImportBeanDefinitionRegistrar
+@Import(HelloWorldImportBeanDefinitionRegistrar.class)
+public @interface EnableHelloWorld {
+}
+```
+
+## Spring条件注解
+
+Spring的条件注解主要有两种：
+
+- 基于配置条件注解 - @org.springframework.context.annotation.Profile
+  - 关联对象 - org.springframework.core.env.Environment
+  - 实现变化：从Spring 4.0开始，@Profile基于@Conditional实现
+- 基于编程条件注解 - org.springframework.context.annotation.Conditional
+  - 关联对象 - org.springframework.context.annotation.Condition具体实现
+
+@Condtional实现原理大致如下：
+
+- 上下文对象 - org.springframework.context.annotation.ConditionContext
+- 条件判断 - org.springframework.context.annotation.ConditionEvaluator
+- 配置阶段 - org.springframework.context.annotation.ConfigurationCondition.ConfigurationPhase
+- 判断入口 - org.springframework.context.annotation.ConfigurationClassPostProcessor
+  - org.springframework.context.annotation.ConfigurationClassParser
+
+Profile注解的示例：
+
+```java
+public class ProfileDemo {
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+
+        context.register(ProfileDemo.class);
+
+        // 获取Environment对象
+        ConfigurableEnvironment environment = context.getEnvironment();
+        // 默认的Profiles = ["odd"]
+        environment.setDefaultProfiles("odd");
+
+        // 添加活跃的Profiles
+        environment.setActiveProfiles("even");
+        context.refresh();
+
+        Integer number = context.getBean("number", Integer.class);
+        System.out.println(number);
+        context.close();
+    }
+
+    @Bean(name = "number")
+    @Profile("odd")
+    public Integer odd() {
+        return 1;
+    }
+
+    @Bean(name = "number")
+//    @Profile("even")
+    @Conditional(EventProfileCondition.class)
+    public Integer even() {
+        return 2;
+    }
+}
+```
+
+实际上@Conditional注解的使用也可能会用到Profile属性：
+
+```java
+public class EventProfileCondition implements Condition {
+    @Override
+    public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
+        // 条件上下文
+        Environment environment = context.getEnvironment();
+        return environment.acceptsProfiles("even");
+    }
+}
+```
+
+@Profile在Spring 4当中的实现方式：
+
+基于org.springframework.context.annotation.Condition接口实现：org.springframework.context.annotation.ProfileCondition，实现的源码如下：
+
+```java
+class ProfileCondition implements Condition {
+
+	@Override
+	public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
+		MultiValueMap<String, Object> attrs = metadata.getAllAnnotationAttributes(Profile.class.getName());
+		if (attrs != null) {
+			for (Object value : attrs.get("value")) {
+				if (context.getEnvironment().acceptsProfiles(Profiles.of((String[]) value))) {
+					return true;
+				}
+			}
+			return false;
+		}
+		return true;
+	}
+}
+```
+
+## SpringBoot和SpringCloud注解
+
+SpringBoot注解：
+
+| 注解                     | 场景说明                | 起始版本 |
+| ------------------------ | ----------------------- | -------- |
+| @SpringBootConfiguration | Spring Boot配置类       | 1.4.0    |
+| @SpringBootApplication   | Spring Boot应用引导注解 | 1.2.0    |
+| @EnableAutoConfiguration | Spring Boot激活自动装配 | 1.0.0    |
+
+SpringCloud注解：
+
+| 注解                    | 场景说明                           | 起始版本 |
+| ----------------------- | ---------------------------------- | -------- |
+| @SpringCloudApplication | Spring Cloud应用引导注解           | 1.0.0    |
+| @EnableDiscovertClient  | Spring Cloud激活服务发现客户端注解 | 1.0.0    |
+| @EnableCircuitBreaker   | Spring Cloud激活熔断注解           | 1.0.0    |
+
+## 面试题
+
+### Spring模式注解有哪些？
+
+- @Compenent
+- @Resository
+- @Service
+- @Controller
+- @Configuration
+
+### @EventListener的工作原理？
+
+源码导读 - org.springframework.context.event.EventListenerMethodProcessor
+
+### @PropertySource工作原理
+
+// ...
+
+# Spring Environment抽象
+
+Environment接口主要有以下两个作用：
+
+1. 统一的Spring配置属性管理
+
+   SpringFramework 3.1开始引入Environment抽象，它统一Spring配置属性的存储，包括占位符处理和类型转换，不仅完整地替换PropertyPlaceholderConfigurer，而且还支持更丰富的配置属性源（PropertySource）
+
+2. 条件化Spring Bean装配管理
+
+   通过Environment Profiles信息，帮助Spring容器提供条件化地装配Bean
+
+## Environment接口使用场景
+
+- 用于属性占位符处理
+- 用于转换Spring配置属性类型
+- 用于存储Spring配置属性源（PropertySource）
+- 用于Profiles状态维护
+
+## Environment占位符处理
+
+不同Spring版本Environment对于占位符处理有所差异：
+
+- Spring 3.1前占位符处理
+  - 组件：org.springframework.beans.factory.config.PropertyPlaceholderConfigurer
+  - 接口：org.springframework.util.StringValueResolver
+- Spring 3.1+占位符处理：
+  - 组件：org.springframework.context.support.PropertySourcesPlaceholderConfigurer
+  - 接口：org.springframework.beans.factory.config.EmbeddedValueResolver
+
+我们可以来看以下具体地使用场景，首先定义一个properties文件：
+
+```properties
+user.id=11111
+user.name=jjjj
+user.city=HANGZHOU
+```
+
+紧接着定义需要注入的Bean：
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+<!--    <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">-->
+<!--        <property name="location" value="classpath:/META-INF/default.properties"/>-->
+<!--        <property name="fileEncoding" value="UTF-8"/>-->
+<!--    </bean>-->
+
+    <bean class="org.springframework.context.support.PropertySourcesPlaceholderConfigurer">
+        <property name="location" value="classpath:/META-INF/default.properties"/>
+        <property name="fileEncoding" value="UTF-8"/>
+    </bean>
+
+    <bean id="user" class="org.jyc.thinking.in.spring.ioc.overview.dependency.domain.User">
+        <property name="id" value="${user.id}"/>
+        <property name="name" value="${user.name}"/>
+        <property name="city" value="${user.city}"/>
+    </bean>
+</beans>
+```
+
+最后观察输出：
+
+```java
+public class PropertyPlaceholderConfigurerDemo {
+    public static void main(String[] args) {
+        ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("classpath:/META-INF/placeholders-resolver.xml");
+        User user = context.getBean("user", User.class);
+        System.out.println(user);
+        context.close();
+    }
+}
+```
+
+可以看到占位符已经被成功的替换。
+
+## 理解条件配置Spring Profiles
+
+Spring3.1的条件配置：
+
+- API：org.springframework.core.env.ConfigurableEnvironment
+  - 修改：addActiveProfile(String)、SetActiveProfiles(String...)和setDefaultProfiles(String....)
+  - 获取：getActiveProfiles()和getDefaultProfiles
+  - 匹配：#acceptsProfiles(String...)和acceptsProfiles(Profiles)
+- 注解：org.springframework.context.annotation.Profile
+
+> 在Spring当中，也可以通过`-Dspring.profiles.active`来修改当前的激活环境。
+
+## 依赖注入Environment
+
+1. 注解注入：
+   - 通过EnvironmentAware接口回调
+   - 通过@Autowired注入Environment
+2. 间接依赖注入：
+   - 通过ApplicationAware接口回调
+   - 通过@Autowired注入ApplicationContext
+
+相关的示例：
+
+```java
+public class InjectingEnvironmentDemo implements EnvironmentAware, ApplicationContextAware {
+
+    private ApplicationContext applicationContext;
+
+    private Environment environment;
+
+    @Autowired
+    private Environment environment2;
+
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+        context.register(InjectingEnvironmentDemo.class);
+        context.refresh();
+        InjectingEnvironmentDemo injectingEnvironmentDemo = context.getBean(InjectingEnvironmentDemo.class);
+        System.out.println(injectingEnvironmentDemo.environment);
+
+        System.out.println(injectingEnvironmentDemo.environment == injectingEnvironmentDemo.environment2);
+
+        System.out.println(context == injectingEnvironmentDemo.applicationContext);
+
+        System.out.println(injectingEnvironmentDemo.environment == context.getEnvironment());
+         
+        context.close();
+    }
+
+    @Override
+    public void setEnvironment(Environment environment) {
+        this.environment = environment;
+    }
+
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        this.applicationContext = applicationContext;
+    }
+}
+```
+
+## 依赖查找Environment
+
+1. 直接依赖查找
+   - 通过org.springframework.context.ConfigurableApplicationContext#ENVIRONMENT_BEAN_NAME
+2. 直接查找
+   - 通过org.springframework.context.ConfigurableApplicationContext#getEnvironment
+
+相关的示例：
+
+```java
+public class LookupEnvironmentDemo implements EnvironmentAware {
+
+    private Environment environment;
 
 
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+
+        context.register(LookupEnvironmentDemo.class);
+
+        context.refresh();
+
+        LookupEnvironmentDemo injectingEnvironmentDemo = context.getBean(LookupEnvironmentDemo.class);
+
+        // 通过Environment Bean名称依赖查找
+        Environment environment = context.getBean(ConfigurableApplicationContext.ENVIRONMENT_BEAN_NAME, Environment.class);
+
+        System.out.println(injectingEnvironmentDemo.environment);
+
+        System.out.println(injectingEnvironmentDemo.environment == environment);
+
+
+        context.close();
+    }
+
+    @Override
+    public void setEnvironment(Environment environment) {
+        this.environment = environment;
+    }
+}
+```
+
+> 可以发现依赖查找和依赖注入的Environment都是同一个，Environment对象本身隶属于ApplicationContext，但是在容器启动的时候，会注册一个单例的Environment对象到BeanFactory中。
+
+## 依赖注入@Value
+
+@Value注解的实现类：org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor
+
+## Spring类型转换在Environment中的运用
+
+Environment底层实现：
+
+- 底层实现 - org.springframework.core.env.PropertySourcesPropertyResolver
+  - 核心方法 - convertValueIfNecessary
+- 底层服务 - org.springframework.core.convert.ConversionService
+  - 默认实现 - org.springframework.core.convert.support.DefaultConversionService
+
+相关的核心源代码：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210625173747553.png" alt="image-20210625173747553" style="zoom: 67%;" />
+
+## Spring类型转换在@Value中的运用
+
+@Value底层实现：
+
+1. 底层实现：org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor
+   - org.springframework.beans.factory.support.DefaultListableBeanFactory#doResolveDependency
+2. 底层服务：org.springframework.beans.TypeConverter
+   - 默认实现：org.springframework.beans.TypeConverterDelegate
+     - java.beans.PropertyEditor
+     - org.springframework.core.convert.ConversionService
+
+相关的核心源代码：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210625174810362.png" alt="image-20210625174810362" style="zoom: 50%;" />
+
+## Spring配置属性源PropertySource
+
+- API
+
+  - 单配置属性源：org.springframework.core.env.PropertySource
+  - 多配置属性源：org.springframework.core.env.PropertySources
+
+- 注解
+
+  - 单配置属性源：org.springframework.context.annotation.PropertySource
+  - 多配置属性源：org.springframework.context.annotation.PropertySources
+
+- 关联
+
+  - 存储对象：org.springframework.core.env.MutablePropertySources
+  - 关联方法：org.springframework.core.env.ConfigurableEnvironment#getPropertySources
+
+  
