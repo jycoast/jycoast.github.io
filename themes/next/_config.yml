@@ -423,7 +423,7 @@ font:
   global:
     external: true
     family: Roboto Mono
-    size: 0.9
+    size: 0.7
 
   # Font settings for site title (.site-title).
   title:
@@ -435,12 +435,13 @@ font:
   headings:
     external: true
     family:
+    size: 
 
   # Font settings for posts (.post-body).
   posts:
     external: true
     family:
-    size: 
+    size: 0.9
 
   # Font settings for <code> and code blocks.
   codes:

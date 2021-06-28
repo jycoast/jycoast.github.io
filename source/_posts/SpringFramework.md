@@ -8756,37 +8756,32 @@ Environment底层实现：
 ## Spring配置属性源PropertySource
 
 - API
-
   - 单配置属性源：org.springframework.core.env.PropertySource
   - 多配置属性源：org.springframework.core.env.PropertySources
-
 - 注解
 
   - 单配置属性源：org.springframework.context.annotation.PropertySource
   - 多配置属性源：org.springframework.context.annotation.PropertySources
-
 - 关联
 
   - 存储对象：org.springframework.core.env.MutablePropertySources
   - 关联方法：org.springframework.core.env.ConfigurableEnvironment#getPropertySources
 
-  ## Spring内建的配置属性源
-  
-  内建的PropertySource:
-  
-  | PropertySource类型                                           | 说明                     |
-  | ------------------------------------------------------------ | ------------------------ |
-  | org.springframework.core.env.CommandLinePropertySource       | 命令行配置属性源         |
-  | org.springframework.jndi.JndiPropertySource                  | JNDI配置属性源           |
-  | org.springframework.core.env.PropertiesPropertySource        | Properties配置属性源     |
-  | org.springframework.web.context.support.ServletConfigPropertySource | Servlet配置属性源        |
-  | org.springframework.web.context.support.ServletContextPropertySource | ServletContext配置属性源 |
-  | org.springframework.core.env.SystemEnvironmentPropertySource | 环境变量配置属性源       |
-  | ......                                                       |                          |
-  
-  ## 基于注解扩展Spring配置属性源
-  
-  
+## Spring内建的配置属性源
+
+内建的PropertySource:
+
+| PropertySource类型                                           | 说明                     |
+| ------------------------------------------------------------ | ------------------------ |
+| org.springframework.core.env.CommandLinePropertySource       | 命令行配置属性源         |
+| org.springframework.jndi.JndiPropertySource                  | JNDI配置属性源           |
+| org.springframework.core.env.PropertiesPropertySource        | Properties配置属性源     |
+| org.springframework.web.context.support.ServletConfigPropertySource | Servlet配置属性源        |
+| org.springframework.web.context.support.ServletContextPropertySource | ServletContext配置属性源 |
+| org.springframework.core.env.SystemEnvironmentPropertySource | 环境变量配置属性源       |
+| ......                                                       |                          |
+
+## 基于注解扩展Spring配置属性源
 
 @org.springframework.context.annotation.PropertySource实现原理：
 
@@ -8838,7 +8833,7 @@ public class EnvironmentPropertySourceChangeDemo {
         System.out.println(environmentPropertySourceChangeDemo.UserName);
 
         for (PropertySource ps : propertySources) {
-            System.out.printf("PropertySource(name=s%),user.name属性=%s\n", ps.getName(), ps.getProperty("user.name"));
+            System.out.printf("PropertySource(name=%s),'user.name'属性=%s\n", ps.getName(), ps.getProperty("user.name"));
         }
         context.close();
     }
@@ -8866,7 +8861,7 @@ public class TestPropertySourceDemo {
     public void testUserName() {
         System.out.println(new TestPropertySourceDemo().userName);
         for (PropertySource ps : environment.getPropertySources()) {
-            System.out.printf("PropertySource(name=s%),user.name属性=%s\n", ps.getName(), ps.getProperty("user.name"));
+            System.out.printf("PropertySource(name=%s),'user.name'属性=%s\n", ps.getName(), ps.getProperty("user.name"));
         }
     }
 }
@@ -8895,4 +8890,659 @@ public class TestPropertySourceDemo {
 // ...
 
 # Spring 应用上下文生命周期
+
+## Spring应用上下文启动准备阶段
+
+org.springframework.context.support.AbstractApplicationContext#prepareRefresh方法：
+
+- 启动时间 - startupDate
+- 状态标志 - closed(false)、active(true)
+- 初始化 PropertySources - initPropertySources()
+- 校验Environment中必须属性
+- 初始化事件监听器集合
+- 初始化早期Spring事件集合
+
+相关的源代码：
+
+```java
+	protected void prepareRefresh() {
+		// Switch to active.
+		this.startupDate = System.currentTimeMillis();
+		this.closed.set(false);
+		this.active.set(true);
+
+		// Initialize any placeholder property sources in the context environment.
+		initPropertySources();
+
+		// Validate that all properties marked as required are resolvable:
+		// see ConfigurablePropertyResolver#setRequiredProperties
+		getEnvironment().validateRequiredProperties();
+
+		// Store pre-refresh ApplicationListeners...
+		if (this.earlyApplicationListeners == null) {
+			this.earlyApplicationListeners = new LinkedHashSet<>(this.applicationListeners);
+		}
+		else {
+			// Reset local application listeners to pre-refresh state.
+			this.applicationListeners.clear();
+			this.applicationListeners.addAll(this.earlyApplicationListeners);
+		}
+
+		// Allow for the collection of early ApplicationEvents,
+		// to be published once the multicaster is available...
+		this.earlyApplicationEvents = new LinkedHashSet<>();
+	}
+```
+
+## BeanFactory创建阶段
+
+AbstractApplicationContext#obtainFreshBeanFactory方法：
+
+- 刷新Spring应用上下文底层BeanFactory - refreshBeanFactory()
+  - 销毁或关闭BeanFactory，如果已存在的话
+  - 创建BeanFactory - createBeanFactory()
+  - 设置BeanFactory Id
+  - 设置"是否允许BeanDefinition重复定义" - customizeBeanFactory(DefaultListableBeanFactory)
+  - 设置"是否允许循环应用（依赖）" - customizeBeanFactory(DefaultListableBeanFactory)
+  - 加载BeanDefinition - loadBeanDefinitions(DefaultListableBeanFactory beanFactory)
+  - 关联新建BeanFactory到Spring应用上下文
+- 返回Spring应用上下文底层BeanFactory - getBeanFactory
+
+可以在AbstractRefreshableApplicationContext看到具体的实现：
+
+```java
+	@Override
+	protected final void refreshBeanFactory() throws BeansException {
+		if (hasBeanFactory()) {
+			destroyBeans();
+			closeBeanFactory();
+		}
+		try {
+			DefaultListableBeanFactory beanFactory = createBeanFactory();
+			beanFactory.setSerializationId(getId());
+			customizeBeanFactory(beanFactory);
+			loadBeanDefinitions(beanFactory);
+			this.beanFactory = beanFactory;
+		}
+		catch (IOException ex) {
+			throw new ApplicationContextException("I/O error parsing bean definition source for " + getDisplayName(), ex);
+		}
+	}
+```
+
+## BeanFactory准备阶段
+
+AbstractApplicationContext#prepareBeanFactory(ConfigurableListableBeanFactory)方法：
+
+- 关联ClassLoader
+- 设置Bean表达式处理器
+- 添加PropertyEdittorRegistrar实现 - ResourceEditorRegistrar
+- 添加Aware回调接口BeanPostProcessor实现 - ApplicationContextAwareProcessor
+- 忽略Aware回调接口作为依赖注入接口
+- 注册ResolvableDependency对象 - BeanFactory、ResourceLoader、ApplicationEventPublisher以及ApplicationContext
+- 注册ApplicationListenerDetector对象
+- 注册LoadTimeWeaverAwareProcessor对象
+- 注册单例对象 - Environment、Java System Properties、以及OS环境变量
+
+相关的源代码：
+
+```java
+	protected void prepareBeanFactory(ConfigurableListableBeanFactory beanFactory) {
+		// Tell the internal bean factory to use the context's class loader etc.
+		beanFactory.setBeanClassLoader(getClassLoader());
+		if (!shouldIgnoreSpel) {
+			beanFactory.setBeanExpressionResolver(new StandardBeanExpressionResolver(beanFactory.getBeanClassLoader()));
+		}
+		beanFactory.addPropertyEditorRegistrar(new ResourceEditorRegistrar(this, getEnvironment()));
+
+		// Configure the bean factory with context callbacks.
+		beanFactory.addBeanPostProcessor(new ApplicationContextAwareProcessor(this));
+		beanFactory.ignoreDependencyInterface(EnvironmentAware.class);
+		beanFactory.ignoreDependencyInterface(EmbeddedValueResolverAware.class);
+		beanFactory.ignoreDependencyInterface(ResourceLoaderAware.class);
+		beanFactory.ignoreDependencyInterface(ApplicationEventPublisherAware.class);
+		beanFactory.ignoreDependencyInterface(MessageSourceAware.class);
+		beanFactory.ignoreDependencyInterface(ApplicationContextAware.class);
+		beanFactory.ignoreDependencyInterface(ApplicationStartupAware.class);
+
+		// BeanFactory interface not registered as resolvable type in a plain factory.
+		// MessageSource registered (and found for autowiring) as a bean.
+		beanFactory.registerResolvableDependency(BeanFactory.class, beanFactory);
+		beanFactory.registerResolvableDependency(ResourceLoader.class, this);
+		beanFactory.registerResolvableDependency(ApplicationEventPublisher.class, this);
+		beanFactory.registerResolvableDependency(ApplicationContext.class, this);
+
+		// Register early post-processor for detecting inner beans as ApplicationListeners.
+		beanFactory.addBeanPostProcessor(new ApplicationListenerDetector(this));
+
+		// Detect a LoadTimeWeaver and prepare for weaving, if found.
+		if (!NativeDetector.inNativeImage() && beanFactory.containsBean(LOAD_TIME_WEAVER_BEAN_NAME)) {
+			beanFactory.addBeanPostProcessor(new LoadTimeWeaverAwareProcessor(beanFactory));
+			// Set a temporary ClassLoader for type matching.
+			beanFactory.setTempClassLoader(new ContextTypeMatchClassLoader(beanFactory.getBeanClassLoader()));
+		}
+
+		// Register default environment beans.
+		if (!beanFactory.containsLocalBean(ENVIRONMENT_BEAN_NAME)) {
+			beanFactory.registerSingleton(ENVIRONMENT_BEAN_NAME, getEnvironment());
+		}
+		if (!beanFactory.containsLocalBean(SYSTEM_PROPERTIES_BEAN_NAME)) {
+			beanFactory.registerSingleton(SYSTEM_PROPERTIES_BEAN_NAME, getEnvironment().getSystemProperties());
+		}
+		if (!beanFactory.containsLocalBean(SYSTEM_ENVIRONMENT_BEAN_NAME)) {
+			beanFactory.registerSingleton(SYSTEM_ENVIRONMENT_BEAN_NAME, getEnvironment().getSystemEnvironment());
+		}
+		if (!beanFactory.containsLocalBean(APPLICATION_STARTUP_BEAN_NAME)) {
+			beanFactory.registerSingleton(APPLICATION_STARTUP_BEAN_NAME, getApplicationStartup());
+		}
+	}
+```
+
+## BeanFactory后置处理阶段
+
+AbstractApplicationContext#postProcessBeanFactory(ConfigurableListableBeanFactory)方法
+
+- 由子类覆盖该方法
+
+AbstractApplicationContext#invokeBeanFactoryPostProcessors(ConfigurableListableBeanFactory)方法：
+
+- 调用BeanFactoryPostProcessor或BeanDefinitionPostProcessorRegistry后置处理方法
+- 注册LoadTimeWeaverAwareProcessor对象
+
+> 通常情况下，我们应该选择第二种方式，组合优先于继承。
+
+相关的源代码：
+
+```java
+protected void invokeBeanFactoryPostProcessors(ConfigurableListableBeanFactory beanFactory) {
+		PostProcessorRegistrationDelegate.invokeBeanFactoryPostProcessors(beanFactory, getBeanFactoryPostProcessors());
+
+		// Detect a LoadTimeWeaver and prepare for weaving, if found in the meantime
+		// (e.g. through an @Bean method registered by ConfigurationClassPostProcessor)
+		if (!NativeDetector.inNativeImage() && beanFactory.getTempClassLoader() == null && beanFactory.containsBean(LOAD_TIME_WEAVER_BEAN_NAME)) {
+			beanFactory.addBeanPostProcessor(new LoadTimeWeaverAwareProcessor(beanFactory));
+			beanFactory.setTempClassLoader(new ContextTypeMatchClassLoader(beanFactory.getBeanClassLoader()));
+		}
+	}
+```
+
+## BeanFactory注册BeanPostProcess
+
+AbstractApplicationContext#registerBeanPostProcessors(ConfigurableListableBeanFactory beanFactory)方法：
+
+- 注册PriorityOrdered类型的BeanPostProcessor Beans
+- 注册Ordered类型的BeanPostProcessor Beans
+- 注册普通BeanPostProcessor Beans
+- 注册MergedBeanDefinitionPostProcessor Beans
+- 注册ApplicationListenerDetector对象
+
+相应的源代码：
+
+```java
+public static void registerBeanPostProcessors(
+			ConfigurableListableBeanFactory beanFactory, AbstractApplicationContext applicationContext) {
+
+		String[] postProcessorNames = beanFactory.getBeanNamesForType(BeanPostProcessor.class, true, false);
+
+		// Register BeanPostProcessorChecker that logs an info message when
+		// a bean is created during BeanPostProcessor instantiation, i.e. when
+		// a bean is not eligible for getting processed by all BeanPostProcessors.
+		int beanProcessorTargetCount = beanFactory.getBeanPostProcessorCount() + 1 + postProcessorNames.length;
+		beanFactory.addBeanPostProcessor(new BeanPostProcessorChecker(beanFactory, beanProcessorTargetCount));
+
+		// Separate between BeanPostProcessors that implement PriorityOrdered,
+		// Ordered, and the rest.
+		List<BeanPostProcessor> priorityOrderedPostProcessors = new ArrayList<>();
+		List<BeanPostProcessor> internalPostProcessors = new ArrayList<>();
+		List<String> orderedPostProcessorNames = new ArrayList<>();
+		List<String> nonOrderedPostProcessorNames = new ArrayList<>();
+		for (String ppName : postProcessorNames) {
+			if (beanFactory.isTypeMatch(ppName, PriorityOrdered.class)) {
+                    // 特别要注意，这里会导致Bean的提前初始化
+				BeanPostProcessor pp = beanFactory.getBean(ppName, BeanPostProcessor.class);
+				priorityOrderedPostProcessors.add(pp);
+				if (pp instanceof MergedBeanDefinitionPostProcessor) {
+					internalPostProcessors.add(pp);
+				}
+			}
+			else if (beanFactory.isTypeMatch(ppName, Ordered.class)) {
+				orderedPostProcessorNames.add(ppName);
+			}
+			else {
+				nonOrderedPostProcessorNames.add(ppName);
+			}
+		}
+
+		// First, register the BeanPostProcessors that implement PriorityOrdered.
+		sortPostProcessors(priorityOrderedPostProcessors, beanFactory);
+		registerBeanPostProcessors(beanFactory, priorityOrderedPostProcessors);
+
+		// Next, register the BeanPostProcessors that implement Ordered.
+		List<BeanPostProcessor> orderedPostProcessors = new ArrayList<>(orderedPostProcessorNames.size());
+		for (String ppName : orderedPostProcessorNames) {
+               // 这里也会初始化
+			BeanPostProcessor pp = beanFactory.getBean(ppName, BeanPostProcessor.class);
+			orderedPostProcessors.add(pp);
+			if (pp instanceof MergedBeanDefinitionPostProcessor) {
+				internalPostProcessors.add(pp);
+			}
+		}
+		sortPostProcessors(orderedPostProcessors, beanFactory);
+		registerBeanPostProcessors(beanFactory, orderedPostProcessors);
+
+		// Now, register all regular BeanPostProcessors.
+		List<BeanPostProcessor> nonOrderedPostProcessors = new ArrayList<>(nonOrderedPostProcessorNames.size());
+		for (String ppName : nonOrderedPostProcessorNames) {
+			BeanPostProcessor pp = beanFactory.getBean(ppName, BeanPostProcessor.class);
+			nonOrderedPostProcessors.add(pp);
+			if (pp instanceof MergedBeanDefinitionPostProcessor) {
+				internalPostProcessors.add(pp);
+			}
+		}
+		registerBeanPostProcessors(beanFactory, nonOrderedPostProcessors);
+
+		// Finally, re-register all internal BeanPostProcessors.
+		sortPostProcessors(internalPostProcessors, beanFactory);
+		registerBeanPostProcessors(beanFactory, internalPostProcessors);
+
+		// Re-register post-processor for detecting inner beans as ApplicationListeners,
+		// moving it to the end of the processor chain (for picking up proxies etc).
+		beanFactory.addBeanPostProcessor(new ApplicationListenerDetector(applicationContext));
+	}
+```
+
+## 初始化内建MessageSource
+
+AbstractApplicationContext#initMessageSource方法：
+
+- 第十二章Spring国际化 - MessageSource内建依赖
+
+相应的源代码：
+
+```java
+	protected void initMessageSource() {
+		ConfigurableListableBeanFactory beanFactory = getBeanFactory();
+		if (beanFactory.containsLocalBean(MESSAGE_SOURCE_BEAN_NAME)) {
+			this.messageSource = beanFactory.getBean(MESSAGE_SOURCE_BEAN_NAME, MessageSource.class);
+			// Make MessageSource aware of parent MessageSource.
+			if (this.parent != null && this.messageSource instanceof HierarchicalMessageSource) {
+				HierarchicalMessageSource hms = (HierarchicalMessageSource) this.messageSource;
+				if (hms.getParentMessageSource() == null) {
+					// Only set parent context as parent MessageSource if no parent MessageSource
+					// registered already.
+					hms.setParentMessageSource(getInternalParentMessageSource());
+				}
+			}
+			if (logger.isTraceEnabled()) {
+				logger.trace("Using MessageSource [" + this.messageSource + "]");
+			}
+		}
+		else {
+			// Use empty MessageSource to be able to accept getMessage calls.
+			DelegatingMessageSource dms = new DelegatingMessageSource();
+			dms.setParentMessageSource(getInternalParentMessageSource());
+			this.messageSource = dms;
+			beanFactory.registerSingleton(MESSAGE_SOURCE_BEAN_NAME, this.messageSource);
+			if (logger.isTraceEnabled()) {
+				logger.trace("No '" + MESSAGE_SOURCE_BEAN_NAME + "' bean, using [" + this.messageSource + "]");
+			}
+		}
+	}
+```
+
+## 初始化内建Spring事件广播器
+
+AbstractApplicationContext#initApplicationEventMulticaster方法：
+
+- 第十七章Spring事件 - ApplicationEventMulticaster底层实现
+
+相应的源代码：
+
+```java
+protected void initApplicationEventMulticaster() {
+		ConfigurableListableBeanFactory beanFactory = getBeanFactory();
+		if (beanFactory.containsLocalBean(APPLICATION_EVENT_MULTICASTER_BEAN_NAME)) {
+			this.applicationEventMulticaster =
+					beanFactory.getBean(APPLICATION_EVENT_MULTICASTER_BEAN_NAME, ApplicationEventMulticaster.class);
+			if (logger.isTraceEnabled()) {
+				logger.trace("Using ApplicationEventMulticaster [" + this.applicationEventMulticaster + "]");
+			}
+		}
+		else {
+			this.applicationEventMulticaster = new SimpleApplicationEventMulticaster(beanFactory);
+			beanFactory.registerSingleton(APPLICATION_EVENT_MULTICASTER_BEAN_NAME, this.applicationEventMulticaster);
+			if (logger.isTraceEnabled()) {
+				logger.trace("No '" + APPLICATION_EVENT_MULTICASTER_BEAN_NAME + "' bean, using " +
+						"[" + this.applicationEventMulticaster.getClass().getSimpleName() + "]");
+			}
+		}
+	}
+```
+
+> 可以看到在Spring的应用上下文中，ApplicationEventMulticaster这个对象一定会存在，因此我们可以使用依赖注入的方式获取到唯一的对象ApplicationEventMulticaster的对象。
+
+## Spring应用上下文刷新
+
+AbstractApplicationContext#onRefresh方法：
+
+- org.springframework.web.context.support.AbstractRefreshableWebApplicationContext#onRefresh
+- org.springframework.web.context.support.GenericWebApplicationContext#onRefresh
+- org.springframework.boot.web.reactive.context.ReactiveWebServerApplicationContext#onRefresh
+- org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext#onRefresh
+- org.springframework.web.context.support.StaticWebApplicationContext#onRefresh
+
+> onRefresh()方法只有在Web的场景下才会进行扩展。
+
+## Spring事件监听器注册
+
+AbstractApplicationContext#registerListeners方法：
+
+- 添加当前应用上下文所关联的ApplicationListeners对象（集合）
+- 添加BeanFactory所注册ApplicationListeners Beans
+- 广播早期Spring事件
+
+相应的源代码：
+
+```java
+protected void registerListeners() {
+		// Register statically specified listeners first.
+		for (ApplicationListener<?> listener : getApplicationListeners()) {
+			getApplicationEventMulticaster().addApplicationListener(listener);
+		}
+
+		// Do not initialize FactoryBeans here: We need to leave all regular beans
+		// uninitialized to let post-processors apply to them!
+		String[] listenerBeanNames = getBeanNamesForType(ApplicationListener.class, true, false);
+		for (String listenerBeanName : listenerBeanNames) {
+			getApplicationEventMulticaster().addApplicationListenerBean(listenerBeanName);
+		}
+
+		// Publish early application events now that we finally have a multicaster...
+		Set<ApplicationEvent> earlyEventsToProcess = this.earlyApplicationEvents;
+		this.earlyApplicationEvents = null;
+		if (!CollectionUtils.isEmpty(earlyEventsToProcess)) {
+			for (ApplicationEvent earlyEvent : earlyEventsToProcess) {
+				getApplicationEventMulticaster().multicastEvent(earlyEvent);
+			}
+		}
+	}
+```
+
+## BeanFactory初始化完成阶段
+
+AbstractApplicationContext#finishBeanFactoryInitialization(ConfigurableListableBeanFactory)方法：
+
+- BeanFactory关联ConversionService Bean，如果存在
+- 添加StringValueResolver对象
+- 依赖查找LoadTimeWeaverAware Bean
+- BeanFactory临时ClassLoader置为null
+- BeanFactory冻结配置
+- BeanFactory初始化非延迟单例Beans
+
+相应的源代码：
+
+```java
+	protected void finishBeanFactoryInitialization(ConfigurableListableBeanFactory beanFactory) {
+		// Initialize conversion service for this context.
+		if (beanFactory.containsBean(CONVERSION_SERVICE_BEAN_NAME) &&
+				beanFactory.isTypeMatch(CONVERSION_SERVICE_BEAN_NAME, ConversionService.class)) {
+			beanFactory.setConversionService(
+					beanFactory.getBean(CONVERSION_SERVICE_BEAN_NAME, ConversionService.class));
+		}
+
+		// Register a default embedded value resolver if no BeanFactoryPostProcessor
+		// (such as a PropertySourcesPlaceholderConfigurer bean) registered any before:
+		// at this point, primarily for resolution in annotation attribute values.
+		if (!beanFactory.hasEmbeddedValueResolver()) {
+			beanFactory.addEmbeddedValueResolver(strVal -> getEnvironment().resolvePlaceholders(strVal));
+		}
+
+		// Initialize LoadTimeWeaverAware beans early to allow for registering their transformers early.
+		String[] weaverAwareNames = beanFactory.getBeanNamesForType(LoadTimeWeaverAware.class, false, false);
+		for (String weaverAwareName : weaverAwareNames) {
+			getBean(weaverAwareName);
+		}
+
+		// Stop using the temporary ClassLoader for type matching.
+		beanFactory.setTempClassLoader(null);
+
+		// Allow for caching all bean definition metadata, not expecting further changes.
+		beanFactory.freezeConfiguration();
+
+		// Instantiate all remaining (non-lazy-init) singletons.
+		beanFactory.preInstantiateSingletons();
+	}
+```
+
+## Spring应用上下文刷新完成阶段
+
+AbstractApplicationContext#finishRefresh方法：
+
+- 清除ResourceLoader缓存 - clearResourceCaches() @since 5.0
+- 初始化LifecycleProcessor对象 - initLifecycleProcessor()
+- 调用LifecycleProcessor().onRefresh()方法
+- 发布Spring应用上下文已刷新事件 - ContextRefreshedEvent
+- 向MBeanServer托管Live Beans
+
+相应的源代码：
+
+```java
+protected void finishRefresh() {
+		// Clear context-level resource caches (such as ASM metadata from scanning).
+		clearResourceCaches();
+
+		// Initialize lifecycle processor for this context.
+		initLifecycleProcessor();
+
+		// Propagate refresh to lifecycle processor first.
+		getLifecycleProcessor().onRefresh();
+
+		// Publish the final event.
+		publishEvent(new ContextRefreshedEvent(this));
+
+		// Participate in LiveBeansView MBean, if active.
+		if (!NativeDetector.inNativeImage()) {
+			LiveBeansView.registerApplicationContext(this);
+		}
+	}
+```
+
+## Spring 应用上下文启动阶段
+
+AbstractApplicationContext#start方法
+
+- 启动LifecycleProcessor
+  - 依赖查找Lifecycle Beans
+  - 启动Lifecycle Beans
+- 发布Spring应用上下文已启动事件 - ContextStartedEvent
+
+相应的源代码：
+
+```java
+public void start() {
+		getLifecycleProcessor().start();
+		publishEvent(new ContextStartedEvent(this));
+	}
+```
+
+## Spring 应用上下文停止阶段
+
+AbstractApplicationContext#stop方法
+
+- 停止LifecycleProcessor
+  - 依赖查找Lifecycle Beans
+  - 停止Lifecycle Beans
+- 发布Spring应用上下文已停止事件 - ContextStoppedEvent
+
+相应的源代码：
+
+```java
+public void stop() {
+		getLifecycleProcessor().stop();
+		publishEvent(new ContextStoppedEvent(this));
+	}
+```
+
+我们可以自定义一个Lifecycle：
+
+```java
+public class MyLifecycle implements Lifecycle {
+
+    private boolean running = false;
+
+    @Override
+    public void start() {
+        running = true;
+        System.out.println("org.jyc.thinking.in.spring.lifecycle.MyLifecycle 启动...");
+    }
+
+    @Override
+    public void stop() {
+        running = false;
+        System.out.println("org.jyc.thinking.in.spring.lifecycle.MyLifecycle 停止...");
+    }
+
+    @Override
+    public boolean isRunning() {
+        return running;
+    }
+}
+```
+
+测试输出：
+
+```java
+public class LifecycleDemo {
+    public static void main(String[] args) {
+        GenericApplicationContext context = new GenericApplicationContext();
+        // 注册MyLifecycle成为一个Spring Bean
+        context.registerBeanDefinition("myLifecycle", BeanDefinitionBuilder.rootBeanDefinition(MyLifecycle.class).getBeanDefinition());
+        context.refresh();
+        // 启动应用上下文
+        context.start();
+        // 关闭Spring应用
+        context.stop();
+        context.close();
+    }
+}
+```
+
+## Spring应用上下文关闭阶段
+
+AbstractApplicationContext#close方法:
+
+- 状态标识：active(false)、closed(true)
+- Live Beans JMX撤销托管
+  - LiveBeansView.unregisterApplicationContext(ConfigurableApplicationContext)
+- 发布Spring应用上下文已关闭事件 - ContextClosedEvent
+- 关闭LifecycleProcessor
+  - 依赖查找Lifecycle Beans
+  - 停止Lifecycle Beans
+- 销毁Lifecycle Beans
+- 关闭BeanFactory
+- 回调onClose()
+- 注册Shutdown Hook线程（如果曾注册）
+
+相应的源代码：
+
+```java
+	protected void doClose() {
+		// Check whether an actual close attempt is necessary...
+		if (this.active.get() && this.closed.compareAndSet(false, true)) {
+			if (logger.isDebugEnabled()) {
+				logger.debug("Closing " + this);
+			}
+
+			if (!NativeDetector.inNativeImage()) {
+				LiveBeansView.unregisterApplicationContext(this);
+			}
+
+			try {
+				// Publish shutdown event.
+				publishEvent(new ContextClosedEvent(this));
+			}
+			catch (Throwable ex) {
+				logger.warn("Exception thrown from ApplicationListener handling ContextClosedEvent", ex);
+			}
+
+			// Stop all Lifecycle beans, to avoid delays during individual destruction.
+			if (this.lifecycleProcessor != null) {
+				try {
+					this.lifecycleProcessor.onClose();
+				}
+				catch (Throwable ex) {
+					logger.warn("Exception thrown from LifecycleProcessor on context close", ex);
+				}
+			}
+
+			// Destroy all cached singletons in the context's BeanFactory.
+			destroyBeans();
+
+			// Close the state of this context itself.
+			closeBeanFactory();
+
+			// Let subclasses do some final clean-up if they wish...
+			onClose();
+
+			// Reset local application listeners to pre-refresh state.
+			if (this.earlyApplicationListeners != null) {
+				this.applicationListeners.clear();
+				this.applicationListeners.addAll(this.earlyApplicationListeners);
+			}
+
+			// Switch to inactive.
+			this.active.set(false);
+		}
+	}
+```
+
+这里补充一个关于ShutdownHook的示例，通过这种方式可以优雅的停止线程：
+
+```java
+public class ShutdownHookThreadDemo {
+    public static void main(String[] args) throws IOException {
+        GenericApplicationContext context = new GenericApplicationContext();
+        context.addApplicationListener(new ApplicationListener<ContextClosedEvent>() {
+            @Override
+            public void onApplicationEvent(ContextClosedEvent event) {
+                System.out.printf("[线程 %s] ContextClosedEvent 处理\n", Thread.currentThread().getName());
+            }
+        });
+        context.refresh();
+        context.registerShutdownHook();
+        System.out.println("按任意键继续并且关闭Spring 应用上下文");
+        System.in.read();
+        context.close();
+    }
+}
+```
+
+## 面试题
+
+###  Spring应用上下文生命周期有哪些阶段？
+
+可以简单的回答为：
+
+- 刷新阶段 - ConfigurableApplicationContext#refresh()
+- 启动阶段 - ConfigurableApplicationContext#start()
+- 停止阶段 - ConfigurableApplicationContext#stop()
+- 关闭阶段 - ConfigurableApplicationContext#close()
+
+### Environment完整的生命周期？
+
+主要分为refresh()方法之前和refresh()方法之后，在refresh()方法之前可以主动填充自定义的Environment对象，在refresh()方法之后会创建默认的Environment对象。
+
+# Spring 总结
+
+## Spring核心特性
+
+![image-20210628202410655](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210628202410655.png)
+
+## Spring核心价值
+
+![image-20210628202440062](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210628202440062.png)
+
+# 附录
+
+## 为什么说ObjectFactory提供的是延迟依赖查找？
 
