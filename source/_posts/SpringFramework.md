@@ -8770,4 +8770,129 @@ Environment底层实现：
   - 存储对象：org.springframework.core.env.MutablePropertySources
   - 关联方法：org.springframework.core.env.ConfigurableEnvironment#getPropertySources
 
+  ## Spring内建的配置属性源
   
+  内建的PropertySource:
+  
+  | PropertySource类型                                           | 说明                     |
+  | ------------------------------------------------------------ | ------------------------ |
+  | org.springframework.core.env.CommandLinePropertySource       | 命令行配置属性源         |
+  | org.springframework.jndi.JndiPropertySource                  | JNDI配置属性源           |
+  | org.springframework.core.env.PropertiesPropertySource        | Properties配置属性源     |
+  | org.springframework.web.context.support.ServletConfigPropertySource | Servlet配置属性源        |
+  | org.springframework.web.context.support.ServletContextPropertySource | ServletContext配置属性源 |
+  | org.springframework.core.env.SystemEnvironmentPropertySource | 环境变量配置属性源       |
+  | ......                                                       |                          |
+  
+  ## 基于注解扩展Spring配置属性源
+  
+  
+
+@org.springframework.context.annotation.PropertySource实现原理：
+
+- 入口 - org.springframework.context.annotation.ConfigurationClassParser#doProcessConfigurationClass
+	- org.springframework.context.annotation.ConfigurationClassParser#processPropertySource
+- 4.3新增语义
+	- 配置属性字符编码 - encoding
+	- org.springframework.core.io.support.PropertySourceFactory
+- 适配对象 - org.springframework.core.env.CompositePropertySource
+
+> 默认只支持properties格式的文件，可以通过PropertySourceFactory进行扩展。
+
+## 基于API扩展Spring配置属性源
+
+PropertySource的配置实际上有两种类型：
+
+- Spring应用上下文启动前装配PropertySource
+- Spring应用上下文启动后装配PropertySource
+
+基于API扩展的示例：
+
+```java
+public class EnvironmentPropertySourceChangeDemo {
+    @Value("${user.name}")
+    private String UserName; // 不具备动态更新地能力
+
+    // propertySource(“first-property-source”) {user.name = 吉永超}
+    // propertySource(Java System Properties) {user.name = jyc}
+
+    public static void main(String[] args) {
+
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+
+        context.register(EnvironmentPropertySourceChangeDemo.class);
+
+        // 在Spring应用上下文启动之前，调整Environment中的PropertySource
+        ConfigurableEnvironment environment = context.getEnvironment();
+        // 获取MutablePropertySources 对象
+        MutablePropertySources propertySources = environment.getPropertySources();
+        // 动态地插入PropertySource到PropertySources
+        HashMap<String, Object> source = new HashMap<>();
+        source.put("user.name", "吉永超");
+        MapPropertySource propertySource = new MapPropertySource("first-property-source", source);
+        propertySources.addFirst(propertySource);
+        context.refresh();
+
+        source.put("user.name", "007");
+        EnvironmentPropertySourceChangeDemo environmentPropertySourceChangeDemo = context.getBean(EnvironmentPropertySourceChangeDemo.class);
+        System.out.println(environmentPropertySourceChangeDemo.UserName);
+
+        for (PropertySource ps : propertySources) {
+            System.out.printf("PropertySource(name=s%),user.name属性=%s\n", ps.getName(), ps.getProperty("user.name"));
+        }
+        context.close();
+    }
+}
+```
+
+## Spring 测试配置属性源
+
+Spring 4.1测试配置属性源 - @TestPropertySource
+
+相关的示例：
+
+```java
+@RunWith(SpringRunner.class)
+@ContextConfiguration(classes = TestPropertySourceDemo.class) //Spring 注解驱动测试注解
+@TestPropertySource(properties = "user.name=吉永超")  // PropertySource(name=Inlined Test Properties)
+public class TestPropertySourceDemo {
+    @Value("${user.name}")
+    private String userName;
+
+    @Autowired
+    private ConfigurableEnvironment environment;
+
+    @Test
+    public void testUserName() {
+        System.out.println(new TestPropertySourceDemo().userName);
+        for (PropertySource ps : environment.getPropertySources()) {
+            System.out.printf("PropertySource(name=s%),user.name属性=%s\n", ps.getName(), ps.getProperty("user.name"));
+        }
+    }
+}
+
+```
+
+可以看到@TestPropertySource来源的优先级相当的高。
+
+## 面试题
+
+### 简单介绍Spring Environment接口？
+
+- 核心接口 - org.springframework.core.env.Environment
+- 父接口 - org.springframework.core.env.PropertyResolver
+- 可配置接口 - org.springframework.core.env.ConfigurableEnvironment
+- 职责：
+	- 管理Spring配置属性源
+	- 管理Profiles
+
+### 如何控制PropertySource的优先级？
+
+可以通过相关的Spring相关的API进行操作
+
+### Environment完整的生命周期是怎样的？
+
+// ...
+
+# Spring 应用上下文生命周期
+
