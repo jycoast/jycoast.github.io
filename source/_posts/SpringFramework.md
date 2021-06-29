@@ -7,7 +7,7 @@ author: 吉永超
 top: 2
 ---
 
-Spring毫无疑问是当下Web开发的事实标准，而大部分开发人员对于Spring的了解还仅仅停留在表面，修炼好Web开发中这一门最为重要的内功，对于视野的开拓、框架的扩展、学习周边技术栈是必不可少的。
+Spring毫无疑问是当下Web开发的事实标准，而大部分开发人员对于Spring的了解还仅仅停留在表面，修炼好Web开发中这一门最为重要的内功，对于框架原理的理解、视野的开拓以及学习周边技术栈是必不可少的。
 <!-- more -->
 # Spring 基础
 
@@ -9545,4 +9545,269 @@ public class ShutdownHookThreadDemo {
 # 附录
 
 ## 为什么说ObjectFactory提供的是延迟依赖查找？
+
+原因：
+
+- ObjectFactory（或ObjectProvider）可关联某一类型Bean
+- ObjectFactory（或ObjectProvider）对象在被依赖注入和依赖查询时并未实时查找关联类型Bean
+- ObjectFactory（或ObjectProvider）调用getObject()方法时，目标Bean才被依赖查找
+
+总结：ObjectFactory（或ObjectProvider）相当于某一类型Bean依赖查找代理对象。
+
+这里我们可以编写一个示例：
+
+```java
+public class ObjectFactoryLazyLookupDemo {
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+        context.register(ObjectFactoryLazyLookupDemo.class);
+        context.refresh();
+
+        ObjectFactoryLazyLookupDemo demo = context.getBean(ObjectFactoryLazyLookupDemo.class);
+        // 代理对象
+        ObjectProvider<User> objectProvider = demo.objectProvider;
+        ObjectFactory<User> userObjectFactory = demo.userObjectFactory;
+
+        // ObjectFactory和ObjectProvider
+        System.out.println("userObjectFactory == objectProvider: " +
+                (userObjectFactory == objectProvider));
+        // 结果为true，说明两者的底层实现是一样的。
+        System.out.println("userObjectFactory.getClass() == objectProvider.getClass(): " +
+                (userObjectFactory.getClass() == objectProvider.getClass()));
+
+        // 实际对象(延迟查找)
+        System.out.println(userObjectFactory.getObject());
+        System.out.println(objectProvider.getObject());
+        System.out.println(context.getBean(User.class));
+        context.close();
+    }
+
+    @Autowired
+    private ObjectFactory<User> userObjectFactory;
+
+    @Autowired
+    private ObjectProvider<User> objectProvider;
+
+    @Bean
+    @Lazy
+    public User user() {
+        User user = new User();
+        user.setId("111111");
+        user.setName("吉永超");
+        return user;
+    }
+}
+```
+
+也可以在DefaultListableBeanFactory.DependencyObjectProvider中看到相关的原理，只有在调用getObject的时候，才会根据泛型的具体化进行依赖查找，创建对象，而不是直接去查找，也就是所谓的延迟依赖查找。
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210629102005648.png" alt="image-20210629102005648" style="zoom:50%;" />
+
+## 依赖查找（注入）的Bean会被缓存嘛？
+
+- 单例Bean（Singleton）-  会
+  - 缓存位置：org.springframework.beans.factory.support.DefaultSingletonBeanRegistry#singletonObjects属性
+- 原型Bean（Prototype）- 不会
+  - 当依赖查询或依赖注入时，根据BeanDefinition每次创建
+- 其他Scope Bean
+  - request：每个ServletRequest内部缓存，生命周期维持在每次HTTP请求
+  - session：每个HttpSeesion内部缓存，生命周期维持在每个用户HTTP会话
+  - application：当前Servlet应用内部缓存
+
+相关的示例代码：
+
+```java
+public class BeanCachingDemo {
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+        context.register(BeanCachingDemo.class);
+        context.refresh();
+
+        BeanCachingDemo beanCachingDemo = context.getBean(BeanCachingDemo.class);
+
+        for (int i = 0; i < 9; i++) {
+            // singletonBean会被缓存
+            System.out.println(beanCachingDemo == context.getBean(BeanCachingDemo.class));
+        }
+        User user = context.getBean(User.class);
+
+        for (int i = 0; i < 9; i++) {
+            // prototype不会被缓存
+            System.out.println(user == context.getBean(User.class));
+        }
+        context.close();
+    }
+
+    @Bean
+    @Scope("prototype")
+    public static User user() {
+        User user = new User();
+        user.setId("111111");
+        user.setName("吉永超");
+        return user;
+    }
+}
+```
+
+其中单例对象的最为复杂，在DefaultSingletonBeanRegistry#getSingleton中可以看到核心的逻辑：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210629104114854.png" style="zoom: 50%;" />
+
+在每次进行依赖查找（注入）的时候不是直接创建对象，而是会现在缓存的字段singletonObjects中进行获取。
+
+原型作用域的Bean每次在依赖查找（注入）的时候都会根据BeanDefinition重新构建Bean。
+
+总而言之，只有Prototype的Bean不会进行缓存，其他情况下均会进行缓存。Prototype的Bean在被容器创建之后就会与容器脱钩，不再有生命周期等特性。
+
+## @Bean的处理流程是怎样的？
+
+- 解析范围 - Configuration Class中的@Bean方法
+- 方法类型 - 静态@Bean方法和实例@Bean方法
+
+在找到标注了@Configuration Class的类之后，会获取到所有的@Bean的方法，根据标注的@Bean的方法解析出相应的BeanDefinition，然后创建对象，相关的逻辑在
+
+ConfigurationClassBeanDefinitionReader#loadBeanDefinitionsForBeanMethod方法中，另外在解析静态方法和实例方法的时候，有一些差别：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210629112032376.png" alt="image-20210629112032376" style="zoom:50%;" />
+
+可以看到，如果是实例方法，那么首先要获取到实例方法所在的类的实例，静态方法的初始化会更早。
+
+## BeanFactory是如何处理循环依赖的？
+
+预备知识：
+
+- 循环依赖开关（方法）- AbstractAutowireCapableBeanFactory#setAllowCircularReferences
+- 单例工程（属性）- DefaultSingletonBeanRegistry#singletonFactories
+- 获取早期未处理Bean（方法） - AbstractAutowireCapableBeanFactory#getEarlyBeanReference
+- 早期未处理Bean（属性） - DefaultSingletonBeanRegistry#earlySingletonObjects
+
+循环依赖的示例，首先定义一个学生类：
+
+```java
+public class Student {
+
+    private Long id;
+
+    private String name;
+
+    @Autowired
+    private ClassRoom classRoom;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public ClassRoom getClassRoom() {
+        return classRoom;
+    }
+
+    public void setClassRoom(ClassRoom classRoom) {
+        this.classRoom = classRoom;
+    }
+
+    @Override
+    public String toString() {
+        return "Student{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", classRoom.name=" + classRoom.getName() +
+                '}';
+    }
+}
+```
+
+然后定义一个教室类：
+
+```java
+public class ClassRoom {
+
+    private String name;
+
+    @Autowired
+    private Collection<Student> students;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public Collection<Student> getStudents() {
+        return students;
+    }
+
+    public void setStudents(Collection<Student> students) {
+        this.students = students;
+    }
+
+    @Override
+    public String toString() {
+        return "ClassRoom{" +
+                "name='" + name + '\'' +
+                ", students=" + students +
+                '}';
+    }
+}
+```
+
+测试示例：
+
+```java
+public class CircularReferencesDemo {
+
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+        // 注册 Configuration Class
+        context.register(CircularReferencesDemo.class);
+
+        // 如果设置为 false，则抛出异常信息如：currently in creation: Is there an unresolvable circular reference?
+        // 默认值为 true
+        context.setAllowCircularReferences(true);
+
+        // 启动 Spring 应用上下文
+        context.refresh();
+
+        System.out.println("Student : " + context.getBean(Student.class));
+        System.out.println("ClassRoom : " + context.getBean(ClassRoom.class));
+
+        // 关闭 Spring 应用上下文
+        context.close();
+    }
+
+    @Bean
+    public static Student student() {
+        Student student = new Student();
+        student.setId(1L);
+        student.setName("张三");
+        return student;
+    }
+
+    @Bean
+    public static ClassRoom classRoom() {
+        ClassRoom classRoom = new ClassRoom();
+        classRoom.setName("C122");
+        return classRoom;
+    }
+}
+```
+
+处理循环依赖的核心代码：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210629152452981.png" alt="image-20210629152452981" style="zoom:50%;" />
+
+
 
