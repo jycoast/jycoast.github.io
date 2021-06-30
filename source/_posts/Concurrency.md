@@ -2,7 +2,10 @@
 title: Java并发编程
 date: 2020-10-05
 categories:
-- Java
+ - Java
+tags: 
+ - 并发编程
+ - 线程
 author: 吉永超
 ---
 

@@ -3,6 +3,10 @@ title: SpringFramework
 date: 2020-07-16
 categories:
  - Spring
+tags: 
+ - Spring
+ - SpringBoot
+ - Java
 author: 吉永超
 top: 2
 ---

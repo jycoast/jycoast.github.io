@@ -2,7 +2,11 @@
 title: 深入理解JVM
 date: 2020-12-06
 categories:
-- Java
+ - Java
+tag: 
+ - JVM
+ - 垃圾回收
+ - 类加载
 author: 吉永超
 ---
 
