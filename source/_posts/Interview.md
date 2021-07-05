@@ -1367,17 +1367,17 @@ AB发布：1、蓝绿发布、红黑发布。老版本和新版本是同时存�
 
   1. 生产者发送消息不丢失
 
-	| 产品类型 | 保证生产者发送消息不丢失策略                                 |
-	| -------- | ------------------------------------------------------------ |
-	| kafka    | 消息发送+回调                                                |
-	| RocketMQ | 事务消息                                                     |
-	| RabbitMQ | 消息发送+回调                                                |
-	|          | 手动事务：Channel：txSelect()开启事务，Channel.txCommit()提交事务，Channel.txRollback()回滚事务，这种方式对channel是会产生阻塞的，造成吞吐量下降 |
-	|          | publisher confirms。整个处理流程跟RocketMQ的事务消息，基本是一样的。 |
+| 产品类型 | 保证生产者发送消息不丢失策略                                 |
+| -------- | ------------------------------------------------------------ |
+| kafka    | 消息发送+回调                                                |
+| RocketMQ | 事务消息                                                     |
+| RabbitMQ | 消息发送+回调                                                |
+|          | 手动事务：Channel：txSelect()开启事务，Channel.txCommit()提交事务，Channel.txRollback()回滚事务，这种方式对channel是会产生阻塞的，造成吞吐量下降 |
+|          | publisher confirms。整个处理流程跟RocketMQ的事务消息，基本是一样的。 |
 
-	具体如下图：
+  具体见下图：
 
-	![img](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210630002758.png)
+  ![img](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210630002758.png)
 
   2. MQ主从消息同步不丢失
 
@@ -1390,17 +1390,20 @@ AB发布：1、蓝绿发布、红黑发布。老版本和新版本是同时存�
 
   3. MQ消息存盘不丢失
 
-	RocketMQ：同步刷盘、异步刷盘：异步刷盘效率更高，但是有可能丢消息，同步刷盘消息安全性更高，但是效率会降低。
+  - RocketMQ：同步刷盘、异步刷盘：异步刷盘效率更高，但是有可能丢消息，同步刷盘消息安全性更高，但是效率会降低。
 
-	RabbitMQ：将队列配置成持久化队列
+
+  - RabbitMQ：将队列配置成持久化队列
 
   4. 消费者消费消息不丢失
 
-	RocketMQ:使用默认的方式消费就行，不要采用异步方式
+  - RocketMQ:使用默认的方式消费就行，不要采用异步方式
 
-	RabbitMQ：autoCommit
 
-	Kafka：手动提交offset
+  - RabbitMQ：autoCommit
+
+
+  - Kafka：手动提交offset
 
 ### 如何保证消费幂等性?
 
