@@ -121,6 +121,10 @@ Set用来存储不允许重复的集合，不会有多个元素引用相同集�
 
 Map是用来存储键值对的，Map会维护与Key有关联的值，两个不同的Key可以引用相同的对象，Key不能重复。
 
+### HashMap实现原理？
+
+[Java 8系列之重新认识HashMap - 美团技术团队 (meituan.com)](https://tech.meituan.com/2016/06/24/java-hashmap.html)
+
 ## Java并发
 
 ### Java如何开启线程？怎么保证线程安全？
