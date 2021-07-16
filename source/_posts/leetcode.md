@@ -400,9 +400,17 @@ public void divideConquer(problem, param1, param2,...) {
 
 贪心算法与动态规划的不同在于它对于每个子问题的解决方案都做出选择，不能回退，动态规划则会保存以前的运算结果，并根据以前的结果对当前进行选择，有回退功能。
 
+> 贪心算法：当下做局部最优判断
+>
+> 回溯：能够回退
+>
+> 动态规划：最优判断 + 回退
+
 贪心法可以解决一些最优化问题，如：求图中的最小生成树、哈夫曼编码等。然而对于工程和生活中的问题，贪心法一般不能得到我们所求的答案。
 
 一旦一个问题可以通过贪心法来解决，那么贪心法一般是解决这个的最好办法。由于贪心法的高效性以及其所求得得答案比较接近最优结果，贪心法也可以用作辅助算法或者直接解决一些要求结果不特别精确得问题。
+
+> 贪心算法可以从前往后，也可以从后往前，也可以从局部切入进行贪心。
 
 ## 深度优先搜索
 
@@ -442,7 +450,35 @@ public void divideConquer(problem, param1, param2,...) {
 
 ### 定义
 
+二分查找又称折半查找，二分查找的核心思想是，在有序表中，取中间记录作为比较对象，若给定值与中间记录的关键字相等，则查找成功，若给定值小于中间记录的关键字，则在中间记录的左搬去继续查找；若给定值大于中间记录的关键字，则在中间记录的右搬去继续查找，不断重复上述过程，直到查找成功，或所有查找区域无记录，查找失败为止。
+
+要使用二分查找的前题是：
+
+- 目标函数单调（单调递增或者单调递减）
+- 能够通过索引访问（即顺序存储）
+- 存在上下界
+
+二分查找的时间复杂度为O（logn）
+
 ### 代码模板
+
+```java
+    public int binarySearch(int nums[], int target) {
+        int left = 0;
+        int right = nums.length - 1;
+        while (left <= right) {
+            int mid = (left + right) / 2;
+            if (target < nums[mid]) {
+                right = mid - 1;
+            } else if (target > nums[mid]) {
+                left = mid + 1;
+            }else {
+                return mid;
+            }
+        }
+        return 0;
+    }
+```
 
 ## 布隆过滤器
 
@@ -934,6 +970,96 @@ public int maxDepthByBFS(TreeNode root) {
     }
 ```
 
+## [455. 分发饼干](https://leetcode-cn.com/problems/assign-cookies/)
+
+使用贪心算法：
+
+```java
+    public int findContentChildren(int[] g, int[] s) {
+        Arrays.sort(g);
+        Arrays.sort(s);
+        // 孩子数组的下标
+        int i = 0;
+        // 饼干数组的下标
+        int j = 0;
+        while (i < g.length && j < s.length) {
+            // 满足条件就下一个孩子
+            if (g[i] <= s[i]) {
+                i++;
+            }
+            // 不满足下一个饼干
+            j++;
+        }
+        // 下标i正好是满足条件的孩子的个数
+        return i;
+    }
+```
+
+## [121. 买卖股票的最佳时机](https://leetcode-cn.com/problems/best-time-to-buy-and-sell-stock/)
+
+使用贪心算法：
+
+```java
+    public int maxProfit(int[] prices) {
+        int profit = 0;
+        int min = prices[0];
+        for (int i = 0; i < prices.length; i++) {
+            if (prices[i] < min) {
+                min = prices[i];
+            } else {
+                profit = Math.max(prices[i] - min, profit);
+            }
+        }
+        return profit;
+    }
+```
+
+需要注意的是，本题中股票值买卖一次。
+
+## [69. x 的平方根](https://leetcode-cn.com/problems/sqrtx/)
+
+使用二分查找：
+
+````java
+    public int mySqrt(int x) {
+        int left = 0;
+        int right = x;
+        while (left < right) {
+            int mid = left + (right - left + 1) / 2;
+            // 注意：这里为了避免乘法溢出，改用除法
+            if (mid > x / mid) {
+                right = mid - 1;
+            } else {
+                left = mid;
+            }
+        }
+        return left;
+    }
+````
+
+另外，解决此类问题也可以使用平方根法。
+
+## [367. 有效的完全平方数](https://leetcode-cn.com/problems/valid-perfect-square/)
+
+```java
+    public boolean isPerfectSquare(int num) {
+        int left = 0;
+        int right = num;
+        while (left <= right) {
+            // 这么写的原因是极端情况下left + right相加的结果溢出
+            int mid =  left + (right - left) / 2;
+            if (mid * mid == num) {
+                return true;
+            } else if (mid * mid > num) {
+                right = mid - 1;
+            } else {
+                left = mid + 1;
+            }
+        }
+        return false;
+    }
+```
+
 
 
 # 高频考题（中等）
@@ -1160,17 +1286,73 @@ public List<List<String>> groupAnagrams(String[] strs) {
 利用中序遍历的性质：
 
 ```java
-
+    public boolean isValidBST(TreeNode root) {
+        Deque<TreeNode> stack = new LinkedList<>();
+        // 存储上一个节点的值
+        double inorder = -Double.MAX_VALUE;
+        while (root != null || !stack.isEmpty()) {
+            while (root != null) {
+                stack.push(root);
+                root = root.left;
+            }
+            TreeNode node = stack.pop();
+            // 当前节点的值与上一个节点的值进行比较
+            if (node.val <= inorder) {
+                return false;
+            }
+            inorder = node.val;
+            root = node.right;
+        }
+        return true;
+    }
 ```
 
 除此之外，也可以先进行中序遍历，然后判断返回的列表是否为升序。
 
 ## [236. 二叉树的最近公共祖先](https://leetcode-cn.com/problems/lowest-common-ancestor-of-a-binary-tree/)
 
+树的祖先的定义：若节点P在节点root的左（右）子树中，或P=root，则称root是p的祖先。
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210713224143.png" alt="Picture1.png" style="zoom:50%;" />
+
+最近公共祖先的定义：设节点root为节点p，q的某公共祖先，若其左子节点root.left和右子节点root.right都不是p,q的公共祖先，则称root是"最近的公共祖先"。
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210713224306.png" alt="Picture2.png" style="zoom:50%;" />
+
+根据以上定义，若root是p,q的最近公共祖先，则只可能为以下情况之一：
+
+- p 和q 在root的子树中，且分列root的异侧即分别在左、右子树中）
+- p = root，且q在root的左或右子树中
+- q = root，且p在root的左或右子树中
+
 ```java
+class Solution {
+    public TreeNode lowestCommonAncestor(TreeNode root, TreeNode p, TreeNode q) {
+        if (root == null) return null;
+        // 如果p,q为根节点，则公共祖先为根节点
+        if (root.val == p.val || root.val == q.val) return root;
+        // 如果p,q在左子树，则公共祖先在左子树查找
+        if (find(root.left, p) && find(root.left, q)) {
+            return lowestCommonAncestor(root.left, p, q);
+        }
+        // 如果p,q在右子树，则公共祖先在右子树查找
+        if (find(root.right, p) && find(root.right, q)) {
+            return lowestCommonAncestor(root.right, p, q);
+        }
+        // 如果p,q分属两侧，则公共祖先为根节点
+        return root;
+    }
+    
+    private boolean find(TreeNode root, TreeNode c) {
+        if (root == null) return false;
+        if (root.val == c.val) {
+            return true;
+        }
+        
+        return find(root.left, c) || find(root.right, c);
+    }
+}
 ```
-
-
 
 ## [50. Pow(x, n)](https://leetcode-cn.com/problems/powx-n/)
 
@@ -1325,7 +1507,7 @@ public List<List<Integer>> levelOrder(TreeNode root) {
 
 <img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210713174441.jpeg" alt="网格结构中四个相邻的格子" style="zoom:50%;" />
 
-这类问题，深度优先遍历的终止条件：
+在这类问题中，深度优先遍历的终止条件：
 
 <img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210713174700.jpeg" alt="网格 DFS 的 base case" style="zoom:50%;" />
 
@@ -1430,7 +1612,28 @@ boolean inArea(int[][] grid, int r, int c) {
     }
 ```
 
-​	
+## [322. 零钱兑换](https://leetcode-cn.com/problems/coin-change/)
+
+使用贪心算法：
+
+```java
+```
+
+## [55. 跳跃游戏](https://leetcode-cn.com/problems/jump-game/)
+
+使用贪心算法：
+
+```java
+```
+
+## [74. 搜索二维矩阵](https://leetcode-cn.com/problems/search-a-2d-matrix/)
+
+使用二分查找：
+
+```java
+```
+
+
 
 # 高频考题（困难）
 
@@ -1438,8 +1641,37 @@ boolean inArea(int[][] grid, int r, int c) {
 
 使用暴力法求解：
 
-```java
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210713190144.png" alt="image.png" style="zoom: 33%;" />
 
+对于每一个位置，我们需要：
+
+- 向左遍历，找到大于等于当前柱形高度最左元素的下标
+- 向右遍历，找到大于等于当前柱形高度最右元素的下标
+
+然后得到一个矩形的面积，求出他们的最大值。
+
+```java
+    public int largestRectangleArea(int[] heights) {
+        if (heights.length == 0) {
+            return 0;
+        }
+        int res = 0;
+        for (int i = 0; i < heights.length; i++) {
+            // 向左遍历，找到大于等于当前柱形高度最左元素的下标
+            int left = i;
+            while (left > 0 && heights[left - 1] >= heights[i]) {
+                left--;
+            }
+            // 向右遍历，找到大于等于当前柱形高度最右元素的下标，注意这里的边界条件
+            int right = i;
+            while (right < heights.length - 1 && heights[right + 1] >= heights[i]) {
+                right++;
+            }
+            int width = right - left + 1;
+            res = Math.max(res, width * heights[i]);
+        }
+        return res;
+    }
 ```
 
 ## [239. 滑动窗口最大值](https://leetcode-cn.com/problems/sliding-window-maximum/)
@@ -1449,6 +1681,7 @@ boolean inArea(int[][] grid, int r, int c) {
 暴力求解法：
 
 ```java
+
 ```
 
 使用最大堆（优先队列）：
@@ -1482,5 +1715,56 @@ boolean inArea(int[][] grid, int r, int c) {
 ## [51. N 皇后](https://leetcode-cn.com/problems/n-queens/)
 
 ```java
+ public List<List<String>> solveNQueens(int n) {
+        List<List<String>> solutions = new ArrayList<List<String>>();
+        int[] queens = new int[n];
+        Arrays.fill(queens, -1);
+        Set<Integer> columns = new HashSet<Integer>();
+        Set<Integer> diagonals1 = new HashSet<Integer>();
+        Set<Integer> diagonals2 = new HashSet<Integer>();
+        backtrack(solutions, queens, n, 0, columns, diagonals1, diagonals2);
+        return solutions;
+    }
+
+    public void backtrack(List<List<String>> solutions, int[] queens, int n, int row, Set<Integer> columns, Set<Integer> diagonals1, Set<Integer> diagonals2) {
+        if (row == n) {
+            List<String> board = generateBoard(queens, n);
+            solutions.add(board);
+        } else {
+            for (int i = 0; i < n; i++) {
+                if (columns.contains(i)) {
+                    continue;
+                }
+                int diagonal1 = row - i;
+                if (diagonals1.contains(diagonal1)) {
+                    continue;
+                }
+                int diagonal2 = row + i;
+                if (diagonals2.contains(diagonal2)) {
+                    continue;
+                }
+                queens[row] = i;
+                columns.add(i);
+                diagonals1.add(diagonal1);
+                diagonals2.add(diagonal2);
+                backtrack(solutions, queens, n, row + 1, columns, diagonals1, diagonals2);
+                queens[row] = -1;
+                columns.remove(i);
+                diagonals1.remove(diagonal1);
+                diagonals2.remove(diagonal2);
+            }
+        }
+    }
+
+    public List<String> generateBoard(int[] queens, int n) {
+        List<String> board = new ArrayList<String>();
+        for (int i = 0; i < n; i++) {
+            char[] row = new char[n];
+            Arrays.fill(row, '.');
+            row[queens[i]] = 'Q';
+            board.add(new String(row));
+        }
+        return board;
+    }
 ```
 
