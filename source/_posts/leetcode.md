@@ -1623,14 +1623,50 @@ boolean inArea(int[][] grid, int r, int c) {
 
 使用贪心算法：
 
+![image-20210719235247657](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210719235247.png)
+
+此时0这个位置的下标是4，但是之前最大的可达步数是3，因为无法再进行跳跃。
+
 ```java
+   public boolean canJump(int[] nums) {
+        // 最大能跳跃到的地方
+        int maxJump = 0;
+        for (int i = 0; i < nums.length; i++) {
+            if (i > maxJump) {
+                return false;
+            }
+            maxJump = Math.max(i + nums[i], maxJump);
+        }
+        return true;
+    }
 ```
 
 ## [74. 搜索二维矩阵](https://leetcode-cn.com/problems/search-a-2d-matrix/)
 
-使用二分查找：
+将矩阵每一行拼接在上一行的末尾，则会得到一个升序数组，我们可以在该数组上二分找到目标元素，可以二分升序数组的下标，将其映射到原矩阵的行和列上：
 
 ```java
+    public boolean searchMatrix(int[][] matrix, int target) {
+        int r = matrix.length;
+        int c = matrix[0].length;
+        int left = 0;
+        // 总共有这么多个元素
+        int right = r * c - 1;
+        while (left < right) {
+            int mid = left + (right - left) / 2;
+            // 最主要的就是元素映射到原矩阵的行和列上
+            // mid/c刚好是行数,mid%c刚好是列数,注意矩阵的下标从0开始算起
+            int element = matrix[mid / c][mid % c];
+            if (element == target) {
+                return true;
+            } else if (element < target) {
+                left = mid + 1;
+            } else if (element > target) {
+                right = mid - 1;
+            }
+        }
+        return false;
+    }
 ```
 
 
