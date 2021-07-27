@@ -2234,6 +2234,12 @@ ApplicationContext就是一种门面模式的实现......
 
 # Spring AOP内部应用
 
+Spring AOP在Spring Framework中的应用的实现都大同小异，大致都分为以下三个步骤：
+
+1. Enable模块驱动
+2. 注册Proxy的Configuration Class
+3. 实现PointcurAdvisor和MethodInterceptor
+
 ## Spring 事件中的应用
 
 核心API - org.springframework.context.event.EventPublicationInterceptor
@@ -2401,6 +2407,17 @@ public class EventPublicationInterceptorDemo {
 - Spring缓存PointcutAdvisor实现 - BeanFactoryCacheOperationSourceAdvisor
 - Spring缓存MethodInterceptor实现 - CacheInterceptor
 
+## Spring本地调度中的应用
+
+核心API：
+
+- Spring异步@Enable模块驱动 - @EnableAsync
+- Spring异步注解 - @Async
+- Spring异步配置器 - AsyncConfigurer
+- Spring异步代理配置 - ProxyAsyncConfiguration
+- Spring异步PointcurAdvisor实现 - AsyncAnnotationAdvisor
+- Spring异步MethodInterceptor实现 - AnnotationAsyncExecutionInterceptor
+
 ## 面试题
 
 ### 请举例说明Spring AOP在Spring Framework特性运用？
@@ -2409,11 +2426,11 @@ public class EventPublicationInterceptorDemo {
 - Spring 事务（Transaction）
 - Spring 缓存（Caching）
 - Spring 本地调度（Scheduling）
-- Spring远程（Remoting）
+- Spring远程（Remoting） 
 
 ### 请解释Spring事务传播的原理？
 
-// ...
+/这里最主要的是要掌握逻辑事务和物理事务的区别。
 
 ### 请总结Spring AOP与IoC功能整合的设计模式？
 

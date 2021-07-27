@@ -65,11 +65,33 @@ JRE是Java运行时环境，它是运行已经编译的Java程序所需的内容
 
 	多态是值程序中定义的引用变量所指向的具体类型和通过该引用变量发出的方法调用在编程时并不确定，而是在程序运行期间才确定，即一个引用变量到底会指向哪个类的实例对象，该引用变量发出的方法调用到底是哪个类中实现的方法，必须是在程序运行期间才能决定。
 
-### String StringBuffer 和 StringBuilder 的区别是什么? String 为什么是不可变的?
+### String StringBuffer 和 StringBuilder 的区别是什么?
 
 - String：不可变字符序列
 - StringBuffer：可变字符序列，效率低，线程安全
 - StringBuilder：可变字符序列，效率高，线程不安全
+
+###  String类为什么是不可变的?
+
+在Java中，String被设计成一个不可变的类，也就是常量对象，理由如下：
+
+- String常量池需要
+
+	JVM为了提升性能和减少内存开销，设计了字符串常量池，字符串不可变的特性就是其设计基础。
+
+- 缓存Hashcode
+
+	可以将Hash值存储起来，不用每次都计算，会给String作为key的数据结构，例如HashMap、HashTable等带来性能提升。
+
+- 安全
+
+	可以防止通过反射机制等有意或者恶意修改，从而预防安全问题。
+
+- 线程安全
+
+	不可变的对象意味着天生就是线程安全的，可以被多个线程共享。
+
+缺点：对于字符串拼接操作会带来极大的性能消耗，这种情况可以使用StringBuffer、StringBuilder来替代String。
 
 ### 深拷贝和浅拷贝的区别？
 
@@ -620,9 +642,11 @@ MarkCompack 标记压缩算法
 
  这三个算法各有利弊，各自有各自的适合场景。
 
-### JVM有哪些垃圾回收器？他们都是怎么工作的？什么是STW？他都发生在哪些阶段？
+### 什么是STW？
 
-STW：stop the world，是在垃圾晖收算法执行过程当中，需要将JVM内存冻结的一种状态，在STW状态下，Java所有的线程都是停止执行的，GC线程除外，只有native方法可以执行，但是，不能与JVM交互，GC各种算法优化的重点，就是减少STW，同时这也是JVM调优的重点。
+STW：stop the world，是在垃圾回收算法执行过程当中，需要将JVM内存冻结的一种状态，在STW状态下，Java所有的线程都是停止执行的，GC线程除外，只有native方法可以执行，但是，不能与JVM交互，GC各种算法优化的重点，就是减少STW，同时这也是JVM调优的重点。
+
+### JVM有哪些垃圾回收器？他们都是怎么工作的？他都发生在哪些阶段？
 
 <img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210630004650.png" alt="img" style="zoom: 67%;" />
 
@@ -684,9 +708,11 @@ CMS通过增量标记increment update的方式来解决漏标的问题。
 
 
 
-### 如何进行JVM调优？JVM参数有哪些？怎么查看一个Java进程的JVM参数，谈谈你了解的JVM参数。如果一个Java程序每次运行一段时间后，就变得非常卡顿，你准备如何对他进行优化？
+### 如何进行JVM调优？
 
 JVM调优主要是通过定制JVM运行参数来提高Java应用程序的运行速度。
+
+### JVM参数有哪些？
 
 JVM参数大致可以分为三类：
 
@@ -695,6 +721,8 @@ JVM参数大致可以分为三类：
 ２、非标准指令：-开头，这些指令通常是跟特定的HotSpot版本对应的，可以用Java -X打印出来
 
 ３、不稳定参数：-XX开头，这一类参数是跟特定HotSpot版本对应的，并且变化非常大，详细的文档资料非常少，在JDK1.8版本下，有几个常用的不稳定指令：Java -XX:+PrintCommandLineFlags：查看当前命令的不稳定指令。
+
+### 怎么查看一个Java进程的JVM参数，谈谈你了解的JVM参数
 
 打印出所有不稳定参数所有默认值：java -XX:+PrintFlagsInitial
 
@@ -1128,7 +1156,21 @@ Spring中保证线程安全的方法
 
 2、最好的方式是将控制器设计成无状态模式。在控制器中不要携带数据，但是可以引用无状态的service和dao。
 
-# 认证授权
+## SpringBoot面试题
+
+### 为什么SpringBoot的 jar可以直接运行？
+
+https://blog.fundebug.com/2019/01/09/how-does-springboot-start/
+
+## MyBatis面试题
+
+### Mybatis接口 Mapper内的方法为什么不能重载？
+
+Mybatis在XML文件中寻找对应的SQL语句的时候，会根据StrictMap<String, MappedStatement>中查找对应的MappedStatement，这里Map的key就是根据Mapper的全类名 + "." + 方法名。一方面，StrictMap如果出现重复的key会直接抛出异常，另一方面，如果允许key重复，也就是允许Mapper内的方法重载，则无法定位到XML文件内唯一的SQL语句。
+
+更多内容可以参考：[Mybatis接口 Mapper内的方法为什么不能重载？](https://www.cnblogs.com/Chenjiabing/p/13671589.html)
+
+# S认证授权
 
 ## 网络安全
 

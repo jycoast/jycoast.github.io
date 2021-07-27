@@ -598,17 +598,27 @@ LRU（最近至少使用）
 
 ## 动态规划
 
-动态规划（Dynamic Programming） → 动态递归
+### 定义
 
-将一个复杂的问题分解为子问题：分治 + 最优子结构
+动态规划（Dynamic Programming）也可以认为是动态递归。
 
-关键点
+关键点：
 
-动态规划和递归或者分治 没有根本上的区别（关键是看有无最优子结构）
+- 最优子结构：opt[n] = best_of(opt[n -1], opt[n - 2], ...)
+- 存储中间状态：opt[i]
+- 递推公式（状态转移方程或者DP方程）
 
-共性：找到重复子问题
+### 代码模板
 
-差异性：最优子结构、中途可以淘汰次优解
+```python
+# 初始化 base case
+dp[0][0][...] = base
+# 进行状态转移
+for 状态1 in 状态1的所有取值：
+    for 状态2 in 状态2的所有取值：
+        for ...
+            dp[状态1][状态2][...] = 求最值(选择1，选择2...)
+```
 
 # 高频考题（简单）
 
@@ -1058,6 +1068,48 @@ public int maxDepthByBFS(TreeNode root) {
         }
         return false;
     }
+```
+
+## [509. 斐波那契数](https://leetcode-cn.com/problems/fibonacci-number/)
+
+直接暴力递归的时间复杂度是O(2<sup>n</sup>)，因为需要优化，优化的思路大致分为两种，一种是记忆化搜索，一种是动态规划，使用记忆化搜索相当于剪枝，记忆化搜索的递归树：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210727102616.png" alt="image-20210727102609636" style="zoom: 67%;" />
+
+代码：
+
+```java
+    public int fib(int n, int[] mem) {
+        if (n <= 1) {
+            return n;
+        }
+        if (mem[n] == 0) {
+            mem[n] = fib(n - 1, mem) + fib(n - 2, mem);
+        }
+        return mem[n];
+    }
+```
+
+如果只记录每次记忆化搜索的结果就变成了动态规划：
+
+<img src="C:/Users/jyc/AppData/Roaming/Typora/typora-user-images/image-20210727102754402.png" alt="image-20210727102754402" style="zoom:67%;" />
+
+所谓的状态转移方程或者说递推公式为：`dp[i] = dp[i - 1] + dp[i - 2]`。
+
+```java
+    public int fib(int n) {
+        int[] dp = {0, 1};
+        for (int i = 2; i < n; i++) {
+            dp[i] = dp[i - 1] + dp[i - 2];
+        }
+        return dp[n];
+    }
+```
+
+还可以进一步优化，实际上每次只需要存储最近的两个结果即可，按照这个思路，可以将空间复杂度优化到O(1)。
+
+```java
+
 ```
 
 
@@ -1668,6 +1720,8 @@ boolean inArea(int[][] grid, int r, int c) {
         return false;
     }
 ```
+
+## [1143. 最长公共子序列](https://leetcode-cn.com/problems/longest-common-subsequence/)
 
 
 

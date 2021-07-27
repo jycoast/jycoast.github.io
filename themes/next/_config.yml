@@ -67,7 +67,7 @@ footer:
   copyright:
 
   # Powered by Hexo & NexT
-  powered: true
+  powered: false
 
   # Beian ICP and gongan information for Chinese users. See: https://beian.miit.gov.cn, http://www.beian.gov.cn
   beian:
@@ -121,10 +121,10 @@ menu:
   categories: /categories/ || fa fa-th
   archives: /archives/ || fa fa-archive
   # schedule: /schedule/ || fa fa-calendar
-  about: /about/ || fa fa-user
-  # 文集: /links/ || fa fa-link
+  文集: https://www.wolai.com/p7EcXEWp3EsR9BeGRZWNgf?theme=dark/ || fa fa-book
   # sitemap: /sitemap.xml || fa fa-sitemap
-  # commonweal: /404/ || fa fa-heartbeat
+  commonweal: /404/ || fa fa-heartbeat
+  about: /about/ || fa fa-user
 
 # Enable / Disable menu icons / item badges.
 menu_settings:
@@ -178,7 +178,7 @@ site_state: false
 # Key is the link label showing to end users.
 # Value before `||` delimiter is the target permalink, value after `||` delimiter is the name of Font Awesome icon.
 social:
-  #GitHub: https://github.com/yourname || fab fa-github
+  GitHub: https://github.com/jiyongchao-qf || fab fa-github
   E-Mail: mailto:jyccoder@gmail.com || fa fa-envelope
   #Weibo: https://weibo.com/yourname || fab fa-weibo
   #Google: https://plus.google.com/yourname || fab fa-google
@@ -883,7 +883,6 @@ canvas_ribbon:
 vendors:
   # Internal path prefix.
   _internal: lib
-
   # Internal version: 3.1.0
   # anime: //cdn.jsdelivr.net/npm/animejs@3.1.0/lib/anime.min.js
   anime:
@@ -993,7 +992,6 @@ vendors:
   # Internal version: 1.0.0
   # canvas_ribbon: //cdn.jsdelivr.net/gh/theme-next/theme-next-canvas-ribbon@1/canvas-ribbon.js
   canvas_ribbon:
-
 # Assets
 css: css
 js: js
