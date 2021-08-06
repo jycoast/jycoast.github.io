@@ -46,7 +46,8 @@ document.addEventListener('DOMContentLoaded', () => {
       var deltaY = event.pageY - mousePos.Y;
       var clickingBlankPart = Math.sqrt((deltaX * deltaX) + (deltaY * deltaY)) < 20 && event.target.matches('.main');
       if (this.isSidebarVisible && (clickingBlankPart || event.target.matches('img.medium-zoom-image, .fancybox img'))) {
-        this.hideSidebar();
+        // 点击空白区域，或者点击图片放大时，侧边栏会自动收回
+        // this.hideSidebar();
       }
     },
     clickHandler: function() {

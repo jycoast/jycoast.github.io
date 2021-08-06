@@ -1109,7 +1109,54 @@ public int maxDepthByBFS(TreeNode root) {
 还可以进一步优化，实际上每次只需要存储最近的两个结果即可，按照这个思路，可以将空间复杂度优化到O(1)。
 
 ```java
+    public int fib(int n) {
+        if (n <= 1)
+            return n;
+        // 初始的时候，分别对应f(o) = 0和f(1) = 1
+        int prev = 0, curr = 1;
+        for (int i = 2; i <= n; i++) {
+            int sum = prev + curr;
+            // 原来的值变成前一个元素
+            prev = curr;
+            // 新的值变成当前值
+            curr = sum;
+        }
+        return curr;
+    }
+```
 
+## [53. 最大子序和](https://leetcode-cn.com/problems/maximum-subarray/)
+
+不难写出，这个问题的状态转移方程：
+$$
+f(i) = max\{f(i - 1) + nums[i],num[i]\}
+$$
+使用数组来保存 $f(i)$ 的值，遍历求出所有的 $f(i)$ 即可：
+
+```java
+    public int maxSubArray(int[] nums) {
+        int[] dp = new int[nums.length];
+        dp[0] = nums[0];
+        int res = nums[0];
+        for (int i = 1; i < nums.length; i++) {
+            dp[i] = Math.max(dp[i - 1] + nums[i], nums[i]);
+            res = Math.max(dp[i], res);
+        }
+        return res;
+    }
+```
+
+实际上我们无需记录所有的中间状态，只需要记录前一个值即可：
+
+```java
+    public int maxSubArray(int[] nums) {
+        int pre = 0, maxAns = nums[0];
+        for (int x : nums) {
+            pre = Math.max(pre + x, x);
+            maxAns = Math.max(maxAns, pre);
+        }
+        return maxAns;
+    }
 ```
 
 
@@ -1669,6 +1716,7 @@ boolean inArea(int[][] grid, int r, int c) {
 使用贪心算法：
 
 ```java
+public
 ```
 
 ## [55. 跳跃游戏](https://leetcode-cn.com/problems/jump-game/)
@@ -1720,6 +1768,41 @@ boolean inArea(int[][] grid, int r, int c) {
         return false;
     }
 ```
+
+## [62. 不同路径](https://leetcode-cn.com/problems/unique-paths/)
+
+递推公式：
+$$
+f(m,n) = f(m - 1, n) + f(m, n - 1)
+$$
+直接求解即可：
+
+```java
+    public int uniquePaths(int m, int n) {
+        int[][] dp = new int[m][n];
+        // 最后一行和最后一列都只有一种走法
+        for (int i = 0; i < m; i++) {
+            dp[i][0] = 1;
+        }
+        for (int j = 0; j < n; j++) {
+            dp[0][j] = 1;
+        }
+        for (int i = 1; i < m; i++) {
+            for (int j = 1; j < n; j++) {
+                dp[i][j] = dp[i - 1][j] + dp[i][j - 1];
+            }
+        }
+        return dp[m - 1][n - 1];
+    }
+```
+
+## [120. 三角形最小路径和](https://leetcode-cn.com/problems/triangle/)
+
+注意，本题要求每一步只能移动到下一行相邻的结点上，由此，递归方程为：
+$$
+f(i,j) = min \{f(i - 1, j),f(i-1, j-1) \} + c(i)(j)
+$$
+其中$c(i)(j)$表示位置$(i, j)$对应的元素值。
 
 ## [1143. 最长公共子序列](https://leetcode-cn.com/problems/longest-common-subsequence/)
 

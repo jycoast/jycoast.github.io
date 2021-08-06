@@ -2,6 +2,13 @@
 # yarn lockfile v1
 
 
+"@iktakahiro/markdown-it-katex@^3.0.3":
+  "integrity" "sha1-zUDBA38DirAMv+4kZGBENYSN6uk="
+  "resolved" "https://registry.npm.taobao.org/@iktakahiro/markdown-it-katex/download/@iktakahiro/markdown-it-katex-3.1.0.tgz"
+  "version" "3.1.0"
+  dependencies:
+    "katex" "^0.10.0"
+
 "a-sync-waterfall@^1.0.0":
   "integrity" "sha1-dba2qnJZi0l6El56J3DxT0yKH6c="
   "resolved" "https://registry.npm.taobao.org/a-sync-waterfall/download/a-sync-waterfall-1.0.1.tgz"
@@ -59,7 +66,7 @@
 
 "argparse@^2.0.1":
   "integrity" "sha1-JG9Q88p4oyQPbJl+ipvR6sSeSzg="
-  "resolved" "https://registry.npm.taobao.org/argparse/download/argparse-2.0.1.tgz?cache=0&sync_timestamp=1598649734444&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2Fargparse%2Fdownload%2Fargparse-2.0.1.tgz"
+  "resolved" "https://registry.nlark.com/argparse/download/argparse-2.0.1.tgz"
   "version" "2.0.1"
 
 "asap@^2.0.3":
@@ -154,6 +161,11 @@
     "select" "^1.1.2"
     "tiny-emitter" "^2.0.0"
 
+"clone@^2.1.1":
+  "integrity" "sha1-G39Ln1kfHo+DZwQBYANFoCiHQ18="
+  "resolved" "https://registry.nlark.com/clone/download/clone-2.1.2.tgz"
+  "version" "2.1.2"
+
 "color-convert@^2.0.1":
   "integrity" "sha1-ctOmjVmMm9s68q0ehPIdiWq9TeM="
   "resolved" "https://registry.npm.taobao.org/color-convert/download/color-convert-2.0.1.tgz"
@@ -170,6 +182,11 @@
   "integrity" "sha1-xQclrzgIyKsCYP1gsB+/oluVT2k="
   "resolved" "https://registry.npm.taobao.org/command-exists/download/command-exists-1.2.9.tgz"
   "version" "1.2.9"
+
+"commander@^2.19.0":
+  "integrity" "sha1-/UhehMA+tIgcIHIrpIA16FMa6zM="
+  "resolved" "https://registry.nlark.com/commander/download/commander-2.20.3.tgz?cache=0&sync_timestamp=1627358203890&other_urls=https%3A%2F%2Fregistry.nlark.com%2Fcommander%2Fdownload%2Fcommander-2.20.3.tgz"
+  "version" "2.20.3"
 
 "commander@^5.1.0":
   "integrity" "sha1-Rqu9FlL44Fm92u+Zu9yyrZzxea4="
@@ -347,6 +364,16 @@
   "integrity" "sha1-CY3JDruD2N/6CJ1VJWs1HTTE2lU="
   "resolved" "https://registry.npm.taobao.org/entities/download/entities-2.2.0.tgz"
   "version" "2.2.0"
+
+"entities@~1.1.1":
+  "integrity" "sha1-vfpzUplmTfr9NFKe1PhSKidf6lY="
+  "resolved" "https://registry.npm.taobao.org/entities/download/entities-1.1.2.tgz"
+  "version" "1.1.2"
+
+"entities@~2.1.0":
+  "integrity" "sha1-mS0xKc999ocLlsV4WMJJoSD4uLU="
+  "resolved" "https://registry.npm.taobao.org/entities/download/entities-2.1.0.tgz"
+  "version" "2.1.0"
 
 "escape-html@~1.0.3":
   "integrity" "sha1-Aljq5NPQwJdN4cFpGI7wBR0dGYg="
@@ -565,13 +592,25 @@
   dependencies:
     "ejs" "^2.6.1"
 
-"hexo-renderer-marked@^4.0.0":
-  "integrity" "sha1-9q2ICjhL4Tx+vD/IeI+G+vzxUAc="
-  "resolved" "https://registry.npm.taobao.org/hexo-renderer-marked/download/hexo-renderer-marked-4.0.0.tgz"
-  "version" "4.0.0"
+"hexo-renderer-markdown-it-plus@^1.0.4":
+  "integrity" "sha1-sJYudbr6SUCt6cHXqX3+UN0DQGY="
+  "resolved" "https://registry.nlark.com/hexo-renderer-markdown-it-plus/download/hexo-renderer-markdown-it-plus-1.0.4.tgz"
+  "version" "1.0.4"
   dependencies:
-    "hexo-util" "^2.1.0"
-    "marked" "^2.0.0"
+    "@iktakahiro/markdown-it-katex" "^3.0.3"
+    "clone" "^2.1.1"
+    "highlight.js" "^9.12.0"
+    "markdown-it" "^8.3.1"
+    "markdown-it-abbr" "^1.0.4"
+    "markdown-it-deflist" "^2.0.3"
+    "markdown-it-emoji" "^1.4.0"
+    "markdown-it-footnote" "^3.0.1"
+    "markdown-it-ins" "^2.0.0"
+    "markdown-it-mark" "^2.0.0"
+    "markdown-it-sub" "^1.0.0"
+    "markdown-it-sup" "^1.0.0"
+    "markdown-it-toc" "^1.1.0"
+    "uslug" "^1.0.4"
 
 "hexo-renderer-stylus@^2.0.0":
   "integrity" "sha1-xlVm6X6QWKUuRsgrDEXPVh9LlMs="
@@ -607,7 +646,7 @@
   "resolved" "https://registry.npm.taobao.org/hexo-theme-landscape/download/hexo-theme-landscape-0.0.3.tgz"
   "version" "0.0.3"
 
-"hexo-util@^2.0.0", "hexo-util@^2.1.0", "hexo-util@^2.4.0":
+"hexo-util@^2.0.0", "hexo-util@^2.4.0":
   "integrity" "sha1-3lY1NBEWuiVjp4mg6861WodSIa0="
   "resolved" "https://registry.nlark.com/hexo-util/download/hexo-util-2.5.0.tgz?cache=0&sync_timestamp=1620209575591&other_urls=https%3A%2F%2Fregistry.nlark.com%2Fhexo-util%2Fdownload%2Fhexo-util-2.5.0.tgz"
   "version" "2.5.0"
@@ -669,6 +708,11 @@
   "integrity" "sha1-aXJy45kTVuQMPKxWanTu9oF1ZTE="
   "resolved" "https://registry.nlark.com/highlight.js/download/highlight.js-10.7.3.tgz?cache=0&sync_timestamp=1622801908267&other_urls=https%3A%2F%2Fregistry.nlark.com%2Fhighlight.js%2Fdownload%2Fhighlight.js-10.7.3.tgz"
   "version" "10.7.3"
+
+"highlight.js@^9.12.0":
+  "integrity" "sha1-0Yo1mGfzeME41oGe38KorNXymCU="
+  "resolved" "https://registry.nlark.com/highlight.js/download/highlight.js-9.18.5.tgz"
+  "version" "9.18.5"
 
 "highlight.js@^9.13.1":
   "integrity" "sha1-0Yo1mGfzeME41oGe38KorNXymCU="
@@ -800,6 +844,34 @@
     "jsonparse" "^1.2.0"
     "through" ">=2.2.7 <3"
 
+"katex@^0.10.0":
+  "integrity" "sha1-OZc+27Ze2ltvnn9BZIeB5VfdSTI="
+  "resolved" "https://registry.nlark.com/katex/download/katex-0.10.2.tgz"
+  "version" "0.10.2"
+  dependencies:
+    "commander" "^2.19.0"
+
+"katex@^0.6.0":
+  "integrity" "sha1-EkGOCRIcBckgQbazuftrqyE8tvM="
+  "resolved" "https://registry.nlark.com/katex/download/katex-0.6.0.tgz"
+  "version" "0.6.0"
+  dependencies:
+    "match-at" "^0.1.0"
+
+"linkify-it@^2.0.0":
+  "integrity" "sha1-47VGl+eL+RXHCjis14/QngBYsc8="
+  "resolved" "https://registry.npm.taobao.org/linkify-it/download/linkify-it-2.2.0.tgz"
+  "version" "2.2.0"
+  dependencies:
+    "uc.micro" "^1.0.1"
+
+"linkify-it@^3.0.1":
+  "integrity" "sha1-9V7ri8HTrnVASeEkqzu1bZd5f7g="
+  "resolved" "https://registry.npm.taobao.org/linkify-it/download/linkify-it-3.0.2.tgz"
+  "version" "3.0.2"
+  dependencies:
+    "uc.micro" "^1.0.1"
+
 "lower-case@^2.0.2":
   "integrity" "sha1-b6I3xj29xKgsoP2ILkci3F5jTig="
   "resolved" "https://registry.npm.taobao.org/lower-case/download/lower-case-2.0.2.tgz?cache=0&sync_timestamp=1606867333511&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2Flower-case%2Fdownload%2Flower-case-2.0.2.tgz"
@@ -807,10 +879,89 @@
   dependencies:
     "tslib" "^2.0.3"
 
-"marked@^2.0.0":
-  "integrity" "sha1-WVeeF7AkQzEsqhUJmU1aCxiuOOE="
-  "resolved" "https://registry.nlark.com/marked/download/marked-2.1.2.tgz?cache=0&sync_timestamp=1624383716123&other_urls=https%3A%2F%2Fregistry.nlark.com%2Fmarked%2Fdownload%2Fmarked-2.1.2.tgz"
-  "version" "2.1.2"
+"markdown-it-abbr@^1.0.4":
+  "integrity" "sha1-1mtTZFIcuz3Yqlna37ovtoZcj9g="
+  "resolved" "https://registry.npm.taobao.org/markdown-it-abbr/download/markdown-it-abbr-1.0.4.tgz"
+  "version" "1.0.4"
+
+"markdown-it-deflist@^2.0.3":
+  "integrity" "sha1-UNela5VEzYElL3YjvXheKKjc71w="
+  "resolved" "https://registry.npm.taobao.org/markdown-it-deflist/download/markdown-it-deflist-2.1.0.tgz"
+  "version" "2.1.0"
+
+"markdown-it-emoji@^1.4.0":
+  "integrity" "sha1-m+4OmpkKljupbfaYDE/dsF37Tcw="
+  "resolved" "https://registry.npm.taobao.org/markdown-it-emoji/download/markdown-it-emoji-1.4.0.tgz"
+  "version" "1.4.0"
+
+"markdown-it-footnote@^3.0.1":
+  "integrity" "sha1-4OTA1nOQpMXwx19zvmBcfBkMpNg="
+  "resolved" "https://registry.nlark.com/markdown-it-footnote/download/markdown-it-footnote-3.0.3.tgz"
+  "version" "3.0.3"
+
+"markdown-it-ins@^2.0.0":
+  "integrity" "sha1-papqMPHi9x6Ul1Z8/f9A8f3mdIM="
+  "resolved" "https://registry.npm.taobao.org/markdown-it-ins/download/markdown-it-ins-2.0.0.tgz"
+  "version" "2.0.0"
+
+"markdown-it-katex@^2.0.3":
+  "integrity" "sha1-17hqGuoLnWSW+rTnkZoY/e9YnDk="
+  "resolved" "https://registry.npm.taobao.org/markdown-it-katex/download/markdown-it-katex-2.0.3.tgz"
+  "version" "2.0.3"
+  dependencies:
+    "katex" "^0.6.0"
+
+"markdown-it-mark@^2.0.0":
+  "integrity" "sha1-RqGqlHEFrtgYiXjgoBYXnkBPQsc="
+  "resolved" "https://registry.npm.taobao.org/markdown-it-mark/download/markdown-it-mark-2.0.0.tgz"
+  "version" "2.0.0"
+
+"markdown-it-sub@^1.0.0":
+  "integrity" "sha1-N1/WAm6ufdywEkl/ZBEZXqHjr+g="
+  "resolved" "https://registry.npm.taobao.org/markdown-it-sub/download/markdown-it-sub-1.0.0.tgz"
+  "version" "1.0.0"
+
+"markdown-it-sup@^1.0.0":
+  "integrity" "sha1-y5yf+RpSVawI8/09YyhuFd8KH8M="
+  "resolved" "https://registry.npm.taobao.org/markdown-it-sup/download/markdown-it-sup-1.0.0.tgz"
+  "version" "1.0.0"
+
+"markdown-it-toc@^1.1.0":
+  "integrity" "sha1-bRiYWOMrPetP860nE/qSdDnJV+A="
+  "resolved" "https://registry.npm.taobao.org/markdown-it-toc/download/markdown-it-toc-1.1.0.tgz"
+  "version" "1.1.0"
+
+"markdown-it@^12.1.0":
+  "integrity" "sha1-etVyyt3TNr0npo0g6GusH6/o+yA="
+  "resolved" "https://registry.nlark.com/markdown-it/download/markdown-it-12.1.0.tgz"
+  "version" "12.1.0"
+  dependencies:
+    "argparse" "^2.0.1"
+    "entities" "~2.1.0"
+    "linkify-it" "^3.0.1"
+    "mdurl" "^1.0.1"
+    "uc.micro" "^1.0.5"
+
+"markdown-it@^8.3.1":
+  "integrity" "sha1-OG+YmY3BWjdyKqdyIIT0Agvdm1Q="
+  "resolved" "https://registry.nlark.com/markdown-it/download/markdown-it-8.4.2.tgz"
+  "version" "8.4.2"
+  dependencies:
+    "argparse" "^1.0.7"
+    "entities" "~1.1.1"
+    "linkify-it" "^2.0.0"
+    "mdurl" "^1.0.1"
+    "uc.micro" "^1.0.5"
+
+"match-at@^0.1.0":
+  "integrity" "sha1-JdBA0pF3dwTV5lVru3kjDsLeBUA="
+  "resolved" "https://registry.npm.taobao.org/match-at/download/match-at-0.1.1.tgz"
+  "version" "0.1.1"
+
+"mdurl@^1.0.1":
+  "integrity" "sha1-/oWy7HWlkDfyrf7BAP1sYBdhFS4="
+  "resolved" "https://registry.npm.taobao.org/mdurl/download/mdurl-1.0.1.tgz"
+  "version" "1.0.1"
 
 "micromatch@^4.0.2":
   "integrity" "sha1-iW1Rnf6dsl/OlM63pQCRm/iB6/k="
@@ -1263,6 +1414,16 @@
   "resolved" "https://registry.nlark.com/tslib/download/tslib-2.3.0.tgz?cache=0&other_urls=https%3A%2F%2Fregistry.nlark.com%2Ftslib%2Fdownload%2Ftslib-2.3.0.tgz"
   "version" "2.3.0"
 
+"uc.micro@^1.0.1", "uc.micro@^1.0.5":
+  "integrity" "sha1-nEEagCpAmpH8bPdAgbq6NLJEmaw="
+  "resolved" "https://registry.nlark.com/uc.micro/download/uc.micro-1.0.6.tgz"
+  "version" "1.0.6"
+
+"unorm@>= 1.0.0":
+  "integrity" "sha1-ApsolmH7pxTxqa9DnrUdmxbCBa8="
+  "resolved" "https://registry.npm.taobao.org/unorm/download/unorm-1.6.0.tgz"
+  "version" "1.6.0"
+
 "unpipe@~1.0.0":
   "integrity" "sha1-sr9O6FFKrmFltIF4KdIbLvSZBOw="
   "resolved" "https://registry.npm.taobao.org/unpipe/download/unpipe-1.0.0.tgz"
@@ -1272,6 +1433,13 @@
   "integrity" "sha1-2pN/emLiH+wf0Y1Js1wpNQZ6bHI="
   "resolved" "https://registry.npm.taobao.org/urix/download/urix-0.1.0.tgz"
   "version" "0.1.0"
+
+"uslug@^1.0.4":
+  "integrity" "sha1-uaIvCRTgqGFAYz2swwLl9PpFBnc="
+  "resolved" "https://registry.npm.taobao.org/uslug/download/uslug-1.0.4.tgz"
+  "version" "1.0.4"
+  dependencies:
+    "unorm" ">= 1.0.0"
 
 "utils-merge@^1.0.0", "utils-merge@1.0.1":
   "integrity" "sha1-n5VxD1CiZ5R7LMwSR0HBAoQn5xM="
