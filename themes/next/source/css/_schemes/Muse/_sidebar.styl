@@ -36,11 +36,13 @@ if (hexo-config('sidebar.position') == 'right') {
 
   a, span.exturl {
     border-bottom-color: $black-light;
-    color: $grey-dark;
+    // 侧边栏目录标题颜色
+    color: $black-title;
 
     &:hover {
       border-bottom-color: $gainsboro;
-      color: $gainsboro;
+      // 侧边栏目录标题鼠标悬浮颜色
+      color: $sidebar-highlight;
     }
   }
 }
