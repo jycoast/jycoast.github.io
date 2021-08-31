@@ -845,6 +845,50 @@ java -XX:+PrintCommandLineFlags -version
 
 在发生Minor GC之前，虚拟机会先检查老年代最大可用的连续空间是否大于新生代所有对象总空间，如果这个条件成立，那么Minor GC可以确保是安全的。当大量对象在Minor GC后仍然存活，就需要老年代进行空间分配担保，把Survivor无法容纳的对象直接进入老年代。如果老年代判断到剩余空间不足（根据以往每一次回收晋升到老年代对象容量的平均值作为经验值），则进行一次Full GC。
 
+### 内存屏障
+
+#### 来源
+
+每个CPU都会有自己的缓存（有的甚至L1、L2、L3），缓存的目的就是为了提高性能，避免每次都要想内存存取。但这样做的弊端也很明显：不能实时的和内存发生信息交换，分在不同CPU执行的不同线程对同一个变量的缓存之不同。
+
+使用volatile关键字修饰变量可以解决上述问题，那么volatile是如何做到这一点的呢？那就是内存屏障，内存屏障是硬件层的概念，不同的硬件平台实现内存屏障的手段并不是一样的，java通过屏蔽这些差异，统一由jvm来生成内存屏障指令。
+
+#### 类型
+
+硬件层的内存屏障分为两种：Load Barrier和Store Barrier即读屏障和写屏障。
+
+内存屏障主要由两个作用：
+
+- 阻止屏障两侧的指令重排序
+- 强制把缓冲区/告诉缓存中的脏数据等写回主内存，让缓存中相应的数据失效
+
+对于Load Barrier来说，在指令前插入Load Barrier，可以让高速缓存中的数据失效，强制从新主内存加载数据；对于Store Barrier来说，在指令后插入Store Barrier，能让写入缓存中的最新数据更新写入主内存，让其他线程可见。
+
+#### Java内存屏障
+
+Java的内存屏障通常所谓的四种即LoadLoad，StoreStore，LoadStore，StoreLoad实际上也是上述两种的组合，完成一系列的屏障和数据同步功能。
+
+- LoadLoad屏障：对于这样的语句Load1；LoadLoad；Load2，在Load2以及后续读取操要读取的数据被访问之前，保证Load1要读取的数据被读取完毕
+- StoreStore屏障：对于这样的语句Store1；StoreStore；Store2，在Store2及后续写入操作执行前，保证Store1的写入操作对其它线程处理器可见
+- LoadStore屏障：对于这样的语句Load1；LoadStore；Store2，在Store2及后续写入操作被刷出前，保证Store1的写入操作对其它处理器可见
+- StoreLoad屏障：对于这样的语句Store1；StoreLoad；Load2，在Load2及后续所有读操作执行前，保证Store1的写入对所有处理器可见。它的开销是四种屏障中最大的。在大多数的处理器的实现中，这个屏障是个万能屏障，兼具其它三种内存屏障的功能
+
+#### volatile语义中的内存屏障
+
+volatile的内存屏障策略非常严格保守，非常悲观且毫无安全感的心态：
+
+- 在每个volatile写操作前插入StoreStore屏障，在写操作后插入StoreLoad屏障
+- 在每个volatile读操作前插入LoadLoad屏障，在读操作后插入LoadStore屏障
+
+正是由于内存屏障的作用，避免了volatile变量个其它指令重排序、线程之间实现了通信，是的volatile表现除了锁的特性。
+
+#### final语义中的内存屏障
+
+- 新建对象过程中，构造体中对final域的初始化写入和这个对象赋值给其他引用变量，这两个操作不能重排序；
+- 初次包含final域的对象引用和读取这个final域，这两个操作不能重排序（先赋值引用，再调用final的值）；
+
+总之，必须要保证一个对象的所有final域被写入完毕后才能引用和读取，这也是内存屏障起的作用。
+
 ## 性能监控、故障处理工具
 
 Java内存泄漏的经典原因：
@@ -856,19 +900,19 @@ Java内存泄漏的经典原因：
 ### 基础故障处理工具
 
 ```shell
--Xms5m -Xmx5m -xx:+HeapDumpOnOutOfMemoryError 
+-Xms5m -Xmx5m -xx:+HeapDumpOnOutOfMemoryError
 ```
 
 元空间大小设置：
 
 ```shell
--XX:MaxMetaspaceSize=10m -XX:+TraceClassLoading 
+-XX:MaxMetaspaceSize=10m -XX:+TraceClassLoading
 ```
 
 获取java进程：
 
 ```shell
-$ ps -ef | grep java jps -mlvV jps -l 
+$ ps -ef | grep java jps -mlvV jps -l
 ```
 
 打印类加载器数据命令：
@@ -1651,7 +1695,7 @@ java中最基本的互斥手段就是synchronized关键字，synchronized经过�
 
 synchronized对同一线程是可重入的，不会出现自己把自己锁死的情况。同步块在执行结束前，会阻塞其它线程的进入。由于java的线程是要映射到操作系统的原生线程的，如果阻塞或者一个线程，都需要操作系统来帮助完成，这就需要从用户态转换为内核态，这个转换需要消耗大量的CPU时间，对于代码简单的同步块，可能这个时间要大于执行时间，因此说，synchronized是一个重量级操作，一般只在确实必要的情况下使用。
 
-除了使用synchronized，还可以受用ReentrantLock来是实现同步。相比synchronized，ReentrantLock提供了一些比较灵活高级的功能，主要有：
+除了使用synchronized，还可以使用ReentrantLock来实现同步。相比synchronized，ReentrantLock提供了一些比较灵活高级的功能，主要有：
 
 - 等待可中断：持有锁的线程长期不释放锁的时候，等待的线程可以选择放弃等待
 - 公平锁：多个线程获取锁的时候，必须按照申请锁的时间来依次获取锁

@@ -4632,6 +4632,7 @@ ThreadLocalRandom的实现：
 - 降低资源消耗：通过重复利用已创建的线程降低线程创建和销毁造成的消耗
 - 提高响应速度：当任务到达时，可以不需要等待线程创建就能立即执行
 - 提高线程的可管理性：线程是稀缺资源，如果无限制的创建，不仅会消耗系统资源，还会降低系统的稳定性，使用线程池可以进行同一的分配，监控和调优。
+- 提供更多更强大的功能：线程池具备可拓展性，允许开发人员向其中增加更多的功能。比如延时定时线程池ScheduledThreadPoolExecutor，就允许任务延期执行或者定期执行。
 
 线程池的API设计图：
 
@@ -4650,6 +4651,8 @@ ThreadLocalRandom的实现：
 - ForkJoinPool：Fork/Join线程池，在JDK1.7时引入，是实现Fork/Join框架的核心类
 
 ## ThreadPoolExecutor
+
+### 核心参数
 
 接下来我们对最常用到的ThreadPoolExecutor进行分析：
 
@@ -4691,6 +4694,8 @@ ThreadLocalRandom的实现：
 	- 转向某个提示页面。
 	- 打印日志。
 
+### 线程池状态转换
+
 线程池的状态及含义：
 
 | 状态       | 含义                                                         |
@@ -4709,7 +4714,11 @@ ThreadLocalRandom的实现：
 - STOP -> TIDYING：当线程池为空时
 - TIDYING -> TERMINATED：当teminated() hook方法执行完成时
 
-线程池的类型：
+具体如下图所示：
+
+![image-20210826150648498](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210826150648.png)
+
+### 线程池的类型
 
 - newFixedThreadPool：创建一个核心线程个数和最大线程个数都为n的线程池，并且阻塞队列长度为Integer.MAX_VALUE。keepAliveTime=0说明只要线程个数比和核心线程个数多并且当前空闲则回收：
 
@@ -4778,6 +4787,253 @@ ThreadLocalRandom的实现：
 	```
 
 除此之外，还有等JDK为我们内置了ScheduledExecutorService等线程池类型。
+
+## 阻塞队列
+
+### ArrayBlockingQueue
+
+ArrayBlockingQueue是一个有边界的阻塞队列，它的内部实现是一个数组，所谓有边界的意思是它的容量是有限的，我们必须在初始化的时候就指定它的容量大小，容量大小一旦指定就不可变。ArrayBlockingQueue是先进先出的方式存储数据，最新插入的对象是尾部，最新移出的对象是头部。
+
+### DelayQueue
+
+DelayQueue阻塞的是其内部元素，DelayQueue中的元素必须实现java.util.concurrent.Delayed接口，Delayed接口继承了Comparable接口，这是因为DelayedQueue中的元素需要进行排序，一般情况下，我们都是按元素过期时间的优先级进行排序，典型的应用场景有定时关闭连接、缓存对象、超时处理等。
+
+### LinkedBlockingQueue
+
+LinkedBlockingQueue阻塞队列大小的配置是可选的，如果我们初始化时指定一个大小，它就是有边界的，如果不指定，它就是无边界的，这里无边界是因为，它采用了默认大小为`Integer.MAX_VALUE`的容量。它的内部实现是一个链表。与ArrayBlockingQueue一样，也是采用先进先出的方式存储数据。
+
+### PriorityBlockingQueue
+
+PriorityBlockingQueue是一个没有边界的队列，它的排序规则和java.util.PriorityBlockingQueue一样。需要注意的是，PriorityBlockingQueue中允许插入null对象。
+
+- 所有插入PriorityBlockingQueue的对象必须实现java.lang.Comparable接口，队列优先级的排序规则就是按照我们对这个接口的实现来定义的。
+- 从PriorityBlockingQueue获取一个迭代器Iterator，但这个迭代器并不保证按照优先级顺序进行迭代。
+
+### SynchronousQueue
+
+synchronousQueue队列内部仅允许容纳一个元素，当一个线程插入一个元素后会被阻塞，除非这个元素被另一个线程消费。
+
+## 拒绝策略
+
+当提交的线程填满核心线程数，并且塞满了队列缓冲区，并且超过了最大线程数时，就会触发拒绝策略。
+
+核心API - java.util.concurrent.RejectedExecutionHandler
+
+具体有以下几种：
+
+| 拒绝策略            | 含义                                                         |
+| ------------------- | ------------------------------------------------------------ |
+| AbortPolicy         | 当任务添加到线程池中被拒绝时，它将抛出RejectedExecutionException异常 |
+| CallerRunsPolicy    | 当任务添加到线程池中被拒绝时，会交由提交任务的线程处理       |
+| DiscardOldestPolicy | 当任务添加到线程池中被拒绝时，线程池会放弃等待队列中最旧的未处理任务，然后将被拒绝的任务添加到等待队列中 |
+| DiscardPolicy       | 当任务添加到线程池中被拒绝时，线程池将丢弃被拒绝的任务       |
+
+什么时候触发拒绝策略，是三个参数总体协调的结果，当提交的任务大于corePoolSize时，会优化放到队列缓冲区，值由填满了缓冲区之后，才会判断当前任务是否大于maxPoolSize，小于的时候会创建新的线程进行处理，大于时就触发了拒绝策略。简单来说，当前提交任务数大于(maxPoolSize + queueCapacity)时就会触发线程的拒绝策略。
+
+### AbortPolicy
+
+AbortPolicy又称为中止策略，源代码如下：
+
+```java
+    public static class AbortPolicy implements RejectedExecutionHandler {
+     
+        public void rejectedExecution(Runnable r, ThreadPoolExecutor e) {
+            throw new RejectedExecutionException("Task " + r.toString() +
+                                                 " rejected from " +
+                                                 e.toString());
+        }
+    }
+```
+
+功能：当触发拒绝策略时，直接抛出拒绝执行的异常，中止策略的意思也就是打断当前执行流程
+
+使用场景：无特殊场景，但是要正确处理抛出的异常
+
+ThreadPoolExecutor中默认的策略就是AbortPolicy，ExecutorService接口的系列ThreadPoolExecutor因为都没有显式的设置拒绝策略，所以默认都是这个，但是，但是ExecutorService中的线程池实例队列都是无界的，也就是说把内存撑爆了都不会触发拒绝策略。当自己自定义线程池实例时，使用这个策略一定要处理好触发策略时抛出的异常，因为它会打断当前的执行流程。
+
+### DiscardPolicy
+
+DiscardPolicy又称为丢失策略，源代码如下：
+
+```java
+    public static class DiscardPolicy implements RejectedExecutionHandler {
+
+        public void rejectedExecution(Runnable r, ThreadPoolExecutor e) {
+        }
+    }
+```
+
+功能：直接静悄悄地丢弃这个任务，不触发任何动作。
+
+使用场景：如果提交的任务无关紧要，可以使用，这种策略会悄无声息的吞噬掉任务，所以这个策略基本上不再使用。
+
+### DiscardOldestPolicy
+
+DiscardOldestPolicy又称为弃老策略，源代码如下：
+
+```java
+    public static class DiscardOldestPolicy implements RejectedExecutionHandler {
+ 
+        public void rejectedExecution(Runnable r, ThreadPoolExecutor e) {
+            if (!e.isShutdown()) {
+                e.getQueue().poll();
+                e.execute(r);
+            }
+        }
+    }
+```
+
+这个策略还是会丢弃任务，丢弃时也是毫无声息，但是特点是丢弃的是老的未执行的任务，而是待执行优先级比较高的任务。
+
+### CallerRunsPolicy
+
+CallerRunsPolicy又称为调用者运行策略，源代码如下：
+
+```java
+    public static class CallerRunsPolicy implements RejectedExecutionHandler {
+        
+        public void rejectedExecution(Runnable r, ThreadPoolExecutor e) {
+            if (!e.isShutdown()) {
+                r.run();
+            }
+        }
+    }
+```
+
+功能：当触发拒绝策略时，只要线程池没有关闭，就由提交任务的当前线程处理。
+
+使用场景：一般在不允许失败的、对性能要求不高、并发量较小的场景下使用，因为线程池一般情况下也不会关闭，也就是提交的任务一定会被运行，但是由于是调用者线程自己执行的，当多次提交任务时，就会阻塞后续任务执行，性能和效率自然就慢了。
+
+### 第三方实现
+
+除了JDK内部的实现，还有一些第三方的实现，例如在dubbo中的拒绝策略：
+
+```java
+public class AbortPolicyWithReport extends ThreadPoolExecutor.AbortPolicy {
+
+    protected static final Logger logger = LoggerFactory.getLogger(AbortPolicyWithReport.class);
+
+    private final String threadName;
+
+    private final URL url;
+
+    private static volatile long lastPrintTime = 0;
+    
+    private static Semaphore guard = new Semaphore(1);
+
+    public AbortPolicyWithReport(String threadName, URL url) {
+        this.threadName = threadName;
+        this.url = url;
+    }
+
+    @Override
+    public void rejectedExecution(Runnable r, ThreadPoolExecutor e) {
+        String msg = String.format("Thread pool is EXHAUSTED!" +
+                        " Thread Name: %s, Pool Size: %d (active: %d, core: %d, max: %d, largest: %d), Task: %d (completed: %d)," +
+                        " Executor status:(isShutdown:%s, isTerminated:%s, isTerminating:%s), in %s://%s:%d!",
+                threadName, e.getPoolSize(), e.getActiveCount(), e.getCorePoolSize(), e.getMaximumPoolSize(), e.getLargestPoolSize(),
+                e.getTaskCount(), e.getCompletedTaskCount(), e.isShutdown(), e.isTerminated(), e.isTerminating(),
+                url.getProtocol(), url.getIp(), url.getPort());
+        logger.warn(msg);
+        dumpJStack();
+        throw new RejectedExecutionException(msg);
+    }
+
+    private void dumpJStack() {
+       //省略实现
+    }
+}
+```
+
+可以看到，当dubbo的工作线程触发了线程拒绝策略后，主要做了三个事情：
+
+- 输出了一条警告级别的日志
+- 输出当前线程堆栈详情
+- 继续抛出拒绝执行异常，使本次任务失败
+
+Netty中的实现：
+
+```java
+private static final class NewThreadRunsPolicy implements RejectedExecutionHandler {
+        NewThreadRunsPolicy() {
+            super();
+        }
+
+        public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+            try {
+                final Thread t = new Thread(r, "Temporary task executor");
+                t.start();
+            } catch (Throwable e) {
+                throw new RejectedExecutionException(
+                        "Failed to start a new thread", e);
+            }
+        }
+    }
+```
+
+Netty中的实现很像JDK中的CallerRunsPolicy，舍不得丢弃任务。不同的是，CallerRunsPolicy是直接在调用者线程执行的任务，而Netty是新建了一个线程来处理的。
+
+所以，Netty的实现相较于调用者执行策略的使用面就可以扩展到支持高效率高性能的场景了，但是也要注意一点，Netty的实现里，在创建线程时未做任何的判断约束，也就是说只要系统还有资源就会创建新的线程来处理，直到new不出新的线程了，才会抛创建线程失败的异常。
+
+activeMq中的线程池拒绝策略：
+
+```java
+new RejectedExecutionHandler() {
+                @Override
+                public void rejectedExecution(final Runnable r, final ThreadPoolExecutor executor) {
+                    try {
+                        executor.getQueue().offer(r, 60, TimeUnit.SECONDS);
+                    } catch (InterruptedException e) {
+                        throw new RejectedExecutionException("Interrupted waiting for BrokerService.worker");
+                    }
+
+                    throw new RejectedExecutionException("Timed Out while attempting to enqueue Task.");
+                }
+            });
+```
+
+activeMq中的策略属于最大努力执行类型，当触发拒绝策略时，在尝试一分钟重新将任务塞进任务队列，当一分钟超时还没由成功的时候，就抛出异常。
+
+pinpoint中的线程池拒绝策略：
+
+```java
+public class RejectedExecutionHandlerChain implements RejectedExecutionHandler {
+    private final RejectedExecutionHandler[] handlerChain;
+
+    public static RejectedExecutionHandler build(List<RejectedExecutionHandler> chain) {
+        Objects.requireNonNull(chain, "handlerChain must not be null");
+        RejectedExecutionHandler[] handlerChain = chain.toArray(new RejectedExecutionHandler[0]);
+        return new RejectedExecutionHandlerChain(handlerChain);
+    }
+
+    private RejectedExecutionHandlerChain(RejectedExecutionHandler[] handlerChain) {
+        this.handlerChain = Objects.requireNonNull(handlerChain, "handlerChain must not be null");
+    }
+
+    @Override
+    public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+        for (RejectedExecutionHandler rejectedExecutionHandler : handlerChain) {
+            rejectedExecutionHandler.rejectedExecution(r, executor);
+        }
+    }
+}
+```
+
+pinpoint的拒绝策略实现很有特点，和其它的实现都不同。他定义了一个拒绝策略链，包装了一个拒绝策略列表，当触发拒绝策略时，会将策略链中的rejectedExecution依次执行一遍。
+
+## 执行过程
+
+总体过程如下图：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210826145615.png" alt="线程池运行示意图" style="zoom:50%;" />
+
+详细说明：
+
+- 如果线程还在运行的状态，就交由核心线程池执行
+- 当线程池的核心线程数量用完，提交的任务会进入阻塞队列
+- 当阻塞队列已满之后，要看是否大于最大线程数
+- 如果阻塞队列已满，也超过了最大线程数量，就进入拒绝策略
+- 如果阻塞队列已满，但是没有超过最大线程数量，就添加新的工作线程
 
 # Java并发包中线程同步器
 
@@ -5087,3 +5343,5 @@ public class SemaphoreDemo {
 [3] [Java并发编程中Semaphore的用法](https://blog.csdn.net/sinat_36246371/article/details/53872412)
 
 [4] [Java AQS 核心数据结构 -CLH 锁](https://www.infoq.cn/article/bvpvyvxjkm8zstspti0l)
+
+[5] [Java线程池实现原理及其在美团业务中的实践](https://tech.meituan.com/2020/04/02/java-pooling-pratice-in-meituan.html)

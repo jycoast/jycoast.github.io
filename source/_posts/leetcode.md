@@ -241,19 +241,110 @@ public class TreeNode {
 
 ## 红黑树
 
-[为什么工程中都用红黑树，而不是其他平衡二叉树？ - 知乎 (zhihu.com)](https://www.zhihu.com/question/27542473)
+主要参考：[30张图带你彻底理解红黑树](https://www.jianshu.com/p/e136ec79235c)
+
+### 定义和性质
+
+红黑树是二叉查找树，具体来说，是一种含有红黑结点并能自平衡的二叉查找树，它必须满足下面的性质：
+
+- 性质1：每个结点要么是黑色，要么是红色
+- 性质2：根节点是黑色
+- 性质3：每个叶子结点（NIL）是黑色
+- 性质4：每个红色结点的两个子节点一定都是黑色
+- 性质5：任意一结点到每个叶子结点的路径都包含数量相同的黑节点
+
+从性质5又可以推出：
+
+- 性质5.1：如果一个结点存在黑子结点，那么该结点肯定有两个子结点
+
+一颗简单的红黑树如下图所示：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210829231754.png" alt="一颗简单的红黑树" style="zoom:50%;" />
+
+红黑树并不是一个完美平衡二叉查找树，从图1可以看到，根节点P的左子树显然比右子树高，但左子树和右子树的黑结点的层数是相等的，也即任意一个结点到每个叶子结点的路径都包含数量相同的黑结点（性质5）。所以我们叫红黑树这种平衡为黑色完美平衡。
+
+在红黑树中最主要的有三种操作：左旋、右旋和变色。
+
+- 左旋：以某个结点作为支点（旋转结点），其右子结点变为旋转结点的父结点，右子结点的左子结点变为旋转结点的右子结点，左子结点保持不变
+- 右旋：以某个结点作为支点（旋转结点），其左子结点变为旋转结点的父结点，左子结点的右子结点变为旋转结点的左子结点，右子结点保持不变
+- 变色：结点的颜色由红变黑或由黑变红
+
+左旋的示意图：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210829233108.png" alt="左旋" style="zoom: 67%;" />
+
+右旋的示意图：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210829233211.png" alt="右旋" style="zoom:67%;" />
+
+如果我们暂时忽略颜色，可以看到旋转操作不会影响旋转结点的父结点，父结点以上的结构还是保持不变的。
+
+- 左旋只影响旋转结点和其右子树的结构，把右子树的结点往左子树挪了
+- 右旋只影响旋转结点和其左子树的结构，把左子树的结点往右子树挪了
+
+### 红黑树的查找
+
+整体的示意图如下：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210829233651.png" alt="红黑树的查找" style="zoom:50%;" />
+
+因为红黑树也是一颗二叉平衡树，并且查找不会破坏树的平衡，所以查找跟二叉平衡树的查找无异：
+
+- 从根节点开始查找，把根节点设置为当前结点
+- 若当前结点为空，返回null
+- 若当前结点不为空，用当前结点的key跟查找key作比较
+- 若当前结点等于查找key，那么该key就是查找目标，返回当前结点
+- 若当前结点key大于查找key，把当前结点的左子结点设置为当前结点，重复步骤2
+- 若当前结点key小于查找key，把当前结点的右子结点设置为当前结点，重复步骤2
+
+### 红黑树的插入
+
+整体的示意图如下：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210829233941.png" alt="红黑树的插入" style="zoom: 67%;" />
+
+插入操作包括两部分工作：一个是查找插入的位置，而是插入后自平衡。查找插入的父结点很简单，跟查找操作的区别不大：
+
+- 从根结点开始查找
+- 若根结点为空，那么插入结点作为根节点，结束
+- 若根结点不为空，那么把根结点作为当前结点
+- 若当前结点为null，返回当前结点的父结点，结束
+- 若当前结点key等于查找key，那么该key所在结点就是插入结点，更新结点的值，结束
+- 若当前结点key大于查找key，那么当前结点的左子结点设置为当前结点，重复步骤4
+- 若当前结点key小于查找key，把当前结点的右子结点设置为当前结点，重复步骤4
+
+当插入的位置确定之后就是要确定插入结点的颜色，插入的结点都是红色，原因在于，红色在父结点（如果存在）为黑色结点时，红黑树的黑色平衡没被破坏，不需要做自平衡操作。但如果插入结点是黑色，那么插入位置所在的子树黑色结点总是多1，必须做自平衡。
+
+所有可能的插入的情景：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210830094135.png" alt="红黑树插入情景"/>
+
+
 
 ## 多路查找树
 
-多路查找树的每一个结点的孩子树可以多于两个，且每一个结点处可以存储多个元素。
+多路查找树的每一个结点的孩子树可以多于两个，且每一个结点处可以存储多个元素，由于它是查找树，所有元素之间存在某种特定的排序关系。
 
 ### 2-3树
 
+2-3树是这样一颗多路查找树：其中每一个结点都具有两个孩子（我们称它为2结点）或三个孩子（我们称它为3结点）。
+
+- 一个2结点包含一个元素和两个孩子（或没有孩子），且与二叉排序树类似，左子树包含的元素小于该元素，右子树包含的元素大于该元素。不过，与二叉排序树不同的是，这个2结点要么没有孩子，要么就有两个，不能只有一个孩子
+- 一个3结点包含一小一大两个元素和三个孩子（或没有孩子），一个3结点要么没有孩子，要么具有3个孩子。如果某个3结点有孩子的话，左子树包含小于较小元素的元素，右子树包含大于较大元素的元素，中间子树包含介于两元素之间的元素
+
+并且2-3树种所有的叶子都在同一层次上。
+
 ### 2-3-4树
+
+2-3-4树实对2-3树的概念扩展，包括了4结点的使用。一个4结点包含小中大三个元素和四个孩子（或没有孩子），一个4结点要么没有孩子，要么具有4个孩子。如果某个4结点有孩子的话，左子树包含于最小元素的元素，第二子树包含大于最小元素，小于第二元素的元素；第三子树包含大于第二元素，小于最低元素的元素；右子树包含大于最大元素的元素。
 
 ### B树
 
+B树是一种平衡的多路查找树，2-3树和2-3-4树都是B树的特里。结点最大的孩子数目称为B树的阶。因此，2-3树是3阶的B树，2-3-4树是4阶B树。
+
 ### B+树
+
+B+树应文件系统所需而出的一种B树的变形树，注意严格意义上讲，它其实已经不是之前所定义的树了。在B树种，每一个元素在该树只出现一次，有可能在叶子结点上，也可能在分支结点上。而在B+树中，出现在分支结点中的元素会被当做它们在该分支结点位置的中序后继者（叶子结点）中再次列出。另外，每一个叶子结点都会保存一个指向叶子结点的指针。
 
 ## 堆
 
@@ -446,6 +537,210 @@ public void divideConquer(problem, param1, param2,...) {
 
 ### 代码模板
 
+```java
+package structure;
+import util.LogUtil;
+import java.util.LinkedList;
+/**
+ * 字典树实现
+ */
+public class TrieTree {
+    private TrieNode root = new TrieNode();
+
+    class TrieNode {
+        TrieNode preNode = null;
+        boolean isEnd = false; // 是否是红点，也就是是否是word的解为
+        int deep = 0; // 做hash使用，防止一个单词里面有多个char的时候hash是一样的，可能导致删除出错
+        char content = 0; // 当前结点到parent节点存储的字母
+        LinkedList<TrieNode> child = new LinkedList<>(); // 子节点，当前节点后续节点
+
+        TrieNode() {
+        }
+
+        TrieNode(char content) {
+            this.content = content;
+        }
+
+        @Override
+        public String toString() {
+            return "\n" + "{" +
+                    "End=" + isEnd +
+                    ", d=" + deep +
+                    ", c=" + content +
+                    ", c=" + child +
+                    '}';
+        }
+
+        @Override
+        public int hashCode() {
+            return content + deep;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return obj instanceof TrieNode && (((TrieNode) obj).content == content);
+        }
+
+        void setPreNode(TrieNode node) {
+            preNode = node;
+        }
+
+        TrieNode getPreNode() {
+            return preNode;
+        }
+
+        /**
+         * child中删掉某个Node
+         *
+         * @param node 需要删掉的node
+         */
+        void removeChild(TrieNode node) {
+            for (TrieNode aChild : child) {
+                if (aChild.content == node.content) {
+                    child.remove(aChild);
+                    break;
+                }
+            }
+        }
+
+        /**
+         * child中是否有此Node
+         *
+         * @param character 保存的char
+         * @return 存在返回不存在返回Null
+         */
+        TrieNode getNode(Character character) {
+            for (TrieNode aChild : child) {
+                if (aChild.content == character) {
+                    return aChild;
+                }
+            }
+            return null;
+        }
+    }
+
+    /**
+     * 添加一个word
+     * apple
+     *
+     * @param word 需要添加的词
+     */
+    public void addWord(String word) {
+        int deep = 0;
+        TrieNode currNode = root;
+        while (deep < word.length()) {
+            /*
+             * 判断当前node的child，如果为空直接添加，不为空，查找是否含有，不含有则添加并设为currNode，含有则找到并设置为currNode
+             */
+            char c = word.charAt(deep);
+            if (currNode.child.contains(new TrieNode(c))) {
+                currNode = currNode.getNode(c);
+            } else {
+                TrieNode node = new TrieNode(c);
+                node.setPreNode(currNode);
+                node.deep = deep + 1;
+                currNode.child.add(node);
+                currNode = node;
+            }
+            if (deep == word.length() - 1) {
+                currNode.isEnd = true;
+            }
+            deep++;
+        }
+    }
+
+    /**
+     * word在map中是否存在
+     *
+     * @param word 需要查找的word
+     * @return 是否存在
+     */
+    public boolean hasWord(String word) {
+        int deep = 0;
+        TrieNode currNode = root;
+        while (deep < word.length()) {
+            char c = word.charAt(deep);
+            if (currNode.child.contains(new TrieNode(c))) {
+                currNode = currNode.getNode(c);
+            } else {
+                return false;
+            }
+            if (deep == word.length() - 1) {
+                return currNode.isEnd;
+            }
+            deep++;
+        }
+        return false;
+    }
+
+    /**
+     * 移除word，几种情况：
+     * 1、word在list中不存在，直接返回失败
+     * 2、word最后一个char 没有child，则删掉此节点并朝 root 查找没有child && isEnd=false 的节点都删掉
+     * 3、word最后一个char 有child，则把isEnd置为false
+     *
+     * @param word 需要移除的word
+     * @return 是否移除成功
+     */
+    public boolean removeWord(String word) {
+        if (word == null || word.trim().equals("")) {
+            return false;
+        }
+        if (hasWord(word)) {
+            return false;
+        }
+        int deep = 0;
+        TrieNode currNode = root;
+        while (deep < word.length()) {
+            char c = word.charAt(deep);
+            if (currNode.child.contains(new TrieNode(c))) {
+                currNode = currNode.getNode(c);
+            } else {
+                return false;
+            }
+            if (deep == word.length() - 1) {
+                if (currNode.child.size() > 0) {
+                    //3、word最后一个char 有child，则把isEnd置为false
+                    currNode.isEnd = false;
+                    return true;
+                } else {
+                    //2、word最后一个char 没有child，则删掉此节点并朝 root 查找没有child && isEnd=false 的节点都删掉
+                    TrieNode parent = currNode.getPreNode();
+                    while (parent != null) {
+                        if (parent.child.size() == 0 && !parent.isEnd) {
+                            parent.removeChild(currNode);
+                            currNode = parent;
+                        } else {
+                            return true;
+                        }
+                    }
+                }
+            }
+            deep++;
+        }
+
+        return false;
+    }
+
+    /**
+     * 前序遍历所有节点
+     */
+    public void traverseTree() {
+        visitNode(root, "");
+    }
+
+    private void visitNode(TrieNode node, String result) {
+        LogUtil.Companion.d("node.content->" + node.content);
+        String re = result + node.content;
+        for (TrieNode n : node.child) {
+            visitNode(n, re);
+            LogUtil.Companion.d("result->" + re);
+        }
+    }
+}
+
+```
+
 ## 二分查找
 
 ### 定义
@@ -538,6 +833,8 @@ LRU（最近至少使用）
 
 ### 代码模板
 
+
+
 ## 位运算
 
 ### 定义
@@ -580,11 +877,22 @@ LRU（最近至少使用）
 
 ## 排序算法
 
+排序算法主要分为两类：
+
+- 比较类排序（数值类型）：通过比较决定元素间的相对次序，由于其时间复杂度不能突破O(nlogn)，依次也称为非线性时间比较类排序
+- 非比较类排序（对象类型）：不通过比较来决定元素间的相对次序，它可以突破基于比较排序的时间下界，以线性时间运行，因此也称为线性时间非比较类排序
+
 ### 冒泡排序
+
+嵌套循环，每次查看相邻的元素如果逆序，则交换。
 
 ### 简单选择排序
 
+每次找最小值，然后放到待排序数组的起始位置。
+
 ### 直接插入排序
+
+从前到后逐步构建有序序列，对于未排序数据，在已排序序列中从后向前扫描，找到相应位置并插入。
 
 ### 希尔排序
 
@@ -619,6 +927,10 @@ for 状态1 in 状态1的所有取值：
         for ...
             dp[状态1][状态2][...] = 求最值(选择1，选择2...)
 ```
+
+### 股票问题
+
+https://www.cnblogs.com/hanyuhuang/p/11083384.html
 
 # 高频考题（简单）
 
@@ -1159,9 +1471,86 @@ $$
     }
 ```
 
+## [409. 最长回文串](https://leetcode-cn.com/problems/longest-palindrome/)
+
 
 
 # 高频考题（中等）
+
+## [5. 最长回文子串](https://leetcode-cn.com/problems/longest-palindromic-substring/)
+
+我们使用$p(i,j)$表示字符串$s$的第$i$到$j$个字母组成的串（下文表示成$s[i:j]$）是否为回文串：
+$$
+p(i,j)=\left\{
+\begin{array}{lcl}
+true, & 如果字串S_i...S_j是回文串 \\
+false, & 其它情况
+\end{array}\right.
+$$
+这里的其它情况包含两种可能性：
+
+- $s[i,j]$本身不是一个回文串
+- $i>j$，此时$s[i,j]$本身不合法
+
+那么对应的状态转移方程：
+$$
+p(i,j) = p(i+1,j-1)\wedge(S_i==S_j)
+$$
+以上都是子串长度2的前提之上的，对于长度为1的字串，明显就是回文串，对于长度为2的字串，只要它的两个字母相同，就是一个回文串，因此，可以确定动态规划的边界条件：
+$$
+\left\{
+\begin{array}{lcl}
+p(i,i)=true, & 如果字串S_i...S_j是回文串 \\
+p(i,i+1)=(S_i==S_{i+1}), & 其它情况
+\end{array}\right.
+$$
+相应的示例代码：
+
+```java
+    public String longestPalindrome(String s) {
+        int len = s.length();
+        if (len < 2) {
+            return s;
+        }
+        int maxLen = 1;
+        int begin = 0;
+        // dp[i][j] 表示 s[i..j] 是否是回文串
+        boolean[][] dp = new boolean[len][len];
+        // 初始化：所有长度为 1 的子串都是回文串
+        for (int i = 0; i < len; i++) {
+            dp[i][i] = true;
+        }
+        char[] charArray = s.toCharArray();
+        // 递推开始
+        // 先枚举子串长度
+        for (int L = 2; L <= len; L++) {
+            // 枚举左边界，左边界的上限设置可以宽松一些
+            for (int i = 0; i < len; i++) {
+                // 由 L 和 i 可以确定右边界，即 j - i + 1 = L 得
+                int j = L + i - 1;
+                // 如果右边界越界，就可以退出当前循环
+                if (j >= len) {
+                    break;
+                }
+                if (charArray[i] != charArray[j]) {
+                    dp[i][j] = false;
+                } else {
+                    if (j - i < 3) {
+                        dp[i][j] = true;
+                    } else {
+                        dp[i][j] = dp[i + 1][j - 1];
+                    }
+                }
+                // 只要 dp[i][L] == true 成立，就表示子串 s[i..L] 是回文，此时记录回文长度和起始位置
+                if (dp[i][j] && j - i + 1 > maxLen) {
+                    maxLen = j - i + 1;
+                    begin = i;
+                }
+            }
+        }
+        return s.substring(begin, begin + maxLen);
+    }
+```
 
 ## [剑指 Offer 67. 把字符串转换成整数](https://leetcode-cn.com/problems/ba-zi-fu-chuan-zhuan-huan-cheng-zheng-shu-lcof/)
 
@@ -1804,7 +2193,141 @@ f(i,j) = min \{f(i - 1, j),f(i-1, j-1) \} + c(i)(j)
 $$
 其中$c(i)(j)$表示位置$(i, j)$对应的元素值。
 
-## [1143. 最长公共子序列](https://leetcode-cn.com/problems/longest-common-subsequence/)
+```java
+    public int minimumTotal(List<List<Integer>> triangle) {
+        int n = triangle.size();
+        // 结果一定是下三角矩阵
+        int[][] dp = new int[n][n];
+        dp[0][0] = triangle.get(0).get(0);
+        for (int i = 1; i < n; i++) {
+            // 第一列的结果等于上一行的元素加上当前行的元素
+            dp[i][0] = dp[i - 1][0] + triangle.get(i).get(0);
+            for (int j = 1; j < i; j++) {
+                // 除了第一列元素和最后一列元素都满足状态转移方程
+                dp[i][j] = Math.min(dp[i - 1][j - 1], dp[i - 1][j]) + triangle.get(i).get(j);
+            }
+            // 对角线上的元素等于上一个对角线元素加上当前元素
+            dp[i][i] = dp[i - 1][i - 1] + triangle.get(i).get(i);
+        }
+        // 最后一行就是所有的结果，找出最小值即可
+        int min = dp[n - 1][0];
+        for (int i = 1; i < n; i++) {
+            min = Math.min(min, dp[n - 1][i]);
+        }
+        return min;
+    }
+```
+
+## [1143. 最长公共子序列](https://leetcode-cn.com/problems/longest-common-subsequence/) 
+
+假设字符串$text_1$和$text_2$的长度分别为$m$和$n$，创建$m+1$行$n+1$列的二维数组$dp$，其中$dp[i][j]$表示$text_1[0:i]$和$text_2[0:j]$的最长公共序列的长度，状态转移方程如下：
+$$
+dp[i][j]=\left\{
+\begin{array}{lcl}
+dp[i-1][j-1] + 1, & text_1[i-1] = text_2[j-1] \\
+max(dp[i-1][j],dp[i][j-1]), & text_1[i-1] \neq text_2[j-1]
+\end{array}\right.
+$$
+示意图：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210819120336.png" style="zoom:67%;" />
+
+直接求解即可：
+
+```java
+    public int longestCommonSubsequence(String text1, String text2) {
+        int m = text1.length();
+        int n = text2.length();
+        int[][] dp = new int[m + 1][n + 1];
+
+        for (int i = 1; i < m + 1; i++) {
+            char c1 = text1.charAt(i - 1);
+            for (int j = 1; j < n + 1; j++) {
+                char c2 = text2.charAt(j - 1);
+                // text_1[i - 1] = text_2[j -1]
+                if (c1 == c2) {
+                    dp[i][j] = dp[i - 1][j - 1] + 1;
+                } else {
+                    // text_1[i - 1] ≠ text_2[j -1]
+                    dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+                }
+            }
+        }
+        return dp[m][n];
+    }
+```
+
+## [198. 打家劫舍](https://leetcode-cn.com/problems/house-robber/)
+
+假设一共有$n$个房子，每个房子的金额分别是$H_0,H_1,...H_{n-1}$，子问题$f(k)$表示从前$k$个房子（即$H_0，H_1,...,H_{k-1}$）中能偷盗的最大金额。那么偷$k$个房子有两种偷法：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210820105009.png" alt="image-20210820104524320" style="zoom:67%;" />
+
+状态转移方程为：
+$$
+f(k)=max\{ {f(k-1),H_{k-1} + f(k-2)} \}
+$$
+使用一维数组的方式：
+
+```java
+    public int rob(int[] nums) {
+        if (nums == null || nums.length == 0)
+            return 0;
+        int n = nums.length;
+        // 第0位用来存储0的情况，从第1位开始存储nums[1]
+        int[] dp = new int[n + 1];
+        dp[0] = 0;
+        dp[1] = nums[0];
+        // 注意这里从2开始，到n+1
+        for (int i = 2; i < n + 1; i++) {
+            dp[i] = Math.max(dp[i - 1], nums[i] + dp[i - 2]);
+        }
+        return dp[n];
+    }
+```
+
+还可以多开一维数组来存每次偷或者不偷的状态：
+
+```java
+    public int rob(int[] nums) {
+        if (nums == null || nums.length == 0)
+            return 0;
+        int n = nums.length;
+        int[][] dp = new int[n][2];
+        // 0表示不选当前元素，1表示选择当前元素
+        dp[0][0] = 0;
+        dp[0][1] = nums[0];
+        for (int i = 1; i < n; i++) {
+            dp[i][0] = Math.max(dp[i - 1][0], dp[i - 1][1]);
+            dp[i][1] = dp[i - 1][0] + nums[i];
+        }
+        return Math.max(dp[n - 1][0], dp[n - 1][1]);
+    }
+```
+
+## [213. 打家劫舍 II](https://leetcode-cn.com/problems/house-robber-ii/)
+
+状态转移方程：
+$$
+dp[i]=max(dp[i-2]+nums[i],dp[i-1])
+$$
+边界条件为：
+$$
+\left\{
+\begin{array}{lcl}
+dp[start] = nums[start] & 只有一间房屋，则偷窃该房屋 \\
+dp[start+1] = max(nums[start],nums[start+1]) & 只有两件房屋，偷窃其中金额较高的房屋
+\end{array}\right.
+$$
+相应的实现：
+
+```java
+class{
+    
+}
+```
+
+## [79. 单词搜索](https://leetcode-cn.com/problems/word-search/)
 
 
 
@@ -1849,7 +2372,7 @@ $$
 
 ## [239. 滑动窗口最大值](https://leetcode-cn.com/problems/sliding-window-maximum/)
 
-> 所有滑动窗口的问题都可以使用队列来解决。
+<div class="note info"><p>所有滑动窗口的问题都可以使用队列来解决。</p></div>
 
 暴力求解法：
 
@@ -1940,4 +2463,10 @@ $$
         return board;
     }
 ```
+
+## [212. 单词搜索 II](https://leetcode-cn.com/problems/word-search-ii/)
+
+
+
+
 
