@@ -806,3 +806,7 @@ Java反射机制的主要用于实现以下功能：
 - java.lang.reflect.Method：代表类的方法
 - java.lang.reflect.Constructor：代表类的构造方法
 - java.lang.reflect.Array：提供了动态创建数组及访问数组元素的静态方法。该类中的所有方法都是静态的
+
+# 泛型
+
+## 由来

@@ -934,6 +934,23 @@ https://www.cnblogs.com/hanyuhuang/p/11083384.html
 
 # 高频考题（简单）
 
+## [1. 两数之和](https://leetcode-cn.com/problems/two-sum/)
+
+梦开始的地方：
+
+```java
+    public int[] twoSum(int[] nums, int target) {
+        Map<Integer,Integer> map = new HashMap<>();
+        for(int i = 0; i < nums.length; i++) {
+            if(map.containsKey(target - nums[i])) {
+                return new int[]{i,map.get(target-nums[i])};
+            }
+            map.put(nums[i],i);
+        }
+        return new int[2];
+    }
+```
+
 ## [283. 移动零](https://leetcode-cn.com/problems/move-zeroes/)
 
 ```java
@@ -953,6 +970,18 @@ public void moveZeroes(int[] nums) {
         for (int i = index; i < nums.length; i++) {
             nums[i] = 0;
         }
+    }
+```
+
+## [136. 只出现一次的数字](https://leetcode-cn.com/problems/single-number/)
+
+```java
+    public int singleNumber(int[] nums) {
+        int single = 0;
+        for (int num : nums) {
+            single ^= num;
+        }
+        return single;
     }
 ```
 
@@ -987,6 +1016,23 @@ public void moveZeroes(int[] nums) {
             f2 = f3;
         }
         return f3;
+    }
+```
+
+也可以直接dp求解：
+
+```java
+    public int climbStairs(int n) {
+        if(n <= 2) {
+            return n;
+        }
+        int[] dp = new int[n];
+        dp[0] = 1;
+        dp[1] = 2;
+        for(int i = 2; i < n; i++) {
+            dp[i] = dp[i-1] + dp[i - 2];
+        }
+        return dp[n -1];
     }
 ```
 
@@ -1054,10 +1100,15 @@ public boolean hasCycle(ListNode head) {
 
 ```java
 public boolean isValid(String s) {
+        int n = s.length();
+        // 如果个数是奇数个直接返回
+        if(n % 2 == 1) {
+            return false;
+        }
         Map<Character, Character> characterMap = new HashMap<>();
-        characterMap.put('{', '}');
-        characterMap.put('[', ']');
-        characterMap.put('(', ')');
+        characterMap.put('}', '{');
+        characterMap.put(']', '[');
+        characterMap.put(')', '(');
         Deque<Character> stack = new LinkedList<>();
         for (int i = 0; i < s.length(); i++) {
             char bracket = s.charAt(i);
@@ -1073,7 +1124,7 @@ public boolean isValid(String s) {
             }
         }
 
-        return false;
+        return stack.isEmpty();
     }
 ```
 
@@ -1352,7 +1403,7 @@ public int maxDepthByBFS(TreeNode root) {
             if (mid > x / mid) {
                 right = mid - 1;
             } else {
-                left = mid;
+                left = mid + 1;
             }
         }
         return left;
@@ -1473,7 +1524,31 @@ $$
 
 ## [409. 最长回文串](https://leetcode-cn.com/problems/longest-palindrome/)
 
+```java
+class {
+    
+}
+```
 
+## [414. 第三大的数](https://leetcode-cn.com/problems/third-maximum-number/)
+
+```java
+    public static int thirdMax(int[] nums) {
+        Set<Integer> set = new HashSet<>();
+        for (int n : nums) {
+            set.add(n);
+            if (set.size() > 3) {
+                set.remove(Collections.min(set));
+            }
+        }
+        // 第三大的正好是集合当中最小的元素
+        if (set.size() == 3) {
+            return Collections.min(set);
+        }
+        // 说明数组的元素不超过3个
+        return Collections.max(set);
+    }
+```
 
 # 高频考题（中等）
 
