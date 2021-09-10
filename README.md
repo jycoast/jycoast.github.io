@@ -1,4 +1,4 @@
-<div class="note info">小站链接：https://jycoder.club（持续更新中...）</div>
+<div class="note info">小站链接：https://jycoder.club</div>
 
 # Java基础
 
