@@ -122,8 +122,8 @@ menu:
   archives: /archives/ || fa fa-archive
   # schedule: /schedule/ || fa fa-calendar
   文集: https://www.wolai.com/p7EcXEWp3EsR9BeGRZWNgf?theme=dark/ || fa fa-book
-  # sitemap: /sitemap.xml || fa fa-sitemap
   commonweal: /404/ || fa fa-heartbeat
+  infoQ: https://www.infoq.cn/profile/3479D9A8F57FEF/publish/ || fa fa-sitemap
   about: /about/ || fa fa-user
 
 # Enable / Disable menu icons / item badges.
