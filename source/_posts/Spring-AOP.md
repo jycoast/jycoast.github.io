@@ -5,7 +5,7 @@ tags: Spring
 author: 吉永超
 ---
 
-AOP（Aspect Oriented Programming）面向切面编程，是针对面向对象编程的一种补充，同时也是Spring中第二个最核心的功能。在学习AOP之前，可以首先了解有关于Spring IoC的相关内容：[Spring Framework](https://jycoder.club/2020/07/16/SpringFramework/)
+AOP（Aspect Oriented Programming）面向切面编程，是针对面向对象编程的一种补充，同时也是Spring中第二个最核心的功能。在学习AOP之前，可以首先了解有关于Spring IoC的相关内容：[Spring Framework](https://jycoder.club/2020/07/16/SpringFramework/)。
 
 <!-- more -->
 
@@ -2121,6 +2121,19 @@ Spring AOP举例实现：
 JDK举例实现：
 
 - 实现 - java.io.BufferedInputStream
+
+装饰器模式以对客户端透明的方式扩展对象的功能，是继承关系的一个替代方案，以对客户端透明的方式动态的给一个对象附加更多的责任。换言之，客户端并不会觉得对象在装饰前和装饰后有什么不同。
+
+装饰器模式可以在不创造更多子类的情况下，将对象的功能加以扩展，把客户端的调用委派到被装饰类，装饰器模式的关键在于这种扩展完全是透明的。
+
+装饰器模式是不必改变原类文件和使用继承的情况下，动态的扩展一个对象的功能。它是通过创建一个包装对象，也就是装饰来包裹真实的对象。
+
+装饰器的角色：
+
+- 抽象构建角色
+- 具体构建角色
+- 装饰角色
+- 具体装饰角色
 
 ## 享元模式
 
