@@ -7,7 +7,7 @@ author: 吉永超
 ---
 
 本文通过对于常见面试题的整理归纳，回顾Web开发中的各种方面知识点。
-<!-- more -->开发授权平台
+<!-- more -->
 
 # Java基础篇
 
@@ -920,11 +920,7 @@ TCP的连接的拆除需要发送四个包，因此称为四次握手，也叫�
 
 Java的类加载器：AppClassLoader -> ExtClassLoader -> BootStrapClassLoader
 
-每一种类加载器都有自己的加载目录，cju
-
-Java中的AppClassLoader、ExtClassLoader 都继承了URLClassLoader，URLClassLoader继承了SecureClassLoader，SecureClassLoader又继承了ClassLoader
-
-每个类加载器对他加载过的类，都是有一个缓存的
+每一种类加载器都有自己的加载目录，Java中的AppClassLoader、ExtClassLoader 都继承了URLClassLoader，URLClassLoader继承了SecureClassLoader，SecureClassLoader又继承了ClassLoader，每个类加载器对他加载过的类，都是有一个缓存的：
 
 <img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210630004512.png" alt="img" style="zoom: 50%;" />
 
@@ -974,7 +970,7 @@ protected Class<?> loadClass(String name, boolean resolve)
 
 ### Java类加载的全过程是怎么样的？
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210727230233.png" alt="image-20210727230233494" style="zoom: 67%;" />
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210727230233.png" alt="Java类加载过程" style="zoom: 67%;" />
 
 类加载过程：加载 -> 连接 -> 初始化 -> 使用 -> 卸载
 
@@ -1946,7 +1942,7 @@ SpringCloudAlibaba:
 
 ### SpringCloud和Dubbo的区别？
 
-SpringCloud使用基于HTTP的REST方式，而Dobbo采用RPC通信。这两种方式各有优劣，前者牺牲了服务调用的性能，但也能避免原生RPC带来的问题，不存在代码级别的强依赖。
+SpringCloud使用基于HTTP的REST方式，而Dubbo采用RPC通信。这两种方式各有优劣，前者牺牲了服务调用的性能，但也能避免原生RPC带来的问题，不存在代码级别的强依赖。
 
 ### 分布式事务如何处理？怎么保证事务一致性？
 
