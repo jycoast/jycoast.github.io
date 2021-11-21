@@ -1,5 +1,5 @@
 ---
-title: RocketMQ从理论到实践
+title: RocketMQ从实践到原理
 date: 2021-10-24 19:12:43
 tags: Java
 categories:
@@ -2596,19 +2596,2663 @@ public class ExpressionMessageFilter implements MessageFilter {
 
 ### SQL匹配
 
+在发送消息的时候，可以为每一条消息附带一个或者多个属性值，SQL匹配指的就是依据这些属性值和TAG标签是否满足一定的SQL语句条件，来过滤消息。用户如果想要开启SQL匹配，那么需要在Broker启动的时候，启用如下几个配置信息：
+
+```java
+brokerConfig.setEnablePropertyFilter(true);
+brokerConfig.setEnableCalcFilterBitMap(true);
+
+messageStoreConfig.setEnableConsumeQueueExt(true);
+```
+
+##### 注册过滤信息
+
+我们在消费者如何接收消息一文中提到过，消费者启动之后，会通过心跳包定时给Broker服务器汇报自己的信息。而Broker服务器在收到消费者的心跳包之后，会产生一个注册事件，如下所示：
+
+```java
+public class ConsumerManager {
+
+    public boolean registerConsumer(final String group,
+                                    /** 其他参数 **/) {
+        // ...
+        this.consumerIdsChangeListener.handle(ConsumerGroupEvent.REGISTER, group, subList);
+        // ...
+    }
+    
+}
+```
+
+DefaultConsumerIdsChangeListener是默认的消费者列表注册事件通知器的实现类，其在收到注册事件以后，会将用户在消费者端订阅的Topic信息注册到ConsumerFilterManager中：
+
+```java
+public class DefaultConsumerIdsChangeListener implements ConsumerIdsChangeListener {
+
+    @Override
+    public void handle(ConsumerGroupEvent event, String group, Object... args) {
+        switch (event) {
+            
+        case REGISTER:
+            Collection<SubscriptionData> subscriptionDataList = (Collection<SubscriptionData>) args[0];
+            this.brokerController.getConsumerFilterManager().register(group, subscriptionDataList);
+            break;
+            
+            // ...
+        }
+    }
+}
+```
+
+![image-20211114234506442](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211114234506.png)
+
+ConsumerFilterData中包含了消费者客户端注册的SQL表达式，由上图可以看到对于每一个Topic所对应的FilterDataMapByTopic，可以注册多个SQL表达式。但是这里需要注意的是，这多个SQL表达式是按照组来做区分的，也就是说一个组只能有一个SQL表达式，那么后注册的会覆盖掉之前注册的。因此，如果想要对同一个组使用不同的SQL语句来过滤自己想要的信息，这些不同的SQL语句必须划分到不同的组里面才可行。
+
+![image-20211114234934592](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211114234934.png)
+
+#### 生成BloomFilterData
+
+在RocketMQ中实现的布隆过滤器，其有四个最关键的值：
+
+```java
+public class BloomFilter {
+
+    // 最大错误率
+    private int f;
+    // 可能插入 n 个元素
+    private int n;
+    // k 个哈希函数
+    private int k;
+    // 数组总共 m 位
+    private int m;
+
+}
+```
+
+RocketMQ实现的布隆过滤器是根据错误率f和可能插入的元素数量n计算出来的k和m，在默认配置情况下，即如下n=32和f=20，计算出来需要k=3个哈希函数和m=112位的数组。
+
+```java
+public class BrokerConfig {
+
+    // Expect num of consumers will use filter.
+    private int expectConsumerNumUseFilter = 32;
+    // Error rate of bloom filter, 1~100.
+    private int maxErrorRateOfBloomFilter = 20;
+    
+}
+```
+
+当客户端注册过滤新的时候，其会根据"Group#Topic"这个字符串计算出相应的位映射数据，也即这个字符串经过布隆过滤器中的若干个哈希函数得到的几个不同的哈希值：
+
+```java
+public class ConsumerFilterManager extends ConfigManager {
+
+    public boolean register(final String topic, /** 其它参数 **/) {
+        // ...
+        BloomFilterData bloomFilterData =
+            bloomFilter.generate(consumerGroup + "#" + topic);
+        // ...
+    }
+    
+}
+```
+
+ConsumerFilterManager中的Topic过滤信息数据，每隔10秒进行一次磁盘持久化：
+
+```java
+public class BrokerController {
+
+    public boolean initialize() throws CloneNotSupportedException {
+        this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
+                @Override
+                public void run() {
+                    BrokerController.this.consumerFilterManager.persist();
+                }
+            }, 1000 * 10, 1000 * 10, TimeUnit.MILLISECONDS);   
+    }
+    
+}
+```
+
+磁盘文件 `consumerFilter.json` 中保存的数据信息如下示例:
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211116232759.png" alt="image-20211116232759174" style="zoom:67%;" />
+
+上述流程图如下所示：
+
+![image-20211116232920420](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211116232920.png)
+
+#### 编译SQL语句
+
+JavaCC（Java Complier Complier）是一个能生成语法和词法分析的生成程序，它通过阅读一个自定义的语法标准文件（通常以jj为后缀名），然后就能生成能够解析该语法的扫描器和解析器的代码。
+
+通过执行 `javacc SelectorParser.jj` 命令以后，其会生成如下七个 Java 文件，用以解析 SQL 语法:
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211116233413.png" alt="image-20211116233412898" style="zoom:67%;" />
+
+过滤器工厂FilterFactory在初次使用的时候，会注册一个SqlFilter类，这个类能够将消费者端指定的SQL语句编译解析为Expression表达式对象，方便后续消息的快速匹配于过滤。
+
+```java
+public class SqlFilter implements FilterSpi {
+
+    @Override
+    public Expression compile(final String expr) throws MQFilterException {
+        return SelectorParser.parse(expr);
+    }
+
+}
+```
+
+#### 计算位映射
+
+当Broker服务器接收到新的消息到来之后，一直在后台运行的ReputMessageService会负责将这条消息封装位一个DispatchRequest分发请求，这个请求会传递给提前构建好的分发请求链。在DefaultMessageStore的构造函数中，我们看到依次添加了构建消费队列和构建索引的分发请求服务：
+
+```java
+public class DefaultMessageStore implements MessageStore {
+
+    public DefaultMessageStore(final MessageStoreConfig messageStoreConfig, /** 其它参数 **/) throws IOException {
+
+        this.dispatcherList = new LinkedList<>();
+        this.dispatcherList.addLast(new CommitLogDispatcherBuildConsumeQueue());
+        this.dispatcherList.addLast(new CommitLogDispatcherBuildIndex());
+        
+    }
+    
+}
+```
+
+而在Broker初始化的时候，我们看到其又添加了计算位映射的分发请求服务，并且将此分发服务放在链表的第一个位置：
+
+```java
+public class BrokerController {
+
+    public boolean initialize() throws CloneNotSupportedException {
+        this.messageStore.getDispatcherList()
+            .addFirst(new CommitLogDispatcherCalcBitMap(this.brokerConfig, this.consumerFilterManager));
+    }
+    
+}
+```
+
+因此，在每次接收到新的消息之后，分发请求的需要经过如下三个分发请求服务进行处理：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211116234137.png" alt="image-20211116234137312" style="zoom:67%;" />
+
+我们在这部分只介绍计算位映射的服务类实现。如下，dispatch方法用来分发请求里面的消息，对于这每一条消息，首先根据Topic取得所有的消费过滤数据。这每一条数据代表的就是一条SQL过滤语句信息。我们在这个地方，需要一一遍历这些过滤信息，从而完成计算位服务的需求：
+
+```java
+public class CommitLogDispatcherCalcBitMap implements CommitLogDispatcher {
+
+    @Override
+    public void dispatch(DispatchRequest request) {
+        Collection<ConsumerFilterData> filterDatas = consumerFilterManager.get(request.getTopic());
+        Iterator<ConsumerFilterData> iterator = filterDatas.iterator();
+        
+        while (iterator.hasNext()) {
+            ConsumerFilterData filterData = iterator.next();
+            // ...
+        }
+    }
+    
+}
+```
+
+在拿到ConsumerFilterData信息之后，其会根据这条信息内的SQL语句编译后的表达式来对这条消息进行检查匹配（evaluate），看到这条消息是否满足SQL语句所设置的条件，如果满足，那么会将先前在客户端注册阶段计算好的BloomFilterData中的映射位信息设置到filterBitMap中，即将相应的位数组BitsArray中的相应位设置为1。在验证完所有的SQL语句之后，会将这些所有的字节数组放置到request请求之后，以便交由下一个请求分发服务进行使用：
+
+```java
+public class CommitLogDispatcherCalcBitMap implements CommitLogDispatcher {
+
+    @Override
+    public void dispatch(DispatchRequest request) {
+        Collection<ConsumerFilterData> filterDatas = consumerFilterManager.get(request.getTopic());
+        Iterator<ConsumerFilterData> iterator = filterDatas.iterator();
+        
+        while (iterator.hasNext()) {
+            ConsumerFilterData filterData = iterator.next();
+            // ...
+        }
+    }
+    
+}
+```
+
+#### 存储位映射
+
+MessageStore在开启扩展消息队列的配置之后，每一个消费队列在创建的时候，都会额外创建一个扩展消费队列。每一个扩展队列文件的大小默认为48MB：
+
+```java
+public class ConsumeQueue {
+
+    public ConsumeQueue(final String topic, /** 其它参数 **/) {
+        // ...
+        if (defaultMessageStore.getMessageStoreConfig().isEnableConsumeQueueExt()) {
+            this.consumeQueueExt = new ConsumeQueueExt(topic, /** 其它参数 **/);
+        }
+    }
+    
+}
+```
+
+在计算位映射一节中，计算好位字节数组之后，我们这里需要通过第二个分发请求服务CommitLogDispatcherBuildConsumeQueue来存储这些字节信息。通过如下代码，我们知道它将请求中的位映射信息、消息存储事件、标签码这三条信息封装为ConsumeQueueExt.CqExtUnit，然后放入扩展消费队列文件中。
+
+```java
+public class ConsumeQueue {
+
+    public void putMessagePositionInfoWrapper(DispatchRequest request) {
+
+        long tagsCode = request.getTagsCode();
+        if (isExtWriteEnable()) {
+            ConsumeQueueExt.CqExtUnit cqExtUnit = new ConsumeQueueExt.CqExtUnit();
+            cqExtUnit.setFilterBitMap(request.getBitMap());
+            cqExtUnit.setMsgStoreTime(request.getStoreTimestamp());
+            cqExtUnit.setTagsCode(request.getTagsCode());
+
+            long extAddr = this.consumeQueueExt.put(cqExtUnit);
+            if (isExtAddr(extAddr)) {
+                tagsCode = extAddr;
+            }
+        }
+
+    }
+    
+}
+```
+
+上述代码中，put方法返回的是一个long类型的扩展地址，当这个数值满足isExtAddr要求后，其会将当前的标签码设置为刚才返回的扩展地址，这是为什么呢？
+
+我们首先来看ConsumeQueueExt文件在存放数据成功后是如何返回信息的：
+
+```java
+public class ConsumeQueueExt {
+
+    public static final long MAX_ADDR = Integer.MIN_VALUE - 1L;
+    
+    public long put(final CqExtUnit cqExtUnit) {
+        if (mappedFile.appendMessage(cqExtUnit.write(this.tempContainer), 0, size)) {
+            return decorate(wrotePosition + mappedFile.getFileFromOffset());
+        }
+
+        return 1;
+    }
+
+    public long decorate(final long offset) {
+        if (!isExtAddr(offset)) {
+            return offset + Long.MIN_VALUE;
+        }
+        return offset;
+    }
+
+    public static boolean isExtAddr(final long address) {
+        return address <= MAX_ADDR;
+    }
+    
+}
+```
+
+MAX_ADDR是一个很小很小的值，为-2147483649，即写入位置如果不小于这个值，那么我们就人顶它不是扩展地址，需要将修正后的写入偏移量+Long.MIN_VALUE确定为扩展地址。当读取信息的时候，其先读取ConsumeQueue文件中的最后的Hash标签码值，如果其通过isExtAddr()函数返回的是true，那么我们就可以使用这个地址，再通过一个unDecorate()函数将其修正为正确的ConsumerQueueExt文件的写入地址，从而接着读取想要的信息：
+
+```java
+public long unDecorate(final long address) {
+    if (isExtAddr(address)) {
+        return address - Long.MIN_VALUE;
+    }
+    return address;
+}
+```
+
+这个地方，我们发现ConsumeQueue中的最后一个long型数值，可能存储的是标签Hash码，也可能存储的是扩展消费队列的写入地址，所以需要通过isExtAddr()来分情况判断。
+
+下图为ConsumeQueue文件和ConsumeQueueExt文件中存取信息的不同：
+
+![image-20211120115434045](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211120115434.png)
+
+#### 消息过滤
+
+在上小节我们提到了有关扩展消息队列地址和标签Hash码存储的不同，所以在获取消息的时候，先得从消费队列文件中取出tagsCode，然后检查是否是扩展消费队列地址，如果是，那么就需要从扩展消费队列文件中读取正确的标签Hash码，如下所示：
+
+```java
+public class DefaultMessageStore implements MessageStore {
+
+    public GetMessageResult getMessage(final String group, /** 其它参数 **/) {
+        ConsumeQueueExt.CqExtUnit cqExtUnit = new ConsumeQueueExt.CqExtUnit();
+        for (; i < bufferConsumeQueue.getSize() && i < maxFilterMessageCount; i += ConsumeQueue.CQ_STORE_UNIT_SIZE) {
+            long tagsCode = bufferConsumeQueue.getByteBuffer().getLong();
+
+            boolean extRet = false, isTagsCodeLegal = true;
+            if (consumeQueue.isExtAddr(tagsCode)) {
+                extRet = consumeQueue.getExt(tagsCode, cqExtUnit);
+                if (extRet) {
+                    tagsCode = cqExtUnit.getTagsCode();
+                } else {
+                    isTagsCodeLegal = false;
+                }
+            }
+
+        }
+    }
+    
+}
+```
+
+当获取到这条消息在扩展消费队列文件中存取的信息后，就会和标签匹配一节所讲述的一致，会进行两道过滤机制，我们先来看第一道ConsumeQueue文件匹配：
+
+```java
+public class ExpressionMessageFilter implements MessageFilter {
+
+    @Override
+    public boolean isMatchedByConsumeQueue(Long tagsCode, ConsumeQueueExt.CqExtUnit cqExtUnit) {
+        byte[] filterBitMap = cqExtUnit.getFilterBitMap();
+        BloomFilter bloomFilter = this.consumerFilterManager.getBloomFilter();
+        BitsArray bitsArray = BitsArray.create(filterBitMap);
+        return bloomFilter.isHit(consumerFilterData.getBloomFilterData(), bitsArray);
+    }
+    
+}
+```
+
+ExpressionMessageFilter依据CqExtUnit中存储的位数组重新创建了比特数组bitsArray，这个数组信息中已经存储了不同SQL表达式是否匹配这条消息的结果。isHit()函数会一一检查BloomFilterData中存储的位信息是否映射在BitsArray中。只要有任何一位没有映射，那么就可以立刻判断出这条消息肯定不符合SQL语句的条件。
+
+![image-20211118232929894](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211118232930.png)
+
+因为布隆过滤器有一定的错误率，其只能精确的判断消息是否一定不在集合中，返回成功的只能确定为消息可能在集合中。因此通过布隆过滤器检查后还需要经过第二道过滤机制，即SQL编译后的表达式亲自验证是否匹配：
+
+```java
+public class ExpressionMessageFilter implements MessageFilter {
+
+    @Override
+    public boolean isMatchedByCommitLog(ByteBuffer msgBuffer, Map<String, String> properties) {
+        MessageEvaluationContext context = new MessageEvaluationContext(tempProperties);
+        Object ret = realFilterData.getCompiledExpression().evaluate(context);
+
+        if (ret == null || !(ret instanceof Boolean)) {
+            return false;
+        }
+
+        return (Boolean) ret;
+    }
+    
+}
+```
+
+通过在验证SQL表达式是否满足之前，提前验证是否命中布隆过滤器，可以有效的避免许多不必要的验证：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211118233425.png" alt="image-20211118233425627" style="zoom:67%;" />
+
+### 自定义匹配
+
+消息的自定义匹配需要开启过滤服务器、上传过来类、过滤服务器委托过滤消息等步骤，下面我们一一进行说明。
+
+#### 过滤服务器
+
+在启动Broker服务器的时候，如果指定了下面一行设置：
+
+```java
+brokerConfig.setFilterServerNums(int filterServerNums);
+```
+
+即将过滤的服务器的数量设定为大于0，那么Broker服务器在启动的时候，将会启动filterServerNums个过滤服务器。过滤服务器是通过调用shell命令的方式，启用独立进程进行启动的。
+
+```java
+public class FilterServerManager {
+
+    public void createFilterServer() {
+        int more =
+            this.brokerController.getBrokerConfig().getFilterServerNums() -
+            this.filterServerTable.size();
+        String cmd = this.buildStartCommand();
+        for (int i = 0; i < more; i++) {
+            FilterServerUtil.callShell(cmd, log);
+        }
+    }
+
+}
+```
+
+过滤服务器在初始化的时候，会启动定时器每个10秒注册一次到Broker服务器：
+
+```java
+public class FiltersrvController {
+
+    public boolean initialize() {
+        this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
+                @Override
+                public void run() {
+                    FiltersrvController.this.registerFilterServerToBroker();
+                }
+            }, 3, 10, TimeUnit.SECONDS);
+    }
+    
+}
+```
+
+Broker服务器在收到来自过滤服务器的注册之后，会把过滤服务器的地址信息、注册事件等放到过滤服务器表中：
+
+```java
+public class FilterServerManager {
+
+    private final ConcurrentMap<Channel, FilterServerInfo> filterServerTable =
+        new ConcurrentHashMap<Channel, FilterServerInfo>(16);
+    
+}
+```
+
+同样，Broker服务器也需要定时地将过滤服务器地址信息同步给所有Namesrv命名服务器，上述整个流程如下图所示：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211118234344.png" alt="image-20211118234344785" style="zoom:67%;" />
+
+#### 过滤类
+
+当消费者通过使用自定义匹配过滤消息的时候，会将存储订阅信息的SubscriptionData中的filterClassSource设置为true，用以表示这个客户端需要过滤类来进行消息的匹配和过滤。
+
+消费者客户端在启动的过程中，会定时地上传本地的过滤类源码到过滤服务器：
+
+```java
+public class MQClientInstance {
+
+    private void startScheduledTask() {
+        this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
+                @Override
+                public void run() {
+                    MQClientInstance.this.sendHeartbeatToAllBrokerWithLock();
+                }
+            }, 1000, this.clientConfig.getHeartbeatBrokerInterval(), TimeUnit.MILLISECONDS);
+    }
+
+    public void sendHeartbeatToAllBrokerWithLock() {
+        // ...
+        this.uploadFilterClassSource();
+    }
+    
+}
+```
+
+其中过滤服务器的地址列表是在从Namesrv服务器获取Topic路由信息的时候取得的，Topic路由信息不光存储了消息队列数据，还存储了各个Broker所关联的服务器列表：
+
+```java
+public class TopicRouteData extends RemotingSerializable {
+    // ...
+    private HashMap<String/* brokerAddr */, List<String>/* Filter Server */> filterServerTable;
+}
+```
+
+当过滤服务器接收到来自消费者客户端的源码之后，其会首先生成一个键为Topic@Group的字符串来查阅过滤信息是否已经存在于内存里面的filterClassTable表中且文件通过CRC校验。如果没有存在或校验失败，那么就需要先编译并加载这个类：
+
+```java
+public class DynaCode {
+
+    public void compileAndLoadClass() throws Exception {
+        String[] sourceFiles = this.uploadSrcFile();
+        this.compile(sourceFiles);
+        this.loadClass(this.loadClass.keySet());
+    }
+    
+}
+```
+
+默认情况下，编译后的类存放于目录下，类的源文件和类的字节码文件名也会相应的加上当前时间戳来确定：
+
+![image-20211118235708088](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211118235708.png)
+
+上述流程图如下：
+
+![image-20211118235741454](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211118235741.png)
+
+#### 过滤消息
+
+当消费者客户端自定义匹配过滤消息后，发往服务器的数据中也包含了过滤标志位，这样每次拉取消息的服务器也由原来的Broker服务器变更为Filtersrv过滤服务器，其中过滤服务器地址的选择是随机确定的：
+
+```java
+public class PullAPIWrapper {
+
+    public PullResult pullKernelImpl(final MessageQueue mq, /** 其它参数 **/) throws Exception {
+        // ...
+        if (findBrokerResult != null) {
+
+            if (PullSysFlag.hasClassFilterFlag(sysFlagInner)) {
+                // 从过滤服务器拉取消息
+                brokerAddr = computPullFromWhichFilterServer(mq.getTopic(), brokerAddr);
+            }
+
+            // ...
+        }
+    }
+    
+} 
+```
+
+过滤服务器在启动的时候，内部还启动了一个PullConsumer客户端，用以从Broker服务器拉取消息：
+
+```java
+public class FiltersrvController {
+
+    private final DefaultMQPullConsumer defaultMQPullConsumer =
+        new DefaultMQPullConsumer(MixAll.FILTERSRV_CONSUMER_GROUP);
+
+    public void start() throws Exception {
+        this.defaultMQPullConsumer.start();
+        // ...
+    }
+    
+}
+```
+
+当过滤服务器收到真正的消费者发来的消息的请求之后，其会委托内部的PullConsumer使用包含在请求体内的偏移量去Broker服务器拉取所有消息，此时这些消息是完全没有过滤的：
+
+```java
+public class DefaultRequestProcessor implements NettyRequestProcessor {
+
+    private RemotingCommand pullMessageForward(final ChannelHandlerContext ctx,
+                                               final RemotingCommand request) throws Exception {
+
+        MessageQueue mq = new MessageQueue();
+        
+        mq.setTopic(requestHeader.getTopic());
+        mq.setQueueId(requestHeader.getQueueId());
+        mq.setBrokerName(this.filtersrvController.getBrokerName());
+
+        // 设置偏移量和最大数量
+        long offset = requestHeader.getQueueOffset();
+        int maxNums = requestHeader.getMaxMsgNums();
+
+        // 委托内部消费者从 Broker 服务器拉取消息
+        pullConsumer.pullBlockIfNotFound(mq, null, offset, maxNums, pullCallback);
+        
+    }
+    
+}
+```
+
+过滤服务器从Broker服务器获取到完整的消息列表之后，会遍历消息列表，然后使用过滤类一一进行匹配，最终将匹配的消息列表返回给客户端：
+
+```java
+public class DefaultRequestProcessor implements NettyRequestProcessor {
+
+    private RemotingCommand pullMessageForward(final ChannelHandlerContext ctx,
+                                               final RemotingCommand request) throws Exception {
+        final PullCallback pullCallback = new PullCallback() {
+
+                @Override
+                public void onSuccess(PullResult pullResult) {
+                    switch (pullResult.getPullStatus()) {
+                    case FOUND:
+                        List<MessageExt> msgListOK = new ArrayList<MessageExt>();
+                        for (MessageExt msg : pullResult.getMsgFoundList()) {
+                            // 使用过滤类过滤消息
+                            boolean match = findFilterClass.getMessageFilter().match(msg, filterContext);
+                            if (match) {
+                                msgListOK.add(msg);
+                            }
+                        }
+                        break;
+                        // ...
+                    }
+
+                }
+
+            };
+
+        // ...
+    }
+    
+}
+```
+
+上述流程如下图所示：
+
+![image-20211120114300366](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211120114300.png)
+
 
 
 ## 消息索引流程
 
+### 消息查询
+
+对于Producer发送到Broker服务器的消息，RocketMQ支持多种方式来方便地查询消息：
+
+- 根据键查询消息
+- 根据ID（偏移量）查询消息
+- 根据唯一键查询消息
+- 根据消息队列偏移量查询消息
+
+在构建消息的时候，指定了这条消息的键位“OrderID001”：
+
+```java
+Message msg =
+    new Message("TopicTest",
+                "TagA",
+                "OrderID001", // Keys
+                "Hello world".getBytes(RemotingHelper.DEFAULT_CHARSET))
+```
+
+那么，当这条消息发送成功后，我们可以使用`queryMsgByKey`命令查询这条消息的详细信息：
+
+```java
+MQAdminStartup.main(new String[] {
+        "queryMsgByKey",
+        "-n",
+        "localhost:9876",
+        "-t",
+        "TopicTest",
+        "-k",
+        "OrderID001"
+    });
+```
+
+根据ID（偏移量）查询消息是指消息在发送成功后，其返回的SendResult类中包含了这条消息的唯一偏移量ID（注意此处指的是offsetMsgId）：
+
+![image-20211121222705163](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121222705.png)
+
+用户可以使用`queryMsgById`命令查询这条消息的详细信息：
+
+```java
+MQAdminStartup.main(new String[] {
+        "queryMsgById",
+        "-n",
+        "localhost:9876",
+        "-i",
+        "0A6C73D900002A9F0000000000004010"
+    });
+```
+
+根据唯一键查询消息指的是消息在发送成功之后，其返回的SendResult类包含了这条消息的唯一ID：
+
+![](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121223003.png)
+
+用户可以使用`queryMsgByUniqueKey`命令查询这条消息的详细信息：
+
+```java
+MQAdminStartup.main(new String[] {
+        "queryMsgByUniqueKey",
+        "-n",
+        "localhost:9876",
+        "-i",
+        "0A6C73D939B318B4AAC20CBA5D920000",
+        "-t",
+        "TopicTest"
+    });
+```
+
+根据消息队列偏移量查询消息指的是消息发送成功之后的SendResult中还包含了消息队列的其它信息，如消息队列ID、消息队列偏移量等信息：
+
+```shell
+SendResult [sendStatus=SEND_OK,
+            msgId=0A6C73D93EC518B4AAC20CC4ACD90000,
+            offsetMsgId=0A6C73D900002A9F000000000000484E,
+            messageQueue=MessageQueue [topic=TopicTest,
+                                    brokerName=zk-pc,
+                                    queueId=3],
+            queueOffset=24]
+```
+
+根据这些信息，使用`queryMsgByOffset`命令也可以查询到这条消息的详细信息：
+
+```java
+MQAdminStartup.main(new String[] {
+        "queryMsgByOffset",
+        "-n",
+        "localhost:9876",
+        "-t",
+        "TopicTest",
+        "-b",
+        "zk-pc",
+        "-i",
+        "3",
+        "-o",
+        "24"
+    });
+```
+
+### ID (偏移量) 查询
+
+ID（偏移量）是在消息发送到Broker服务器存储的时候生成的，其包含如下几个字段：
+
+- Broker服务器的IP地址
+- Broker服务器端口号
+- 消息文件CommitLog写偏移量
+
+![image-20211121223534356](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121223534.png)
+
+```java
+public class CommitLog {
+
+    class DefaultAppendMessageCallback implements AppendMessageCallback {
+
+        public AppendMessageResult doAppend(final long fileFromOffset, /** 其它参数 **/) {
+            String msgId = MessageDecoder
+                .createMessageId(this.msgIdMemory,
+                                 msgInner.getStoreHostBytes(hostHolder),
+                                 wroteOffset);
+            // ...
+        }
+        
+    }
+    
+}
+```
+
+Admin端查询的时候，首先对msgId进行解析，取出Broker服务器的IP、端口号和消息偏移量：
+
+```java
+public class MessageDecoder {
+
+    public static MessageId decodeMessageId(final String msgId)
+        throws UnknownHostException {
+        byte[] ip = UtilAll.string2bytes(msgId.substring(0, 8));
+        byte[] port = UtilAll.string2bytes(msgId.substring(8, 16));
+        // offset
+        byte[] data = UtilAll.string2bytes(msgId.substring(16, 32));
+        // ...
+    }
+    
+}
+```
+
+获取到偏移量之后，Admin会对Broker服务器发送一个VIEW_MESSAGE_BY_ID的请求命令，Broker服务器在收到请求之后，会根据偏移量定位到CommitLog文件的相应位置然后取出位置，返回给Admin端：
+
+```java
+public class DefaultMessageStore implements MessageStore {
+
+    @Override
+    public SelectMappedBufferResult selectOneMessageByOffset(long commitLogOffset) {
+        SelectMappedBufferResult sbr = this.commitLog
+            .getMessage(commitLogOffset, 4);
+        // 1 TOTALSIZE
+        int size = sbr.getByteBuffer().getInt();
+        return this.commitLog.getMessage(commitLogOffset, size);
+    }
+    
+}
+```
+
+![image-20211121223857140](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121224006.png)
+
+根据队列偏移量查询是最简单的一种查询方式，Admin会启动一个PullConsumer，然后利用用户传递给Admin的队列ID、队列偏移量等信息，从服务器拉取一条消息过来：
+
+```java
+public class QueryMsgByOffsetSubCommand implements SubCommand {
+
+    @Override
+    public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
+        // 根据参数构建 MessageQueue
+        MessageQueue mq = new MessageQueue();
+        mq.setTopic(topic);
+        mq.setBrokerName(brokerName);
+        mq.setQueueId(Integer.parseInt(queueId));
+
+        // 从 Broker 服务器拉取消息
+        PullResult pullResult = defaultMQPullConsumer.pull(mq, "*", Long.parseLong(offset), 1);
+    }
+    
+}
+```
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121224143.png" alt="image-20211121224143451" style="zoom:67%;" />
+
+### 消息索引服务
+
+在继续讲解剩下两种查询方式之前，我们必须先介绍一下Broker端的消息索引服务。在之前提到过，每当一条消息发送过来之后，其会封装为一个DispatchRequest来下发给各个转发服务，而CommitLogDispatcherBuildIndex构建索引服务便是其中之一：
+
+```java
+class CommitLogDispatcherBuildIndex implements CommitLogDispatcher {
+
+    @Override
+    public void dispatch(DispatchRequest request) {
+        if (DefaultMessageStore.this.messageStoreConfig.isMessageIndexEnable()) {
+            DefaultMessageStore.this.indexService.buildIndex(request);
+        }
+    }
+    
+}
+```
+
+#### 索引文件结构
+
+消息的索引信息是存放到磁盘上的，文件以时间戳命名的，默认存在`$HOME/store/index`目录下。由下图来看，一个索引文件的结构被分成了三部分：
+
+- 前40个字节存放固定的索引头信息，包含了存放在这个索引文件中的消息的最小/大存储时间、最小/大偏移量等状况
+- 中间一段存储了500万个哈希槽位，每个槽内部存储的是索引文件的地址（索引槽）
+- 最后一段存储了2000万个索引内容信息，是实际的索引信息存储的地方。每一个槽位存储了这条消息的键哈希值、存储偏移量、存储时间戳与下一个索引槽地址
+
+![image-20211121231107977](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121231108.png)
+
+RocketMQ在内存中还维护一个索引文件列表，对于每一个索引文件，前一个文件的最大存储时间是下一个文件的最小存储时间，前一个文件的最大偏移量是下一个文件的最大偏移量。每一个索引文件都索引了某个时间段内、某个偏移量段内的所有消息，当文件满了，就会用前一个文件的最大偏移量和最大存储时间作为起始值，创建下一个索引文件：
+
+![image-20211121231323420](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121231323.png)
+
+#### 添加消息
+
+当有新的消息过来后，构建索引服务会取出这条消息的键，然后对字符串“Topic#键”构建索引，构建索引的步骤如下：
+
+- 找出哈希值：生成字符串的哈希码，取余落到500W个槽位之一，并取出其中的值，默认为0
+- 找出索引槽：IndexHeader维护了indexCount，实际存储的索引槽就是直接依次顺延添加的
+- 存储索引内容：找到索引槽后，放入键哈希值、存储偏移量、存储时间戳与下一个索引槽地址，下一个索引槽地址就是第一步哈希槽中取出的值，0代表这个槽位是第一次被索引，而不为0代表这个操作之前的索引槽地址。因此，通过索引槽地址可以将相同哈希槽的消息串联起来，就像单链表那样
+- 更新哈希槽：更新原有哈希槽中存储的值
+
+我们以实际例子来说明。假设我们需要依次为键的哈希值为“{16，29，29，8，16，16}”这几条消息构建索引，我们在这个地方忽略了索引信息中存储的存储时间和便宜量字段，只是存储键哈希和下一索引槽信息，那么：
+
+- 放入 16: 将 “16|0” 存储在第 1 个索引槽中，并更新哈希槽为 16 的值为 1，即哈希槽为 16 的第一个索引块的地址为 1
+- 放入 29: 将 “29|0” 存储在第 2 个索引槽中，并更新哈希槽为 29 的值为 2，即哈希槽为 29 的第一个索引块的地址为 2
+- 放入 29: 取出哈希槽为 29 中的值 2，然后将 “29|2” 存储在第 3 个索引槽中，并更新哈希槽为 29 的值为 3，即哈希槽为 29 的第一个索引块的地址为 3。而在找到索引块为 3 的索引信息后，又能取出上一个索引块的地址 2，构成链表为： “[29]->3->2”
+- 放入 8: 将 “8|0” 存储在第 4 个索引槽中，并更新哈希槽为 8 的值为 4，即哈希槽为 8 的第一个索引块的地址为 4
+- 放入 16: 取出哈希槽为 16 中的值 1，然后将 “16|1” 存储在第 5 个索引槽中，并更新哈希槽为 16 的值为 5。构成链表为: “[16]->5->1”
+- 放入 16: 取出哈希槽为 16 中的值 5，然后将 “16|5” 存储在第 6 个索引槽中，并更新哈希槽为 16 的值为 6。构成链表为: “[16]->6->5->1”
+
+整个过程如下图所示：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121231418.png" alt="image-20211121231418459" style="zoom:67%;" />
+
+#### 查询消息
+
+当需要根据键来查询消息的时候，其会按照倒序回溯整个索引文件列表，对于每一个在时间上能够匹配用户传入的begin和end时间戳参数的索引文件，会一一进行消息查询：
+
+```java
+public class IndexService {
+
+    public QueryOffsetResult queryOffset(String topic, String key, int maxNum, long begin, long end) {
+        // 倒序
+        for (int i = this.indexFileList.size(); i > 0; i--) {
+            // 位于时间段内
+            if (f.isTimeMatched(begin, end)) {
+                // 消息查询
+            }
+        }
+    }
+    
+}
+```
+
+而具体到每一个索引文件，其查询匹配消息的过程如下所示：
+
+- 确定哈希槽：根据键生成哈希值，定位到哈希槽
+- 定位索引槽：沿着索引槽地址，依次取出下一个索引槽地址，即沿着链表遍历，直至遇见下一个索引槽地址位非法地址0停止
+- 收集偏移量：在遇到匹配的消息之后，会将相应的物理偏移量放到列表中，最后根据物理偏移量，从CommitLog文件中取出消息
+
+```java
+public class DefaultMessageStore implements MessageStore {
+
+    @Override
+    public QueryMessageResult queryMessage(String topic, String key, int maxNum, long begin, long end) {
+        
+        for (int m = 0; m < queryOffsetResult.getPhyOffsets().size(); m++) {
+            long offset = queryOffsetResult.getPhyOffsets().get(m);
+            // 根据偏移量从 CommitLog 文件中取出消息
+        }
+        
+    }
+    
+}
+```
+
+以查询哈希值 16 的消息为例，图示如下:
+
+![image-20211121231905163](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121231905.png)
+
+### 唯一键查询
+
+消息的唯一键是在客户端发送消息前构建的：
+
+```java
+public class DefaultMQProducerImpl implements MQProducerInner {
+    private SendResult sendKernelImpl(final Message msg, /** 其它参数 **/) throws XXXException {
+        // ...
+        if (!(msg instanceof MessageBatch)) {
+            MessageClientIDSetter.setUniqID(msg);
+        }
+    }
+}
+```
+
+创建唯一ID的算法：
+
+```java
+public class MessageClientIDSetter {
+
+    public static String createUniqID() {
+        StringBuilder sb = new StringBuilder(LEN * 2);
+        sb.append(FIX_STRING);
+        sb.append(UtilAll.bytes2string(createUniqIDBuffer()));
+        return sb.toString();
+    }
+    
+}
+```
+
+唯一键是根据客户端的进程ID、IP地址、ClassLoader哈希码、时间戳、计数器这几个值来生成的一个唯一的键，然后作为这条消息的附属属性发送到Broker服务器的：
+
+```java
+public class MessageClientIDSetter {
+
+    public static void setUniqID(final Message msg) {
+        if (msg.getProperty(MessageConst.PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX) == null) {
+            msg.putProperty(MessageConst.PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX, createUniqID());
+        }
+    }
+    
+}
+```
+
+当服务器收到客户端发送过来的消息之后，索引服务便会取出客户端生成的uniqKey并为之建立索引，放入到索引文件中：
+
+```java
+public class IndexService {
+
+    public void buildIndex(DispatchRequest req) {
+        // ...
+        if (req.getUniqKey() != null) {
+            indexFile = putKey(indexFile, msg, buildKey(topic, req.getUniqKey()));
+        }
+        // ...
+    }
+    
+}
+```
+
+客户端在生成消息唯一键的时候，在ByteBuffer的第11位到第14位放置的是当前的时间与当月第一天的时间的毫秒差：
+
+```java
+public class MessageClientIDSetter {
+
+    private static byte[] createUniqIDBuffer() {
+        long current = System.currentTimeMillis();
+        if (current >= nextStartTime) {
+            setStartTime(current);
+        }
+
+        // 时间差 [当前时间 - 这个月 1 号的时间]
+        // putInt 占据的是第 11 位到第 14 位
+        buffer.putInt((int) (System.currentTimeMillis() - startTime));
+    }
+
+    private synchronized static void setStartTime(long millis) {
+        Calendar cal = Calendar.getInstance();
+        cal.setTimeInMillis(millis);
+        cal.set(Calendar.DAY_OF_MONTH, 1);
+        cal.set(Calendar.HOUR_OF_DAY, 0);
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.SECOND, 0);
+        cal.set(Calendar.MILLISECOND, 0);
+        // 开始时间设置为这个月的 1 号
+        startTime = cal.getTimeInMillis();
+        // ...
+    }
+    
+}
+```
+
+我们知道消息索引服务的查询需要用户传入begin和end者两个时间值，以进行这段时间内的匹配。所以RocketMQ为了加速消息的查询，于是在Admin端对特定ID进行查询的时候，首先取出了这段时间差值，然后与当月时间进行相加得到的begin时间值：
+
+```java
+public class MessageClientIDSetter {
+
+    public static Date getNearlyTimeFromID(String msgID) {
+        ByteBuffer buf = ByteBuffer.allocate(8);
+        byte[] bytes = UtilAll.string2bytes(msgID);
+        buf.put((byte) 0);
+        buf.put((byte) 0);
+        buf.put((byte) 0);
+        buf.put((byte) 0);
+        // 取出第 11 位到 14 位
+        buf.put(bytes, 10, 4);
+        
+        buf.position(0);
+        // 得到时间差值
+        long spanMS = buf.getLong();
+        
+        Calendar cal = Calendar.getInstance();
+        long now = cal.getTimeInMillis();
+        cal.set(Calendar.DAY_OF_MONTH, 1);
+        cal.set(Calendar.HOUR_OF_DAY, 0);
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.SECOND, 0);
+        cal.set(Calendar.MILLISECOND, 0);
+        long monStartTime = cal.getTimeInMillis();
+        if (monStartTime + spanMS >= now) {
+            cal.add(Calendar.MONTH, -1);
+            monStartTime = cal.getTimeInMillis();
+        }
+        // 设置为这个月(或者上个月) + 时间差值
+        cal.setTimeInMillis(monStartTime + spanMS);
+        return cal.getTime();
+    }
+    
+}
+```
+
+由于发送消息的客户端和查询消息的Admin端可能不在一台服务器上，而且从函数的命名getNearlyTimeFromID与上述实现来看，Admin端的时间戳得到的是一个近似起始值，它尽可能地加速用户的查询。而且太旧的消息（超过一个月的消息）是查询不到的。
+
+当begin时间戳确定以后，Admin便会将其它必要的信息，如Topic、key等信息封装答QUERY_MESSAGE的包中，然后向Broker服务器传递这个请求，来进行消息的查询。Broker服务器在获取到这个查询消息的请求后，便会根据key从索引文件中查询符合的消息，最终返回的Admin端。
+
+### 键查询消息
+
+上文提到过，在发送消息的时候，可以填充一个keys的值，这个值将会作为消息的一个属性被发送到Broker服务器上：
+
+```java
+public class Message implements Serializable {
+
+    public void setKeys(String keys) {
+        this.putProperty(MessageConst.PROPERTY_KEYS, keys);
+    }
+    
+}
+```
+
+当服务器收到客户端发送过来的消息之后，索引服务便会取出这条消息的keys并将其用空格进行分割，分割后的每一个字符串都会作为一个单独的键，创建索引，放入到索引文件中：
+
+```java
+public class IndexService {
+
+    public void buildIndex(DispatchRequest req) {
+        // ...
+        if (keys != null && keys.length() > 0) {
+            // 使用空格进行分割
+            String[] keyset = keys.split(MessageConst.KEY_SEPARATOR);
+            for (int i = 0; i < keyset.length; i++) {
+                String key = keyset[i];
+                if (key.length() > 0) {
+                    indexFile = putKey(indexFile, msg, buildKey(topic, key));
+                }
+            }
+        }
+    }
+    
+}
+```
+
+由此我们也可以得知，keys键的设置通过使用空格分割字符串，一条消息可以指定多个键。
+
+keys键查询的方式也是通过将参数封装为QUERY_MESSAGE请求包中去请求服务器返回相应的信息。由于键本身不能和时间戳相关联，因此begin值设置的是0，这是和第五节的不同之处：
+
+```java
+public class QueryMsgByKeySubCommand implements SubCommand {
+
+    private void queryByKey(final DefaultMQAdminExt admin, final String topic, final String key)
+        throws MQClientException, InterruptedException {
+        // begin: 0
+        // end: Long.MAX_VALUE
+        QueryResult queryResult = admin.queryMessage(topic, key, 64, 0, Long.MAX_VALUE);
+    }
+    
+}
+```
+
 ## 定时消息和重试消息
+
+### 定时消息
+
+RocketMQ支持Producer端发送定时消息，即该消息被发送之后，到一段时间之后才能被Consumer消费者端消费，不过，当前开源版本的RocketMQ所支持的定时时间是有限的、不同级别的精度的时间，并不是任意无限制的定时时间。因此在每条消息上设置定时时间的API叫做setDelayTimeLevel，而非setDelayTime这样的命名：
+
+```java
+Message msg =
+    new Message("TopicTest" /* Topic */,
+                "TagA" /* Tag */,
+                ("Hello RocketMQ " + i).getBytes(RemotingHelper.DEFAULT_CHARSET) /* Message body */);
+msg.setDelayTimeLevel(i + 1);
+```
+
+默认Broekr服务器有18个定时级别：
+
+```java
+public class MessageStoreConfig {
+
+    private String messageDelayLevel = "1s 5s 10s 30s 1m 2m 3m 4m 5m 6m 7m 8m 9m 10m 20m 30m 1h 2h";
+    
+}
+```
+
+这18个定时级别在服务器端启动的时候，会被解析并放置列表delayLevelTable中。解析的过程就是上述字符串按照空格拆开后分开，然后根据时间单位的不同再进一步进行计算，得到最终的毫秒时间。级别就是根据这些毫秒时间的顺序而确定的，例如上述1s延迟就是级别1，5s延迟就是级别2，以此类推：
+
+```java
+public class ScheduleMessageService extends ConfigManager {
+
+    public boolean parseDelayLevel() {
+        for (int i = 0; i < levelArray.length; i++) {
+            // ...
+                
+            int level = i + 1;
+            long delayTimeMillis = tu * num;
+
+            // 级别:延迟时间
+            this.delayLevelTable.put(level, delayTimeMillis);
+        }
+    }
+    
+}
+```
+
+### 定时消息存储
+
+客户端在为某条消息设置上定时级别的时候，实际上级别这个字段会被作为附属属性放到消息中：
+
+```java
+public class Message implements Serializable {
+
+    public void setDelayTimeLevel(int level) {
+        this.putProperty(MessageConst.PROPERTY_DELAY_TIME_LEVEL, String.valueOf(level));
+    }
+    
+}
+```
+
+与普通的消息一样，定时消息也会被存储到CommitLog消息文件中，将定时消息存储下来是为了保证消息最大程度地不丢失。不过毕竟定时消息和普通消息还是有所不同，在遇到定时消息后，CommitLog会将这条消息地Topic和队列ID替换成专门用于定时的Topic和相应级别对应的队列ID，真实的Topic的队列ID会作为属性值放置到这条消息中。
+
+```java
+public class CommitLog {
+
+    public PutMessageResult putMessage(final MessageExtBrokerInner msg) {
+
+        // Delay Delivery
+        if (msg.getDelayTimeLevel() > 0) {
+
+            topic = ScheduleMessageService.SCHEDULE_TOPIC;
+            queueId = ScheduleMessageService.delayLevel2QueueId(msg.getDelayTimeLevel());
+
+            // Backup real topic, queueId
+            MessageAccessor.putProperty(msg, MessageConst.PROPERTY_REAL_TOPIC, msg.getTopic());
+            MessageAccessor.putProperty(msg, MessageConst.PROPERTY_REAL_QUEUE_ID, String.valueOf(msg.getQueueId()));
+            msg.setPropertiesString(MessageDecoder.messageProperties2String(msg.getProperties()));
+
+            // 替换 Topic 和 QueueID
+            msg.setTopic(topic);
+            msg.setQueueId(queueId);
+        }
+        
+    }
+    
+}
+```
+
+随后，这条消息会被存储在CommitLog消息文件中。我们知道后台重放消息服务RequestMessageService会一直监督CommitLog文件是否添加了新的消息。当有了新的消息后，重放消息服务会取出消息并封装为DispatchRequest请求，然后将其分发给不同的三个分发服务，建立消费队列文件服务就是这其中之一。而此处当取消息封装为DispatchRequest的时候，当遇到定时消息时，又多做了一些额外的事情。
+
+当遇见定时消息时，CommitLOg计算tagsCode标签码与普通消息不同。对于定时消息，tagsCode值设置的是这条消息的投递时间，即建立消费队列文件的时候，文件中tagesCode存储的是这条消息未来在什么时候被投递：
+
+```java
+public class CommitLog {
+
+    public DispatchRequest checkMessageAndReturnSize(java.nio.ByteBuffer byteBuffer,
+                                                     final boolean checkCRC,
+                                                     final boolean readBody) {
+        // Timing message processing
+        {
+            String t = propertiesMap.get(MessageConst.PROPERTY_DELAY_TIME_LEVEL);
+            if (ScheduleMessageService.SCHEDULE_TOPIC.equals(topic) && t != null) {
+                int delayLevel = Integer.parseInt(t);
+
+                if (delayLevel > 0) {
+                    tagsCode = this.defaultMessageStore.getScheduleMessageService()
+                        .computeDeliverTimestamp(delayLevel,storeTimestamp);
+                }
+            }
+        }
+    }
+    
+}
+```
+
+如下是，发送了10条定时级别分别为1-10的消息以后，`$HOME/store/consumequeue`文件下消费队列文件的分布情况：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121190601.png" alt="image-20211121190601162" style="zoom:50%;" />
+
+
+
+不同的定时级别对应于不同的队列ID，定时级别减1得到的就是队列ID的值，因此级别1-10对应的是0-9的队列ID：
+
+```java
+public class ScheduleMessageService extends ConfigManager {
+
+    public static int delayLevel2QueueId(final int delayLevel) {
+        return delayLevel - 1;
+    }
+    
+}
+```
+
+### 消息重试
+
+消息重试分为消息发送重试和消息接收重试，消息发送重试是指消息从Producer端发送到Broker服务器的失败以后的重试情况，消息接收重试是指Consumer在消费消息的时候出现异常或者失败的重试情况。
+
+Producer端通过配置如下两个API可以分别配置在同步发送和异步发送消息失败的时候的重试次数：
+
+```java
+DefaultMQProducer producer = new DefaultMQProducer("please_rename_unique_group_name");
+producer.setRetryTimesWhenSendAsyncFailed(3);
+producer.setRetryTimesWhenSendFailed(3);
+```
+
+Consumer端在消费的时候，如果接收消息的回调函数出现了如下几种情况：
+
+- 抛出异常
+- 返回NULL状态
+- 返回RECONSUME_LATER状态
+- 超过15分钟没有响应
+
+那么Consumer便会将消费失败的消息重新调度直到成功消费：
+
+```java
+consumer.registerMessageListener(new MessageListenerConcurrently() {
+
+        @Override
+        public ConsumeConcurrentlyStatus consumeMessage(List<MessageExt> msgs,
+                                                        ConsumeConcurrentlyContext context) {
+            // 抛出异常
+            // 返回 NULL 或者 RECONSUME_LATER 状态
+            return ConsumeConcurrentlyStatus.RECONSUME_LATER;
+        }
+    });
+```
+
+#### Producer消息发送重试
+
+发送失败的重试方式，主要表现在发送消息的时候，会最多尝试getRetryTimesWhenSendFailed()次发送，当成功发送以后，会直接返回发送结果给调用者。当发送失败以后，会继续进行下一次发送尝试，核心代码如下所示：
+
+```java
+public class DefaultMQProducerImpl implements MQProducerInner {
+
+    private SendResult sendDefaultImpl(Message msg, /** 其他参数 **/) throws MQClientException,
+                                                                             RemotingException,
+                                                                             MQBrokerException,
+                                                                             InterruptedException {
+        int timesTotal = communicationMode ==
+            CommunicationMode.SYNC ?
+            1 + this.defaultMQProducer.getRetryTimesWhenSendFailed() :
+            1;
+        int times = 0;
+
+        for (; times < timesTotal; times++) {
+            // 尝试发送消息，发送成功 return，发送失败 continue
+        }
+        
+    }
+    
+}
+```
+
+#### Consumer消息接收重试
+
+Consumer在启动的时候，会指定一个copySubscription()，当用户注册的消息模型为集群模式的时候，会根据用户指定的Group创建重试Group Topic并放入到注册信息中：
+
+```java
+public class DefaultMQPushConsumerImpl implements MQConsumerInner {
+
+    public synchronized void start() throws MQClientException {
+        switch (this.serviceState) {
+        case CREATE_JUST:
+            // ...
+            this.copySubscription();
+            // ...
+        
+            this.serviceState = ServiceState.RUNNING;
+            break;
+        }
+    }
+
+    private void copySubscription() throws MQClientException {
+        switch (this.defaultMQPushConsumer.getMessageModel()) {
+        case BROADCASTING:
+            break;
+            
+        case CLUSTERING:
+            // 重试话题组
+            final String retryTopic = MixAll.getRetryTopic(this.defaultMQPushConsumer.getConsumerGroup());
+            SubscriptionData subscriptionData = FilterAPI.buildSubscriptionData(this.defaultMQPushConsumer.getConsumerGroup(),
+                                                                                retryTopic, SubscriptionData.SUB_ALL);
+            this.rebalanceImpl.getSubscriptionInner().put(retryTopic, subscriptionData);
+            break;
+            
+        default:
+            break;
+        }
+    }
+    
+}
+```
+
+假设用户指定的组为“ORDER”，那么重试的Topic则为“%RETRY%ORDER”，即前面加上了“%RETRY”这个字符串。
+
+Consumer在一开始启动的时候，就为用户自动注册了订阅组的重试Topic，即用户不单单只接收这个Group的Topic的消息，也接收这个Group的重试Topic的消息，这样以来，就为用户如何接收重试消息奠定了基础。
+
+当Consumer客户端在消费消息的时候，抛出了异常、返回了非正确消费的状态等错误的时候，这时，ConsumeMessageConcurrentlyService会收集所有失败的消息，然后将每一条消息封装进CONSUMER_SEND_MSG_BACK的请求中，并将其发送到Broker服务器：
+
+```java
+public class ConsumeMessageConcurrentlyService implements ConsumeMessageService {
+
+    public void processConsumeResult(final ConsumeConcurrentlyStatus status,
+                                     /** 其他参数 **/) {
+        switch (this.defaultMQPushConsumer.getMessageModel()) {
+        case BROADCASTING:
+            // ...
+            break;
+        case CLUSTERING:
+            for (int i = ackIndex + 1; i < consumeRequest.getMsgs().size(); i++) {
+                MessageExt msg = consumeRequest.getMsgs().get(i);
+                // 重新将消息发往 Broker 服务器
+                boolean result = this.sendMessageBack(msg, context);
+            }
+            // ...
+            break;
+        default:
+            break;
+        }
+    }
+    
+}
+```
+
+当消费失败的消息重新发送到服务器后，Broker会为其指定新的Topic重试Topic，并根据当前这条消息的已有的重试次数来选择定时级别，即将这条消息变成定时消息投放到重试Topic消息队列中。可见消息消费失败后并不是立即进行新的投递，而是有一定的延迟时间的。延迟时间随着重试次数的增加而增加，也即投递的时间的间隔也越来越长：
+
+```java
+public class SendMessageProcessor
+    extends AbstractSendMessageProcessor
+    implements NettyRequestProcessor {
+
+    private RemotingCommand consumerSendMsgBack(final ChannelHandlerContext ctx,
+                                                final RemotingCommand request)
+        throws RemotingCommandException {
+
+        // 指定为重试话题
+        String newTopic = MixAll.getRetryTopic(requestHeader.getGroup());
+        int queueIdInt = Math.abs(this.random.nextInt() % 99999999) % subscriptionGroupConfig.getRetryQueueNums();
+
+        // 指定为延时信息，设定延时级别
+        if (0 == delayLevel) {
+            delayLevel = 3 + msgExt.getReconsumeTimes();
+        }
+        msgExt.setDelayTimeLevel(delayLevel);
+
+        // 重试次数增加
+        msgInner.setReconsumeTimes(msgExt.getReconsumeTimes() + 1);
+
+        // 重新存储
+        PutMessageResult putMessageResult = this.brokerController.getMessageStore().putMessage(msgInner);
+
+        // ...
+    }
+    
+}
+```
+
+当然，消息如果一直消费不成功，那也不会一直无限次的尝试重新投递，当重试次数大于最大重试次数（默认为16次）的时候，该消息将会被送往死信队列，认定这条消息投递无门：
+
+```java
+public class SendMessageProcessor
+    extends AbstractSendMessageProcessor
+    implements NettyRequestProcessor {
+
+    private RemotingCommand consumerSendMsgBack(final ChannelHandlerContext ctx,
+                                                final RemotingCommand request)
+        throws RemotingCommandException {
+        // 重试次数大于最大重试次数
+        if (msgExt.getReconsumeTimes() >= maxReconsumeTimes
+            || delayLevel < 0) {
+            // 死信队列话题
+            newTopic = MixAll.getDLQTopic(requestHeader.getGroup());
+            queueIdInt = Math.abs(this.random.nextInt() % 99999999) % DLQ_NUMS_PER_GROUP;
+        }
+        // ...
+    }
+    
+}
+```
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121203713.png" alt="image-20211121203713011" style="zoom:67%;" />
+
+上述客户端消费失败的流程图如下所示：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121203805.png" alt="image-20211121203805755" style="zoom:67%;" />
 
 ## 主备同步
 
+RocketMQ通过Master-Slave主备机制，来实现整个系统的高可用，具体表现在：
+
+- Master磁盘坏掉，Slave依然保存了一份
+- Master宕机，不影响消费者继续消费
+
+假设我们在同一台机器上搭建了一个Master和一个Slave的环境：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121171339.png" alt="image-20211121171339365" style="zoom:67%;" />
+
+为了能够将Master和Slave搭建在同一台计算机上，我们除了需要将Broker的角色设置为SLAVE，还需要为其指定单独的brokerId、storePathRootDir、storePathCommitLog。
+
+```java
+// SLAVE 角色
+messageStoreConfig.setBrokerRole(BrokerRole.SLAVE);
+
+// 一个机器如果要启动多个 Broker，那么每个 Broker 的 store 根目录必须不同
+messageStoreConfig.setStorePathRootDir(storePathRootDir);
+// 一个机器如果要启动多个 Broker，那么每个 Broker 的 storePathCommitLog 根目录必须不同
+messageStoreConfig.setStorePathCommitLog(storePathCommitLog);
+// 设置 Slave 的 Master HA 地址
+messageStoreConfig.setHaMasterAddress("localhost:10912");
+
+// SLAVE 角色的 brokerId 必须大于 0
+brokerConfig.setBrokerId(1);
+```
+
+注意Slave和Master的brokerName必须一致，即它们必须处于同一个BrokerData数据结构里面。实际上在做了如上的修改之后，Slave和Master依旧不能同时运行在同一台机器上，因为Slave本身也可以称为Master，接收来自其它Slave的请求，因此当运行Slave的时候，需要将HAService里面的启动AcceptSocketService运行的相关方法注释掉。
+
+### 建立连接
+
+当一个Broker在启动的时候，会调用HAService的start()方法：
+
+```java
+public class HAService {
+
+    public void start() throws Exception {
+        this.acceptSocketService.beginAccept();
+        this.acceptSocketService.start();
+        
+        this.groupTransferService.start();
+        this.haClient.start();
+    }
+    
+}
+```
+
+AcceptSocketService服务的功能是Master等待接收来自其它客户端Slave的连接，当成功建立连接后，会将这条连接HAConnecion放入到connectionList连接列表里面，而HAClient服务的功能是Slave主动发起同其它Master的连接。
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121173400.png" alt="image-20211121173400580" style="zoom:67%;" />
+
+### 数据传输
+
+当启动HAService之后，一旦Master发现和Slave不同步，那么Master会自动开始同步消息到Slave，无需其它的触发机制。
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121173514.png" alt="image-20211121173514012" style="zoom:67%;" />
+
+消息的传输方式主要分为两种：
+
+- 消息异步传输
+- 消息同步传输
+
+#### 消息异步传输
+
+如果Mater Broker的角色是ASYNC_MASTER，那么消息等待从Master同步到Slave的方式是异步传输的方式。这意味当一条消息发送到Master Broker的时候，Master Broker在存储完这条消息到本地之后，并不会等待消息同步到Slave Broker才返回。这种方式会缩短发送消息的响应时间。
+
+#### 消息同步传输
+
+如果Master Broker的角色是SYNC_MASTER，那么消息等待从Master同步到Slave的方式是同步传输方式。除此之外，进入同步方式还得满足另外两个条件：
+
+- 消息体的PROPERTY_WAIT_STORE_MSG_OK属性值为true，即这条消息允许等待
+- Slave相比Master落下的同步进度不能超过265MB
+
+```java
+public class CommitLog {
+
+    public void handleHA(AppendMessageResult result, PutMessageResult putMessageResult, MessageExt messageExt) {
+        if (BrokerRole.SYNC_MASTER == this.defaultMessageStore.getMessageStoreConfig().getBrokerRole()) {
+            HAService service = this.defaultMessageStore.getHaService();
+
+            // 消息是否允许等待同步
+            if (messageExt.isWaitStoreMsgOK()) {
+                
+                // Slave 是否没有落下 Master 太多
+                if (service.isSlaveOK(result.getWroteOffset() + result.getWroteBytes())) {
+                    // 等待同步完成
+                    // ...
+                }
+                
+                // Slave problem
+                else {
+                    // Tell the producer, slave not available
+                    putMessageResult.setPutMessageStatus(PutMessageStatus.SLAVE_NOT_AVAILABLE);
+                }
+            }
+        }
+
+    }
+    
+}
+```
+
+其中isSlaveOK方法就是用来检测Slave和Master落下的同步进度是否太大的：
+
+```java
+public class HAService {
+
+    public boolean isSlaveOK(final long masterPutWhere) {
+        boolean result = this.connectionCount.get() > 0;
+
+        result =
+            result
+
+            && ((masterPutWhere - this.push2SlaveMaxOffset.get()) <
+                this.defaultMessageStore
+                .getMessageStoreConfig()
+                .getHaSlaveFallbehindMax()); // 默认 256 * 1024 * 1024 = 256 MB
+        
+        return result;
+    }
+    
+}
+```
+
+如果上面两个条件不满足的话，那么Master便不会再等待消息同步到Slave之后再返回，能尽早返回便尽早返回了。
+
+消息等待是否同步到Slave是借助CountDownLatch来实现的。当消息需要等待的时候便会构建一个GroupCommitRequest，每个请求在其内部都维护了一个CountDownLatch，然后通过调用await(timeout)方法来等待消息同步到Slave之后，或者超时之后自动返回。
+
+```java
+public static class GroupCommitRequest {
+
+    private final CountDownLatch countDownLatch = new CountDownLatch(1);
+
+    public void wakeupCustomer(final boolean flushOK) {
+        this.flushOK = flushOK;
+        this.countDownLatch.countDown();
+    }
+
+    public boolean waitForFlush(long timeout) {
+        try {
+            this.countDownLatch.await(timeout, TimeUnit.MILLISECONDS);
+            return this.flushOK;
+        } catch (InterruptedException e) {
+            log.error("Interrupted", e);
+            return false;
+        }
+    }
+    
+}
+```
+
+我们需要重点掌握几个循环体和唤醒点：
+
+- GroupTransferService服务的是否处理请求的循环体和唤醒点：
+
+	```java
+	class GroupTransferService extends ServiceThread {
+	
+	    public synchronized void putRequest(final CommitLog.GroupCommitRequest request) {
+	        // ...
+	        // 放入请求，唤醒
+	        if (hasNotified.compareAndSet(false, true)) {
+	            waitPoint.countDown(); // notify
+	        }
+	    }
+	
+	    public void run() {
+	        // 循环体
+	        while (!this.isStopped()) {
+	            try {
+	                // putRequest 会提前唤醒这句话
+	                this.waitForRunning(10);
+	                this.doWaitTransfer();
+	            } catch (Exception e) {
+	                log.warn(this.getServiceName() + " service has exception. ", e);
+	            }
+	        }
+	
+	    }
+	
+	}
+	```
+
+- HAConnection的是否进行消息传输的循环体和唤醒点：
+
+	```java
+	class WriteSocketService extends ServiceThread {
+	
+	    @Override
+	    public void run() {
+	        // 循环体
+	        while (!this.isStopped()) {
+	            SelectMappedBufferResult selectResult =
+	                HAConnection.this.haService.getDefaultMessageStore().getCommitLogData(this.nextTransferFromWhere);
+	            if (selectResult != null) {
+	                // 传输（写入）消息
+	            } else {
+	                // 等待 100 毫秒或者提前被唤醒
+	                HAConnection.this.haService.getWaitNotifyObject().allWaitForRunning(100);
+	            }
+	        }
+	    }
+	
+	}
+	
+	public class CommitLog {
+	
+	    public void handleHA(AppendMessageResult result,
+	                         PutMessageResult putMessageResult,
+	                         MessageExt messageExt) {
+	        GroupCommitRequest request =
+	            new GroupCommitRequest(result.getWroteOffset() +
+	                                   result.getWroteBytes());
+	        service.putRequest(request);
+	        // 提前唤醒 WriteSocketService
+	        service.getWaitNotifyObject().wakeupAll();
+	    }
+	    
+	}
+	```
+
+- Slave汇报进度唤醒GroupTransferService，等待同步完成唤醒GroupCommitRequest的CountDownLatch：
+
+	```java
+	class ReadSocketService extends ServiceThread {
+	
+	    private boolean processReadEvent() {
+	        // 唤醒 GroupTransferService
+	        HAConnection.this.haService.notifyTransferSome(HAConnection.this.slaveAckOffset);
+	    }
+	    
+	}
+	
+	class GroupTransferService extends ServiceThread {
+	
+	    // 被唤醒
+	    public void notifyTransferSome() {
+	        this.notifyTransferObject.wakeup();
+	    }
+	
+	    private void doWaitTransfer() {
+	        for (CommitLog.GroupCommitRequest req : this.requestsRead) {
+	            boolean transferOK = HAService.this.push2SlaveMaxOffset.get() >= req.getNextOffset();
+	
+	            // 5 次重试
+	            for (int i = 0; !transferOK && i < 5; i++) {
+	                // 等待被唤醒或者超时
+	                this.notifyTransferObject.waitForRunning(1000);
+	                transferOK = HAService.this.push2SlaveMaxOffset.get() >= req.getNextOffset();
+	            }
+	
+	            // 唤醒 GroupCommitRequest 的 CountDownLatch
+	            req.wakeupCustomer(transferOK);
+	        }
+	    }
+	    
+	}
+	
+	public static class GroupCommitRequest {
+	
+	    // 被唤醒
+	    public void wakeupCustomer(final boolean flushOK) {
+	        this.flushOK = flushOK;
+	        this.countDownLatch.countDown();
+	    }
+	
+	}
+	```
+
+完整的消息唤醒链：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121174957.png" alt="image-20211121174957641" style="zoom:67%;" />
+
+### 消费建议
+
+当消费者在消费的时候，如果Master突然宕机，那么消费者会自动切换到Slave机器上继续进行消费。
+
+RocketMQ提供了自动从Slave读取老数据的功能，这个功能主要由slaveReadEnable这个参数控制。默认是关的（slaveReadEnable=false）。推荐主从都打开，这个参数打开之后，在客户端消费数据时，会判断，当前读取消息的物理偏移量跟最新的位置的差值，是否超过了内存容量的一个百分比（`accessMessageInMemoryMaxRatio = 40` by default）。如果超过了，就会告诉客户端去备机上消费数据。如果采用异步主从，也就是broekrRole等于ASYNC_AMSTER的时候，备机IO爆了，其实影响不太大，但是如果采用同步主从，就会收到影响，这个时候，最好是有两个备机，因为RocketMQ的主从同步复制，只要一个备机响应了确认写入就可以了，另一台IO爆了，问题不是很大。
+
+### 异常处理
+
+一、Master（Slave）读取来自Slave（Master）的消息异常（IOException、read()返回-1等）的时候怎么处理？
+
+答：打印日志+关闭这条连接。
+
+二、Master（Slave）长时间没有收到来自Slave（Master）的进度汇报怎么处理？
+
+答：每次读取之后更新lastReadTimeStamp或者lastWriteTimestamp，一旦发现在haHousekeepingInterval间隔内（默认20秒）这个时间戳没有改变的话，关闭这条连接。
+
+三、Slave检测到来自Master汇报的本次传输偏移量和本地的传输偏移量不同时怎么处理？
+
+答：打印日志+关闭这条连接。
+
+四、Master如何知道Slave是否真正的存储了刚才发送过去的消息？
+
+答：Slave存储完毕之后，通过向Master汇报进度来完成。相当于TCP的ACK机制。
+
+五、Master宕机
+
+答：无论Master是主动关闭Master，还是Master因为异常而退出，Slave都会每隔5秒重连一次Master。
+
 ## 事务消息
+
+### 发送事务消息
+
+发送事务大致分为三个步骤：
+
+- 初始化事务环境
+- 发送消息并执行本地事务
+- 结束事务
+
+初始化事务环境是为了构建checkExecutor线程池：
+
+```Java
+public class TransactionMQProducer extends DefaultMQProducer {
+
+    @Override
+    public void start() throws MQClientException {
+        this.defaultMQProducerImpl.initTransactionEnv();
+        super.start();
+    }
+
+}
+```
+
+发送消息并执行本地事务：
+
+```Java
+public class TransactionMQProducer extends DefaultMQProducer {
+
+    @Override
+    public TransactionSendResult sendMessageInTransaction(final Message msg, final Object arg) throws MQClientException {
+        return this.defaultMQProducerImpl.sendMessageInTransaction(msg, null, arg);
+    }
+
+}
+```
+
+下面是DefaultMQProducerImpl类的发送事务消息的具体实现：
+
+```Java
+public TransactionSendResult sendMessageInTransaction(final Message msg, final LocalTransactionExecuter localTransactionExecuter, final Object arg) throws MQClientException {
+
+    // 标识这条消息的属性：TRANSACTION_PREPARED
+    MessageAccessor.putProperty(msg, MessageConst.PROPERTY_TRANSACTION_PREPARED, "true");
+
+    // 发送消息
+    sendResult = this.send(msg);
+
+    // 根据消息的发送状态决定是否执行本地事务
+    switch (sendResult.getSendStatus()) {
+        // 发送消息成功
+        case SEND_OK: {
+            // 获取事务 ID
+            if (sendResult.getTransactionId() != null) {
+                msg.putUserProperty("__transactionId__", sendResult.getTransactionId());
+            }
+            String transactionId = msg.getProperty(MessageConst.PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX);
+            if (null != transactionId && !"".equals(transactionId)) {
+                msg.setTransactionId(transactionId);
+            }
+
+            // 执行本地事务
+            if (null != localTransactionExecuter) {
+                localTransactionState = localTransactionExecuter.executeLocalTransactionBranch(msg, arg);
+            } else if (transactionListener != null) {
+                log.debug("Used new transaction API");
+                localTransactionState = transactionListener.executeLocalTransaction(msg, arg);
+            }
+        }
+        break;
+
+        // 发送消息失败
+        case FLUSH_DISK_TIMEOUT:
+        case FLUSH_SLAVE_TIMEOUT:
+        case SLAVE_NOT_AVAILABLE:
+            localTransactionState = LocalTransactionState.ROLLBACK_MESSAGE;
+            break;
+    }
+
+    // 事务结束
+    this.endTransaction(sendResult, localTransactionState, localException);
+
+}
+```
+
+从上述代码可以看出，RocketMQ是先发送消息，然后再执行本地事务。
+
+在endTransaction内部，需要根据本地事务执行的状态，来决定是COMMIT还是ROLLBACK已经发送到服务器的消息：
+
+```Java
+switch (localTransactionState) {
+    case COMMIT_MESSAGE:
+        requestHeader.setCommitOrRollback(MessageSysFlag.TRANSACTION_COMMIT_TYPE);
+        break;
+    case ROLLBACK_MESSAGE:
+        requestHeader.setCommitOrRollback(MessageSysFlag.TRANSACTION_ROLLBACK_TYPE);
+        break;
+    case UNKNOW:
+        requestHeader.setCommitOrRollback(MessageSysFlag.TRANSACTION_NOT_TYPE);
+        break;
+    default:
+        break;
+}
+
+// 调用 API: 只调用一次，不重试
+this.mQClientFactory.getMQClientAPIImpl().endTransactionOneway(brokerAddr, requestHeader, remark, this.defaultMQProducer.getSendMsgTimeout());
+```
+
+其中endTransactionOneway()发送的是到Server的END_TRANSACTION命令：
+
+```Java
+RemotingCommand request = RemotingCommand.createRequestCommand(RequestCode.END_TRANSACTION, requestHeader);
+```
+
+### 接收事务消息
+
+接收事务消息大致分为两个阶段：
+
+- 接收事务准备消息
+- 接收事务结束消息
+
+#### 接收事务准备消息
+
+Broker检查收到的消息是否是PROPERTY_TRANCSACTION_PREPARED消息：
+
+```java
+// SendMessageProcessor
+String transFlag = origProps.get(MessageConst.PROPERTY_TRANSACTION_PREPARED);
+
+if (transFlag != null && Boolean.parseBoolean(transFlag)) {
+    if (this.brokerController.getBrokerConfig().isRejectTransactionMessage()) {
+        // 没有发送事务的权限
+        response.setCode(ResponseCode.NO_PERMISSION);
+        return CompletableFuture.completedFuture(response);
+    }
+    putMessageResult = this.brokerController.getTransactionalMessageService().asyncPrepareMessage(msgInner);
+}
+```
+
+异步准备消息内部，其实就是存储half消息的过程：
+
+```Java
+// org.apache.rocketmq.broker.transaction.queue.TransactionalMessageServiceImpl
+
+@Override
+public CompletableFuture<PutMessageResult> asyncPrepareMessage(MessageExtBrokerInner messageInner) {
+    return transactionalMessageBridge.asyncPutHalfMessage(messageInner);
+}
+```
+
+将消息的Topic替换为了RMQ_SYS_TRANS_HALF_TOPIC：
+
+```Java
+// 备份原来真正的 Topic
+MessageAccessor.putProperty(msgInner, MessageConst.PROPERTY_REAL_TOPIC, msgInner.getTopic());
+msgInner.setTopic(TransactionalMessageUtil.buildHalfTopic());
+
+public static String buildHalfTopic() {
+    return TopicValidator.RMQ_SYS_TRANS_HALF_TOPIC;
+}
+```
+
+下图是，刚发送完PREPARED消息后，consumequeue文件夹中存放的文件：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121205836.png" alt="image-20211121205835828" style="zoom:67%;" />
+
+PREPARED消息不会被消费吗？
+
+PREPARED消息在存储到磁盘之前，会将Topic改为RMQ_SYS_TRANS_HALF_TOPIC，因此通过订阅该消息关联的原来的Topic，是消费不到该消息的。
+
+另外就是在Broker分发消息的时候，正常情况下，当收到了一条消息，后台会根据消息，构建consume文件（下面代码中的putMessagePositionInfo()方法就是为了构建消费文件），以供消费者消费。但是在遇到PREPARED消息的时候，就不再构建consume文件了，即消费者根本看不到这条消息。
+
+```Java
+// DefaultMessageStore.java
+class CommitLogDispatcherBuildConsumeQueue implements CommitLogDispatcher {
+
+    @Override
+    public void dispatch(DispatchRequest request) {
+        final int tranType = MessageSysFlag.getTransactionValue(request.getSysFlag());
+        switch (tranType) {
+            case MessageSysFlag.TRANSACTION_NOT_TYPE:
+            case MessageSysFlag.TRANSACTION_COMMIT_TYPE:
+                DefaultMessageStore.this.putMessagePositionInfo(request);
+                break;
+            case MessageSysFlag.TRANSACTION_PREPARED_TYPE:
+            case MessageSysFlag.TRANSACTION_ROLLBACK_TYPE:
+                break;
+        }
+    }
+}
+```
+
+#### 接收事务结束的消息
+
+对于END_TRANSACTION的请求，BrokerController注册了单独的处理器来处理事务结束的命令：
+
+```java
+// BrokerController
+this.remotingServer.registerProcessor(RequestCode.END_TRANSACTION, new EndTransactionProcessor(this), this.endTransactionExecutor);
+```
+
+EndTransactionProcessor内部，处理命令的逻辑如下：
+
+```java
+// SLAVE 不支持接受 END_TRANSACTION 命令
+if (BrokerRole.SLAVE == brokerController.getMessageStoreConfig().getBrokerRole()) {
+    response.setCode(ResponseCode.SLAVE_NOT_AVAILABLE);
+    return response;
+}
+
+if (MessageSysFlag.TRANSACTION_COMMIT_TYPE == requestHeader.getCommitOrRollback()) {
+    // COMMIT 消息
+} else if (MessageSysFlag.TRANSACTION_ROLLBACK_TYPE == requestHeader.getCommitOrRollback()) {
+    // ROLLBACK 消息
+}
+```
+
+COMMIT消息的实现：
+
+```java
+result = this.brokerController.getTransactionalMessageService().commitMessage(requestHeader);
+
+MessageExtBrokerInner msgInner = endMessageTransaction(result.getPrepareMessage());
+msgInner.setSysFlag(MessageSysFlag.resetTransactionValue(msgInner.getSysFlag(), requestHeader.getCommitOrRollback()));
+MessageAccessor.clearProperty(msgInner, MessageConst.PROPERTY_TRANSACTION_PREPARED);
+
+RemotingCommand sendResult = sendFinalMessage(msgInner);
+if (sendResult.getCode() == ResponseCode.SUCCESS) {
+    this.brokerController.getTransactionalMessageService().deletePrepareMessage(result.getPrepareMessage());
+}
+```
+
+上述代码第一行commitMessage内部是根据commitLogOffset这个偏移量，从commitLog的MappedFile文件中查找消息的过程。
+
+第二行的endMessageTransaction内部根据preparedMessage构建了新的Message，恢复了Topic、拷贝了这个消息上其它的属性信息，最重要的是清除了MessageConst、PROPERTY_TRANSACTION_PREPARED属性，以便这个消息可以构建消费队列文件，从而让消费者能够消费。
+
+最后sendMessage内部就是将构建好的新的消息体，重新调用Broker端的发送消息的流程，来发送消息。所以消费端消费已经不是之前发送的PREPARED消息，而是根据PREPARED消息重新克隆出来的新的消息体，当然内容、属性等都是一样的。
+
+最后deletePrepareMessage的过程，内部其实只是给这条消息打赏了一个TransactionMessageUtil.REMOVETAG标签，然后重新putMessage()。
+
+下图展示的是，执行COMMIT之后的，consumequeue存放文件的情况：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121221847.png" alt="image-20211121221847599" style="zoom:67%;" />
+
+RollBack回滚消息的实现：
+
+回滚消息第一步也是根据commitOffset查找消息，然后再给这条消息打上`TransactionalMessageUtil.REMOVETAG` 的过程。
+
+下图是消息执行ROLLBACK之后的consumequeue所存储的文件的状态：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121222041.png" alt="image-20211121222041279" style="zoom:67%;" />
+
+### 扫描事务状态
+
+加入Client执行本地事务，运行时间过长，或者发送了COMMIT消息或者ROLLBACK消息，但是这条消息由于网络原因等没有到达Server端，那么可能会导致PREPARED的消息越来越多。因此Broker会在后台定期给Client发送检查事务状态的消息，主要通过如下三种方式：
+
+- Server定时扫描
+- Server检查事务状态
+- 客户端检查事务状态
+
+#### Server定时扫描
+
+```Java
+public class TransactionalMessageCheckService extends ServiceThread {
+    
+    @Override
+    public void run() {
+        long checkInterval = brokerController.getBrokerConfig().getTransactionCheckInterval();
+        while (!this.isStopped()) {
+            this.waitForRunning(checkInterval);
+        }
+    }
+
+    @Override
+    protected void onWaitEnd() {
+        long timeout = brokerController.getBrokerConfig().getTransactionTimeOut();
+        int checkMax = brokerController.getBrokerConfig().getTransactionCheckMax();
+
+        // 检查事务状态
+        this.brokerController.getTransactionalMessageService().check(timeout, checkMax, this.brokerController.getTransactionalMessageCheckListener());
+    }
+
+}
+```
+
+- transactionCheckInterval = 60 * 1000：每隔60s执行一次check方法
+- transactionTimeOut = 6 * 1000：第一次检查事务消息的时间，一条消息只有大于这个时间还没有收到COMMIT或者ROLLBACK，那么就执行检查
+- transactionCheckMax = 15：最多执行多少次检查后，如果依然还没有收到这条消息是提交还是回滚，那么这条消息将被丢弃
+
+#### Server检查事务状态
+
+在check方法内部，Server端需要扫描是否有消息需要取检查事务的状态，如果需要，则会给Client发送CHECK_TRANSACTION_STATE命令。
+
+首先，Broker将自己作为一个客户端来去订阅消费RMQ_SYS_TRANS_OP_HALF_TOPIC Topic中的消息。
+
+```Java
+// TransactionalMessageBridge.java
+public PullResult getOpMessage(int queueId, long offset, int nums) {
+    String group = TransactionalMessageUtil.buildConsumerGroup();
+    String topic = TransactionalMessageUtil.buildOpTopic();
+    SubscriptionData sub = new SubscriptionData(topic, "*");
+    return getMessage(group, topic, queueId, offset, nums, sub);
+}
+```
+
+那么每一次消费，我们怎么知道上一次消费到哪里了呢？实际上，最新的消息偏移量存储在了offsetTable中：
+
+```java
+// ConsumerOffsetManager.java
+public long queryOffset(final String group, final String topic, final int queueId) {
+    // topic@group
+    String key = topic + TOPIC_GROUP_SEPARATOR + group;
+    ConcurrentMap<Integer, Long> map = this.offsetTable.get(key);
+    if (null != map) {
+        Long offset = map.get(queueId);
+        if (offset != null)
+            return offset;
+    }
+
+    return -1;
+}
+```
+
+offsetTable在后台也会定时地将里面的信息保存到磁盘上的config/consumerOffset.json文件中（如下图所示）。0：9的0表示queueId，9表示最新的offset。
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121215138.png" alt="image-20211121215138254" style="zoom:67%;" />
+
+在获取到上一轮offset到最新的offset之间的消息列表后，那么就需要逐一检查这些消息的事务状态了：
+
+```Java
+PullResult pullResult = fillOpRemoveMap(removeMap, opQueue, opOffset, halfOffset, doneOpOffset);
+long i = halfOffset;
+
+while (true) {
+    // ...
+    GetResult getResult = getHalfMsg(messageQueue, i);
+    // ...
+    if (isNeedCheck) {
+        // ...
+        listener.resolveHalfMsg(msgExt);
+    } 
+}
+```
+
+msgExt的内部状态：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121215312.png" alt="image-20211121215312432" style="zoom:50%;" />
+
+那么在每一轮循环中，即每一条消息内部，逻辑又是怎么样执行的呢？
+
+```Java
+// TransactionalMessageServiceImpl
+if (System.currentTimeMillis() - startTime > MAX_PROCESS_TIME_LIMIT) {
+    break;
+}
+
+if (needDiscard(msgExt, transactionCheckMax) || needSkip(msgExt)) {
+    continue;
+}
+
+long valueOfCurrentMinusBorn = System.currentTimeMillis() - msgExt.getBornTimestamp();
+long checkImmunityTime = transactionTimeout;
+
+boolean isNeedCheck = (opMsg == null && valueOfCurrentMinusBorn > checkImmunityTime);
+
+if (isNeedCheck) {
+    if (!putBackHalfMsgQueue(msgExt, i)) {
+        continue;
+    }
+
+    listener.resolveHalfMsg(msgExt);
+} 
+```
+
+我们可以看到：
+
+- 首先对于while(true)的时间设定了限制，不能超过MAX_PROCESS_TIME_LIMIT这个值
+
+- 其次，needDiscard这个方法检查的就是从消息的MessageConst.PROPERTY_TRANSACTION_CHECK_TIMES属性中，获取到这个消息已经检查了多少次，如果超过transactionCheckMax，那么就需要丢弃
+
+- needSkip()函数判断的是这条消息自诞生以来，在Broker端放置的时间是否超过了3天，如果超过3天，这条消息也没有必要检查了，因此RocketMQ默认存储消息的最长时间就是3天
+
+- isNeedCheck看的主要就是消息诞生的时间是否超过了transactionTimeout
+
+- putBackHalfMsgQueue主要就是将当前的消息，最新修改的属性等，重新拷贝一份，然后将新的消息追加到MappedFile的末尾
+
+- resolveHalfMsg就是在线程池中执行发送检查事务状态的任务：
+
+	```java
+	public void resolveHalfMsg(final MessageExt msgExt) {
+	    executorService.execute(new Runnable() {
+	        @Override
+	        public void run() {
+	            try {
+	                sendCheckMessage(msgExt);
+	            } catch (Exception e) {
+	                LOGGER.error("Send check message error!", e);
+	            }
+	        }
+	    });
+	}
+	```
+
+sendCheckMessage的内部实现：
+
+```Java
+// AbstractTransactionalMessageCheckListener.java
+String groupId = msgExt.getProperty(MessageConst.PROPERTY_PRODUCER_GROUP);
+Channel channel = brokerController.getProducerManager().getAvaliableChannel(groupId);
+if (channel != null) {
+    brokerController.getBroker2Client().checkProducerTransactionState(groupId, channel, checkTransactionStateRequestHeader, msgExt);
+}
+```
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121220206.png" alt="image-20211121220206065" style="zoom:67%;" />
+
+checkProducerTransactionState的内部实现，就是发送了CHECK_TRANSACTION_STATE报文给Client：
+
+```Java
+// Broker2Client.java
+RemotingCommand request =
+    RemotingCommand.createRequestCommand(RequestCode.CHECK_TRANSACTION_STATE, requestHeader);
+request.setBody(MessageDecoder.encode(messageExt, false));
+try {
+    this.brokerController.getRemotingServer().invokeOneway(channel, request, 10);
+} catch (Exception e) {
+    log.error("Check transaction failed because invoke producer exception. group={}, msgId={}, error={}",
+            group, messageExt.getMsgId(), e.toString());
+}
+```
+
+#### 客户端检查事务状态
+
+Producer也通过Netty监听了一个端口上，这样也能接收来自外界的命令了：
+
+```Java
+public class ClientRemotingProcessor extends AsyncNettyRequestProcessor implements NettyRequestProcessor {
+    @Override
+    public RemotingCommand processRequest(ChannelHandlerContext ctx,
+        RemotingCommand request) throws RemotingCommandException {
+        switch (request.getCode()) {
+            case RequestCode.CHECK_TRANSACTION_STATE:
+                return this.checkTransactionState(ctx, request);
+        }
+    }
+}
+```
+
+当收到CHECK_TRANSACTION_STATE命令后，Client会解析出消息的事务ID、存放消息的Broker地址等：
+
+```java
+String transactionId = messageExt.getProperty(MessageConst.PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX);
+final String group = messageExt.getProperty(MessageConst.PROPERTY_PRODUCER_GROUP);
+if (group != null) {
+    MQProducerInner producer = this.mqClientFactory.selectProducer(group);
+    if (producer != null) {
+        // Broker 地址
+        final String addr = RemotingHelper.parseChannelRemoteAddr(ctx.channel());
+        producer.checkTransactionState(addr, messageExt, requestHeader);
+    }
+}
+```
+
+然后checkTransactionState内部则通过线程池提交了一个新的任务，检查事务的状态，并反馈给Broker。
+
+```Java
+localTransactionState = transactionListener.checkLocalTransaction(message);
+// COMMIT_TYPE 或者 ROLLBACK_TYPE 等
+thisHeader.setCommitOrRollback(MessageSysFlag.TRANSACTION_COMMIT_TYPE);
+DefaultMQProducerImpl.this.mQClientFactory.getMQClientAPIImpl().endTransactionOneway(brokerAddr, thisHeader, remark, 3000);
+```
 
 ## ACL权限控制
 
+RocketMQ从4.4.0版本引入了ACL权限控制功能，可以给Topic指定全选，只有拥有权限的消费者才可以进行消费。
+
+### 使用示例
+
+首先定义一个RPCHook：
+
+```java
+private static final String ACL_ACCESS_KEY = "RocketMQ";
+private static final String ACL_SECRET_KEY = "1234567";
+
+static RPCHook getAclRPCHook() {
+    return new AclClientRPCHook(new SessionCredentials(ACL_ACCESS_KEY,ACL_SECRET_KEY));
+}
+```
+
+然后在发消息的时候指定RPCHook：
+
+```java
+DefaultMQProducer producer = new DefaultMQProducer("ProducerGroupName", getAclRPCHook());
+```
+
+接收消息的时候也需要指定具有同样ACCESS_KEY和SECRET_KEY的RPCHook：
+
+```java
+DefaultMQPullConsumer consumer = new DefaultMQPullConsumer("please_rename_unique_group_name_6", getAclRPCHook());
+```
+
+### RPCHook
+
+从示例代码中，我们可以看出可以为Producer指定一个RPCHook，随后此RPCHook会被注册进来：
+
+```Java
+// org.apache.rocketmq.client.impl.MQClientAPIImpl.class
+this.remotingClient.registerRPCHook(rpcHook);
+```
+
+注册的实质就是将其放入了rpcHooks列表中：
+
+```Java
+// org.apache.rocketmq.remoting.netty.NettyRemotingAbstract.java
+protected List<RPCHook> rpcHooks = new ArrayList<RPCHook>();
+```
+
+在Producer端调用底层API发送命令的前后，调用RPCHook上面的doBeforeRequest和doAfterRequest方法，便于在发送命令的前后拦截：
+
+```java
+@Override
+public RemotingCommand invokeSync(String addr, final RemotingCommand request, long timeoutMillis) {
+    doBeforeRpcHooks(addr, request);
+    // ...
+    doAfterRpcHooks(RemotingHelper.parseChannelRemoteAddr(channel), request, response);   
+}
+
+protected void doBeforeRpcHooks(String addr, RemotingCommand request) {
+    if (rpcHooks.size() > 0) {
+        for (RPCHook rpcHook: rpcHooks) {
+            rpcHook.doBeforeRequest(addr, request);
+        }
+    }
+}
+
+protected void doAfterRpcHooks(String addr, RemotingCommand request, RemotingCommand response) {
+    if (rpcHooks.size() > 0) {
+        for (RPCHook rpcHook: rpcHooks) {
+            rpcHook.doAfterResponse(addr, request, response);
+        }
+    }
+}
+```
+
+### AclClientRPCHook
+
+下面来看AclClientRPCHook在发送命令的前后做了什么事情：
+
+```java
+@Override
+public void doBeforeRequest(String remoteAddr, RemotingCommand request) {
+    // 生成签名
+    byte[] total = AclUtils.combineRequestContent(request,
+        parseRequestContent(request, sessionCredentials.getAccessKey(), sessionCredentials.getSecurityToken()));
+    String signature = AclUtils.calSignature(total, sessionCredentials.getSecretKey());
+    // 添加扩展字段
+    request.addExtField(SIGNATURE, signature);
+    request.addExtField(ACCESS_KEY, sessionCredentials.getAccessKey());
+    
+    // The SecurityToken value is unneccessary,user can choose this one.
+    if (sessionCredentials.getSecurityToken() != null) {
+        request.addExtField(SECURITY_TOKEN, sessionCredentials.getSecurityToken());
+    }
+}
+
+@Override
+public void doAfterResponse(String remoteAddr, RemotingCommand request, RemotingCommand response) {
+    // 空实现
+}
+```
+
+可以看到doBeforeRequest主要完成了两件事情：
+
+- 生成签名
+- 添加扩展字段
+
+#### 生成签名
+
+parseRequestContent方法内部将request的自定义头部上面的所有字段的name和value放入到了一个SortedMap中，同时将ACCESS_KEY和SECURITY_TOKEN（如果有）也放了进去：
+
+```java
+map.put(ACCESS_KEY, ak);
+if (securityToken != null) {
+    map.put(SECURITY_TOKEN, securityToken);
+}
+```
+
+当然获取类上面的所有字段是通过反射实现的，为了提高性能，也是使用了Map进行了缓存。缓存的只是Field字段，而非value。
+
+```Java
+protected ConcurrentHashMap<Class<? extends CommandCustomHeader>, Field[]> fieldCache =
+        new ConcurrentHashMap<Class<? extends CommandCustomHeader>, Field[]>();
+```
+
+之所以获取到所有字段的值，是为了计算签名，计算签名的方法如下：
+
+- 首先将上述所有的字段的值拼接成字段，然后获取字节数组，再与请求本身的body的字节数组拼接在一起，获取到最终的byte[]数组。
+
+	```java
+	// AclUtils.java
+	public static byte[] combineRequestContent(RemotingCommand request, SortedMap<String, String> fieldsMap) {
+	    StringBuilder sb = new StringBuilder("");
+	    for (Map.Entry<String, String> entry : fieldsMap.entrySet()) {
+	        if (!SessionCredentials.SIGNATURE.equals(entry.getKey())) {
+	            sb.append(entry.getValue());
+	        }
+	    }
+	
+	    return AclUtils.combineBytes(sb.toString().getBytes(CHARSET), request.getBody());
+	}
+	```
+
+- 然后通过calSignature方法计算签名，在内部默认采用SigningAlgorithm.HmacSHA1算法获取到签名后的byte[]数组，再通过Base64.encodeBase64将其转为字符串，返回最终的签名。
+
+	```java
+	// AclClientRPCHook.java
+	String signature = AclUtils.calSignature(total, sessionCredentials.getSecretKey());
+	```
+
+#### 添加扩展字段
+
+生成签名以后，将签名、ACCESS_KEY、SECURITY_TOKEN（如果有）添加到请求的扩展字段中。
+
+```java
+request.addExtField(SIGNATURE, signature);
+request.addExtField(ACCESS_KEY, sessionCredentials.getAccessKey());
+
+// The SecurityToken value is unneccessary,user can choose this one.
+if (sessionCredentials.getSecurityToken() != null) {
+    request.addExtField(SECURITY_TOKEN, sessionCredentials.getSecurityToken());
+}
+```
+
+### Broker权限验证
+
+Broker在初始化ACL的时候会判断用户是否启用了ACL：
+
+```java
+// BrokerController.java
+if (!this.brokerConfig.isAclEnable()) {
+    return;
+}
+```
+
+如果用户开启了ACL，那么会从META-INF路径下去加载所有实现了AccessValidator接口的实现类：
+
+```java
+// ServiceProvider.java
+public static final String ACL_VALIDATOR_ID = "META-INF/service/org.apache.rocketmq.acl.AccessValidator";
+
+// BrokerController.java
+List<AccessValidator> accessValidators = ServiceProvider.load(ServiceProvider.ACL_VALIDATOR_ID, AccessValidator.class);
+if (accessValidators == null || accessValidators.isEmpty()) {
+    return;
+}
+```
+
+如果有AccessValidator的实现，那么会注册到Server端的rpcHooks列表中：
+
+```java
+for (AccessValidator accessValidator: accessValidators) {
+    final AccessValidator validator = accessValidator;
+    accessValidatorMap.put(validator.getClass(),validator);
+    this.registerServerRPCHook(new RPCHook() {
+
+        @Override
+        public void doBeforeRequest(String remoteAddr, RemotingCommand request) {
+            //Do not catch the exception
+            validator.validate(validator.parse(request, remoteAddr));
+        }
+
+        @Override
+        public void doAfterResponse(String remoteAddr, RemotingCommand request, RemotingCommand response) {
+        }
+    });
+}
+```
+
+而Broker中的META-INF/service/org.apache.rocketmq.acl.AccessValidator文件存储的内容如下，即采用PlainAccessValidator作为默认的权限访问校验器。
+
+```properties
+org.apache.rocketmq.acl.plain.PlainAccessValidator
+```
+
+Broker端收到请求后，会将请求解析为AcessResource。解析的过程就是要将RemotingCommand中附带的ip地址、ACESS_KEY、签名、SECRET_TOKEN等添加到PlainAccessResource中，并根据不同的命令，给资源添加上不同的访问权限。
+
+```java
+@Override
+public AccessResource parse(RemotingCommand request, String remoteAddr) {
+    PlainAccessResource accessResource = new PlainAccessResource();
+
+    // 将远程的地址放到白名单里面
+    accessResource.setWhiteRemoteAddress(remoteAddr.substring(0, remoteAddr.lastIndexOf(':')));
+
+    // 将 ACCESS_KEY、SIGNATURE、SECRET_TOKEN 解析出来
+    accessResource.setAccessKey(request.getExtFields().get(SessionCredentials.ACCESS_KEY));
+    accessResource.setSignature(request.getExtFields().get(SessionCredentials.SIGNATURE));
+    accessResource.setSecretToken(request.getExtFields().get(SessionCredentials.SECURITY_TOKEN));
+
+    // 根据不同的请求，添加不同的资源访问权限
+    switch (request.getCode()) {
+        case RequestCode.SEND_MESSAGE:
+            accessResource.addResourceAndPerm(request.getExtFields().get("topic"), Permission.PUB);
+            break;
+
+        case RequestCode.QUERY_MESSAGE:
+            accessResource.addResourceAndPerm(request.getExtFields().get("topic"), Permission.SUB);
+            break;
+
+        // ...
+    }
+}
+```
+
+其中RocketMQ的Topic资源访问控制权限定义主要如下所示，分为以下四种：
+
+```java
+public class Permission {
+    // 拒绝
+    public static final byte DENY = 1;
+    // PUB或者SUB权限
+    public static final byte ANY = 1 << 1;
+    // 发送权限，即从Producer端发送出来的命令，所具有的权限
+    public static final byte PUB = 1 << 2;
+    // 订阅权限，即从消费端发送出来的命令，所具有的权限
+    public static final byte SUB = 1 << 3;
+
+}
+```
+
+以上述示例代码为例，SEND_MESSAGE命令只能是Producer端发送，因此它的权限PUB；而QUERY_MESSAGE命令只能是Consumer端查询，因此它的权限是SUB。
+
+#### 校验权限
+
+生成AccessResource后，便需要对这个资源进行权限校验，校验的具体规则如下：
+
+- （1）检查是否命中全局IP白名单；如果是，则认为校验通过；否则走2；
+
+	```java
+	// PlainPermissionManager.java
+	for (RemoteAddressStrategy remoteAddressStrategy : globalWhiteRemoteAddressStrategy) {
+	    if (remoteAddressStrategy.match(plainAccessResource)) {
+	        return;
+	    }
+	}
+	```
+
+- （2）检查是否命中用户IP白名单；如果是，则认为校验通过；否则走3；
+
+	```java
+	// PlainPermissionManager.java
+	PlainAccessResource ownedAccess = plainAccessResourceMap.get(plainAccessResource.getAccessKey());
+	if (ownedAccess.getRemoteAddressStrategy().match(plainAccessResource)) {
+	    return;
+	}
+	```
+
+- （3）校验签名，校验不通过，抛出异常；校验通过，则走4；
+
+	```java
+	// PlainPermissionManager.java
+	String signature = AclUtils.calSignature(plainAccessResource.getContent(), ownedAccess.getSecretKey());
+	if (!signature.equals(plainAccessResource.getSignature())) {
+	    throw new AclException(String.format("Check signature failed for accessKey=%s", plainAccessResource.getAccessKey()));
+	}
+	```
+
+- （4）对用户请求所需要的权限和用户所拥有的权限进行校验；不通过，则抛出异常；
+
+	```java
+	// 如果是 Admin 那么直接通过
+	if (ownedPermMap == null && ownedAccess.isAdmin()) {
+	    // If the ownedPermMap is null and it is an admin user, then return
+	    return;
+	}
+	
+	// Permission.java
+	public static boolean checkPermission(byte neededPerm, byte ownedPerm) {
+	    if ((ownedPerm & DENY) > 0) {
+	        return false;
+	    }
+	    if ((neededPerm & ANY) > 0) {
+	        return ((ownedPerm & PUB) > 0) || ((ownedPerm & SUB) > 0);
+	    }
+	    return (neededPerm & ownedPerm) > 0;
+	}
+	```
+
+用户所需要的权限校验需要注意以下内容：
+
+- 特殊的请求如UPDATE_AND_CREATE_TOPIC等，只能由admin账户进行操作；
+
+	```java
+	// PlainPermissionManager.java
+	if (Permission.needAdminPerm(needCheckedAccess.getRequestCode()) && !ownedAccess.isAdmin()) {
+	    throw new AclException(String.format("Need admin permission for request code=%d, but accessKey=%s is not", needCheckedAccess.getRequestCode(), ownedAccess.getAccessKey()));
+	}
+	```
+
+- 对于某个资源，如果由显性配置权限，则采用配置的权限；如果没有显性配置权限，则采用默认的权限；
+
+#### ACL权限管理器
+
+上述校验规则的validate方法是放在权限管理器PlainPermissionManager上面的，在新建该类实例的时候，其内部会首先加载YAML格式的权限配置文件，然后在监听这个文件的变化，做到运行时动态的更新权限。
+
+```Java
+private static final String DEFAULT_PLAIN_ACL_FILE = "/conf/plain_acl.yml";
+private String fileName = System.getProperty("rocketmq.acl.plain.file", DEFAULT_PLAIN_ACL_FILE);
+
+public void load() {
+    JSONObject plainAclConfData = AclUtils.getYamlDataObject(fileHome + File.separator + fileName, JSONObject.class);
+    // ...
+}
+```
+
+RocketMQ在distribution/conf目录下，给出了一个默认的权限配置文件plain_acl.yml：
+
+```yaml
+globalWhiteRemoteAddresses:
+- 10.10.103.*
+- 192.168.0.*
+
+accounts:
+- accessKey: RocketMQ
+  secretKey: 12345678
+  whiteRemoteAddress: 192.168.0.*
+  admin: false
+  defaultTopicPerm: DENY
+  defaultGroupPerm: SUB
+  topicPerms:
+  - topicA=DENY
+  - topicB=PUB|SUB
+  - topicC=SUB
+  groupPerms:
+  # the group should convert to retry topic
+  - groupA=DENY
+  - groupB=SUB
+  - groupC=SUB
+
+- accessKey: rocketmq2
+  secretKey: 12345678
+  whiteRemoteAddress: 192.168.1.*
+  # if it is admin, it could access all resources
+  admin: true
+```
+
+对于此文件的监听，是通过FileWatchService进行的：
+
+```java
+FileWatchService fileWatchService = new FileWatchService(new String[] {watchFilePath}, new FileWatchService.Listener() {
+    @Override
+    public void onChanged(String path) {
+        log.info("The plain acl yml changed, reload the context");
+        load();
+    }
+});
+fileWatchService.start();
+```
+
+在FileWatchService内部，其每隔WATCH_INTERVAL=500毫秒，扫描一次指定的所有文件列表。如果某个文件的MD5哈希值有变化，就会调用listener.onChanged方法来通知这个文件发生了变化。
+
 ## 逻辑队列
+
+当前，MessageQueue和Broker耦合在一起，这意味着Broker数量变化之后，消息队列的数量也会发生变化，这会造成所有的队列都需要一个重新平衡的过程，这个过程可能需要数分钟才能恢复。增加逻辑队列之后，Broker数量的变化不会影响逻辑队列数量的变化，二者可以独立变化。
+
+### 架构实现
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211120120210.png" alt="image-20211120120210815" style="zoom:67%;" />
+
+假设当前一个LogicalQueue从boker1迁移到了broker2，我们迁移仅仅是映射关系，而非实际的数据，所以broker1依然能够正常消费LogicalQueue-0这个逻辑队列里面的数据，我们会将这个队列的状态置为只读，故这个队列不能再写入消息：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211120120638.png" alt="image-20211120120638011" style="zoom:67%;" />
+
+当broker1从commit log和consume queue中清除了所有数据后，QueueStatus变为Expired（不可读也不可写）：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211120121405.png" alt="image-20211120121405761" style="zoom:67%;" />
+
+如果这个LogicQueue再次迁移回broker1,它会重用这个过期的MessageQueue：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211120121516.png" alt="image-20211120121516366" style="zoom:67%;" />
+
+如果这个LogicQueue再次迁移回broker1的时候，当前没有过期的MessageQueue，它会创建一个新的MessageQueue：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211120121640.png" alt="image-20211120121640261" style="zoom:67%;" />
+
+如果broker2下线了，那么上面的所有的LogicQueue都应该进行迁移：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211120121743.png" alt="image-20211120121743706" style="zoom:67%;" />
+
+当broker2上面的所有数据包括commit log和consume queue被消费完后，那么broker2可以被移除掉了：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211120121848.png" alt="image-20211120121848447" style="zoom:67%;" />
+
+当部署了新的broker后，我们可以使用命令来迁移一些LogicQueue到这个broker上，来分担一些流量：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211120121957.png" alt="image-20211120121957775" style="zoom:67%;" />
+
+### 实现
+
+```java
+public class LogicalQueuesInfo extends HashMap<Integer, List<LogicalQueueRouteData>> {
+}
+```
+
+```java
+/**
+ * logical queue offset -> message queue offset mapping
+ */
+public class LogicalQueueRouteData implements Comparable<LogicalQueueRouteData> {
+    
+    private volatile int logicalQueueIndex = -1; /* -1 means not set */
+    private volatile long logicalQueueDelta = -1; /* inclusive, -1 means not set, occurred in writeOnly state */
+
+    private MessageQueue messageQueue;
+
+    private volatile MessageQueueRouteState state = MessageQueueRouteState.Normal;
+
+    private volatile long offsetDelta = 0; // valid when Normal/WriteOnly/ReadOnly
+    private volatile long offsetMax = -1; // exclusive, valid when ReadOnly
+
+}
+```
+
+Topic路由信息TopicRouteData中增加了和逻辑队列相关的信息：
+
+```java
+public class TopicRouteData extends RemotingSerializable {
+
+	private LogicalQueuesInfo logicalQueuesInfo;
+
+}
+```
+
+在构造器中，logicQueueIdx封装为了一个brokerName是__logical_queue_broker__，同时queueId是logicQueueIdx的MessageQueue：
+
+```java
+public class SendResultForLogicalQueue extends SendResult {
+
+	public SendResultForLogicalQueue(SendResult sendResult, int logicalQueueIdx) {
+        super(sendResult.getSendStatus(), sendResult.getMsgId(), sendResult.getOffsetMsgId(),
+            	new MessageQueue(sendResult.getMessageQueue().getTopic(), MixAll.LOGICAL_QUEUE_MOCK_BROKER_NAME, logicalQueueIdx),
+            	sendResult.getQueueOffset());
+        // ...
+    }
+
+}
+```
+
+```java
+public class PullResultWithLogicalQueues extends PullResultExt {
+}
+```
+
+
 
 # RocketMQ中的设计模式
 
