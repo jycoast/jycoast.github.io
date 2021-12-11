@@ -1301,6 +1301,10 @@ Redis每秒可以承受10w+的QPS，它如此优秀的性能主要取决于以�
 
 使用其他自增/自减操作，比如DECR和INCRBY，用户可以通过执行不同的操作增加或者减少计数器的值。
 
+### 高并发下，如何保证接口的幂等性？
+
+https://segmentfault.com/a/1190000039737646
+
 ## MySQL
 
 ### MySQL有哪几种数据存储引擎?
@@ -2028,7 +2032,9 @@ AB发布：1、蓝绿发布、红黑发布。老版本和新版本是同时存�
 
 <div class="note info"><p>CAP原则又称为CAP定理，指的是在一个分布式系统中，Consistency（一致性），Availability（可用性）、Partition tolerance（分区容错性），三者不可得兼。</p></div>
 
+### 熔断和限流有什么区别？
 
+https://zhuanlan.zhihu.com/p/61363959
 
 ## 消息队列
 
