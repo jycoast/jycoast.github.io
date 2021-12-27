@@ -12,187 +12,7 @@ author: 吉永超
 
 # MySQL基础
 
-虽然关于安装MySQL已经有很多的文章，但是为了保持环境和参数的一致，这里我们还是简单介绍如何安装MySQL的基础知识，如果你已经有一个可用的MySQL可以跳过这部分，如果在后文中出现执行了执行情况不一致的情况，那你可能需要检查你的MySQL的版本和参数的配置是否和这里的一样。
-
-## 环境搭建
-
-### 安装MySQL
-
-```shell
-# 查看Linux服务器上是否安装过MySQL
-rpm -qa | grep -i mysql # 查询出所有mysql依赖包
-
-# 1、拉取镜像
-docker pull mysql:5.7
-
-# 2、创建实例并启动
-docker run -p 3306:3306 --name mysql \
--v /root/mysql/log:/var/log/mysql \
--v /root/mysql/data:/var/lib/mysql \
--v /root/mysql/conf:/etc/mysql \
--e MYSQL_ROOT_PASSWORD=333 \
--d mysql:5.7
-
-# 3、mysql配置 /root/mysql/conf/my.conf
-[client]
-#mysqlde utf8字符集默认为3位的，不支持emoji表情及部分不常见的汉字，故推荐使用utf8mb4
-default-character-set=utf8
-
-[mysql]
-default-character-set=utf8
-
-[mysqld]
-#设置client连接mysql时的字符集,防止乱码
-init_connect='SET collation_connection = utf8_general_ci'
-init_connect='SET NAMES utf8'
-
-#数据库默认字符集
-character-set-server=utf8
-
-#数据库字符集对应一些排序等规则，注意要和character-set-server对应
-collation-server=utf8_general_ci
-
-# 跳过mysql程序起动时的字符参数设置 ，使用服务器端字符集设置
-skip-character-set-client-handshake
-
-# 禁止MySQL对外部连接进行DNS解析，使用这一选项可以消除MySQL进行DNS解析的时间。但需要注意，如果开启该选项，则所有远程主机连接授权都要使用IP地址方式，否则MySQL将无法正常处理连接请求！
-skip-name-resolve
-
-# 4、重启mysql容器
-docker restart mysql
-
-# 5、进入到mysql容器
-docker exec -it mysql /bin/bash
-
-# 6、查看修改的配置文件
-cat /etc/mysql/my.conf
-```
-
-`Linux`环境下`MySQL`的安装目录。
-
-| 路径                | 解释                     |
-| ------------------- | ------------------------ |
-| `/var/lib/mysql`    | MySQL数据库文件存放位置  |
-| `/usr/share/mysql`  | 错误消息和字符集文件配置 |
-| `/usr/bin`          | 客户端程序和脚本         |
-| `/etc/init.d/mysql` | 启停脚本相关             |
-
-### 修改字符集
-
-```shell
-# 1、进入到mysql数据库并查看字符集
-# show variables like 'character%';
-# show variables like '%char%';
-
-mysql> show variables like 'character%';
-+--------------------------+----------------------------+
-| Variable_name            | Value                      |
-+--------------------------+----------------------------+
-| character_set_client     | utf8                       |
-| character_set_connection | utf8                       |
-| character_set_database   | utf8                       |
-| character_set_filesystem | binary                     |
-| character_set_results    | utf8                       |
-| character_set_server     | utf8                       |
-| character_set_system     | utf8                       |
-| character_sets_dir       | /usr/share/mysql/charsets/ |
-+--------------------------+----------------------------+
-8 rows in set (0.00 sec)
-
-mysql> show variables like '%char%';
-+--------------------------+----------------------------+
-| Variable_name            | Value                      |
-+--------------------------+----------------------------+
-| character_set_client     | utf8                       |
-| character_set_connection | utf8                       |
-| character_set_database   | utf8                       |
-| character_set_filesystem | binary                     |
-| character_set_results    | utf8                       |
-| character_set_server     | utf8                       |
-| character_set_system     | utf8                       |
-| character_sets_dir       | /usr/share/mysql/charsets/ |
-+--------------------------+----------------------------+
-8 rows in set (0.01 sec)
-```
-
-`MySQL5.7`配置文件位置是`/etc/my.cnf`或者`/etc/mysql/my.cnf`，如果字符集不是`utf-8`直接进入配置文件修改即可。
-
-```shell
-[client]
-default-character-set=utf8
-
-[mysql]
-default-character-set=utf8
-
-[mysqld]
-# 设置client连接mysql时的字符集,防止乱码
-init_connect='SET NAMES utf8'
-init_connect='SET collation_connection = utf8_general_ci'
-
-# 数据库默认字符集
-character-set-server=utf8
-
-#数据库字符集对应一些排序等规则，注意要和character-set-server对应
-collation-server=utf8_general_ci
-
-# 跳过mysql程序起动时的字符参数设置 ，使用服务器端字符集设置
-skip-character-set-client-handshake
-
-# 禁止MySQL对外部连接进行DNS解析，使用这一选项可以消除MySQL进行DNS解析的时间。但需要注意，如果开启该选项，则所有远程主机连接授权都要使用IP地址方式，否则MySQL将无法正常处理连接请求！
-skip-name-resolve
-```
-
-<div class="note warning"><p>安装MySQL完毕之后，第一件事就是修改字符集编码。</p></div>
-
-### 配置文件
-
-`MySQL`配置文件讲解：https://www.cnblogs.com/gaoyuechen/p/10273102.html
-
-1、二进制日志`log-bin`：主从复制。
-
-```shell
-# my,cnf
-# 开启mysql binlog功能
-log-bin=mysql-bin
-```
-
-2、错误日志`log-error`：默认是关闭的，记录严重的警告和错误信息，每次启动和关闭的详细信息等。
-
-```shell
-# my,cnf
-# 数据库错误日志文件
-log-error = error.log
-```
-
-3、查询日志`log`：默认关闭，记录查询的`sql`语句，如果开启会降低`MySQL`整体的性能，因为记录日志需要消耗系统资源。
-
-```shell
-# my,cnf
-# 慢查询sql日志设置
-slow_query_log = 1
-slow_query_log_file = slow.log
-```
-
-4、数据文件。
-
-- `frm文件`：存放表结构。
-- `myd`文件：存放表数据。
-- `myi`文件：存放表索引。
-
-```shell
-# mysql5.7 使用.frm文件来存储表结构
-# 使用 .ibd文件来存储表索引和表数据
--rw-r-----  1 mysql mysql   8988 Jun 25 09:31 pms_category.frm
--rw-r-----  1 mysql mysql 245760 Jul 21 10:01 pms_category.ibd
-```
-
-`MySQL5.7`的`Innodb`存储引擎可将所有数据存放于`ibdata*`的共享表空间，也可将每张表存放于独立的`.ibd`文件的独立表空间。
-共享表空间以及独立表空间都是针对数据的存储方式而言的。
-
-- 共享表空间: 某一个数据库的所有的表数据，索引文件全部放在一个文件中，默认这个共享表空间的文件路径在`data`目录下。 默认的文件名为`:ibdata1` 初始化为`10M`。
-- 独立表空间: 每一个表都将会生成以独立的文件方式来进行存储，每一个表都有一个`.frm`表描述文件，还有一个`.ibd`文件。 其中这个文件包括了单独一个表的数据内容以及索引内容，默认情况下它的存储位置也是在表的位置之中。在配置文件`my.cnf`中设置： `innodb_file_per_table`。
-
-## 逻辑架构
+## MySQL逻辑架构
 
 让我们从最简单的情形开始，假设有一张这样的表T，表里只有一个ID字段，在执行下面这个查询语句时：
 
@@ -384,7 +204,7 @@ update语句的执行如下图：
 
 简单来说，redo log和binlog都可以用于表示事务的提交状态，而两阶段提交就是让这两个状态保持逻辑上的一致。
 
-## 性能分析
+## MySQL性能分析工具
 
 ### EXPLAIN简介
 
@@ -1210,15 +1030,130 @@ select city,name,age from t where city=' 杭州 ' order by name limit 1000;
 
 Extra这个字段中的“Using filesort”表示就是需要排序，MySQL会给每个线程分配一块内存用于排序，称为sort_buffer。
 
-从图中可以看出， city=' 杭州 ’ 条件的行，是从 ID_X 到 ID_(X+N) 的这些记录。下面我们来分析整个语句的执行过程：
+从索引的示意图中可以看出， city='杭州'条件的行，是从 ID_X 到 ID_(X+N) 的这些记录。下面我们来分析整个语句的执行过程：
 
-- 
+1. 初始化sort_buffer，确定放入name、city、age这三个字段
+2. 从索引city找到第一个满足city='杭州'条件的主键id，也就是图中的ID_X
+3. 到主键id索引取出整行，取name、city、age三个字段的值，存入sort_buffer中
+4. 从索引city取下一个记录的主键id
+5. 重复步骤3、4直到city的值不满足查询条件为止，对应的主键id也就是图中的ID_Y
+6. 对sort_buffer中的数据按照字段name做快速排序
+7. 按照排序结果取前1000行返回给客户端
+
+这个过程就称为全字段排序，执行流程的示意图如下所示：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211211225315.png" alt="image-20211211225315510" style="zoom:67%;" />
+
+图中“按name排序”这个动作，可能在内存中完成，也可能需要使用外部排序，这取决于排序所需要的内存和参数sort_buffer_size。sort_buffer_size就是MySQL为排序开辟的内存（sort_buffer）的大小，如果要排序的数据量小于sort_buffer_size，排序就在内存中完成，但如果排序数据量太大，内存放不下，则不得不利用磁盘临时文件辅助排序。可以通过如下命令来查看
+
+```sql
+/* 打开 optimizer_trace ，只对本线程有效 */
+SET optimizer_trace='enabled=on';
+/* @a 保存 Innodb_rows_read 的初始值 */
+select VARIABLE_VALUE into @a from performance_schema.session_status where variable_name = 'Innodb_rows_read';
+/* 执行语句 */
+select city, name,age from t where city=' 杭州 ' order by name limit 1000;
+/* 查看 OPTIMIZER_TRACE 输出 */
+SELECT * FROM `information_schema`.`OPTIMIZER_TRACE`\G
+/* @b 保存 Innodb_rows_read 的当前值 */
+select VARIABLE_VALUE into @b from performance_schema.session_status where variable_name = 'Innodb_rows_read';
+/* 计算 Innodb_rows_read 差值 */
+select @b-@a;
+```
+
+这个方法是通过查看OPTIMIZER_TRACE的结果来确认的，也可以从number_of_tmp_files中看到是否使用了临时文件。
+
+![image-20211214233110080](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211214233110.png)
+
+图中number_of_tmp_files表示的是，排序过程中使用的临时的文件数，之所以是12个文件，是当内存放不下时，就需要外部排序，外部排序一般使用归并排序算法，MySQL将需要排序的数据分成12份，每一份单独排序后存在这些临时文件中，然后把这12个有序文件再合并成一个有序的大文件。如果sort_buffer_size超过了需要排序的数据量的大小，number_of_tmp_files就是0，表示排序可以直接在内存中完成，否则就需要放在临时文件中排序。sort_buffer_size越小，需要的分成的份数就越多，number_of_tmp_files的值就越大。
+
+另外，在示例表中有4000条满足city='杭州'的记录，所以图中的examined_rows=4000，表示参与排序的行数是4000行。
+
+sort_mode里面的packed_additional_fields的意思是，排序过程中对字符串做了“紧凑处理”，即使name字段的定义是varchar(16)，在排序的过程中还是按照实际长度来分配空间的。
+
+最后的查询`select @b - @a`在MyISAM引擎中返回的结果是4000，而在InnoDB引擎中会返回4001，这是因为如果使用的是InnoDB引擎的话，在查询表optimizer_trace的时候，需要用到临时表，InnoDB会把数据从临时表取出来，然后让innodb_rows_read的值加1。
 
 ### rowid排序
 
+上面的排序算法，只对原表的数据读了一遍，剩下的操作都是在sort_buffer和临时表中执行的，但这个算法有一个问题，就是如果查询要返回的字段很多的话，那么sort_buffer里面要放的字段数太多，这样内存里能够同时放下的行数就很少，要分成很多个临时文件，排序的性能会很差，所以如果单行很大，这个方法效率不够好。
+
+我们可以通过修改参数，让MySQL换成另外一种算法：
+
+```sql
+SET max_length_for_sort_data = 16;
+```
+
+它的意思是，如果单行的长度超过了这个值，MySQL就认为单行太大，要换一个算法。city、name、age这三个字段的定义总长度是36，超过了16，这个时候，MySQL就会使用rowid排序。
+
+新的算法放入sort_buffer的字段，只有要排序的列（即name字段）和主键id，但这个时候，排序的结果因为少了city和age字段的值，不能直接返回了，整个执行流程如下：
+
+1. 初始化sort_buffer，确定放入两个字段，即name和id
+2. 从索引city找到第一个满足city=“杭州”条件的主键id，也就是图中的ID_X
+3. 到主键id索引取出整行，取name、id这两个字段，存入sort_buffer
+4. 从索引city取下一个记录的主键id
+5. 重复步骤3、4直到不满足city=“杭州”条件为止，也就是图中的ID_Y
+6. 对sort_buffer中的数据按照字段name进行排序
+7. 遍历排序结果，取前1000行，并按照id的值回到原表中取出city、name、age三个字段返回给客户端
+
+执行的示意图如下：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211214235751.png" alt="image-20211214235751360" style="zoom:67%;" />
+
+对于全字段的排序流程图会发现，rowid排序多访问了一次表t的主键索引，也就是步骤7。需要说明的是，最后的“结果集”是一个逻辑概念，实际上MySQL服务端从排序后的sort_buffer中依次取出id，然后原表查到city、name和age这三个字段的结果，不需要在服务端再耗费内存存储结果，是直接返回给客户端的，此时的OPTIMIZER_TRACE的结果如下：
+
+![image-20211215230833238](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211215230833.png)
+
+可以发现：
+
+- sort_mode变成了<sort_key,rowid>,表示参与排序的只有name和id这两个字段
+- number_of_tmp_files变成10了，是因为这时候参与排序的行数虽然仍然是4000行，但是每一行都变小了，因此需要排序的总数据量就变小了，需要的临时文件也相应地变少了
+
 ### 全字段排序和rowid排序对比
 
+当MySQL认为内存足够大，会优先选择全字段排序，把需要的字段都放到sort_buffer中，这样排序后就会直接从内存里面返回查询结果了，不用再会到原表去取数据；当内存太小，会影响排序效率，MySQL才会采用rowid排序算法，这样在排序过程中一次可以排序更多行，但是需要再回到原表去取数据。这体现了MySQL的一个设计理念：如果内存足够，就要多利用内存，尽量减少磁盘访问，对于InnoDB表来说，rowid排序会要求回表，因此不会优先选择。
 
+不难发现，在MySQL中，对于无序的字段，排序是一个成本比较高的操作，因此，优化order by语句的一种方式就是让原来无序的数据变的“有序”。还是以市民表为例，我们在这个市民表上创建一个city和name的联合索引，对应的SQL语句是：
+
+```sql
+alter table t add index city_user(city, name);
+```
+
+索引的示意图：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211215232534.png" alt="image-20211215232534687" style="zoom:67%;" />
+
+在这个索引里面，我们依然可以用树搜索的方式定位到第一个满足city="杭州"的记录，并且额外确保了，接下来按顺序取“下一条记录”的遍历过程中，只要city的值是杭州，name的值就一定是有序的。这样整个查询过程的流程就变成了：
+
+1. 从索引（city，name）找到第一个满足city="杭州"条件的主键id
+2. 到主键id索引取出整行，取name、city、age三个字段的值，作为结果集的一部分直接返回
+3. 从索引（city，name）取下一个记录主键id
+4. 重复步骤2、3，直到查到1000条记录，或者是不满足city="杭州"条件时循环结束
+
+可以看到，这个查询过程不需要临时表，也不需要排序，explain的结果如下：
+
+![image-20211215233134766](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211215233134.png)
+
+可以看到，Extra字段中没有Using filesort了，也就是不需要排序了，而且由于（city，name）这个联合索引本身有序，所以这个查询也不用把4000行全都读一遍，只要找到满足条件的前1000条记录就可以退出了，也就是说，在这个例子中，只需要扫描1000次。
+
+还可以更进一步，使用覆盖索引：
+
+```sql
+alter table t add index city_user_age(city, name, age);
+```
+
+这时，对于city字段的值相同的行来说，还是按照name字段的值递增排序的，此时的查询也就不再需要排序了，这样整个查询语句的执行流程就变成了：
+
+1. 从索引（city，name，age）找到第一个满足city="杭州"条件的记录，取出其中的city、name和age这三个字段的值，作为结果集的一部分直接返回
+2. 从索引（city，name，age）取下一个记录，同样取出这三个字段的值，作为结果集的一部分直接返回
+3. 重复执行步骤2，直到查到第1000条记录，或者是不满足city="杭州"条件时循环结束
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211215234018.png" alt="image-20211215234018038" style="zoom:67%;" />
+
+explain的结果如下：
+
+![image-20211215234055979](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211215234056.png)
+
+可以看到Extra字段里面多了“Using index”，表示的就是使用了覆盖索引，性能上会快很多，不过索引还是有维护代价的，这是一个需要权衡的决定。
 
 ## 索引的创建时机
 
@@ -1853,190 +1788,653 @@ count（）是一个聚合函数，对于返回的结果集，一行行地判断
 
 ## join语句的优化
 
+在实际生产中，关于join语句使用的问题，一般会几种在以下两类：
+
+- DBA不让使用join，使用join有什么问题？
+- 如果有两个大小不同的表做join，应该用哪个表做驱动表？
+
+为了便于量化分析，我们创建两个表t1和t2：
+
+```sql
+CREATE TABLE `t2` (
+  `id` int(11) NOT NULL, 
+  `a` int(11) DEFAULT NULL, 
+  `b` int(11) DEFAULT NULL, 
+  PRIMARY KEY (`id`), 
+  KEY `a` (`a`)
+) ENGINE = InnoDB; 
+
+drop 
+  procedure idata; delimiter;; create procedure idata() begin declare i int; 
+set 
+  i = 1; while(i <= 1000) do insert into t2 
+values 
+  (i, i, i); 
+set 
+  i = i + 1; end while; end;; delimiter; call idata(); 
+  
+create table t1 like t2; 
+  
+insert into t1 (select * from t2 where id <= 100);
+```
+
+这两张表都有一个主键索引id和一个索引a，字段b上无索引。存储过程idata()往表t2里面插入了1000行数据，在表t1插入的是100行数据。
+
+### Index Nested-Loop Join
+
+```sql
+select * from t1 straight_join t2 on (t1.a=t2.a);
+```
+
+如果直接使用join语句，MySQL优化器可能会选择表t1或t2作为驱动表，这样会影响我们分析SQL语句的执行过程，使用straight_join可以让MySQL使用固定的连接方式执行查询，这样优化器只会按照我们指定的方式去join，在这个语句里，t1是驱动表，t2是被驱动表，explain的结果如下：
+
+![image-20211215235731451](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211215235731.png)
+
+可以看到，在这条语句里，被驱动表t2的字段上有索引，join过程用上了这个索引，因此这个语句的执行流程如下：
+
+1. 从表t1中读入一行数据R
+2. 从数据行R中，取出字段到表t2里去查找
+3. 取出表t2中满足条件的行，跟R组成一行，作为结果集的一部分
+4. 重复执行步骤1到3，直到表t1的末尾循环结束
+
+这个过程是现遍历表t1，然后根据从表t1中取出的每行数据中a的值，去表t2查找满足条件的记录，在形式上，这个过程就跟我们写程序时的嵌套查询类似，并且可以用上被驱动表的索引，所以我们称之为“Index Nested-Loop Join”，简称NLJ。对应的流程图如下：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211216233223.png" alt="image-20211216233222986" style="zoom:67%;" />
+
+在这个流程里：
+
+1. 对驱动表t1做了全表扫描，这个过程需要扫描100行
+2. 对于每一行R，根据a字段去表t2查找，走的是树搜索过程，由于我们构造的数据都是一一对应的，因此每次的搜索过程都只扫描一行，也就是总共扫描100行
+3. 所以，整个执行流程，总扫描行数是200
+
+假设不使用join，那我们就只能用单表查询，要实现上述相同的需求，使用单表查询需要：
+
+1. 执行`select * from t1`，查出表t1的所有数据，这里有100行
+2. 循环遍历这100行数据
+	- 从每一行R取出字段a的值$R.a
+	- 执行`select * from where a = $R.a`
+	- 把返回的结果和R构成结果集的一行
+
+可以看到，在这个查询过程，也就是扫描了200行，但是总共执行了101条语句，比直接join多了100次交互，除此之外，客户端还要自己拼接SQL语句和结果，那么显然，这么做不如直接join。
+
+在这个join语句的执行过程中，驱动表是走全表扫描，而被驱动表是走树搜索，假设被驱动表的行数是M，每次在被驱动表查一行数据，要先搜索索引a，再搜索主键索引，每次搜索一棵树近似复杂度是以2为底的M的对数，记为log<sub>2</sub>M，所以在被驱动表上查一行的时间复杂度是2*log<sub>2</sub>M。假设驱动表的行数是N，执行过程就要扫描驱动表N行，然后对于每一行，到被驱动表上匹配一次，因此整个执行过程，时间复杂度近似是N+N\*2log<sub>2</sub>M，显然，N对扫描行数影响更大，因此应该让小表做驱动表。
+
+通过以上的分析，我们可以得到两个结论：
+
+1. 使用join语句，性能比强行拆成多个单表执行SQL语句的性能要好
+2. 如果使用join语句的话，需要让小表做驱动表
+
+### Simple Nested-Loop Join
+
+现在，我们将SQL语句修改如下：
+
+```sql
+select * from t1 straight_join t2 on (t1.a = t2.b);
+```
+
+由于表t2的字段上没有索引，因此在join的时候，每次到t2做一次匹配，就要做一次全表扫描，这种算法就被称为“Simple Nested-Loop Join”。虽然也可以得到正确的结果，但是这个SQL请求需要扫描表t2多达100次，总共扫描100*1000=10万行。如果t1和t2都是10万行的表，就需要扫描100亿行，不难想象，这个语句的执行将会非常耗时。MySQL并没有使用Simple Nested-Loop Join算法，而是使用了另一个叫做“Block Nested-Loop Join”的算法，简称BNL。
+
+### Block Nested-Loop Join
+
+BNL的执行流程如下：
+
+1. 将表t1的数据读入线程内存join_buffer中，由于我们这个语句中写的是`select *`，因此是把整个表t1放入了内存
+2. 扫描表t2，把t2中的每一行取出来，跟join_buffer中的数据做对比，满足join条件的，作为结果集的一部分返回
+
+流程图如下：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211219110609.png" alt="image-20211219110609522" style="zoom:67%;" />
+
+explain的结果如下：
+
+![image-20211219110725871](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211219110725.png)
+
+可以看到，在这个过程中，对表t1和t2都做了一次全表扫描，因此总的扫描行数是1100。由于join_buffer是以无序数组的方式组织的，因此对表t2中的每一行，都要做100次判断，总共需要在内存中做判断的次数是100*1000=10万次。
+
+从时间复杂度上来看，Simple Nested-Loop Join和Block Nested-Loop Join算法是相同的，但是BNL算法的这10万次判断是内存操作，速度会快上很多，性能也更好。
+
+那么在这种情况下，应该使用哪个表做驱动表呢？假设小表的行数是N，大表的行数是M，那么在这个算法里：
+
+1. 两个表都做一次全表扫描，所以总的扫描行数是M+N
+2. 内存中的判断次数是M*N
+
+可以看到，调换M和N的位置，并不会影响这个算法的时间复杂度，因此这个时候选择大表或者小表做驱动表，执行耗时都是一样的。
+
+这个算法会将t1表的内容放入到join_buffer中，join_buffer的大小是由参数join_buffer_size设定的，默认值是256k。如果放不下表t1的所有数据的话，就会分段放置。现在我们将join_buffer_size改小，再执行：
+
+```sql
+select * from t1 straight_join t2 on (t1.a=t2.b);
+```
+
+此时，执行流程就变成了：
+
+1. 扫描表t1，顺序读取数据行放入join_buffer中，放完第88行join_buffer满了，继续第2步
+2. 扫描表t2，把t2中的每一行取出来，跟join_buffer中的数据做对比，满足join条件的，作为结果集的一部分返回
+3. 清空join_buffer
+4. 继续扫描表t1，顺序读取最后的12行数据放入join_buffer中，继续执行第二步
+
+执行的流程图如下：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211219113254.png" alt="image-20211219113254308" style="zoom: 67%;" />
+
+图中的步骤4和5表示清空join_buffer复用，这也体现出了这个算法名字中“Block”的由来，表示“分块去join”。由于表t1被分成了两次放入join_buffer中，导致表t2会被扫描两次，虽然分成两次放入join_buffer，但是判断等值条件的次数还是不变的，依然是（88+12）\*1000=10万次。
+
+在这个算法里，驱动表的数据行数是N，需要分k段才能完成算法流程，其中`K=λN（λ∈（0,1））`，被驱动表的数据行数是M：
+
+1. 扫描行数是N+λ*N\*M
+2. 内存判断是N*M次
+
+显然，内存判断次数是不受选择哪个表作为驱动表影响的，而考虑到扫描行数，在M和N大小确定的情况下，N小一些，整个算式的结果会更小，所以在这种算法下，应该让小表当驱动表。
+
+在N+λ*N\*M中，还有一个关键的参数λ，可以看到λ越小越好，由定义，我们可以知道$λ=K/N$，那么显然，在N确定的情况下，K越小越好，也就是说，当join_buffer_size越大的时候，分成的段数也就越少，对被驱动表的全表扫描次数就越少。
+
+<div class="note info"><p>以上结论告诉我们，如果join语句很慢，可以尝试将join_buffer_size改大。</p></div>
+
+我们回到本小节一开始的两个问题：
+
+1. 能不能使用join语句？
+2. 如果使用join语句，应该选择大表做驱动表还是选择小表做驱动表？
+
+对于第一个问题：
+
+- 如果可以使用Index Nested-Loop Join算法，也就是说可以用上被驱动表上的索引，就可以用上被驱动表上的索引，其实是没问题的
+- 如果使用Block Nested-Loop Join算法，扫描行数就会过多，尤其是在大表上的join操作，这样可能要扫描被驱动表很多次，会占用大量的系统资源，所以这种join尽量不要使用
+
+因此，在判断要不要使用join语句时，就是看explain的结果里面，extra字段里面有没有出现“Block Nested Loop”字样。
+
+对于第二个问题：
+
+- 如果是Index Nested-Loop Join算法，应该选择小表做驱动表
+- 如果是Block Nested-Loop Join算法：
+	- 在join_buffer_size足够大的时候，是一样的
+	- 在join_buffer_size不够大的时候（这种情况更为常见），应该选择小表做驱动表
+
+所以，这个问题的结论是，应该选择小表做驱动表。不过需要格外说明的是，在决定哪个表做驱动表的时候，应该是两个表按照各自的条件过滤，过滤完成之后，计算参与join的各个字段的总数据量，数据量小的那个表，就是“小表”，应该作为驱动表。
+
+### Multi-Range Read 优化
+
+NLJ和BNL都还有优化的空间，为了说明这一点，创建表t1和t2：
+
+```sql
+create table t1(
+  id int primary key, 
+  a int, 
+  b int, 
+  index(a)
+); 
+create table t2 like t1; 
+
+drop procedure idata; delimiter;;
+create procedure idata() begin declare i int; 
+set 
+  i = 1; while(i <= 1000) do insert into t1 
+values 
+  (i, 1001 - i, i); 
+set 
+  i = i + 1; end while; 
+set 
+  i = 1; while(i <= 1000000) do insert into t2 
+values 
+  (i, i, i); 
+set 
+  i = i + 1; end while; end;; delimiter; call idata();
+```
+
+在表t1里，插入了1000行数据，每一行的`a=1001-id`的值。也就是说，表t1中字段a是逆序的，同时，在表t2中插入了100万行数据。
+
+Multi-Range Read优化的主要目的是尽量使用顺序读盘。回表是指，InnoDB在普通索引a上查到主键id的值后，再根据一个个主键id的值到主键索引上去查整行数据的过程。
+
+```sql
+select * from t1 where a >= 1 and a <= 100;
+```
+
+由于主键索引是一颗B+树，在这棵树上，每次只能根据一个主键id查到一行数据。因此，回表肯定是一行行搜索主键索引的，基本流程如图所示：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211219225104.png" alt="image-20211219225104477" style="zoom:67%;" />
+
+如果随着a的值递增顺序查询的话，id的值就变成随机的，那么就会出现随机访问，性能相对较差。虽然还是按行查，但是可以通过调整查询的顺序，还是可以加速查询的效率，因为大多数的数据都是按照主键递增顺序插入得到的，所以我们可以认为，如果按照主键的递增顺序查询的话，对磁盘的读比较接近顺序读，能够提升读性能。这就是MRR优化的设计思路，此时语句的执行流程就变成了这样：
+
+1. 根据索引a，定位到满足条件的记录，将id值放入read_rnd_buffer中
+2. 将read_rnd_buffer中的id进行递增排序
+3. 排序后的id数组，依次到主键id索引中查记录，并作为结果返回
+
+这里，read_rnd_buffer的大小是由read_rnd_buffer参数控制的。如果步骤1中，read_rnd_buffer放满了，就会执行步骤2和3，然后清空read_rnd_buffer，之后继续找索引a的下个记录，并继续循环。
+
+<div class="note info"><p>如果想要稳定地使用MRR优化的话，需要设置`set optimizer_switch="mrr_cost_based=off"`，因为目前的优化器会更倾向于不使用MRR，通过这个设置就可以保证一定可以使用MRR优化。</p></div>
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211219230645.png" alt="image-20211219230645249" style="zoom:67%;" />
+
+explain的结果：
+
+![image-20211219230712320](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211219230712.png)
+
+从explain的结果来看，Extra字段多了Using MRR，表示的是用上了MRR优化，而且，由于我们在read_md_buffer中按照id做了排序，所以最后得到的结果集也是按照主键id递增顺序的，与没有适用MRR的结果集顺序刚好相反。
+
+总而言之，MRR能够提升性能的核心在于，这条查询语句在索引a上是一个范围查询（也就是说，这是一个多指查询），可以得到足够多的主键id。这样通过排序以后，再去主键索引查数据，才能体现出“顺序性”的优势。
+
+### Batched Key Access
+
+MySQL在5.6版本后开始引入了Batched Key Acess（BKA）算法，这个算法其实就是对NLJ算法的优化。首先我们来回顾一下NLJ算法的执行流程：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211219232052.png" alt="image-20211219232052731" style="zoom:67%;" />
+
+NLJ算法执行的逻辑是：从驱动表t1，一行行地取出a的值，再到被驱动表t2去做join。也就是说，对于表t2来说，每次都是匹配一个值，这时，MRR的优势就用不上了。那怎么才能一次性地多穿些值给表t2呢？从表t1里一次性地多拿些出来，放入到join_buffer，然后一起传给表t2，这就是BKA算法，简而言之，使用join_buffer优化的NLJ算法就是BKA算法，算法的流程图如下：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211219235052.png" alt="image-20211219235052154" style="zoom:67%;" />
+
+
+
+图中，join_buffer中放入的数据是R1~R100，表示的是只会取查询需要的字段，如果join_buffer放不下 R1~R100 的所有数据，就会把这100行数据分成多段执行上图的流程。BKA算法并没有默认开启，如果要使用BKA优化算法的话，需要在执行SQL语句之前，先设置：
+
+```sql
+set optimizer_switch = 'mrr=on,mrr_cost_based=off,batched_key_access=on';
+```
+
+其中，前两个参数的作用是启用MRR，这么做的原因是，BKA算法的优化要依赖于MRR。
+
+### BNL算法的性能问题
+
+BNL可能会对被驱动表做多次扫描，如果这个被驱动表是一个大的冷数据表，除了会导致IO压力大以外，还会对系统有什么影响呢？
+
+由于InnoDB对Buffer Pool的LRU算法做了优化，即：第一次从磁盘读入内存的数据页，会先放在old区域。如果1秒之后这个数据也不再被访问了，就不会移动到LRU链表头部，这样对Buffer Pool的命中率影响就不大。但是，如果这个冷表很大，就会出现另外一种情况：业务正常访问的数据页，没有机会进入young区域。
+
+由于这个优化机制的存在，一个正常访问的数据页，要进入young区域，需要隔1秒后再次被访问到。但是，由于我们的join语句在循环读磁盘和淘汰内存页，进入old区域的数据页，很可能在1秒内就被淘汰了。这样，就会导致MySQL实例的Buffer Pool在这段时间内，young区域的数据页没有被合理地淘汰，也就是说，这两种情况都会影响Buffer Pool的正常运作。
+
+BNL算法对系统的影响主要包括三个方面：
+
+1. 可能会多次扫描被驱动表，占用磁盘IO资源
+2. 判断join条件需要执行M*N次对比（M、N分别是两张表的行数），如果是大表就会占用非常多的CPU资源
+3. 可能会导致Buffer Pool的热数据被淘汰，影响内存命中率
+
+因此，我们在执行语句之前，需要通过理论分析和查看explain结果的方式，确认是否使用BNL算法。如果确认优化器会使用BNL算法，就需要做优化。优化的常见做法是，给被驱动表的join字段加上索引，把BNL算法转成BKA算法。
+
+### BNL转BKA
+
+大多数情况下，我们直接在被驱动表上建立索引，就可以直接转为BKA算法了，但是也有一些并不适合在被驱动表上建索引的情况，比如下面这个语句：
+
+```sql
+select * from t1 join t2 on (t1.b = t2.b) where t2.b >= 1 and t2.b <= 2000;
+```
+
+此时，如果BNL算法来join的话，语句的执行流程如下：
+
+1. 把表t1的所有字段取出来，存入join_buffer中，这个表只有1000行，join_buffer_size默认值是256k，可以完全存入
+2. 扫描表t2，取出每一行数据跟join_buffer中的数据进行对比：
+	- 如果不满足`t1.b = t2.b`
+	- 如果满足`t1.b = t2.b`，再判断其它条件，也就是是否满足`t2.b∈[1,2000]`，如果是，就作为结果集的一部分返回，否则跳过
+
+explain的结果如下：
+
+![image-20211221000258809](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211221000258.png)
+
+可以发现，判断join是否满足的时候，会扫描表t2的每一行，判断条件的次数是1000*100万=10亿次，这个判断的工作量很大。但是经过where条件过滤后，需要参与join的实际上只有2000行数据。如果这条语句是一个低频的SQL语句，那么再为这个语句在表t2的字段b上创建一个索引就很浪费了。
+
+在表t2的字段b上创建索引会浪费资源，但是不创建索引的话需要判断10亿次，这个时候就可以考虑使用临时表，使用临时表的步骤如下：
+
+1. 将表t2中满足条件的数据放在临时表tmp_t中
+2. 为了让join使用BKA算法，给临时表tmp_t的字段b加上索引
+3. 让表t1和tmp_t做join操作
+
+```sql
+create temporary table temp_t(id int primary key, a int, b int, index(b))engine=innodb;
+insert into temp_t select * from t2 where b>=1 and b<=2000;
+select * from t1 join temp_t on (t1.b=temp_t.b);
+```
+
+执行的流程如下：
+
+1. 执行insert语句构造temp_t表并插入数据的过程中，对表t2做了全表扫描，这里扫描的行数是100万
+2. 之后的join语句，扫描表t1，这里的扫描行数是1000，join比较过程中，做了1000次带索引的查询，相比于优化前的join语句需要做10亿次条件判断来说，这个优化效果还是很明显的
+
+执行的效果如下：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211221000900.png" alt="image-20211221000900031" style="zoom:67%;" />
+
+总体来看，不论是在原表上加索引，还是用有索引的临时表，我们的思路都是让join语句能够用上被驱动表上的索引，来触发BKA算法，提升查询性能。
+
+### hash join
+
+在之前的例子中，之所以要有计算10亿次的操作，是因为在join_buffer里面维护的是一个无序数组，而不是一个哈希表，如果能够将无序数组替换为哈希表，这样只需要100万次的哈希查找，整条语句的执行速度就可以加快，但MySQL的优化器和执行器并不支持哈希join。不过，我们可以按照这个思路，在业务端实现：
+
+1. `select * from t1;`，取得表t1的全部1000行数据，在业务端存入到哈希这种数据结构的实现，比如HashMap
+2. `select * from t2 where b >= 1 and b <= 2000;`，获取表t2中满足条件的2000行数据
+3. 把这2000行数据，一行行地取到业务端，到哈希表中寻找匹配的数据，满足匹配的条件的这行数据，就作为结果集的一行
+
 ## MySQL中的临时表
 
-## 小表驱动大表
-
-> 优化原则：对于MySQL数据库而言，永远都是小表驱动大表。
-
-```java
-/**
-* 举个例子：可以使用嵌套的for循环来理解小表驱动大表。
-* 以下两个循环结果都是一样的，但是对于MySQL来说不一样，
-* 第一种可以理解为，和MySQL建立5次连接每次查询1000次。
-* 第一种可以理解为，和MySQL建立1000次连接每次查询5次。
-*/
-for(int i = 1; i <= 5; i ++){
-    for(int j = 1; j <= 1000; j++){
-        
-    }
-}
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-for(int i = 1; i <= 1000; i ++){
-    for(int j = 1; j <= 5; j++){
-        
-    }
-}
-```
-
-> IN和EXISTS
+在join语句优化的章节中，我们使用了临时表：
 
 ```sql
-/* 优化原则：小表驱动大表，即小的数据集驱动大的数据集 */
-
-/* IN适合B表比A表数据小的情况*/
-SELECT * FROM `A` WHERE `id` IN (SELECT `id` FROM `B`)
-
-/* EXISTS适合B表比A表数据大的情况 */
-SELECT * FROM `A` WHERE EXISTS (SELECT 1 FROM `B` WHERE `B`.id = `A`.id);
+create temporary table temp_t like t1;
+alter table temp_t add index(b);
+insert into temp_t select * from t2 where b >= 1 and b <= 2000;
+select * from t1 join temp_t on (t1.b = temp_t.b);
 ```
 
-**EXISTS：**
+与临时表相类似的还有内存表，实际上这两个概念是完全不同的。
 
-- 语法：`SELECT....FROM tab WHERE EXISTS(subquery);`该语法可以理解为：
-- 该语法可以理解为：将主查询的数据，放到子查询中做条件验证，根据验证结果（`true`或是`false`）来决定主查询的数据结果是否得以保留。
+- 内存表，指的是使用Memory引擎的表，建表语法是`create table ...engine = memory`。这种表的数据都保存在内存里，系统重启的时候就会被清空，但是表结构还在。除了这两个特性看上去比较“奇怪”，从其它特征上看，它就是一个正常表
+- 而临时表，可以使用各种引擎类型（包括Memory引擎），如果使用InnDB引擎或者MyISAM引擎的临时表，写数据的时候是写到磁盘上的
 
-**提示：**
+### 临时表的特性
 
-- `EXISTS(subquery)`子查询只返回`true`或者`false`，因此子查询中的`SELECT *`可以是`SELECT 1 OR SELECT X`，它们并没有区别。
-- `EXISTS(subquery)`子查询的实际执行过程可能经过了优化而不是我们理解上的逐条对比，如果担心效率问题，可进行实际检验以确定是否有效率问题。
-- `EXISTS(subquery)`子查询往往也可以用条件表达式，其他子查询或者`JOIN`替代，何种最优需要具体问题具体分析。
+以下列操作序列为例：
 
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211221234203.png" alt="image-20211221234203605" style="zoom:67%;" />
 
+可以看到，临时表有以下几个特点：
 
-## ORDER BY优化
+1. 建表语法是`create temporary table..`
+2. 一个临时表只能被创建它的session访问，对其它线程不可见，所以，图中session A创建的临时表t，对于session B就是不可见的
+3. 临时表可以与普通表同名
+4. session A内有同名的临时表和普通表的时候，`show create`语句，以及增删改查语句访问的是临时表
+5. `show tables`命令不显示临时表
 
-> 数据准备
+由于临时表只能被创建它的session访问，所以在这个session结束的时候，会自动删除临时表，也正是由于这个特性，临时表特别适合join优化的场景，理由如下：
+
+- 不同session的临时表是可以重名的，如果有多个session同时执行join优化，无需担心表名重复导致建表失败的问题
+- 不需要担心数据删除问题。如果使用普通表，在执行流程过程中客户端发生了异常断开，或者数据库发生异常重启，还需要专门清理中间过程中生成的数据表。而临时表由于会自动回收，所以不需要这个额外的操作
+
+### 临时表的应用
+
+由于不同担心线程之间的重名冲突，临时表经常会被用在复杂查询优化过程中，其中，分库分表系统的跨库查询就是一个典型的使用场景。
+
+一般分库分表的场景，就是要把一个逻辑上的大表分散到不同的数据库实例上。比如，将一个大表ht，按照字段f，拆分成1024个分表，然后分布到32个数据库实例上，如下图所示：
+
+![image-20211222000035457](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211222000035.png)
+
+一般情况下，这种分库分表系统都有一个中间层proxy，不过，也有一些方案会让客户端直接连接数据，也就是没有proxy这一层。在这个架构中，分区key的选择是以“减少跨库和跨表查询”为依据的。如果大部分的语句都会包含f的等值条件，那么就要用f做分区键。这样，在proxy这一层解析完SQL语句以后，就能确定将这条语句到哪个分表做查询。
+
+以下面的查询语句为例：
 
 ```sql
-CREATE TABLE `talA`(
-`age` INT,
-`birth` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-INSERT INTO `talA`(`age`) VALUES(18);
-INSERT INTO `talA`(`age`) VALUES(19);
-INSERT INTO `talA`(`age`) VALUES(20);
-INSERT INTO `talA`(`age`) VALUES(21);
-INSERT INTO `talA`(`age`) VALUES(22);
-INSERT INTO `talA`(`age`) VALUES(23);
-INSERT INTO `talA`(`age`) VALUES(24);
-INSERT INTO `talA`(`age`) VALUES(25);
-
-/* 创建索引 */
-CREATE INDEX idx_talA_age_birth ON `talA`(`age`, `birth`);
+select v from ht where f=N;
 ```
 
-> 案例
+这时，我们就可以通过分表规则（比如N%1024）来确认需要的数据被放在哪个分表上，这种语句只需要访问一个分表。但是，如果这个表上还有另外一个索引k，并且查询语句如下：
 
 ```sql
-/* 1.使用索引进行排序了 不会产生Using filesort */
-EXPLAIN SELECT * FROM `talA` WHERE `age` > 20 ORDER BY `age`;
-
-/* 2.使用索引进行排序了 不会产生Using filesort */
-EXPLAIN SELECT * FROM `talA` WHERE `age` > 20 ORDER BY `age`,`birth`;
-
-/* 3.没有使用索引进行排序 产生了Using filesort */
-EXPLAIN SELECT * FROM `talA` WHERE `age` > 20 ORDER BY `birth`;
-
-/* 4.没有使用索引进行排序 产生了Using filesort */
-EXPLAIN SELECT * FROM `talA` WHERE `age` > 20 ORDER BY `birth`,`age`;
-
-/* 5.没有使用索引进行排序 产生了Using filesort */
-EXPLAIN SELECT * FROM `talA` ORDER BY `birth`;
-
-/* 6.没有使用索引进行排序 产生了Using filesort */
-EXPLAIN SELECT * FROM `talA` WHERE `birth` > '2020-08-04 07:42:21' ORDER BY `birth`;
-
-/* 7.使用索引进行排序了 不会产生Using filesort */
-EXPLAIN SELECT * FROM `talA` WHERE `birth` > '2020-08-04 07:42:21' ORDER BY `age`;
-
-/* 8.没有使用索引进行排序 产生了Using filesort */
-EXPLAIN SELECT * FROM `talA` ORDER BY `age` ASC, `birth` DESC;
+select v from ht where k >= M order by t_modified desc limit 100;
 ```
 
-`ORDER BY`子句，尽量使用索引排序，避免使用`Using filesort`排序。
+这个时候，由于查询条件里面没有用到分区字段f，只能到所有的分区中去查找满足条件的所有行，然后统一进行排序，这种情况下，有两种比较常用的思路。
 
-MySQL支持两种方式的排序，`FileSort`和`Index`，`Index`的效率高，它指MySQL扫描索引本身完成排序。`FileSort`方式效率较低。
+第一种思路是在proxy层的进程代码中实现排序。这种方式的优势是处理速度快，拿到分库的数据以后，直接在内存中参与计算，不过，这个方案的缺点也很明显：
 
-`ORDER BY`满足两情况，会使用`Index`方式排序：
+1. 需要的开发工作量比较大。如果仅需要order by还比较简单，但是，如果涉及到复杂的操作，比如group by，甚至join这样的操作，对中间层的开发能力要求比较高
+2. 对proxy端的压力比较大，尤其是很容易出现内存不够用和CPU瓶颈的问题
 
-- `ORDER BY`语句使用索引最左前列。
-- 使用`WHERE`子句与`ORDER BY`子句条件列组合满足索引最左前列。
+第二种思路是，将各个分库拿到的数据，汇总到一个MySQL实例的一个表中，然后在这个汇总实例上做逻辑操作，以上这条查询语句的执行流程如下：
 
-**结论：尽可能在索引列上完成排序操作，遵照索引建的最佳左前缀原则。**
+- 在汇总库上创建一个临时表temp_ht，表中包含三个字段v、t、t_modified
+- 在各个分库上执行`select v,k,t_modified from ht_x where k >= M order by t_modified desc limit 100;`
+- 将分库执行的结果插入到temp_ht表中
+- 执行`select v from temp_ht order by t_modified desc limit 100;`就可以得到结果
 
+第二种思路的示意图如下：
 
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211226130032.png" alt="image-20211226130031919" style="zoom:67%;" />
 
-> 如果不在索引列上，File Sort有两种算法：MySQL就要启动双路排序算法和单路排序算法
+<div class="note info"><p>实践中，由于每个分库的计算量都不饱和，所以会直接把临时表temp_ht放到32个分库中的某一个上。</p></div>
 
-1、双路排序算法：MySQL4.1之前使用双路排序，字面意思就是两次扫描磁盘，最终得到数据，读取行指针和`ORDER BY`列，対他们进行排序，然后扫描已经排序好的列表，按照列表中的值重新从列表中读取对应的数据输出。**一句话，从磁盘取排序字段，在`buffer`中进行排序，再从磁盘取其他字段。**
+### 重命名临时表
 
-取一批数据，要对磁盘进行两次扫描，众所周知，IO是很耗时的，所以在MySQL4.1之后，出现了改进的算法，就是单路排序算法。
+上文我们总结临时表的特性，发现不同线程可以创建同名的临时表，那么这是怎么做到的呢？
 
-2、单路排序算法：从磁盘读取查询需要的所有列，按照`ORDER BY`列在`buffer`対它们进行排序，然后扫描排序后的列表进行输出，它的效率更快一些，避免了第二次读取数据。并且把随机IO变成了顺序IO，但是它会使用更多的空间，因为它把每一行都保存在内存中了。
-
-
-
-由于单路排序算法是后出的，总体而言效率好过双路排序算法。
-
-但是单路排序算法有问题：如果`SortBuffer`缓冲区太小，导致从磁盘中读取所有的列不能完全保存在`SortBuffer`缓冲区中，这时候单路复用算法就会出现问题，反而性能不如双路复用算法。
-
-
-
-**单路复用算法的优化策略：**
-
-- 增大`sort_buffer_size`参数的设置。
-- 增大`max_length_for_sort_data`参数的设置。
-
-**提高ORDER BY排序的速度：**
-
-- `ORDER BY`时使用`SELECT *`是大忌，查什么字段就写什么字段，这点非常重要。在这里的影响是：
-  - 当查询的字段大小总和小于`max_length_for_sort_data`而且排序字段不是`TEXT|BLOB`类型时，会使用单路排序算法，否则使用多路排序算法。
-  - 两种排序算法的数据都有可能超出`sort_buffer`缓冲区的容量，超出之后，会创建`tmp`临时文件进行合并排序，导致多次IO，但是单路排序算法的风险会更大一些，所以要增大`sort_buffer_size`参数的设置。
-
-- 尝试提高`sort_buffer_size`：不管使用哪种算法，提高这个参数都会提高效率，当然，要根据系统的能力去提高，因为这个参数是针对每个进程的。
-- 尝试提高`max_length_for_sort_data`：提高这个参数，会增加用单路排序算法的概率。但是如果设置的太高，数据总容量`sort_buffer_size`的概率就增大，明显症状是高的磁盘IO活动和低的处理器使用率。
-
-## GORUP BY优化
-
-- `GROUP BY`实质是先排序后进行分组，遵照索引建的最佳左前缀。
-
-- 当无法使用索引列时，会使用`Using filesort`进行排序，增大`max_length_for_sort_data`参数的设置和增大`sort_buffer_size`参数的设置，会提高性能。
-
-- `WHERE`执行顺序高于`HAVING`，能写在`WHERE`限定条件里的就不要写在`HAVING`中了。
-
-
-
-## 总结
-
-**为排序使用索引**
-
-- MySQL两种排序方式：`Using filesort`和`Index`扫描有序索引排序。
-- MySQL能为排序与查询使用相同的索引，创建的索引既可以用于排序也可以用于查询。
+假设我们执行如下语句：
 
 ```sql
-/* 创建a b c三个字段的索引 */
-idx_table_a_b_c(a, b, c)
-
-/* 1.ORDER BY 能使用索引最左前缀 */
-ORDER BY a;
-ORDER BY a, b;
-ORDER BY a, b, c;
-ORDER BY a DESC, b DESC, c DESC;
-
-/* 2.如果WHERE子句中使用索引的最左前缀定义为常量，则ORDER BY能使用索引 */
-WHERE a = 'Ringo' ORDER BY b, c;
-WHERE a = 'Ringo' AND b = 'Tangs' ORDER BY c;
-WHERE a = 'Ringo' AND b > 2000 ORDER BY b, c;
-
-/* 3.不能使用索引进行排序 */
-ORDER BY a ASC, b DESC, c DESC;  /* 排序不一致 */
-WHERE g = const ORDER BY b, c;   /* 丢失a字段索引 */
-WHERE a = const ORDER BY c;      /* 丢失b字段索引 */
-WHERE a = const ORDER BY a, d;   /* d字段不是索引的一部分 */
-WHERE a IN (...) ORDER BY b, c;  /* 对于排序来说，多个相等条件(a=1 or a=2)也是范围查询 */
+create temporary table temp_t(id int primary key)engine=innodb;
 ```
+
+这个时候，MySQL要给这个InnoDB表创建一个frm文件保存表结构定义，还要有地方保存表数据，这个frm文件放在临时文件目录下，文件名的后缀是.frm，前缀是“#sql{进程id}\_{线程id}_序列号”，可以使用`select @@tmpdir`命令，来显示实例的临时文件目录。
+
+关于临时表中数据的存放方式，在不同的MySQL版本中有着不同的处理方式：
+
+- 在5.6以及之前的版本里，MySQL会在临时文件目录下创建一个相同前缀、以.ibd为后缀的文件，用来存放数据文件
+- 而从5.7版本开始，MySQL引入了一个临时文件表空间，专门用来存放临时文件的数据，而无需再创建idb文件
+
+示例如下：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211226131704.png" alt="image-20211226131648061" style="zoom:67%;" />
+
+这个进程的进程号是4d2，session A的线程id是4，session B的线程id是5，所以，session A和 session B创建的临时表，在磁盘上的文件不会重名。
+
+MySQL维护数据表，除了物理上要有文件外，内存里面也有一套机制区别不同的表，每个表都对应一个table_def_key。
+
+- 一个普通表的table_def_key的值是由“库名+表名”得到的，所以如果要在同一个库下创建两个同名的临时表，创建第二表的过程中就会发现table_def_key已经存在了
+- 而对于临时表，table_def_key在“库名+表名”的基础上，又加入了“server_id + thread_id”，也就是说，session A和session B创建的两个临时表t1，它们的table_def_key不同，磁盘文件名也不同，因此可以并存。
+
+在实现上，每个线程都维护了自己的临时表链表。这样，每次session内操作表的时候，先遍历链表，检查是否有这个名字的临时表，如果有就优先操作临时表，如果没有再操作普通表，在sessoin结束的时候，对链表里的每个临时表，执行“DROP TEMPARY TABLE + 表名”操作。
+
+### 临时表和主备复制
+
+临时表只能在线程内自己访问，但在执行`DROP TEMPARY TABLE`命令的时候，也会将其记录到binlog中，写入到binlog中的目的是为了主备复制。为了说明这一点，假设我们执行如下语句：
+
+```sql
+create table t_normal(id int primary key, c int)engine=innodb;/*Q1*/
+create temporary table temp_t like t_normal;/*Q2*/
+insert into temp_t values(1,1);/*Q3*/
+insert into t_normal select * from temp_t;/*Q4*/
+```
+
+如果关于临时表的操作都不记录，那么在备库就只有`create table t_normal`和`insert into t_normal select * from temp_t`这两个语句的binlog日志，备库在执行到`insert into t_normal`的时候，就会报错“表temp_t不存在”。
+
+实际上可以通过设置参数`binlog_format=row`,那么与临时表有关的语句，就不会记录到binlog里。当参数设置为`binlog_format=statment/mixedde`的时候，binlog才会记录临时表的操作。
+
+当binlog是row格式的时候，创建临时表的语句会自动在备库执行，主库在线程退出的时候，会自动删除临时表，但是备库同步线程是持续在运行的。所以，需要在主库上再写一个`DROP TEMPARY TABLE`传给备库执行，这就是这个命令会什么会出现在binlog的原因。
+
+通常情况下，MySQL在记录binlog的时候，都会将SQL语句原封不动的记录下来，但是如果执行`drop table_normal`，此时binlog会被记录成：
+
+```sql
+DROP TABLE `t_normal` /* generated by server */
+```
+
+这是因为，`drop table`是可以一次删除多个表的。在以上的例子中，设置binlog_format=row，如果主库上执行“drop table t_normal, temp_t”这个命令，那么binlog中就只能记录：
+
+```sql
+DROP TABLE `t_normal` /* generated by server */
+```
+
+因为备库上并没有表tmp_t，将这个命令重写后再传到备库执行，才不会备库同步线程停止。所以，`drop table`命令记录binlog的时候，就必须对语句做改写， “/* generated by server */” 说明了这是一个被服务端改写过的命令。
+
+主库上不同的线程创建同名的临时表是没有关系的，但是传到备库执行时如何处理的呢？下面的序列中实例S是M的备库：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211226182104.png" alt="image-20211226182104322" style="zoom:67%;" />
+
+主库M上的两个session创建了同名的临时表t1，这两个`create temporary table t1`语句都会被传到备库S上，但是，备库的应用日志线程是共用的，也就是说要在应用线程里面先后执行这个create语句两次。（即使开了多线程复制，也可能被分配到从库的同一个worker中执行），如果直接执行，那么显然可能会出现冲突。MySQL在记录binlog的时候，会把主库执行的这个语句的线程id写到binlog中，这样，在备库的应用线程就能够知道执行每个语句的主库线程id，并利用这个线程id来构造临时表的table_def_key，具体流程下：
+
+1. session A的临时表t1，在备库的table_def_key就是：库名+t1+“M的serverid” + “session A的thread_id”
+2. session B的临时表t1，在备库的table_def_key就是：库名+t1+“M的serverid” + “session B的thread_id”
+
+由于table_def_key不同，所以这两个表在备库的应用线程里不会冲突。
+
+### 使用临时表优化查询
+
+union的执行就会使用临时表来完成，为了便于量化分析，我用下面的表 t1 来举例。
+
+```sql
+create table t1(
+  id int primary key, 
+  a int, 
+  b int, 
+  index(a)
+); 
+
+delimiter;; 
+create procedure idata() begin declare i int; 
+set 
+  i = 1; while(i <= 1000) do insert into t1 
+values 
+  (i, i, i); 
+set 
+  i = i + 1; end while; end;; 
+delimiter; 
+call idata();
+```
+
+然后，我们执行如下语句：
+
+```sql
+(select 1000 as f) union (select id from t1 order by id desc limit 2);
+```
+
+这条语句用到了union，它的语义是，取这两个子查询结果的并集，下面是这个语句explain的结果：
+
+![image-20211226185633150](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211226185633.png)
+
+可以看到：
+
+- 第二行的key=PRIMARY，说明第二个子句用到了索引id
+- 第三行的Extra字段，表示在对子查询的结果做UNION的时候，使用了临时表（Using temporary）。
+
+这个语句的执行流程如下：
+
+1. 创建一个内存临时表，这个临时表只有一个整型字段f，并且f是主键字段
+2. 执行第一个子查询，得到1000这个值，并存入临时表中
+3. 执行第二个子查询：
+	- 拿到第一行id=1000，试图插入临时表中，但由于1000这个值已经存在于临时表了，违反了唯一性约束，所以插入失败，然后继续执行
+	- 取到第二行id=999，插入临时表成功
+4. 从临时表按行取数据，返回结果，并删除临时表，结果中包含两行数据分别是1000和999
+
+这个过程的示意图如下：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211226190524.png" alt="image-20211226190524454" style="zoom:67%;" />
+
+可以看到，这里的内存临时表起到了暂存数据的作用，而且计算过程还用上了临时表主键id的唯一性约束，实现了union的语义。如果将这个语句中的union改成union all的话，就没有了“去重”的语义。这样执行的时候，就依次执行子查询，得到的结果直接作为结果集的一部分，发给客户端，因此也就不需要临时表了。
+
+![image-20211226190854967](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211226190855.png)
+
+可以看到，第二行的Extra字段显示的是Using index，表示只使用了覆盖索引，没有用临时表了。
+
+## group by语句的优化
+
+### group by执行流程
+
+还是使用表t1执行如下SQL语句：
+
+```sql
+select id % 10 as m, count(*) as c from t1 group by m;
+```
+
+这个语句的逻辑是把表t1里的数据，按照id%10进行分组统计，并按照m的结果排序后输出，它的explain结果如下：
+
+![image-20211226191521497](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211226191521.png)
+
+在Extra字段里面，我们可以看到：
+
+- Using index，表示这个语句使用了覆盖索引，选择了索引a，不需要回表
+- Using temporary，表示使用了临时表
+- Using filesort，表示需要排序
+
+这个语句的执行流程如下：
+
+1. 创建内存临时表，表里有两个字段m和c，主键是m
+2. 扫描表t1的索引a，依次取出叶子节点上id的值，计算id%10的结果，记为x
+	- 如果临时表中没有主键为x的行，就插入一条记录（x，1）
+	- 如果表中有主键为x的行，就将x这一行的c值加1
+3. 遍历完成后，再根据字段m做排序，得到结果集返回给客户端
+
+流程图如下：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211226204524.png" alt="image-20211226204524315" style="zoom:67%;" />
+
+其中，虚线框内表示临时表的排序过程：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211226204657.png" alt="image-20211226204657634" style="zoom:67%;" />
+
+这条语句的执行结果如下：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211226204808.png" alt="image-20211226204808711" style="zoom: 50%;" />
+
+如果并不需要对结果进行排序，那么可以在SQL语句末尾增加order by null：
+
+```sql
+select id % 10 as m, count(*) as c from t1 group by m order by null;
+```
+
+这样就跳过了最后排序的阶段，直接从临时表中取数据返回，返回的结果如图所示：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211226205042.png" alt="image-20211226205042481" style="zoom:50%;" />
+
+
+
+由于表t1中的id的值是从1开始的，因此返回的结果集中的第一行是id=1，扫描到id=10的时候才插入m=0这一行，因此结果集里最后一行才是m=0。
+
+这个例子中由于临时表只有10行，内存可以放得下，因此全程只使用了内存临时表。但是，内存临时表的大小是有限制的，参数tmp_table_size就是控制这个内存大小的，默认是16M。此时，如果执行如下语句：
+
+```sql
+set tmp_table_size = 1024;
+select id % 100 as m, count(*) as c from t1 group by m order by null limit 10;
+```
+
+把内存临时表的大小限制为最大1024字节，并把语句改为id%100，这样返回结果里有100行数据。但是，这时的内存临时表大小不够存下这100行数据，也就是说，执行过程中会发现内存临时表大小不够存下这100行数据，也就是说，执行过程中会发现内存临时表大小达到了上限（1024字节）。这个时候，MySQL就会把内存临时表转成磁盘临时表，磁盘临时表默认使用的引擎是InnoDB，这时返回的结果如下：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211226210055.png" alt="image-20211226210055235" style="zoom:50%;" />
+
+如果这个表t1的数据量很大，很可能这个查询需要的磁盘临时表就会占用大量的磁盘空间。
+
+### 使用索引优化group by语句
+
+可以看到，不论是使用内存临时表还是磁盘临时表，group by逻辑都需要构造一个带唯一索引的表，执行代价都是比较高的，如果表的数据量比较大，上面这个group by语句执行起来就会很慢。
+
+在优化group by问题之前，我们得清楚，为什么执行group by语句需要临时表，group by的语义逻辑是统计不同的值出现的个数，但是，由于每一行的id%100的结果是无需的，所以，我们需要一个临时表，来记录并统计结果。那么，如果扫描过程中可以保证出现的数据是有序的，那么group by语句就可以不再需要临时表，假设有如下数据结构：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211226223201.png" alt="image-20211226223201473" style="zoom:67%;" />
+
+可以看到，如果可以确保输入的数据是有序的，那么计算group by的时候，就只需要从左到右，顺序扫描，依次累加，也就是下面的这个过程：
+
+- 当碰到第一个1的时候，已经知道累积了X个0，结果集里的第一行就是（0，x）
+- 当碰到第一个2的时候，已经知道类及了Y个1，结果集里的第一行就是（1，Y）
+
+按照这个逻辑执行的话，扫描到整个输入的数据结束，就可以拿到group by的结果，不需要临时表，也不需要再额外的排序。在MySQL5.7支持了generated cloumn机制，用来实现列数据的关联更新，可以使用如下方法创建一个列z，然后在z列上创建一个索引（如果是MySQL5.6及之前的版本，可以创建普通列和索引，来解决这个问题）。
+
+```sql
+alter table t1 add column z int generated always as(id % 100), add index(z);
+```
+
+这样，索引z上的数据就是类似上图中的有序数据了，此时，上面的group by语句就可以改成：
+
+```sql
+select z, count(*) as c from t1 group by z;
+```
+
+优化后的group by语句的explain结果，如下图所示：
+
+![image-20211226224059201](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211226224059.png)
+
+可以看到这个语句的执行不再需要临时表，也不需要排序了。
+
+### 直接排序优化group by语句
+
+实际上，并不是所有场景中可以通过加索引来完成group by的逻辑，如果碰到不适合创建索引的场景，还是一定要进行排序的操作。无论数据量大或小的group by语句都要先放到内存临时表，插入一部分数据后，发现内存临时表不够用了再转成磁盘临时表，我们可以在group by语句中加入`SQL_BIG_RESULT`这个提示（hint），就可以告诉优化器 ，这个语句涉及的数据量很大，直接使用磁盘临时表，MySQL会直接使用数组来存储这些数据，此时
+
+```sql
+select SQL_BIG_RESULT id % 100 as m, count(*) as c from t1 group by m;
+```
+
+执行流程就变成了：
+
+1. 初始化sort_buffer，确定放入一个整型字段，记为m
+2. 扫描表t1的索引a，依次取出里面的id的值，将id%100的值存入sort_buffer中
+3. 扫描完成后，对sort_buffer的字段m做排序（如果sort_buffer的内存不够用，就会利用磁盘临时文件辅助排序）
+4. 排序完成后，就得到了一个有序数组
+
+根据有序数组，得到数组里面的不同值，以及每个值得出现次数，执行的流程图如下：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211226225313.png" alt="image-20211226225313194" style="zoom:67%;" />
+
+explain的结果如下：
+
+![image-20211226225353695](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211226225353.png)
+
+从Extra字段可以看到，这个语句的执行没有再使用临时表，而是直接使用了排序算法。
+
+这里我们对MySQL使用内部临时表做如下总结：
+
+1. 如果语句执行过程可以一边读数据，一边直接得到结果，是不需要额外内存的，否则就需要额外的内存，来保存中间结果
+2. join_buffer是无序数组，sort_buffer是有序数组，临时表是二维表结构
+3. 如果执行逻辑需要用到二维表特性，就会优先考虑使用临时表（之前的例子中，union还需要用到唯一索引约束，group by还需要用到另外一个字段来存累积计数）
 
 ## 慢查询日志
 
@@ -2312,6 +2710,12 @@ mysql> SHOW PROFILE cpu,block io FOR QUERY 3;
 - `Creating tmp table`：创建临时表（拷贝数据到临时表，用完再删除），非常耗费数据库性能。
 - `Copying to tmp table on disk`：把内存中的临时表复制到磁盘，危险！！！
 - `locked`：死锁。
+
+# MySQL中的事务
+
+## 事务隔离
+
+
 
 # MySQL中的锁
 
