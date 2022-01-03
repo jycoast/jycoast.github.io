@@ -1734,6 +1734,20 @@ EXPLAIN SELECT * FROM `test03` WHERE `c1` = 'a1' AND `c4` = 'a4' GROUP BY `c3`,`
 
 # MySQL查询优化
 
+## 慢查询基础
+
+### 请求多余的数据
+
+### 扫描额外的记录
+
+## 重构查询
+
+### 复杂查询 or 简单查询
+
+### 切分查询
+
+### 分解关联查询
+
 ## count（*）优化
 
 在实际的开发中，经常可能需要计算一个表中（或部分）的行数，通常可以使用`select count(*) from t`，但随着系统中记录数的不断增多，这条语句会执行得越来越慢。
@@ -2711,452 +2725,276 @@ mysql> SHOW PROFILE cpu,block io FOR QUERY 3;
 - `Copying to tmp table on disk`：把内存中的临时表复制到磁盘，危险！！！
 - `locked`：死锁。
 
-# MySQL中的事务
+# MySQL中的事务和锁
 
 ## 事务隔离
 
+简单来说，事务就是要保证一组操作，要么全部成功，要么全部失败，事务具有ACID（Atomicity、Consistency、Isolation、Durability，即原子性、一致性、隔离性、持久性）的特性。在MySQL中，事务支持是在引擎层实现的，但并不是所有的引擎都支持事务，比如MySQL原生的MyISAM引擎就不支持事务，这也是MyISAM被InnoDB取代的重要原因之一。
 
+### 隔离性和隔离级别
 
-# MySQL中的锁
+当数据库上有多个事务同时执行的时候，就可能出现藏独（dirty read）、不可重复读（non-repeatable read）、幻读（phantom read）的问题，为了解决这些问题，就有了“隔离级别”的概念。隔离级别越高，执行的效率就会越低，因此很多时候，都需要在二者之间寻找一个平衡点。
 
-## 表锁(偏读)
+SQL标准的事务隔离级别包括：读未提交（read uncommitted）、读提交（read committed）、可重复读（repeatable read）和串行化（serializable），它们的含义如下：
 
-**表锁特点：**
+- 读未提交是指，一个事务还没有提交时，它做的变更就能被别的事务看到
+- 读提交是指，一个事务提交之后，它做的变更才会被其它事务看到
+- 可重复读是指，一个事务执行过程中看到的数据，总是跟这个事务在启动的时候看到的数据是一致的。在可重复读的隔离级别下，未提交变更对其它事务也是不可见的
+- 串行化是指对同一行记录，“写”会加锁，“读”会“读锁”。当出现读写锁冲突的时候，后访问的事务必须等待前一个事务执行完成，才能继续执行
 
-- 表锁偏向`MyISAM`存储引擎，开销小，加锁快，无死锁，锁定粒度大，发生锁冲突的概率最高，并发度最低。
+下面我们通过实例来说明，假设数据表T中只有一列，其中一行的值为1：
 
-
-### 环境准备
-
-```mysql
-# 1、创建表
-CREATE TABLE `mylock`(
-`id` INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
-`name` VARCHAR(20)
-)ENGINE=MYISAM DEFAULT CHARSET=utf8 COMMENT='测试表锁';
-
-# 2、插入数据
-INSERT INTO `mylock`(`name`) VALUES('ZhangSan');
-INSERT INTO `mylock`(`name`) VALUES('LiSi');
-INSERT INTO `mylock`(`name`) VALUES('WangWu');
-INSERT INTO `mylock`(`name`) VALUES('ZhaoLiu');
+```sql
+create table T(c int) engine = InnoDB;
+insert into T(c) values (1);
 ```
 
-### 锁表的命令
+下面是按照时间顺序执行两个事务的行为：
 
-> 1、查看数据库表锁的命令。
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220103112251081.png" alt="image-20220103112251081" style="zoom: 50%;" />
 
-```mysql
-# 查看数据库表锁的命令
-SHOW OPEN TABLES;
+我们来看下在不同的隔离级别下，事务A会查询到的V1、V2、V3的返回值分别是什么：
+
+- 若隔离级别是“读未提交”，则V1、V2、V3的值都是2。这时候事务B虽然还没有提交，但是结果已经被A看到了
+- 若隔离级别是“读提交”，则V1是1，V2的值是2，事务B的更新在提交后才能被A看到，所以V3的值也是2
+- 若隔离级别是“可重复读”，则V1、V2是1，V3是2，之所以V2还是1，是因为在这个隔离级别下，事务在执行期间看到的数据前后必须是一致的
+- 若隔离级别是“串行化”，则事务B执行“将1改成2”的时候，会被锁住，直到事务A提交之后，事务B才可以继续执行。所以，从A的角度来看，V1、V2的值是1，V3的值是2
+
+在实现上，数据库里面会创建一个视图，访问的时候以视图的逻辑结果为准。在“可重复读”隔离级别下，这个视图是在事务启动时创建的，整个事务存在期间都用这个视图。在“读提交”隔离级别下，这个视图是在每个SQL语句开始执行的时候创建的，这里需要注意的是，“读未提交”隔离级别下直接返回记录上的最新值，没有视图概念；而“串行化”隔离级别下直接用加锁的方式来避免并行访问。
+
+在不同的隔离级别下，数据库的行为是有所不同的。Oracle数据库的默认隔离级别是“读提交”，MySQL的InnoDB默认隔离级别是“可重复读”。因此，对于一些从Oracle迁移到MySQL的应用，为了保证数据库隔离级别的一致，需要将隔离级别设置为“读提交”，将启动参数`transaction-isolation`的值设置为READ-COMMITTED，可以使用`show variables like 'transaction_isolation';`来查看当前的值。
+
+<div class="note info"><p>每一种隔离级别都有自己的使用场景，具体使用哪一种，需要根据业务情况来定。</p></div>
+
+### 事务隔离的实现
+
+那么事务隔离是怎么实现的呢？实际上，在MySQL中，每条记录在更新的时候都会同时记录一条回滚操作，记录上最新的值，通过回滚操作，都可以得到前一个状态的值。假设一个值从1被顺序改成了2、3、4，在回滚日志里面就会有类似下面的记录：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220103115424619.png" alt="image-20220103115424619" style="zoom:50%;" />
+
+当前值是4，但是在查询这条记录的时候，不同时刻启动的事务会有不同的read-view。如图中看到的，在视图A、B、C里面，这一个记录的值分别是1、2、4，同一条记录在系统中可以存在多个版本，就是数据库的多版本并发控制（MVCC）。对于read-view A要得到1，就必须将当前的值依次执行图中所有的回滚操作得到。
+
+回滚日志只有当没有事务需要用到这些回滚日志，也就是当系统里没有比这个回滚日志更早的read-view的时候，才会被删除，这也就是很多文章中建议不要使用长事务的原因之一。长事务意味着系统里面会存在很老的事务视图。由于这些事务随时可能访问数据库里面的任何数据，所以在这个事务提交之前，数据库里面它可能用到的回滚记录都必须保留，这就会导致大量占用存储空间。在MySQL5.5及以前的版本，回滚日志是跟字典一起放在ibdata文件里的，即使长事务最终提交，回滚段被清理，文件也不会变小，也许数据只有20GB，但是回滚段却有200GB。
+
+可以在information_schema库的innodb_trx这个表中，使用如下语句查询超过60s的长事务：
+
+```sql
+select * from information_schema.innodb_trx where TIME_TO_SEC(timediff(now(),trx_started)) > 60;
 ```
 
-> 2、给`mylock`表上读锁，给`book`表上写锁。
+### 事务的启动方式
 
-```mysql
-# 给mylock表上读锁，给book表上写锁
-LOCK TABLE `mylock` READ, `book` WRITE;
+MySQL的事务启动方式有以下几种：
 
-# 查看当前表的状态
-mysql> SHOW OPEN TABLES;
-+--------------------+------------------------------------------------------+--------+-------------+
-| Database           | Table                                                | In_use | Name_locked |
-+--------------------+------------------------------------------------------+--------+-------------+
-| sql_analysis       | book                                                 |      1 |           0 |
-| sql_analysis       | mylock                                               |      1 |           0 |
-+--------------------+------------------------------------------------------+--------+-------------+
+1. 显式启动事务语句：`begin或start transaction;`。配套的提交语句是commit，回滚语句是rollback
+2. `set autocommit = 0;`，这个命令会将这个线程的自动提交关掉，意味着如果只执行一个select语句，这个事务就启动了，而且并不会自动提交。这个事务将持续存在直到主动执行commit或rollback语句，或者断开连接
+
+有些客户端框架会默认连接成功后先执行`set autocommit = 0;`，这就导致接下来的查询都在事务中，如果是长连接，就导致了意外的长事务。因此，最好使用`set autocommit = 1`，通过显式语句的方式来启动事务，不过这样需要每次执行依次“begin”，如果不想每次都多“多一次交互”，那么可以使用`commit work and chain`语法。在autocommit为1的情况下，用begin显式启动事务，如果执行commit则提交事务，如果执行`mmit work and chain`，则是提交事务并自动启动下一个事务，这样既省去了再次执行begin语句的开销，又可以明确地直到每个语句是否处于事务中。
+
+
+
+## 全局锁
+
+数据库锁的设计的初衷是处理并发问题。作为多用户共享的资源，当出现并发访问的时候，数据库需要合理地控制资源的访问规则，而锁就是用来实现这些访问规则的重要数据结构。根据加锁的范围，MySQL里面的锁大致可以分为全局锁、表级锁和行锁三类。
+
+### 全局锁的特点
+
+顾名思义，全局锁就是对整个数据库实例加锁，MySQL提供了一个全局读锁的方法：`Flush tables with read lock`(FTWRL)。当需要让整个库处于只读状态的时候，可以使用这个命令，之后其它线程的更新（增删改）、数据定义语句（建表、修改表结构）和更新类事务的提交语句都会被阻塞。
+
+全局锁的典型使用场景是，做全库逻辑备份，也就是将整库的每个表都select出来存成文本。
+
+### 全局锁对比
+
+MySQL自带的逻辑备份工具是mysqldump，当mysqldump使用参数`-single-transaction`的时候，导数据之前就会启动一个事务，来确保拿到一致性视图，由于MVCC的支持，这个过程中数据是可以正常更新的。但并不是所有的存储引擎都支持一致性读的隔离级别，例如MyISAM这种不支持事务的引擎，如果备份过程中有更新，总是取到最新的数据，那么就破坏了备份的一致性，这个时候，就只能使用FTWRL命令了，因此`-single-transaction`只适用于所有的表使用事务引擎的数据库，如果有的表使用了不支持事务的引擎，那么备份只能通过FTWRL方法，这往往是DBA要求业务开发人员使用InnoDB替代MyISAM的原因之一。
+
+全库只读除了使用FTWRL，还可以使用`set global readonly = true`，不过如果要备份全库，还是应该使用FTWRL，原因有二：
+
+1. 在有些系统中，readonly的值会被用来做其它逻辑，比如用来判断一个库是主库还是备库，因此，修改global变量的方式影响面更大
+2. 在异常处理机制上有差异。如果执行FTWRL命令之后由于客户端发生异常断开，那么MySQL会自动释放这个全局锁，整个库到可以正常更新的状态。而将整个库设置为readonly之后，如果客户端发生异常，则数据库就会一致保持readonly状态，这样会导致整库长时间处于不可写状态，风险较高
+
+## 表级别的锁
+
+
+
+MySQL里面表级别的锁有两种：一种是表锁，一种是元数据锁（meta data lock，简称MDL）。
+
+### 表锁
+
+表锁的语法是`lock tables ... read/write`。与FTWRL类似，可以用unlock tables主动释放锁，也可以在客户端断开的时候自动释放。需要注意的是，lock tables语法除了会限制别的线程的读写外，也限定了本线程接下来的操作对象。
+
+### 元数据锁
+
+另一类表级的锁是MDL（metadata lock）。MDL不需要显式使用，在访问一个表的时候会被自动加上。MDL的作用是，保证读写的正确性。例如，一个查询正在遍历一个表中的数据，而执行期间另一个线程对这个表结构在做变更，删了一列，那么查询线程拿到的结果就与表结构对应不上了，这种情况就需要MDL。在MySQL5.5版本中引入了MDL，当对一个表做增删改查操作的时候，就会加上MDL读锁；当要对表结构做变更操作的时候，就会加上MDL写锁。
+
+- 读锁之间不互斥，因此可以有多个线程同时对一张表增删改查
+- 读写锁之间、写锁之间是互斥的，用来保证变更表结构操作的安全性，因此，如果有两个线程要同时给一个表加字段，其中一个要等另一个执行完才能开始执行
+
+给一个表加字段或者修改字段、添加索引，都需要扫描全表的数据，因此，操作不慎的话，就可能导致生产事故：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211228232542.png" alt="image-20211228232542111" style="zoom:50%;" />
+
+session A先启动，这时候会对表t加上一个MDL读锁，由于session B需要的也是MDL读锁，因此可以正常执行。之后session C会被blocked，因为session A的MDL读锁还没有释放，而session C需要MDL写锁，因此只能被阻塞。之后所有在表上新申请MDL读锁的请求也会被session C阻塞，也就是说，所有对表的增删改查都需要先申请MDL读锁，都被锁住导致表完全不可读写。如果这个表上的查询语句频繁，而且客户端有重试机制，也就是超时后会再起一个新的session 再请求的话，这个库的线程很快就会爆满。
+
+事务中的MDL锁，在语句执行开始时申请，但是语句结束后并不会马上释放，而会等到整个事务提交后再释放。在给小表加字段的时候，首先要解决的是长事务，事务不提交，就会一直占着MDL锁。在MySQL的information_schema库的innodb_trx表中，可以查询到当前执行中的事务，如果要做DDL变更的表刚好有长事务在执行，要考虑先暂停DDL，或者kill掉这个长事务。但如果要变更的表是一个热点表，虽然数据量不大，但是请求很频繁，这个时候只kill掉可能未必管用了，因为新的请求马上就会到。
+
+因此，给小表添加字段比较合理的方案是，在`alter table`语句里面设定等待时间，如果在这个执行的等待时间里面能够拿到MDL写锁最好，拿不到也不要阻塞后面的业务语句，先放弃，之后开发人员或者DBA再通过重试命令重复这个过程。MairaDB已经合并了AliSQL的这个功能，所以这两个开源分支目前都支持DDL NOWAIT/WAIT n这个语法。
+
+```sql
+ALTER TABLE tbl_name NOWAIT add column ...
+ALTER TABLE tbl_name WAIT N add column ...
 ```
 
-> 3、释放表锁。
+## 行锁
 
-```mysql
-# 释放给表添加的锁
-UNLOCK TABLES;
+行锁顾名思义，就是针对数据表中行记录的锁，比如事务A更新了一行，而这个时候，事务B也要更新同一行，则必须等事务A的操作完成后才能进行更新。在MySQL中有四种类型的行锁：
 
-# 查看当前表的状态
-mysql> SHOW OPEN TABLES;
-+--------------------+------------------------------------------------------+--------+-------------+
-| Database           | Table                                                | In_use | Name_locked |
-+--------------------+------------------------------------------------------+--------+-------------+
-| sql_analysis       | book                                                 |      0 |           0 |
-| sql_analysis       | mylock                                               |      0 |           0 |
-+--------------------+------------------------------------------------------+--------+-------------+
+- LOCK_ORDINARY：也称为Next-Key Lock，锁一条记录及其间隙，这是RR隔离级别用的最多的锁
+- LOCK_GAP：间隙锁，锁两个记录之间的GAP，防止记录插入
+- LOCK_REC_NOT_GAP：只锁记录
+- LOCK_INSERT_INTENSION：插入意向GAP锁，插入记录时使用，是LOCK_GAP的一种特例
+
+### 两阶段锁
+
+为了更好的说明行锁，我们以下面的操作序列为例，假设id是表t的主键：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211228234751.png" alt="image-20211228234751212" style="zoom:50%;" />
+
+这个例子中事务B的update语句会被阻塞，直到事务A执行commit之后，事务B才能继续执行，在这个过程中，事务A持有两个记录的行锁，都是在commit的时候才释放的，也就是说，在InnoDB事务中，行锁是在需要的时候才加上的，但并不是不需要了就立刻释放，而是要等到事务结束时才释放，这就是两阶段锁协议。基于这个协议，我们在使用事务的时候，如果事务中需要锁多个行，要把最可能造成锁冲突，最可能影响并发度的锁尽量完后放，接下来我们通过一个实例来说明这一点。
+
+假设要实现一个电影票在线交易业务，顾客A要在影院B购买电影票，这个业务需要涉及以下的操作：
+
+1. 从顾客A账余额中扣除电影票价
+2. 给影院B的账户余额增加这张电影票价
+3. 记录一条交易日志
+
+也就是说，要完成这个交易，我们需要update两条记录，并insert一条记录，为了保证交易的原子性，我们需要把这三个操作放在一个事务中。假设此时同时有另外一个顾客C要在影院B买票，那么这两个事务冲突的部分就是语句2了，因为它们要更新同一个影院账户的余额，需要修改同一行数据。根据两阶段锁协议，无论怎样安排语句顺序，所有的操作需要行锁的都是在事务提交的时候才会释放，所以，应该把需要行锁的语句放在最后，这样可以最大程度减少事务之间的锁等待，提升并发度。
+
+### 死锁和死锁检测
+
+当并发系统中不同线程出现循环资源以来，设计的线程都在等待别的线程释放资源时，就会导致这几个线程都进入无限等待的状态，称为死锁。
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220102184417933.png" alt="image-20220102184417933" style="zoom:50%;" />
+
+这时候，事务A在等待事务B释放id=2的行锁，而事务B在等待事务A释放id=1的行锁。事务A和事务B在互相等待对方的资源释放，就是进入了死锁状态。当出现死锁以后，有两种策略：
+
+- 一种策略是，直接进入等待，直到超时，这个超时时间可以通过参数`innodb_lock_wait_timeout`来设置
+- 另一种策略是。发起死锁检测，发现死锁后，主动回滚锁链条的某一个事务，让其它事务得以继续执行，可以通过参数`innodb_deadlock_detect=on`来控制，默认开启
+
+在InnoDB中，`innodb_lock_wait_timeout`的默认值是50s，意味着如果采用第一个策略，当出现死锁以后，第一个被锁住的线程要过50s才会超时退出，然后其它线程才有可能继续执行。这对于在线服务来说，这个等待时间往往是无法接受的。但是，将这个时间的值设置的很小也不行，这样当出现死锁的时候，确实很快就可以解开，但是如果不是死锁，只是简单的锁等待也会释放，也会释放掉。所以，一般都会选择第二种策略，即主动死锁检测。
+
+主动死锁检测在发生死锁的时候，虽然能够快速发现并进行处理的，但是它也有额外的负担，每当一个事务被锁的时候，就要看看它所依赖的线程有没有被别人锁住，如此循环，最后判断是否出现了循环等待，也就是死锁。
+
+当所有事务都要更新同一行的场景时，每个新来的被堵住的线程，都要判断会不会由于自己的加入导致了死锁，这是一个时间复杂度是O（n）的操作。假设有1000个并发线程要同时更新同一行，那么死锁检测操作的时间复杂度就是百万量级的，虽然最终检测的结果是没有死锁，但是检测期间要消耗大量的CPU资源，因此，当并发量很大的时候，就会看到CPU利用率很高，但是每秒却执行不了几个事务。
+
+总而言之，死锁检测要耗费大量的CPU资源。那么，该如何解决由这种热点行更新导致的性能的问题呢？
+
+1. 一种方法是，确保业务一定不会出现死锁，然后关掉死锁检测，但是这种操作本身带有一定的风险，因此业务设计的时候一般不会把死锁当做一个严重错误，一旦出现死锁，就可能会出现大量的超时
+2. 另一种方法是控制并发度，根据上面的分析，死锁检测的时间复杂度与并发量正相关，如果可以控制并发量，那么就可以控制死锁检测的时间复杂度。需要注意的是，这个并发控制要做在数据库服务端，因为虽然每个客户端的并发量可能很小，但是汇总到数据库服务端以后，还是会很大。可以在中间件中实现，也可以在MySQL里面做（基本思路：对于相同行的更新，在进入引擎之前排队，这样在InnoDB内部就不会有大量的死锁检测工作了）。
+3. 最后一种方法是，可以考虑通过将一行改成逻辑上的多行来减少锁冲突。以影院的账户为例，可以考虑放在多条记录上，比如10个记录，影院的账户总额等于这10个记录的值的总和。这样每次要给影院账户加金额的时候，随机选其中一条记录来加，这样每次冲突概率变成原来的1/10，可以减少锁等待的个数，也减少了死锁检测的CPU消耗，需要注意的是，当一部分行记录变成0的时候，如果还要减少记录的值，需要特殊处理
+
+## 间隙锁
+
+### 幻读
+
+为了说明幻读，我们初始化如下数据：
+
+```sql
+CREATE TABLE `t` (
+	`id` INT (11) NOT NULL,
+	`c` INT (11) DEFAULT NULL,
+	`d` INT (11) DEFAULT NULL,
+	PRIMARY KEY (`id`),
+	KEY `c` (`c`)
+) ENGINE = INNODB;
+
+INSERT INTO t VALUES (0, 0, 0), (5, 5, 5), (10, 10, 10), (15, 15, 15), (20, 20, 20), (25, 25, 25);
 ```
 
-### 读锁案例
+假设执行的场景序列如下：
 
-> 1、打开两个会话，`SESSION1`为`mylock`表添加读锁。
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220103172302968.png" alt="image-20220103172302968" style="zoom: 67%;" />
 
-```mysql
-# 为mylock表添加读锁
-LOCK TABLE `mylock` READ;
+可以看到，session A里执行了三次查询，分别是Q1、Q2和Q3，具体的执行结果如下：
+
+1. Q1只返回id=5这一行
+2. 在T2时刻，session B把id=0这一行的d值改成了5，因此T3时刻Q2查出来的是id=0和id=5这两行
+3. 在T4时刻，session C又插入一行（1,1,5），因此T5时刻Q3查出来的是id=0、id=1和id=5的这三行
+
+其中，Q3读到id=1这一行的现象，被称为“幻读”。也就是说，幻读指的是一个事务在前后两次查询同一个范围的时候，后一次查询看到了前一次查询没有看到的行，关于幻读的两点说明：
+
+- 在可重复读隔离级别下，普通的查询是快照读，是不会看到别的事务插入的数据的。因此，幻读在“当前读”下才会出现
+- 上面session B的修改结果，被session A之后的select语句用“当前读”看到，不能称为幻读，幻读专指“新插入的行”
+
+因为这三个查询都是加了for update，都是当前读。而当前读的规则，就是要能读到所有已经提交的记录的最新值，并且，session B和session C两条语句，执行后就会提交，所以Q2和Q3就是应该看到这两个事务的操作效果，而且也看到了，这跟事务的可见性规则并不矛盾。
+
+### 幻读的问题
+
+幻读会带来一些问题，假设时序图如下：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220103174549152.png" alt="image-20220103174549152" style="zoom:67%;" />
+
+session B的第二条语句`update t set c = 5 where id = 0`，语义是把id=0、d=5这一行的c的值，改成了5。由于在T1时刻，session A还只是给id=5这一行加了行锁，并没有给id=0这行加上锁。因此，session B在T2时刻，是可以执行这两条update语句的，这样，就破坏了session A里Q1语句要锁住所有d=5的行的加锁声明。session C也是相同的道理，对id=1这一行的修改，也是破坏了Q1的加锁声明。
+
+其次，还有数据一致性的问题，我们直到，锁的设计是为了保证数据的一致性，而这个一致性，不止是数据库内部数据状态在此刻的一致性，还包含了数据和日志在逻辑上的一致性。为了说明这个问题，给session A在T1时刻再加上一个更新语句，即：`update t set d = 100 where d = 5;`，此时的序列图如下：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220103215449655.png" alt="image-20220103215449655" style="zoom:67%;" />
+
+update加锁的语义和`select ... for update`是一致的，所以这时候加上这条update语句也很合理。session A声明说“要给d=5的语句加上锁”，就是为了要更新数据，新加的这条update语句就是把它认为加上了锁的这一行的d的值修改成了100。
+
+执行完图中的语句之后，数据库中的情况：
+
+1. 经过T1时刻，id=5这一行变成（5，5，100），当然这个结果最终是在T6时刻正式提交的
+2. 经过T2时刻，id=0这一行变成（0，5，5）
+3. 经过T4时刻，表里面多了一行（1，5，5）
+4. 其它行跟这个执行序列无关，保持不变
+
+这样看起来，数据本身是没有问题的，binlog的内容如下：
+
+1. T2时刻，session B事务提交，写入了两条语句
+2. T4时刻，session C事务提交，写入了两条语句
+3. T6时刻，session A事务提交，写入了`update t set d=100 where d=5`这条语句
+
+汇总后如下：
+
+```sql
+update t set d=5 where id=0; /*(0,0,5)*/
+update t set c=5 where id=0; /*(0,5,5)*/
+insert into t values(1,1,5); /*(1,1,5)*/
+update t set c=5 where id=1; /*(1,5,5)*/
+update t set d=100 where d=5;/* 所有 d=5 的行， d 改成 100*/
 ```
 
-> 2、打开两个会话，`SESSION1`是否可以读自己锁的表？是否可以修改自己锁的表？是否可以读其他的表？那么`SESSION2`呢？
+这个语句序列，不论是拿到备库去执行，还是以后用binlog克隆，这三行的结果，都变成了（0，5，100）、（1，5，100）和（5，5，100）。也就是说，id=0和id=1这两行，发生了数据不一致，经过分析不难发现，我们只给d=5这一行加了锁，假设我们给扫描过程中碰到的所有行都加上写锁，再观察执行效果：
 
-```shell
-# SESSION1
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220103233722467.png" alt="image-20220103233722467" style="zoom:67%;" />
 
-# 问题1：SESSION1为mylock表加了读锁，可以读mylock表！
-mysql> SELECT * FROM `mylock`;
-+----+----------+
-| id | name     |
-+----+----------+
-|  1 | ZhangSan |
-|  2 | LiSi     |
-|  3 | WangWu   |
-|  4 | ZhaoLiu  |
-+----+----------+
-4 rows in set (0.00 sec)
+由于session A把所有的行都加上了写锁，所在session B在执行第一个update语句的时候就被锁住了，需要等到T6时刻session A提交以后，session B才能继续执行，这样对于id=0这一行，在数据库里的最终结果还是（0，5，5）。在binlog里面，执行的序列如下：
 
-# 问题2：SESSION1为mylock表加了读锁，不可以修改mylock表！
-mysql> UPDATE `mylock` SET `name` = 'abc' WHERE `id` = 1;
-ERROR 1099 (HY000): Table 'mylock' was locked with a READ lock and can't be updated
-
-# 问题3：SESSION1为mylock表加了读锁，不可以读其他的表！
-mysql> SELECT * FROM `book`;
-ERROR 1100 (HY000): Table 'book' was not locked with LOCK TABLES
-
-
-# SESSION2
-
-# 问题1：SESSION1为mylock表加了读锁，SESSION2可以读mylock表！
-mysql> SELECT * FROM `mylock`;
-+----+----------+
-| id | name     |
-+----+----------+
-|  1 | ZhangSan |
-|  2 | LiSi     |
-|  3 | WangWu   |
-|  4 | ZhaoLiu  |
-+----+----------+
-4 rows in set (0.00 sec)
-
-# 问题2：SESSION1为mylock表加了读锁，SESSION2修改mylock表会被阻塞，需要等待SESSION1释放mylock表！
-mysql> UPDATE `mylock` SET `name` = 'abc' WHERE `id` = 1;
-^C^C -- query aborted
-ERROR 1317 (70100): Query execution was interrupted
-
-# 问题3：SESSION1为mylock表加了读锁，SESSION2可以读其他表！
-mysql> SELECT * FROM `book`;
-+--------+------+
-| bookid | card |
-+--------+------+
-|      1 |    1 |
-|      7 |    4 |
-|      8 |    4 |
-|      9 |    5 |
-|      5 |    6 |
-|     17 |    6 |
-|     15 |    8 |
-+--------+------+
-24 rows in set (0.00 sec)
+```sql
+insert into t values(1,1,5); /*(1,1,5)*/
+update t set c=5 where id=1; /*(1,5,5)*/
+update t set d=100 where d=5;/* 所有 d=5 的行， d 改成 100*/
+update t set d=5 where id=0; /*(0,0,5)*/
+update t set c=5 where id=0; /*(0,5,5)*/
 ```
 
-### 写锁案例
+可以看到，按照日志顺序执行，id=0这一行的最终结果也是（0，5，5）。所以，id=0这一行的问题解决了，但同时，id=1这一行，在数据库里面的结果是（1，5，5），而根据binlog的执行结果是（1，5，100），也就是说幻读的问题还是没有解决，那么为什么我们将所有的记录都已经上了锁，还是阻止不了id=1这一行的插入和更新呢？因为在T3时刻，我们在给所有行加锁的时候，id=1这一行还不存在，不存在也就加不上锁，也就是说，即使把所有的记录都加上锁，还是阻止不了新插入的记录。
 
-> 1、打开两个会话，`SESSION1`为`mylock`表添加写锁。
+### 间隙锁
 
-```mysql
-# 为mylock表添加写锁
-LOCK TABLE `mylock` WRITE;
-```
+产生幻读的原因是，行锁只能锁住行，但是新插入记录这个动作，要更新的是记录之间的“间隙”。因此为了解决幻读问题，InnoDB引入了间隙锁（Gap Lock）来解决。顾名思义，间隙锁，锁的就是两个值之间的空隙，比如本节中的表t，初始化插入6个记录，就产生了7个间隙。
 
-> 2、打开两个会话，`SESSION1`是否可以读自己锁的表？是否可以修改自己锁的表？是否可以读其他的表？那么`SESSION2`呢？
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220103220303233.png" alt="image-20220103220303233" style="zoom:67%;" />
 
-```shell
-# SESSION1
+这样。在执行`select * from t where d = 5 for update;`的时候，就不止是给数据库已有的6个记录加上了行锁，还同时加了7个间隙锁，这样就确保了无法再插入新的记录，也就是说这时候，在一行行扫描的过程中，不仅将给行加上了行锁，还给行两边的空袭，也加上了间隙锁。
 
-# 问题1：SESSION1为mylock表加了写锁，可以读mylock的表！
-mysql> SELECT * FROM `mylock`;
-+----+----------+
-| id | name     |
-+----+----------+
-|  1 | ZhangSan |
-|  2 | LiSi     |
-|  3 | WangWu   |
-|  4 | ZhaoLiu  |
-+----+----------+
-4 rows in set (0.00 sec)
+虽然间隙锁也是一种锁，但是它和之前介绍过的锁都不太一样，它是加载数据行之间间隙上的，行锁的之间的冲突关系是“另外一个行锁”，但间隙锁不一样，跟间隙锁存在冲突关系的，是“往这个间隙中插入一个记录”这个操作，间隙锁之间不存在冲突关系。
 
-# 问题2：SESSION1为mylock表加了写锁，可以修改mylock表!
-mysql> UPDATE `mylock` SET `name` = 'abc' WHERE `id` = 1;
-Query OK, 1 row affected (0.00 sec)
-Rows matched: 1  Changed: 1  Warnings: 0
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220103220843354.png" alt="image-20220103220843354" style="zoom:67%;" />
 
-# 问题3：SESSION1为mylock表加了写锁，不能读其他表!
-mysql> SELECT * FROM `book`;
-ERROR 1100 (HY000): Table 'book' was not locked with LOCK TABLES
+这里的session B并不会被阻塞，因为表t中没有c=7这个记录，因此session A加的是间隙锁（5，10），而session B也是再这个间隙加的间隙锁，它们有共同的目标，即：保护这个间隙，不允许插入值，但，它们之间是不冲突的。
 
-# SESSION2
-
-# 问题1：SESSION1为mylock表加了写锁，SESSION2读mylock表会阻塞，等待SESSION1释放！
-mysql> SELECT * FROM `mylock`;
-^C^C -- query aborted
-ERROR 1317 (70100): Query execution was interrupted
-
-# 问题2：SESSION1为mylock表加了写锁，SESSION2读mylock表会阻塞，等待SESSION1释放！
-mysql> UPDATE `mylock` SET `name` = 'abc' WHERE `id` = 1;
-^C^C -- query aborted
-ERROR 1317 (70100): Query execution was interrupted
-
-# 问题3：SESSION1为mylock表加了写锁，SESSION2可以读其他表！
-mysql> SELECT * FROM `book`;
-+--------+------+
-| bookid | card |
-+--------+------+
-|      1 |    1 |
-|      7 |    4 |
-|      8 |    4 |
-|      9 |    5 |
-|      5 |    6 |
-|     17 |    6 |
-|     15 |    8 |
-+--------+------+
-24 rows in set (0.00 sec)
-```
-
-### 案例结论
-
-**`MyISAM`引擎在执行查询语句`SELECT`之前，会自动给涉及到的所有表加读锁，在执行增删改之前，会自动给涉及的表加写锁。**
-
-MySQL的表级锁有两种模式：
-
-- 表共享读锁（Table Read Lock）。
-
-- 表独占写锁（Table Write Lock）。
-
-対`MyISAM`表进行操作，会有以下情况：
-
-- 対`MyISAM`表的读操作（加读锁），不会阻塞其他线程対同一表的读操作，但是会阻塞其他线程対同一表的写操作。只有当读锁释放之后，才会执行其他线程的写操作。
-- 対`MyISAM`表的写操作（加写锁），会阻塞其他线程対同一表的读和写操作，只有当写锁释放之后，才会执行其他线程的读写操作。
-
-### 表锁分析
-
-```shell
-mysql> SHOW STATUS LIKE 'table%';
-+----------------------------+-------+
-| Variable_name              | Value |
-+----------------------------+-------+
-| Table_locks_immediate      | 173   |
-| Table_locks_waited         | 0     |
-| Table_open_cache_hits      | 5     |
-| Table_open_cache_misses    | 8     |
-| Table_open_cache_overflows | 0     |
-+----------------------------+-------+
-5 rows in set (0.00 sec)
-```
-
-可以通过`Table_locks_immediate`和`Table_locks_waited`状态变量来分析系统上的表锁定。具体说明如下：
-
-`Table_locks_immediate`：产生表级锁定的次数，表示可以立即获取锁的查询次数，每立即获取锁值加1。
-
-`Table_locks_waited`：出现表级锁定争用而发生等待的次数（不能立即获取锁的次数，每等待一次锁值加1），此值高则说明存在较严重的表级锁争用情况。
-
-**此外，`MyISAM`的读写锁调度是写优先，这也是`MyISAM`不适合作为主表的引擎。因为写锁后，其他线程不能进行任何操作，大量的写操作会使查询很难得到锁，从而造成永远阻塞。**
-
-## 行锁(偏写)
-
-**行锁特点：**
-
-- 偏向`InnoDB`存储引擎，开销大，加锁慢；会出现死锁；锁定粒度最小，发生锁冲突的概率最低，并发度最高。
-
-**`InnoDB`存储引擎和`MyISAM`存储引擎最大不同有两点：一是支持事务，二是采用行锁。**
-
-事务的ACID：
-
-- `Atomicity [ˌætəˈmɪsəti] `。
-- `Consistency [kənˈsɪstənsi] `。
-- `Isolation [ˌaɪsəˈleɪʃn]`。
-- `Durability [ˌdjʊərəˈbɪlɪti] `。
-
-### 环境准备
-
-```mysql
-# 建表语句
-CREATE TABLE `test_innodb_lock`(
-`a` INT,
-`b` VARCHAR(16)
-)ENGINE=INNODB DEFAULT CHARSET=utf8 COMMENT='测试行锁'; 
-
-# 插入数据
-INSERT INTO `test_innodb_lock`(`a`, `b`) VALUES(1, 'b2');
-INSERT INTO `test_innodb_lock`(`a`, `b`) VALUES(2, '3');
-INSERT INTO `test_innodb_lock`(`a`, `b`) VALUES(3, '4000');
-INSERT INTO `test_innodb_lock`(`a`, `b`) VALUES(4, '5000');
-INSERT INTO `test_innodb_lock`(`a`, `b`) VALUES(5, '6000');
-INSERT INTO `test_innodb_lock`(`a`, `b`) VALUES(6, '7000');
-INSERT INTO `test_innodb_lock`(`a`, `b`) VALUES(7, '8000');
-INSERT INTO `test_innodb_lock`(`a`, `b`) VALUES(8, '9000');
-
-# 创建索引
-CREATE INDEX idx_test_a ON `test_innodb_lock`(a);
-CREATE INDEX idx_test_b ON `test_innodb_lock`(b);
-```
-
-### 行锁案例
-
-> 1、开启手动提交
-
-打开`SESSION1`和`SESSION2`两个会话，都开启手动提交。
-
-```shell
-# 开启MySQL数据库的手动提交
-mysql> SET autocommit=0;
-Query OK, 0 rows affected (0.00 sec)
-```
-
-> 2、读几知所写
-
-```shell
-# SESSION1 
-
-# SESSION1対test_innodb_lock表做写操作，但是没有commit。
-# 执行修改SQL之后，查询一下test_innodb_lock表，发现数据被修改了。
-mysql> UPDATE `test_innodb_lock` SET `b` = '88' WHERE `a` = 1;
-Query OK, 1 row affected (0.00 sec)
-Rows matched: 1  Changed: 1  Warnings: 0
-
-mysql> SELECT * FROM `test_innodb_lock`;
-+------+------+
-| a    | b    |
-+------+------+
-|    1 | 88   |
-|    2 | 3    |
-|    3 | 4000 |
-|    4 | 5000 |
-|    5 | 6000 |
-|    6 | 7000 |
-|    7 | 8000 |
-|    8 | 9000 |
-+------+------+
-8 rows in set (0.00 sec)
-
-# SESSION2 
-
-# SESSION2这时候来查询test_innodb_lock表。
-# 发现SESSION2是读不到SESSION1未提交的数据的。
-mysql> SELECT * FROM `test_innodb_lock`;
-+------+------+
-| a    | b    |
-+------+------+
-|    1 | b2   |
-|    2 | 3    |
-|    3 | 4000 |
-|    4 | 5000 |
-|    5 | 6000 |
-|    6 | 7000 |
-|    7 | 8000 |
-|    8 | 9000 |
-+------+------+
-8 rows in set (0.00 se
-```
-
-> 3、行锁两个SESSION同时対一条记录进行写操作
-
-```shell
-# SESSION1 対test_innodb_lock表的`a`=1这一行进行写操作，但是没有commit
-mysql> UPDATE `test_innodb_lock` SET `b` = '99' WHERE `a` = 1;
-Query OK, 1 row affected (0.00 sec)
-Rows matched: 1  Changed: 1  Warnings: 0
-
-# SESSION2 也对test_innodb_lock表的`a`=1这一行进行写操作，但是发现阻塞了！！！
-# 等SESSION1执行commit语句之后，SESSION2的SQL就会执行了
-mysql> UPDATE `test_innodb_lock` SET `b` = 'asdasd' WHERE `a` = 1;
-ERROR 1205 (HY000): Lock wait timeout exceeded; try restarting transaction
-```
-
-> 4、行锁两个SESSION同时对不同记录进行写操作
-
-```shell
-# SESSION1 対test_innodb_lock表的`a`=6这一行进行写操作，但是没有commit
-mysql> UPDATE `test_innodb_lock` SET `b` = '8976' WHERE `a` = 6;
-Query OK, 1 row affected (0.00 sec)
-Rows matched: 1  Changed: 1  Warnings: 0
-
-# SESSION2 対test_innodb_lock表的`a`=4这一行进行写操作，没有阻塞！！！
-# SESSION1和SESSION2同时对不同的行进行写操作互不影响
-mysql> UPDATE `test_innodb_lock` SET `b` = 'Ringo' WHERE `a` = 4;
-Query OK, 1 row affected (0.00 sec)
-Rows matched: 1  Changed: 1  Warnings: 0
-```
-
-### 索引失效行锁变表锁
-
-```shell
-# SESSION1 执行SQL语句，没有执行commit。
-# 由于`b`字段是字符串，但是没有加单引号导致索引失效
-mysql> UPDATE `test_innodb_lock` SET `a` = 888 WHERE `b` = 8000;
-Query OK, 1 row affected, 1 warning (0.00 sec)
-Rows matched: 1  Changed: 1  Warnings: 1
-
-# SESSION2 和SESSION1操作的并不是同一行，但是也被阻塞了？？？
-# 由于SESSION1执行的SQL索引失效，导致行锁升级为表锁。
-mysql> UPDATE `test_innodb_lock` SET `b` = '1314' WHERE `a` = 1;
-ERROR 1205 (HY000): Lock wait timeout exceeded; try restarting transaction
-```
-
-### 间隙锁的危害
-
-> 什么是间隙锁？
-
-当我们用范围条件而不是相等条件检索数据，并请求共享或者排他锁时，`InnoDB`会给符合条件的已有数据记录的索引项加锁，对于键值在条件范文内但并不存在的记录，叫做"间隙(GAP)"。
-
-`InnoDB`也会对这个"间隙"加锁，这种锁的机制就是所谓的"间隙锁"。
-
-> 间隙锁的危害
-
-因为`Query`执行过程中通过范围查找的话，他会锁定整个范围内所有的索引键值，即使这个键值不存在。
-
-间隙锁有一个比较致命的缺点，就是**当锁定一个范围的键值后，即使某些不存在的键值也会被无辜的锁定，而造成在锁定的时候无法插入锁定键值范围内的任何数据。**在某些场景下这可能会対性能造成很大的危害。
-
-### 如何锁定一行
-
-![锁定一行](https://img-blog.csdnimg.cn/2020080616050355.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L1JyaW5nb18=,size_16,color_FFFFFF,t_70)
-
-`SELECT .....FOR UPDATE`在锁定某一行后，其他写操作会被阻塞，直到锁定的行被`COMMIT`。
-
-
-
-mysql InnoDB引擎默认的修改数据语句，update,delete,insert都会自动给涉及到的数据加上排他锁，select语句默认不会加任何锁类型，如果加排他锁可以使用select ...for update语句，加共享锁可以使用select ... lock in share mode语句。所以加过排他锁的数据行在其他事务种是不能修改数据的，也不能通过for update和lock in share mode锁的方式查询数据，但可以直接通过select ...from...查询数据，因为普通查询没有任何锁机制。
-
-![image-20210421122752768](https://img-blog.csdnimg.cn/20210421122919994.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L1JyaW5nb18=,size_16,color_FFFFFF,t_70)
-
-
-
-
-
-###  案例结论
-
-`InnoDB`存储引擎由于实现了行级锁定，虽然在锁定机制的实现方面所带来的性能损耗可能比表级锁定会要更高一些，但是在整体并发处理能力方面要远远优于`MyISAM`的表级锁定的。当系统并发量较高的时候，`InnoDB`的整体性能和`MyISAM`相比就会有比较明显的优势了。
-
-但是，`InnoDB`的行级锁定同样也有其脆弱的一面，当我们使用不当的时候，可能会让`InnoDB`的整体性能表现不仅不能比`MyISAM`高，甚至可能会更差。
-
-### 行锁分析
-
-```shell
-mysql> SHOW STATUS LIKE 'innodb_row_lock%';
-+-------------------------------+--------+
-| Variable_name                 | Value  |
-+-------------------------------+--------+
-| Innodb_row_lock_current_waits | 0      |
-| Innodb_row_lock_time          | 124150 |
-| Innodb_row_lock_time_avg      | 31037  |
-| Innodb_row_lock_time_max      | 51004  |
-| Innodb_row_lock_waits         | 4      |
-+-------------------------------+--------+
-5 rows in set (0.00 sec)
-```
-
-対各个状态量的说明如下：
-
-- `Innodb_row_lock_current_waits`：当前正在等待锁定的数量。
-- `Innodb_row_lock_time`：从系统启动到现在锁定总时间长度（重要）。
-- `Innodb_row_lock_time_avg`：每次等待所花的平均时间（重要）。
-- `Innodb_row_lock_time_max`：从系统启动到现在等待最长的一次所花的时间。
-- `Innodb_row_lock_waits`：系统启动后到现在总共等待的次数（重要）。
-
-尤其是当等待次数很高，而且每次等待时长也不小的时候，我们就需要分析系统中为什么会有如此多的等待，然后根据分析结果着手制定优化策略。
+间隙锁和行锁合称next-key lock，每个next-key lock是前后闭区间。也就是说，我们的表t初始以后，如果用`select * from for update`要把整个表所有记录锁起来，就形成了7个next-key lock，分别是(-∞,0]、(0,5]、(5,10]、(10,15]、(15,20]、(20,25]、(25,+supremum]。InnoDB给每个索引加上了一个不存在得最大值supremum，这样就都是前开后闭区间了。
 
 # MySQL的高可用
 

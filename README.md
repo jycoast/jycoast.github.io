@@ -18,10 +18,11 @@
 
 - [算法](https://jycoder.club/2021/06/24/leetcode/)
 
-# 数据库
+# 中间件
 
-- [MySQL高级篇](https://jycoder.club/2021/08/30/MySQL/)
+- [MySQL原理分析](https://jycoder.club/2021/08/30/MySQL/)
 - [深入浅出Redis](https://jycoder.club/2021/04/07/Redis/)
+- [RocketMQ从实践到原理](https://jycoder.club/2021/10/24/RocketMQ/)
 
 # 特别篇
 
