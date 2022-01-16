@@ -206,7 +206,7 @@ update语句的执行如下图：
 
 ## MySQL性能分析工具
 
-### EXPLAIN简介
+### explain 简介
 
 > EXPLAIN是什么？
 
@@ -245,7 +245,7 @@ possible_keys: NULL
 - `ref`：表之间的引用。
 - `rows`：每张表有多少行被优化器查询。
 
-### EXPLAIN字段
+### explain 字段
 
 > id
 
@@ -1369,24 +1369,175 @@ CREATE INDEX idx_phone_card ON phone(card);
 
 ## 索引失效
 
-> 数据准备
+索引看起来非常美好，能够十分有效的加快我们的查询效率，然而，在MySQL中有很多看上去逻辑相同，但是性能却差异巨大的SQL语句，对这些语句使用不当的话，就会不经意间导致整个数据库的压力变大，
+
+### 函数操作
+
+假设现在维护的是一个交易系统，其中交易记录表tradelog包含交易流水号（tradeid）、交易员id（operator）、交易时间（t_modified）等字段，建表语句如下：
 
 ```sql
-CREATE TABLE `staffs`(
-`id` INT(10) PRIMARY KEY AUTO_INCREMENT,
-`name` VARCHAR(24) NOT NULL DEFAULT '' COMMENT '姓名',
-`age` INT(10) NOT NULL DEFAULT 0 COMMENT '年龄',
-`pos` VARCHAR(20) NOT NULL DEFAULT '' COMMENT '职位',
-`add_time` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '入职时间'
-)COMMENT '员工记录表';
-
-INSERT INTO `staffs`(`name`,`age`,`pos`) VALUES('Ringo', 18, 'manager');
-INSERT INTO `staffs`(`name`,`age`,`pos`) VALUES('张三', 20, 'dev');
-INSERT INTO `staffs`(`name`,`age`,`pos`) VALUES('李四', 21, 'dev');
-
-/* 创建索引 */
-CREATE INDEX idx_staffs_name_age_pos ON `staffs`(`name`,`age`,`pos`);
+CREATE TABLE `tradelog` (
+  `id` int(11) NOT NULL, 
+  `tradeid` varchar(32) DEFAULT NULL, 
+  `operator` int(11) DEFAULT NULL, 
+  `t_modified` datetime DEFAULT NULL, 
+  PRIMARY KEY (`id`), 
+  KEY `tradeid` (`tradeid`), 
+  KEY `t_modified` (`t_modified`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 ```
+
+假设现在已经记录了从2016年初到2018年底的所有数据，要查询所有年份中7月份的交易记录总数，SQL语句可能如下：
+
+```sql
+select count(*) from tradelog where month(t_modified)=7;
+```
+
+执行之后就会发现这个SQL语句会比预期的慢很多，虽然在t_modified字段上已经创建了索引，但是MySQL并没有使用这个索引。下面是t_modified索引的示意图，方框上面的数字表示month()函数对应的值：
+
+<img src="https://s2.loli.net/2022/01/11/5tWsbZfcvzUdlnp.png" alt="image-20220111234901523" style="zoom:67%;" />
+
+如果SQL语句中条件是where t_modified='2018-7-1'的话，引擎就会按照上面绿色箭头的路线，快速定位到t_modified='2018-7-1'需要的结果，而如果计算month()函数的话，在传入7的时候已经无法定位记录了。实际上，B+树提供的这个快速定位能力，来源于同一层兄弟节点的有序性，也就是说，对索引字段做函数操作，可能会破坏索引值的有序性，因此优化器决定放弃走树搜索功能。
+
+需要注意的是，优化器并不是要放弃使用这个索引，在这个例子中，放弃了树搜索功能，优化器可以选择遍历主键索引，也可以选择遍历索引t_modified，优化器对比索引大小后发现，索引t_modified更小，遍历这个索引比主键索引来得更快，因此最终还是会选择索引t_modified。
+
+这条语句的explain的结果如下：
+
+![image-20220111235919912](https://s2.loli.net/2022/01/11/pxg3V6QXJ72ajO1.png)
+
+key="t_modified"表示的是，使用了t_modified这个索引，这里的测试数据有10万行，rows=100335，说明这条语句扫描了整个索引的所有值，Extra字段的Using index，表示的是使用了覆盖索引，也就是说，由于在t_modified字段加上了month()函数操作，导致了全索引扫描。为了能够用上索引的快速定位能力，我们就要把SQL语句改成基于字段本身的范围查询：
+
+```sql
+select count(*) from tradelog where
+	(t_modified >= '2016-7-1' and t_modified<'2016-8-1') or
+	(t_modified >= '2017-7-1' and t_modified<'2017-8-1') or
+	(t_modified >= '2018-7-1' and t_modified<'2018-8-1');
+```
+
+如果还有其它年份的数据，都需要手动将年份补齐。实际上，只要where条件后面有函数操作都会导致无法使用索引快速定位的功能，即使不改变有序性，例如`select * from tradelog where id + 1 = 10000`,也需要将where条件修改为`where id = 10000 - 1`才可以有效的用上索引。
+
+### 隐式类型转换
+
+假设我们执行这样一条SQL语句：
+
+```sql
+select * from tradelog where tradeid = 110717;
+```
+
+交易编号tradeid这个字段上，本来是有索引的，但是explain结果却显式，这条语句需要走全表扫描，这是由于tradeid字段类型是varchar（32），而输入的参数却是整型，所以需要做类型转换，从而导致了索引失效。实际上在MySQL中，字符串和数字做比较的话，会将字符串转换成数字，也就是说对与优化器来说，上面的SQL语句等价于：
+
+```sql
+select * from tradelog where CAST(tradid AS signed int) = 110717;
+```
+
+也就是说，这条语句触发了我们之前说到的过规则：对索引字段做函数操作，优化器会放弃走树搜索功能。
+
+### 隐式字符编码转换
+
+假设系统里面还有另外一张表trade_detail，用来记录交易的操作细节。为了便于量化分析和复现，我们往交易日志表tradelog和交易详情表trade_detail这两个表里插入一些数据：
+
+```sql
+CREATE TABLE `trade_detail` (
+  `id` int(11) NOT NULL, 
+  `tradeid` varchar(32) DEFAULT NULL, 
+  `trade_step` int(11) DEFAULT NULL, 
+  `step_info` varchar(32) DEFAULT NULL, 
+  PRIMARY KEY (`id`), 
+  KEY `tradeid` (`tradeid`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8; insert into tradelog 
+
+insert into tradelog values(1, 'aaaaaaaa', 1000, now());
+insert into tradelog values(2, 'aaaaaaab', 1000, now());
+insert into tradelog values(3, 'aaaaaaac', 1000, now());
+insert into trade_detail values(1, 'aaaaaaaa', 1, 'add');
+insert into trade_detail values(2, 'aaaaaaaa', 2, 'update');
+insert into trade_detail values(3, 'aaaaaaaa', 3, 'commit');
+insert into trade_detail values(4, 'aaaaaaab', 1, 'add');
+insert into trade_detail values(5, 'aaaaaaab', 2, 'update');
+insert into trade_detail values(6, 'aaaaaaab', 3, 'update again');
+insert into trade_detail values(7, 'aaaaaaab', 4, 'commit');
+insert into trade_detail values(8, 'aaaaaaac', 1, 'add');
+insert into trade_detail values(9, 'aaaaaaac', 2, 'update');
+insert into trade_detail values(10, 'aaaaaaac', 3, 'update again');
+insert into trade_detail values(11, 'aaaaaaac', 4, 'commit');
+```
+
+这时候，如果要查询id=2的交易的所有操作步骤信息，可以使用如下SQL语句：
+```sql
+select d.* from tradelog l, trade_detail d where d.tradeid=l.tradeid and l.id=2;
+```
+![image-20220112234657374](https://s2.loli.net/2022/01/12/f7srao8tkLSjIgJ.png)
+
+可以看到：
+
+1. 第一行显式优化器现在交易记录表tradelog上查到id=2的行，这个步骤用上了主键索引，rows=1表示只扫描一行
+2. 第二行key=NULL，表示没有用上交易详情表trade_detail上的tradeid索引，进行了全表扫描
+
+explain的详细过程如下：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220112235754324.png" alt="image-20220112235754324" style="zoom:67%;" />
+
+图中：
+
+- 第一步，是根据id在tradelog表里找到L2这一行
+- 第二步，是从L2中取出tradeid字段的值
+- 第三步，是根据tradeid的值到trade_detail表中查找条件匹配的行。explain的结果第二行的key=NULL表示的就是，这个过程是通过遍历主键索引的方式，一个一个地判断tradeid的值是否匹配
+
+可以发现，在执行第三步的时候，并没有使用trade_detail里的tradeied上的索引快速定位到等值的行。实际上，这是因为这两张表的字符集不同导致的，上面的SQL等价于：
+
+```sql
+select * from trade_detail where CONVERT(traideid USING utf8mb4) = $L2.tradeid.value;
+```
+
+CONVERT()函数，在这里的意思是把输入的字符串转成utf8mb4字符集，这再次触发了本节开始时提到的原则：对索引字段做函数操作，优化器会放弃走树搜索功能。
+
+<div class="note info"><p>utf8mb4是utf8的超集，类似地，在程序设计语言里面，做自动类型转换的时候，为了避免数据在转换过程中由于截断导致数据错误，也都是“按数据长度增加地方向”进行转换的。</p></div>
+
+接下来我们看另外一种场景：
+
+```sql
+select l.operator from tradelog l , trade_detail d where d.tradeid=l.tradeid and d.id = 4;
+```
+
+explain的结果：
+
+![image-20220113234214053](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220113234214053.png)
+
+这个语句里trade_detail表成了驱动表，但是explain结果的第二行显示，这次的查询操作用上了被驱动表tradelog里的索引（tradeied），扫描行数是1，这也是两个tradeied字段的join操作，为什么这次能用上被驱动表的tradeied索引呢？假设驱动表trade_detail里id=4的行记为R4，那么在连接的时候。被驱动表tradelog上执行的就是类似这样的SQL语句：
+
+```sql
+select operator from tradelog where traideid = $R4.tradeid.value;
+```
+
+这个时候的$R4.tradeied.value的字符集是utf8，按照字符集转换规则，要转成utf8mb4，所以这个过程就被改写成：
+
+```sql
+select operator from tradelog where traideid =CONVERT($R4.tradeid.value USING utf8mb4);
+```
+
+由于这里CONVERT函数是加在输入参数上的，这样就可以用上被驱动表的tradeid索引了。
+
+因此，对于SQL：
+
+```sql
+select d.* from tradelog l, trade_detail d where d.tradeid = l.tradeid and l.id = 2;
+```
+
+优化的方式通常有两种：
+
+- 比较常见的优化方法是，把trade_detail表上的tradeid字段的字符集也改成utf8mb4，这样就没有字符集转换问题了
+
+	```sql
+	alter table trade_detail modify tradeid varchar(32) CHARACTER SET utf8mb4 default null;
+	```
+
+- 如果数据量比较大，或者其它原因不能执行这个DDL，那么可以修改SQL语句：
+
+	```sql
+	select d.* from tradelog l, trade_detail d where d.tradeid = CONVERT(l.tradeid USING utf8);
+	```
+
+	这样主动把l.tradeid转成utf8，就避免了被驱动表上的字符编码转换。
 
 ### 索引失效的场景
 
@@ -2392,7 +2543,7 @@ select id % 100 as m, count(*) as c from t1 group by m order by null limit 10;
 
 可以看到，不论是使用内存临时表还是磁盘临时表，group by逻辑都需要构造一个带唯一索引的表，执行代价都是比较高的，如果表的数据量比较大，上面这个group by语句执行起来就会很慢。
 
-在优化group by问题之前，我们得清楚，为什么执行group by语句需要临时表，group by的语义逻辑是统计不同的值出现的个数，但是，由于每一行的id%100的结果是无需的，所以，我们需要一个临时表，来记录并统计结果。那么，如果扫描过程中可以保证出现的数据是有序的，那么group by语句就可以不再需要临时表，假设有如下数据结构：
+在优化group by问题之前，我们得清楚，为什么执行group by语句需要临时表，group by的语义逻辑是统计不同的值出现的个数，但是，由于每一行的id%100的结果是无序的，所以，我们需要一个临时表，来记录并统计结果。那么，如果扫描过程中可以保证出现的数据是有序的，那么group by语句就可以不再需要临时表，假设有如下数据结构：
 
 <img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211226223201.png" alt="image-20211226223201473" style="zoom:67%;" />
 
@@ -2449,6 +2600,305 @@ explain的结果如下：
 1. 如果语句执行过程可以一边读数据，一边直接得到结果，是不需要额外内存的，否则就需要额外的内存，来保存中间结果
 2. join_buffer是无序数组，sort_buffer是有序数组，临时表是二维表结构
 3. 如果执行逻辑需要用到二维表特性，就会优先考虑使用临时表（之前的例子中，union还需要用到唯一索引约束，group by还需要用到另外一个字段来存累积计数）
+
+## order by rand() 优化
+
+假设有一个英语学习APP，用户每次访问首页的时候，都会随机滚动显示三个单词，也就是根据每个用户级别有一个单词表，假设我们的表结构如下：
+
+```sql
+CREATE TABLE `words` (
+  `id` int(11) NOT NULL AUTO_INCREMENT, 
+  `word` varchar(64) DEFAULT NULL, 
+  PRIMARY KEY (`id`)
+) ENGINE = InnoDB; 
+
+delimiter;; 
+create procedure idata() begin declare i int; 
+set 
+  i = 0; while i < 10000 do insert into words(word) 
+values 
+  (
+    concat(
+      char(
+        97 +(i div 1000)
+      ), 
+      char(
+        97 +(i % 1000 div 100)
+      ), 
+      char(
+        97 +(i % 100 div 10)
+      ), 
+      char(
+        97 +(i % 10)
+      )
+    )
+  ); 
+set i = i + 1; end while; end;; 
+delimiter; 
+call idata();
+```
+
+实现这个需求最简单的实现方式，不难想到：
+
+```sql
+select word from words order by rand() limit 3;
+```
+
+但是随着单词表的变大，这个语句的执行速度越来越慢，那么该如何优化呢？
+
+### 内存临时表
+
+上述SQL的explain的结果如下：
+
+![image-20220116105216709](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220116105216709.png)
+
+Extra字段显示Using temporary，表示的是需要使用临时表，Using filesort表示的是需要执行排序操作，也就是说这个SQL需要临时表，并且需要在临时表上排序。
+
+对于InnoDB表来说，执行全字段排序会会减少磁盘访问，因此会优先选择全字段排序，而对于临时内存表的排序来说，回表过程只是简单根据数据行的位置，直接访问内存得到数据，并不会导致过多的访问磁盘，因此，MySQL这时会选择rowid排序。
+
+这条语句的执行流程如下：
+
+1. 创建一个临时表，这个临时表使用的是memory引擎，表中有两个字段，第一个字段是double类型，为了后面描述方便，记为字段R，第二个字段是varchar（64）类型，记为字段W，并且，这个表没有建索引
+2. 从words表中，按主键顺序取出所有word值，对于每一个word值，调用rand()函数生成一个大于0小于1的随机小数，并且把这个随机小数和word分别存入临时表的R和W字段中，到此，扫描的行数是10000
+3. 接下来按照R排序
+4. 初始化sort_buffer，sort_buffer中有两个字段，一个是double类型，另一个是整型
+5. 从内存临时表中一行一行地取出R值和位置信息，分别存入sort_buffer中的两个字段里，这个过程要对内存临时表做全表扫描，此时扫描行数增加10000，变成了20000
+6. 在sort_buffer中根据R的值进行排序（这个过程没有涉及到表操作，所以不会增加扫描行数）
+7. 排序完成后，取出前三个结果的位置信息，依次到临时表中取出word值，返回给客户端，这个过程中，访问了表的三行数据，总扫描行数变成了20003
+
+接下来，我们通过慢查询日志（`show log`）来验证扫描行数是否是20003：
+
+```sql
+# Query_time: 0.900376 Lock_time: 0.000347 Rows_sent: 3 Rows_examined: 20003
+SET timestamp=1541402277;
+select word from words order by rand() limit 3;
+```
+
+其中，Rows_examined：20003就表示这个语句执行过程中扫描了20003行。完整的排序的执行流程图如下：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220116112157514.png" alt="image-20220116112157514" style="zoom:67%;" />
+
+图中的pos指的是位置信息。在InnoDB中，如果创建的表没有主键，获取把一个表的主键删掉了，那么InnoDB会自己生成一个长度为6字节的rowid来作为主键，这也就是排序模式里面，rowid名字的来历，实际上它表示的就是每个引擎用来唯一标识数据行的信息。
+
+- 对于有主键的InnoDB表来说，这个rowid就是主键ID
+- 对于没有主键的InnoDB表磊说，这个rowid就是由系统生成的
+- Memory引擎不是索引组织表，这个例子里面，可以认为它就是一个数组，因为rowid其实就是数组的下标
+
+### 磁盘临时表
+
+上文我们提到，order by rand()使用了内存临时表，内存临时表排序的时候使用了rowid排序方法，那么是不是所有的临时表都是内存表呢？其实并不是，`tmp_table_size`这个配置限制了内存临时表的大小，默认值是16M。如果临时表大小超过了`tmp_table_size`，那么内存临时表就会转成磁盘临时表。
+
+<div class="note info"><p>磁盘临时表使用的引擎默认是InnoDB，是由参数internal_tmp_disk_storage_engine来控制的，因此当使用磁盘临时表的时候，对应的就是一个没有显式索引的InnoDB表排序的过程。</p></div>
+
+为了复现这个过程，我们将`tmp_table_size`设置成1024，把`sort_buffer_size`设置成32768，把`max_length_for_sort_data`设置成16。
+
+```sql
+set tmp_table_size=1024;
+set sort_buffer_size=32768;
+set max_length_for_sort_data=16;
+/* 打开 optimizer_trace ，只对本线程有效 */
+SET optimizer_trace='enabled=on';
+/* 执行语句 */
+select word from words order by rand() limit 3;
+/* 查看 OPTIMIZER_TRACE 输出 */
+SELECT * FROM `information_schema`.`OPTIMIZER_TRACE`\G
+```
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220116114409076.png" alt="image-20220116114409076" style="zoom:67%;" />
+
+因为将`max_length_for_sort_data`设置成16，小于word字段的长度定义，所以我们看到sort_mode里面显式的是rowid排序，这个是符合预期的，参与排序的是随机值R字段和rowid段组成的行。
+
+R字段存放的随机值是8个字段，rowid是6个字节，数据总行数是10000，加起来是14000字节，超过了sort_buffer_size定义的32768字节，但是这里的number_of_tmp_files的值却是0，这里因为这里MySQL并没有使用归并排序算法，而是采用了优先队列排序算法。实际上，我们只需要取R值最小的3个rowid，但是，如果使用归并排序算法的话，虽然最终也能得到前3个值，但是这个算法会将1000行数据都排好序，然后再取前3条记录，如果使用归并算法就会浪费非常多的计算量。而优先队列算法，就可以精确地只得到三个最小值，执行流程如下：
+
+1. 对于这10000个准备排序的（R，rowid），先取前三行，构造成一个堆
+2. 取下一个行（R<sup>'</sup>，rowid<sup>'</sup>），跟当前堆里面最大地R比较，如果R<sup>'</sup>小于R，把这个（R，rowid）从堆中去掉，换成（R<sup>'</sup>，rowid<sup>'</sup>）
+3. 重复第二步，直到第10000个（R<sup>'</sup>，rowid<sup>'</sup>）完成比较
+
+优先队列排序地示意图如下：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220116120330311.png" alt="image-20220116120330311" style="zoom: 80%;" />
+
+
+
+图中模拟了6个（R，rowid）行，通过优先队列排序找到最小的三个R值的行的过程。整个排序过程中，为了最快地拿到当前堆的最大值，总是保持最大值在堆顶，因此这是一个最大堆。
+
+OPTIMIZER_TRACE结果中，`filesort_priority_queue_optimization`这个部分的`chosen=true`，就表示使用了优先队列排序算法，这个过程不需要临时文件，因此对应的`number_of_tmp_files`是0。
+
+```sql
+select city,name,age from t where city=' 杭州 ' order by name limit 1000;
+```
+
+排序的过程结束后，在我们构造的堆里面，就是这个10000行里面R值最小的三行。然后，依次把它们的rowid取出来，去临时表里面拿到word字段，就得到了最终的结果。
+
+### 随机排序法
+
+清楚了order by rand（）的执行过程，那么该如何优化呢？
+
+我们先把问题简化以下，如果只随机选择1个word值，可以按照如下思路实现：
+
+1. 取得这个表的主键id最大值M和最小值N
+2. 用随机函数生成一个最大值和最小值之间的数`X=（M-N）*rand（）+N`
+3. 取不小于X的第一个ID的行
+
+我们将这个算法暂时称作随机算法1，对应的执行语句的序列：
+
+```sql
+select max(id),min(id) into @M,@N from t;
+set @X= floor((@M-@N+1)*rand() + @N);
+select * from t where id >= @X limit 1;
+```
+
+这个方法的效率很高，因为取max（id）和min（id）都是不需要扫描索引的，而第三步的select也可以用索引快速定位，可以认为就只扫描了3行。但实际上，这个算法并不严格满足题目的随机要求，因为ID中间可能由空洞，因此选择不同行的概率不一样，不是真正的随机。假设4个id分别是1、2、4、5，如果按照这个算法，那么取到id=4的这一行的概率是取到其它行的概率的两倍。
+
+所以，为了得到严格随机的结果，可以按照如下流程：
+
+1. 取得整个表的行数，并记为C
+2. 取得`Y=floor(C*rand())`，floor函数在这里的作用，就是取整数部分
+3. 再用limit Y,1取得一行
+
+我们将这个算法暂时称作随机算法2，对应的执行语句的序列：
+
+```sql
+select count(*) into @C from t;
+set @Y = floor(@C * rand());
+set @sql = concat("select * from t limit ", @Y, ",1");
+prepare stmt from @sql;
+execute stmt;
+DEALLOCATE prepare stmt;
+```
+
+由于limit后面的参数不能直接跟变量，所以这里使用了prepare+execute的方法，实际使用时，可以将拼接SQL语句的方法写在应用程序中。
+
+MySQL处理limit Y,1的做法是按照顺序一个一个地读出来，丢掉前Y个，然后把下一个记录作为返回结果，因此这一步需要扫描Y+1行，再加上，第一个扫描地C行，总共需要扫描C+Y+1行，虽然解决了算法1里明显的概率不均匀的问题，但是执行代价要比随机算法1的代价要高，不过于order by rand（）相比，执行代价还是小很多。
+
+到这里，我们就可以按照随机算法2的思路，优化本篇一开始的语句：
+
+1. 取得整个表的行数，记为C
+2. 根据相同的随机方法得到Y1、Y2、Y3
+3. 再执行三个limit Y,1语句得到三行数据
+
+完整的执行序列如下：
+
+```sql
+select count(*) into @C from t;
+set @Y1 = floor(@C * rand());
+set @Y2 = floor(@C * rand());
+set @Y3 = floor(@C * rand());
+select * from t limit @Y1 ， 1 ； // 在应用代码里面取 Y1 、 Y2 、 Y3 值，拼出 SQL 后执行
+select * from t limit @Y2 ， 1 ；
+select * from t limit @Y3 ， 1 ；
+```
+
+## 分区表
+
+在有些公司的数据库规范中，不允许使用分区表，那么分区表有什么问题呢？
+
+### 分区表简介
+
+为了说明分区表的组织形式，我们先创建表t：
+
+```sql
+CREATE TABLE `t` (
+  `ftime` datetime NOT NULL, 
+  `c` int(11) DEFAULT NULL, 
+  KEY (`ftime`)
+) ENGINE = InnoDB DEFAULT CHARSET = latin1
+
+PARTITION BY RANGE (
+  YEAR(ftime)
+) (
+  PARTITION p_2017 
+  VALUES 
+    LESS THAN (2017) ENGINE = InnoDB, 
+    PARTITION p_2018 
+  VALUES 
+    LESS THAN (2018) ENGINE = InnoDB, 
+    PARTITION p_2019 
+  VALUES 
+    LESS THAN (2019) ENGINE = InnoDB, 
+    PARTITION p_others 
+  VALUES 
+    LESS THAN MAXVALUE ENGINE = InnoDB
+);
+
+insert into t values('2017-4-1',1),('2018-4-1',1);
+```
+
+![image-20220116181122059](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220116181122059.png)
+
+此时表中有两行记录，按照定义的分区的规则，这两行记录分别落在p_2018和p_2019这两个分区上，可以看到，这个表包含了一个.frm文件和4个.ibd文件，每个分区对应一个.ibd文件，也就是说：
+
+- 对于引擎层来说，这是4个表
+- 对于Server层来说，这是1个表
+
+接下来我们通过观察分区表加间隙锁的例子来说明对于InnoDB来说，这是4个表：
+
+![image-20220116193146452](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220116193146452.png)
+
+我们初始化表t的时候，只插入了两行数据，ftime的值分别是，'2017-4-1'和'2018-4-1'，session A的select语句对索引ftime上这两个记录之间的间隙加了锁。如果是一个普通表的话，那么T1时刻，在表t的ftime索引，间隙和加锁状态应该如下图：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220116193512618.png" alt="image-20220116193512618" style="zoom: 67%;" />
+
+也就是说，'2017-4-1'和'2018-4-1'这两个记录之间的间隙是会被锁住的，那么session B的两条插入语句应该都要进入锁等待状态。但是从上面的实验效果可以看出，session B的第一个insert语句是可以执行成功，因为，对于引擎来说，p_2018和p_2019是两个不同的表，也就是说2017-4-1的下一个记录并不是2018-4-1，而是p_2018分区的supermum，所以在T1时刻，在表t的ftime索引上，间隙和加锁的状态其实是这样的：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220116193910224.png" alt="image-20220116193910224" style="zoom:67%;" />
+
+由于分区表的规则，session A的select语句其实只操作了分区p_2018，因此加锁范围就是图中深绿色的部分，所以，session B要写入一行ftime是2018-2-1的时候是可以成功的，而要写入2017-12-1这个记录，就要等session A的间隙锁。
+
+此时`show engine innodb status`的部分结果如下：
+
+![image-20220116194133483](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220116194133483.png)
+
+接下来我们看看在MyISAM引擎中的情况，首先使用`alter table t engine`将表t改成MyISAM表，然后执行如下序列：
+
+![image-20220116194544996](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220116194544996.png)
+
+在session A里面，使用sleep(100)将这条语句的执行时间设置为100秒，由于MyISAM引擎只支持表锁，所以这条update语句会锁住整个表t上的读，但是我们看到的结果是，session B的第一条查询语句是可以正常执行的，第二条语句才进入锁等待状态，这正是因为MyISAM的表锁是在引擎层实现的，session A加的表锁，其实是锁在分区p_2018上。因此，只会堵住在这个分区上执行的查询，落到其它分区的查询时不受影响的。
+
+此时看起来使用分区表并没有什么不妥，通常我们使用分区表的一个重要原因就是单表过大，如果不使用分区表的话，就要使用手动分表的方式，那么手动分表和分区表有什么区别？比如，按照年份来划分，我们就分别创建普通表t_2017、t_2018、t_2019等等。手工分表的逻辑，也是找到需要更新的所有分表，然后依次执行更新，在性能上，这个分区表并没有实质的差别。另外，分区表和手工分表，一个是由server层来决定使用哪个分区，一个是由应用层代码决定使用哪个分表，因此，从引擎层来看，这两种方式也是没有差别的。
+
+实际上，问题的关键在于server层，分区表最重要的问题在于：打开表的行为。
+
+### 分区策略
+
+每当第一次访问一个分区表的时候，MySQL需要把所有的分区都访问一遍。一个典型的报错情况是这样的：如果一个分区表的分区很多，比如超过了1000个，而MySQL启动的时候，`open_files_limit`参数使用的默认值是1024，那么就会在访问这个表的时候，由于需要打开所有的文件，导致打开表文件的个数超过了上限而报错。
+
+下图是创建的一个包含了很多分区的表t_myisam，执行一条插入语句后报错的情况。：
+
+![image-20220116191126999](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220116191126999.png)
+
+可以看到，这条insert语句，明显只需要访问一个分区，但语句却无法执行。实际上使用InnoDB引擎并不会出现这个问题，MyISAM分区表使用的分区策略，我们称为通用分区策略（generic partitioning），每次访问分区都由server层控制，通用分区策略，是MySQL一开始支持分区表的时候就存在的代码，在文件管理、表管理的实现上很粗糙，因此有比较严重的性能问题。
+
+从MySQL5.7.9开始，InnoDB引擎引入了本地分区策略（native partitioning），这个策略是在InnoDB内部自己管理打开分区的行为。从MySQL5.7.17开始，将MyISAM分区表标记为Deprecated，从MySQL8.0版本开始，就不允许创建MyISAM分区表了，只允许创建已经实现了本地分区策略的引擎。目前来看，只有InnoDB和NDB这两个引擎支持了本地分区策略。
+
+如果从server层看的话，一个分区表就只是一个表。下面我们通过例子来说明，下面两张图分别是这个例子的操作序列和执行结果图。
+
+![image-20220116192048055](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220116192048055.png)
+
+![image-20220116192111558](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220116192111558.png)
+
+可以看到，虽然session B只需要操作p_2017这个分区，但是由于session A持有整个表t的MDL锁，就导致了session B的alter语句被堵住，实际上，分区表在做DDL的时候，影响会更大，但是如果是在普通的分表上操作的时候并不会出现这样的问题。
+
+我们可以对分区表做以下总结：
+
+- MySQL在第一次打开分区表的时候，需要访问所有的分区
+- 在server层，认为这是同一张表，因此所有分区共用同一个MDL锁
+- 在引擎层，认为这是不同的表，因此MDL锁之后的执行过程，会根据分区表规则，只访问必要的分区
+
+其中“必要的分区”是根据SQL语句中的where条件，结合分区规则来实现的。比如，上面的例子中`where ftime='2018-4-1'`，根据分区规则year函数算出来的值是2018，那么就会落在p_2019这个分区，但是如果这个where条件改成`where ftime>='2018-4-1'`，虽然查询结果相同，但是这个时候根据where条件，就要访问p_2019和P_others这两个分区。如果查询语句的where条件中没有分区key，那么就只能访问所有分区了，不过即使是使用业务分表的方式，没有分区的key也需要访问所有的分区表。
+
+### 分区表的应用场景
+
+分区表的一个显而易见的优势是对业务透明，相对于用户分表来说，使用分区别的业务代码更简洁，另外，分区表可以很方便的清理历史数据。如
+
+如果一项业务跑的时间足够长，往往就会有根据时间删除历史数据的需求，这个时候，按照时间分区的分区表，就可以直接通过`alter table t drop partition...`这个语法删掉分区，从而删掉过期的历史数据，这个语句的操作时直接删除分区文件，效果跟drop普通表类似，与使用delete语句删除数据相比，优势是速度快、对系统影响小。
+
+分区表在使用的时候，有两个绕不开的问题：一个是第一次访问的时候需要访问所有分区，另一个是共用MDL锁，对于分区表的使用有以下需要注意的点：
+
+1. 分区并不是越细越好，实际上，单表或者单分区的数据一千万行，只要没有也别大的索引，对于现在的硬件能力来说都已经是小表了
+2. 分区也不要提前预留太多，在使用之前预先创建即可。比如，如果是按月分区，每年年底时再把下一年度的12个新分区创建上即可，对于没有数据的历史分区，要及时drop掉
+
+至于分区表的其它问题，比如查询需要跨多个分区取数据，查询性能就会比较慢，基本上就不是分区表本身的问题，而是数据量的问题或者说时使用方式的问题了。
 
 ## 慢查询日志
 
