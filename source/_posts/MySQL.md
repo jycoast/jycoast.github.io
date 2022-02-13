@@ -3448,268 +3448,663 @@ update t set c=5 where id=0; /*(0,5,5)*/
 
 # MySQL的高可用
 
-## 主从复制
+## 防止数据丢失
 
-### 复制基本原理
+### bin log的写入机制
 
-![主从复制](https://img-blog.csdnimg.cn/20200806170415401.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L1JyaW5nb18=,size_16,color_FFFFFF,t_70)
+binlog的吸入逻辑比较简单：事务执行过程中，先把日志写到binlog cache，事务提交的时候，再把binlog cache写入到binlog文件中。一个事务的binlog是不能被拆开的，因此不论这个事务多大，也要确保一次性写入。这就涉及到binlog cache的保存问题，系统给binlog cache分配了一片内存，每个线程一个，参数`binlog_cache_size`用于控制单个线程内binlog cache所占内存的大小。如果超过了这个参数规定的大小，就要暂存到磁盘。事务提交的时候，执行器把binlog cache里的完整事务写入到binlog中，并清空binlog cache。状态图如下：
 
-MySQL复制过程分为三步：
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220210094732836.png" alt="image-20220210094732836" style="zoom:67%;" />
 
-- Master将改变记录到二进制日志(Binary Log)。这些记录过程叫做二进制日志事件，`Binary Log Events`；
-- Slave将Master的`Binary Log Events`拷贝到它的中继日志(Replay  Log);
-- Slave重做中继日志中的事件，将改变应用到自己的数据库中。MySQL复制是异步且串行化的。
+可以看到，每个线程有自己binlog cache，但是共用同一份binlog文件。
 
-### 复制基本原则
+- 图中的write，指的就是把日志写入到文件系统的page cache，并没有数据持久化到磁盘，所以速度比较快
+- 图中的fsync，才是将数据持久化到磁盘的操作。一般情况下，我们认为fsync才占磁盘的IOPS
 
-- 每个Slave只有一个Master。
-- 每个Slave只能有一个唯一的服务器ID。
-- 每个Master可以有多个Salve。
+write和fsync的时机，是由参数sync_binlog控制的：
 
-### 一主一从配置
+1. `sync_binlog=0`的时候，表示每次提交事务都只write，不fsync
+2. `sync_binlog=1`的时候，表示每次提交事务都会执行fsync
+3. `sync_binlog=N（N>1）`的时候，表示每次提交事务都write，但累积N个事务才fsync
 
-> 1、基本要求：Master和Slave的MySQL服务器版本一致且后台以服务运行。
+因此，在出现IO瓶颈的场景里，将sync_binlog设置成一个比较大的值，可以提升性能。在实际的业务场景中，考虑到丢失日志量的可控性，一般不建议将这个参数设成0，比较常见的是将其设置为100~1000中的某个数值。但是，将sync_binlog设置为N，对应的风险是：如果主机发生异常重启，会丢失最近N的事务的binlog日志。
 
-```shell
-# 创建mysql-slave1实例
-docker run -p 3307:3306 --name mysql-slave1 \
--v /root/mysql-slave1/log:/var/log/mysql \
--v /root/mysql-slave1/data:/var/lib/mysql \
--v /root/mysql-slave1/conf:/etc/mysql \
--e MYSQL_ROOT_PASSWORD=333 \
--d mysql:5.7
+### redo log的写入机制
+
+事务在执行过程中，生成的redo log会先写入到redo log buffer中，并且并不是每次生成后都会持久化到磁盘中。这意味着如果事务执行期间MySQL发生异常重启，那么这部分日志就丢失了，由于事务没有提交，所以这时日志丢了也不会有损失，那么事务还没有提交的时候，redo log buffer中的部分日志有没有可能被持久化到磁盘呢？这就和redo log的三种状态有关：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220210225451762.png" alt="image-20220210225451762" style="zoom:67%;" />
+
+这三种状态分别是：
+
+1. 存在redo log buffer中，物理上是在MySQL进程内存中，就是图中红色的部分
+2. 写到磁盘（write），但是没有持久化（fsync），物理上是在文件系统的page cache里面，也就是图中的黄色部分
+3. 持久化到磁盘，对应的是hard disk，也就是图中绿色部分
+
+日志写入到redo log buffer是很快的，write到page cache也差不多，但是持久化到磁盘的速度就慢多了。为了控制redo log的写入策略，InnoDB提供了`innodb_flush_log_at_trx_commit`参数，它有三种可能取值：
+
+- 设置为0的时候，表示每次事务提交时都只是把redo log留在redo log buffer中
+- 设置为1的时候，表示每次事务提交时都将redo log直接持久化到磁盘
+- 设置为2的时候，表示每次事务提交时都只是把redo log写入到page cache
+
+InnoDB有一个后台线程，每个1秒，就会把redo log buffer中的日志，调用write写入到文件系统的page cache，然后调用fsync持久化到磁盘。
+
+<div class="note warning"><p>事务执行中间过程中的redo log也就是直接写在redo log buffer中的，这些redo log也会被后台线程一起持久化到磁盘。也就是说，一个没有提交的事务的redo log，也是可能持久化到磁盘的。</p></div>
+
+实际上，除了后台线程每秒一次的轮询操作外，还有两种场景会让一个没有提交的事务的redo log写入到磁盘中：
+
+- 一种是，redo log buffer占用的空间即将达到`innodb_log_buffer_size`一半的时候，后台线程会主动写盘。注意，由于这个事务并没有提交，所以这个写盘的动作只是write，而没有调用fsync，也就是只留在了文件系统的page cache
+- 并行的事务提交的时候，顺带将这个事务的redo log buffer持久化到磁盘。假设一个事务A执行到一半，已经写了一些redo log到buffer中，这个时候另外一个线程的事务B提交，如果`innodb_flush_log_at_trx_commit`设置的是1，那么按照这个参数的逻辑，事务B要把redo log buffer里的日志全部持久化到磁盘。这时候，就会带上事务A在redo log buffer中的日志一起持久化到磁盘。
+
+如果把`innodb_flush_log_at_trx_commit`设置成1，那么redo log在prepaer阶段就要持久化一次，因为有一个崩溃恢复逻辑是要依赖于prepare的redo log，再加上binlog来恢复的。每秒一次后台轮询刷盘，再加上崩溃恢复这个逻辑，InnoDB就认为redo log在commit的时候就不需要fsync了，只会write到文件系统的page cache中就够了。
+
+通常我们说的MySQL的“双1”配置，指的就是`sync_binlog`和`innodb_flush_log_at_trx_commit`都设置成1，也就是说，一个事务完整提交前，需要等待两次刷盘，一次是redo log（prepare阶段），一次是binlog。
+
+MySQL的TPS会高于磁盘的TPS，这是因为MySQL中使用了组提交（group commit）的机制，而要了解组提交首先要了解日志逻辑序列号（log sequence number，LSN）。LSN是单调递增的，用来对应redo log的一个个写入点，每次写入长度为length的redo log，LSN的值就会加上length，LSN也会写到InnoDB的数据页中，来确保数据页不会被多次执行重复的redo log。
+
+下图表示的是，三个并发事务（trx1，trx2，trx3）在prepare阶段，都写完redo log buffer，持久化到磁盘的过程，对应的LSN分别是50、120和160。
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220210234121462.png" alt="image-20220210234121462" style="zoom:67%;" />
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220210234201404.png" alt="image-20220210234201404" style="zoom:67%;" />
+
+从图中可以看到：
+
+1. trx1是第一个到达得，会被选为这组的leader
+2. 等trx1要开始写盘的时候，这个组里面已经有了三个事务，这时候LSN也变成了160
+3. trx1去写盘的时候，带的就是LSN=160，因此等trx1返回时，所有LSN小于等于160的redo log，都已经被持久化磁盘
+4. 这时候trx2和trx3就可以直接返回了
+
+所以，一次组提交里面，组员越多，节约磁盘IOPS效果越好，但如果只有单线程压测，那么就是一个事务对应一次持久化操作了。在并发场景下，第一个事务写完redo log buffer以后，接下来这个fsync越晚调用，组员可能越多，节约IOPS的效果就越好，为了让一次fsync带的组员更多，MySQL还有另一个优化：拖时间。两阶段提交的示意图如下：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220210235251648.png" alt="image-20220210235251648" style="zoom:67%;" />
+
+其实，写binlog其实是分成两步的：
+
+1. 先把binlog从binlog cache中写到磁盘上的binlog文件
+2. 调用fsync持久化
+
+MySQL为了让组提交的效果更好，把redo log做fsync的时间拖到了步骤1之后。也就是说，上面的图变成了这样：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220210235504487.png" alt="image-20220210235504487" style="zoom:67%;" />
+
+这么以来，binlog也可以组提交了。在执行图5中第4步把binlog fsync到磁盘时，如果有多个事务的binlog已经写完了，也是一起持久化的，这样也可以减少IOPS的消耗。
+
+不过通常情况下第3步执行得会很快，所以binlog得write和fsync间的间隔时间端，导致能集合到一起持久化的binlog比较少，因此，binlog的组提交的效果通常不如redo log的效果那么好，如果想提升binlog组提交的效果，可以通过设置`binlog_group_commit_sync_delay`和`binlog_group_commit_sync_no_delay_count`来实现。
+
+- `binlog_group_commit_sync_delay`表示延迟多少微妙后才调用fsync
+- `binlog_group_commit_sync_no_delay_count`参数，表示累积多少次以后才调用fsync
+
+这两个条件是或的关系，也就是说只要有一个满足条件就会调用fsync，所以，当`binlog_group_commit_sync_delay`设置为0的时候，`binlog_group_commit_sync_no_delay_count`也无效了。
+
+综上所述，如果MySQL出现了性能瓶颈，而且瓶颈在IO上，可以通过哪些方法来提升性能呢？
+
+- 设置`binlog_group_commit_sync_delay`和`binlog_group_commit_sync_no_delay_count`参数，减少binlog的写盘次数。这个方法是基于“额外的故意等待”来实现的，因此可能会增加语句的响应时间，但没有丢失数据的风险
+- 将`sync_binlog`设置为大于1的值（比较常见的是100~1000）。这样做的风险是，主机掉电时会丢binlog日志
+- 将`innodb_flush_log_at_trx_commit`设置为2，这样做的风险时，主机掉电的时候会丢数据
+
+不过将`innodb_flush_log_at_trx_commit`设置成0，当MySQL本身异常重启的话，就会丢失数据。而redo log写到文件系统的page cache的速度也是很快的，所以将这个参数设置成2跟设置0的性能相差并不多，但是设置成2，当MySQL异常重启后就不会丢失数据了。
+
+## 主备一致
+
+### 主备的基本原理
+
+下图表示的是基本主备切换流程：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220213170252460.png" alt="image-20220213170252460" style="zoom:67%;" />
+
+在状态1中，客户端的读写都直接访问节点A，而节点B是A的备库，只是将A的更新都同步过来，到本地执行，这样可以保持节点B和A的数据是相同的。当需要切换的时候，就切成状态2，这时候客户端读写访问的都是节点B，而节点A是B的备库。
+
+在状态1中，虽然节点B并没有被直接访问，但是依然建议将节点B（也就是备库）设置成只读（readonly）模式，这样做，有以下考虑：
+
+- 有时候一些运营类的查询语句会被放到备库上去查，设置为只读可以防止误操作
+- 防止切换逻辑有bug，比如切换过程中出现双写，造成主备不一致
+- 可以用readonly状态，来判断节点的角色
+
+<div class="note info"><p>备库虽然设置了readonly，但readonly对超级（super）权限用户是无效的，而用于同步更新的线程，就拥有超级线程，因此，备库可以和主库保持同步更新。</p></div>
+
+语句在节点A执行，然后同步到节点B的完整示意图如下：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220213171430906.png" alt="image-20220213171430906" style="zoom:67%;" />
+
+可以看到：主库接收到客户端的更新请求后，执行内部事务的更新逻辑，同时写binlog。备库B和主库A之间维持了一个长连接。主库A内部有一个线程，专门用于服务备库B的这个长连接，一个事务日志同步的完整过程如下：
+
+1. 在备库B上通过`change master`命令，设置主库A的IP、端口、用户名、密码，以及要从哪个位置开始请求binlog，这个位置包含文件名和日志偏移量
+2. 在备库B上执行`start slave`命令，这时候备库会启动两个线程，就是图中io_thread和sql_thread。其中io_thread负责与主库建立连接
+3. 主库A校验完用户名、密码后，开始按照备库B传过来的位置，从本地读取binlog，发给B
+4. 备库B拿到binlog后，写到本地文件，称为中转日志（relay log）
+5. sql_thread读取中转日志，解析出日志里的命令，并执行
+
+不过后来由于多线程复制方案的引入，sql_thread演化成为了多个线程。
+
+### bin log的三种格式
+
+bin log其实有三种格式：一种是statement，一种是row，还有一种叫做mixed，其实它就是前两种格式的混合。为了便于描述 binlog 的这三种格式间的区别，这里创建了一个表，并初始化几行数据：
+
+```sql
+CREATE TABLE `t` (
+  `id` int(11) NOT NULL, 
+  `a` int(11) DEFAULT NULL, 
+  `t_modified` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP, 
+  PRIMARY KEY (`id`), 
+  KEY `a` (`a`), 
+  KEY `t_modified`(`t_modified`)
+) ENGINE = InnoDB;
+
+insert into t values(1,1,'2018-11-13');
+insert into t values(2,2,'2018-11-12');
+insert into t values(3,3,'2018-11-11');
+insert into t values(4,4,'2018-11-10');
+insert into t values(5,5,'2018-11-09');
 ```
 
-> 2、主从配置都是配在[mysqld]节点下，都是小写
+如果要在表中删除一行数据的话，我们来看看这个delete语句的binlog是怎么记录的：
 
-```shell
-# Master配置
-[mysqld]
-server-id=1 # 必须
-log-bin=/var/lib/mysql/mysql-bin # 必须
-read-only=0
-binlog-ignore-db=mysql
+```sql
+mysql> delete from t /*comment*/ where a>=4 and t_modified<='2018-11-10' limit 1;
 ```
 
-```shell
-# Slave配置
-[mysqld]
-server-id=2 # 必须
-log-bin=/var/lib/mysql/mysql-bin
+当`binlog_format=statement`时，binlog里面记录的就是SQL语句的原文，可以使用命令：
+
+```sql
+mysql> show binlog events in 'master.000001';
 ```
 
-> 3、Master配置
+查看binlog中的内容：
 
-```shell
-# 1、GRANT REPLICATION SLAVE ON *.* TO 'username'@'从机IP地址' IDENTIFIED BY 'password';
-mysql> GRANT REPLICATION SLAVE ON *.* TO 'zhangsan'@'172.18.0.3' IDENTIFIED BY '123456';
-Query OK, 0 rows affected, 1 warning (0.01 sec)
+![image-20220213173317686](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220213173317686.png)
 
-# 2、刷新命令
-mysql> FLUSH PRIVILEGES;
-Query OK, 0 rows affected (0.00 sec)
 
-# 3、记录下File和Position
-# 每次配从机的时候都要SHOW MASTER STATUS;查看最新的File和Position
-mysql> SHOW MASTER STATUS;
-+------------------+----------+--------------+------------------+-------------------+
-| File             | Position | Binlog_Do_DB | Binlog_Ignore_DB | Executed_Gtid_Set |
-+------------------+----------+--------------+------------------+-------------------+
-| mysql-bin.000001 |      602 |              | mysql            |                   |
-+------------------+----------+--------------+------------------+-------------------+
-1 row in set (0.00 sec)
+
+说明如下：
+
+- 第一行`SET @@SESSION.GTID_NEXT='ANONYMOUS'`
+- 第二行是一个BEGIN，跟第四行的commit对应，表示中间是一个事务
+- 第三行是真实执行的语句。可以看到，在真正执行的delete命令之前，还有一个“use test”命令，这是MySQL根据当前要操作的表所在的数据库自行添加的，这样做可以保证日志传到备库去执行的时候，不论当前的工作线程在哪个库里，都能够正确地更新到test库的表t。在“use test”命令之后的delete语句，就是我们输入的SQL原文，可以看到，binlog“忠实”地记录了SQL命令，甚至连注释也一并记录了
+- 最后一行是一个COMMIT，并且记录了xid=61
+
+为了说明statement和row格式的区别，delete命令的执行效果如下：
+
+![image-20220213202550075](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220213202550075.png)
+
+可以看到，运行这条delete命令产生了一个warning，原因是当前binlog设置的是statement格式，并且语句中有limit，所以这个命令可能是unsafe的。为什么会这样呢？这是因为delete带limit，很可能会出现主备数据不一致的情况，比如上面的这个例子：
+
+- 如果delete语句使用的是索引a，那么会根据索引a找到第一个满足条件的行，也就是说删除的是a=4这一行
+- 但如果使用的是索引t_modified，那么删除的就是t_modified='2018-11-09'也就是a=5这一行
+
+由于statement格式下，记录到binlog里的是语句原文，因此可能会出现这样一种情况：在主库执行这条SQL语句的时候，用的是索引a，而在备库执行这条SQL语句的时候，却使用了索引t_modified。因此，MySQL认为这样写是有风险的。
+
+将binlog的格式修改为`binlog_format='row'`,此时，binlog中的内容如下：
+
+![image-20220213203155674](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220213203155674.png)
+可以看到，与statement格式的binlog相比，前后的BEGIN和COMMIT是一样的。但是，row格式的binlog里没有了SQL语句的原文，而是替换成了两个event：Table_map和Delete_rows:
+
+- Table_map event用于说明接下来要操作的表是test库的表t
+- Delete_rows event用于定义删除的行为
+
+通过上图还是不能看出详细的信息，这时候需要借助mysqlbinlog工具，使用如下命令解析和查看binlog中的内容：
+
+```sql
+mysqlbinlog -w data/master.000001 --start-position=8900; /** 根据上图，这个事务的binlog是从8900这个位置开始的。 */
 ```
 
-> 4、Slave从机配置
+![image-20220213203942182](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220213203942182.png)
 
-```shell
-CHANGE MASTER TO MASTER_HOST='172.18.0.4',
-MASTER_USER='zhangsan',
-MASTER_PASSWORD='123456',
-MASTER_LOG_FILE='mysql-bin.File的编号',
-MASTER_LOG_POS=Position的最新值;
+说明如下：
+
+- server id 1，表示这个事务是在server_id=1的这个库上执行的
+- 每个event都有CRC32的值，这是因为此时的参数设置`binlog_checksum=CRC32`
+- Table_map event显示了接下来要打开的表，map到数字226。这里只操作了一张表，如果操作的是多张彪，每个表都有一个对应的Table_map event，都会map到一个单独的数字，用于区分不同表的操作
+- -w的参数是为了把内容都解析出来，所以从结果里面可以看到各个字段的值（比如，@1=4，@2=4这些值）
+- binlog_row_image的默认配置是FULL，因此Delete_event里面，包含了删掉的行的所有字段的值。如果把binlog_row_image设置为MINIMAL，则只会记录必要的信息，在这个例子里，只会记录`id=4`这个信息
+- 最后的Xid event，用于表示事务被正确地提交了
+
+可以看到，当`binlog_format=row`的时候，binlog里面记录了真实删除的行的主键id，这样binlog传到备库去的时候，就肯定会删除id=4的行，不会有主备删除不同行的问题。
+
+对比statement和row的优缺点，就有了mixed这种binlog格式存在的场景：
+
+- 因为有些statement格式的binlog可能会导致主备不一致，所以要使用row格式
+- row格式的缺点是，很占空间。比如，使用delete语句删掉10万行数据，用statement的话就是一个SQL语句被记录到binlog中，占用几十个字节的空间。但是如果row格式的binlog，就要把这10万条记录都写到binlog中，这样做，不仅会占用更大的空间，同时写binlog也要耗费IO资源，影响执行速度
+- MySQL有一个折中的方案，也就是mixed格式的binlog。MySQL自己会判断这条SQL语句是否可能引起主备不一致，如果有可能，就用row格式，否则就用statement格式
+
+总而言之，mixed格式可以利用statement格式的优点，同时又避免了数据不一致的风险。比如上文中的这个例子，设置为mixed，就会记录为row格式，而如果执行的语句去掉limit 1，就会记录为statement格式。
+
+不过，现在越来越多的场景要求将MySQL的binlog格式设置为row，这么做的理由有很多，其中可以直接看出来好处的就是：恢复数据。接下来，我们分别从delete、insert和update这三种SQL语句的角度，来看看数据恢复的问题：
+
+如果执行的是delete语句，row格式的binlog会把删掉的行的整行信息保存起来。所以，如果执行完一条delete语句以后，发现删错数据了，可以直接把binlog中记录的delete语句转为insert，把被错删的数据插入回去就可以恢复了，
+
+类似的，如果是执行错了insert语句，在row格式下，insert语句的binlog会记录所有的字段信息，这些信息可以用来精确定位刚刚被插入的那一行。这是，直接把insert语句转成delete语句，删掉这被误插入的一行数据就可以了。
+
+如果执行的update语句，binlog里面会记录修改前整行的数据和修改后的整行数据。所以，如果误执行了update语句的话，只需要把这个event前后的两行信息对调以下，再去数据库里面执行，就能恢复这个更新操作了。
+
+在使用binlog恢复数据的时候，使用mysqlbinlog解析出日志，然后将statement语句直接拷贝出来执行，这种做法可行吗？假设binlog的格式设置为mixed，然后执行如下语句：
+
+```sql
+mysql> insert into t values(10,10, now());
 ```
 
+执行的效果如下：
+
+![image-20220213221234250](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220213221234250.png)
+
+可以看到，MySQL此时使用的statement格式，那么，如果这个binlog过了1分钟才传给备库的话，那主备的数据不就不一致了吗？使用 mysqlbinlog工具查看执行的详情：
+
+![image-20220213221344241](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220213221344241.png)
+
+从图中的结果可以看到，binlog在记录event的时候，会多记录`SET TIMESTAMP=1546103491`，它用`SET TIMESTAMP`命令约定了接下来`now()`函数的返回时间。因此，不论这个binlog是1分钟之后被备库执行，还是3天后用来恢复这个库的备库，这个insert语句插入的行，值都是固定的。也就是说，通过`SET TIMESTAMP`命令，MySQL就确保了主备数据的一致性。
+
+这也就是说直接执行语句的结果可能是错误的，因为有些语句的执行结果是依赖于上下文命令的，所以，使用binlog来恢复数据的标准做法是，用mysqlbinlog工具解析出来，然后把解析结果整个发给MySQL执行，类似下面的命令：
+
+````sql
+mysqlbinlog master.000001 --start-position=2738 --stop-position=2973 | mysql -h127.0.0.1 -P13000 -u$user -p$pwd;
+````
+
+这个命令的意思是，将master.000001文件里面从第2738字节到2973字节中间这段内容解析出来，放到MySQL去执行。
+
+### 循环复制问题
+
+上文中主备的结构实际上是M-S结果，但实际生产上使用比较多的是双M结构，也就是下图所展示的主备切换流程：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220213222320129.png" alt="image-20220213222320129" style="zoom:50%;" />
+
+对比双M结构和M-S结构，其实区别只是多了一条线，即：节点A和B之间总是互为主备关系，这样在切换的时候就不用再修改主备关系。但是，双M结构有一个显著的问题需要解决：
+
+业务逻辑在节点A上更新了一条语句，然后再把生成的binlog发给节点B，节点B执行完这条更新语句后也会生成binlog（`log_slave_updates=on`），那么，如果节点A同时是节点B的备库，相当于又把节点B新生成的binlog拿过来执行了一次，然后节点A和B间，会不断地循环执行这条更新语句，也就是循环复制了，要解决这个问题，要用到上文中提到的server id：
+
+1. 规定两个库的server id必须不同，如果相同，则它们之间不能设定为主备关系
+2. 一个备库接到binlog并在重放的过程中，生成与binlog的server id相同的新的binlog
+3. 每个库在收到从自己的主库发过来的日志后，先判断server id，如果跟自己的相同，表示这个日志是自己生成的，就直接丢弃这个日志
+
+按照这个逻辑，如果我们设置了双M结构，日志的执行流程就会变成这样：
+
+1. 从节点A更新的事务，binlog里面记的都是A的server id
+2. 传到节点B执行一次后，节点B生成的binlog的server id也是A的server id
+3. 再传回给节点A，A判断这个server id与自己的相同，就不会再处理这个日志。所以，死循环在这里就断掉了
+
+## 主备延迟
+
+### 主备延迟的来源
+
+### 可用性优先策略
 
 
-```shell
-# 1、使用用户名密码登录进Master
-mysql> CHANGE MASTER TO MASTER_HOST='172.18.0.4',
-    -> MASTER_USER='zhangsan',
-    -> MASTER_PASSWORD='123456',
-    -> MASTER_LOG_FILE='mysql-bin.000001',
-    -> MASTER_LOG_POS=602;
-Query OK, 0 rows affected, 2 warnings (0.02 sec)
 
-# 2、开启Slave从机的复制
-mysql> START SLAVE;
-Query OK, 0 rows affected (0.00 sec)
+## 读写分离
 
-# 3、查看Slave状态
-# Slave_IO_Running 和 Slave_SQL_Running 必须同时为Yes 说明主从复制配置成功！
-mysql> SHOW SLAVE STATUS\G
-*************************** 1. row ***************************
-               Slave_IO_State: Waiting for master to send event # Slave待命状态
-                  Master_Host: 172.18.0.4
-                  Master_User: zhangsan
-                  Master_Port: 3306
-                Connect_Retry: 60
-              Master_Log_File: mysql-bin.000001
-          Read_Master_Log_Pos: 602
-               Relay_Log_File: b030ad25d5fe-relay-bin.000002
-                Relay_Log_Pos: 320
-        Relay_Master_Log_File: mysql-bin.000001
-             Slave_IO_Running: Yes  
-            Slave_SQL_Running: Yes
-              Replicate_Do_DB: 
-          Replicate_Ignore_DB: 
-           Replicate_Do_Table: 
-       Replicate_Ignore_Table: 
-      Replicate_Wild_Do_Table: 
-  Replicate_Wild_Ignore_Table: 
-                   Last_Errno: 0
-                   Last_Error: 
-                 Skip_Counter: 0
-          Exec_Master_Log_Pos: 602
-              Relay_Log_Space: 534
-              Until_Condition: None
-               Until_Log_File: 
-                Until_Log_Pos: 0
-           Master_SSL_Allowed: No
-           Master_SSL_CA_File: 
-           Master_SSL_CA_Path: 
-              Master_SSL_Cert: 
-            Master_SSL_Cipher: 
-               Master_SSL_Key: 
-        Seconds_Behind_Master: 0
-Master_SSL_Verify_Server_Cert: No
-                Last_IO_Errno: 0
-                Last_IO_Error: 
-               Last_SQL_Errno: 0
-               Last_SQL_Error: 
-  Replicate_Ignore_Server_Ids: 
-             Master_Server_Id: 1
-                  Master_UUID: bd047557-b20c-11ea-9961-0242ac120002
-             Master_Info_File: /var/lib/mysql/master.info
-                    SQL_Delay: 0
-          SQL_Remaining_Delay: NULL
-      Slave_SQL_Running_State: Slave has read all relay log; waiting for more updates
-           Master_Retry_Count: 86400
-                  Master_Bind: 
-      Last_IO_Error_Timestamp: 
-     Last_SQL_Error_Timestamp: 
-               Master_SSL_Crl: 
-           Master_SSL_Crlpath: 
-           Retrieved_Gtid_Set: 
-            Executed_Gtid_Set: 
-                Auto_Position: 0
-         Replicate_Rewrite_DB: 
-                 Channel_Name: 
-           Master_TLS_Version: 
-1 row in set (0.00 sec)
+### 强制走主库方案
+
+### sleep 方案
+
+### 判断主备无延迟方案
+
+### GID方案
+
+# MySQL的最佳实践
+
+## 误删数据
+
+俗话说“常在河边走，哪有不湿鞋”，大多数人都可能会碰到误删数据的场景，为了找到解决误删数据的更高效的方法，我们对MySQL相关的误删数据，做以下分类：
+
+- 使用`delete`语句误删数据行
+- 使用`drop table`或者`truncate table`语句误删数据表
+- 使用`drop database`语句误删数据库
+- 使用`rm`命令误删整个MySQL实例
+
+### 误删行
+
+如果使用delete语句误删了数据行，可以用Flashback工具通过闪回把数据恢复回来，Flashback恢复数据的原理，是修改binlog的内容，拿回原库重放，而能够使用这个方案的前题是，需要确保`binlog_format=row`和`binlog_row_image=FULL`。
+
+具体恢复数据时，对单个事务做如下处理：
+
+1. 对于insert语句，对应的`binlog event`类型是`Write_rows event`，把它改成`Delete_rows event`即可
+2. 同理，对于delete语句，也是将`Delete_rows event`改为`Write_rows event`
+3. 而如果是`Update_rows`的话，binlog里面记录了数据行修改前和修改后的值，对调这两行的位置即可
+
+如果误操作不是一个，而是多个，比如下面三个事务：
+
+```sql
+(A)delete ...
+(B)insert ...
+(C)update...
 ```
 
-> 5、测试主从复制
+现在要把数据库恢复到这个三个事务操作之前的状态，用Flashback工具解析binlog后，写回主库的命令是：
 
-```shell
-# Master创建数据库
-mysql> create database test_replication;
-Query OK, 1 row affected (0.01 sec)
-
-# Slave查询数据库
-mysql> show databases;
-+--------------------+
-| Database           |
-+--------------------+
-| information_schema |
-| mysql              |
-| performance_schema |
-| sys                |
-| test_replication   |
-+--------------------+
-5 rows in set (0.00 sec)
+```sql
+(reverse C)update ...
+(reverse B)delete ...
+(reverse A)insert...
 ```
 
-> 6、停止主从复制功能
+也就是说，如果误删数据涉及到了多个事务的话，需要将事务的顺序调过来再执行。需要注意的是，不要直接在主库上执行这些操作，恢复数据比较安全的做法是，恢复出一个备份，或者找一个从库作为临时库，在这个临时库上执行这些操作，然后再将确认过的临时库的数据，恢复回主库。这么做的原因是，一个在执行线上逻辑的主库，数据状态的变更往往是有关联的，可能由于发现数据问题的时间晚了一点，就导致已经在之前误操作的基础上，业务代码逻辑又继续修改了其它数据，所以，如果这时候单独恢复这几行数据，而又未经确认的话，就可能出现对数据的二次破坏。
 
-```shell
-# 1、停止Slave
-mysql> STOP SLAVE;
-Query OK, 0 rows affected (0.00 sec)
+比起误删数据时候进行处理，更重要的是做到事前预防：
 
-# 2、重新配置主从
-# MASTER_LOG_FILE 和 MASTER_LOG_POS一定要根据最新的数据来配
-mysql> CHANGE MASTER TO MASTER_HOST='172.18.0.4',
-    -> MASTER_USER='zhangsan',
-    -> MASTER_PASSWORD='123456',
-    -> MASTER_LOG_FILE='mysql-bin.000001',
-    -> MASTER_LOG_POS=797;
-Query OK, 0 rows affected, 2 warnings (0.01 sec)
+1. 把`sql_safe_updates`参数设置为on，这样依赖，如果忘记在delete或者update语句中写where条件，或者where条件里面没有包含索引字段的话，这条语句的执行就会报错
+2. 代码上线前，必须经过SQL审计
 
-mysql> START SLAVE;
-Query OK, 0 rows affected (0.00 sec)
+<div class="note info"><p>如果设置了sql_safe_updates=on，但是要删除一个小表的全部数据，可以在delete语句中加上where条件，比如where id >= 0。但是delete全表是很慢的，需要生成回滚日志，写redo log和bin log，所以，从性能的角度考虑，应该优先考虑使用truncate table或者drop table命令。</p></div>
 
-mysql> SHOW SLAVE STATUS\G
-*************************** 1. row ***************************
-               Slave_IO_State: Waiting for master to send event
-                  Master_Host: 172.18.0.4
-                  Master_User: zhangsan
-                  Master_Port: 3306
-                Connect_Retry: 60
-              Master_Log_File: mysql-bin.000001
-          Read_Master_Log_Pos: 797
-               Relay_Log_File: b030ad25d5fe-relay-bin.000002
-                Relay_Log_Pos: 320
-        Relay_Master_Log_File: mysql-bin.000001
-             Slave_IO_Running: Yes
-            Slave_SQL_Running: Yes
-              Replicate_Do_DB: 
-          Replicate_Ignore_DB: 
-           Replicate_Do_Table: 
-       Replicate_Ignore_Table: 
-      Replicate_Wild_Do_Table: 
-  Replicate_Wild_Ignore_Table: 
-                   Last_Errno: 0
-                   Last_Error: 
-                 Skip_Counter: 0
-          Exec_Master_Log_Pos: 797
-              Relay_Log_Space: 534
-              Until_Condition: None
-               Until_Log_File: 
-                Until_Log_Pos: 0
-           Master_SSL_Allowed: No
-           Master_SSL_CA_File: 
-           Master_SSL_CA_Path: 
-              Master_SSL_Cert: 
-            Master_SSL_Cipher: 
-               Master_SSL_Key: 
-        Seconds_Behind_Master: 0
-Master_SSL_Verify_Server_Cert: No
-                Last_IO_Errno: 0
-                Last_IO_Error: 
-               Last_SQL_Errno: 0
-               Last_SQL_Error: 
-  Replicate_Ignore_Server_Ids: 
-             Master_Server_Id: 1
-                  Master_UUID: bd047557-b20c-11ea-9961-0242ac120002
-             Master_Info_File: /var/lib/mysql/master.info
-                    SQL_Delay: 0
-          SQL_Remaining_Delay: NULL
-      Slave_SQL_Running_State: Slave has read all relay log; waiting for more updates
-           Master_Retry_Count: 86400
-                  Master_Bind: 
-      Last_IO_Error_Timestamp: 
-     Last_SQL_Error_Timestamp: 
-               Master_SSL_Crl: 
-           Master_SSL_Crlpath: 
-           Retrieved_Gtid_Set: 
-            Executed_Gtid_Set: 
-                Auto_Position: 0
-         Replicate_Rewrite_DB: 
-                 Channel_Name: 
-           Master_TLS_Version: 
-1 row in set (0.00 sec)
+### 误删库/表
+
+如果使用了`truncate/drop table`和`drop database`命令删除的数据，就无法通过Flashback来恢复了，这是因为，即使我们配置了`binlog_format=row`，执行这三个命令时，记录的binlog还是statement格式。binlog里面就只有一个`truncate/drop`语句，这些信息是恢复不出来数据的。
+
+这种情况下，要想恢复数据，就需要使用全量备份，加增量日志的方式了。这个方案要求线上有定期的全量备份，并且实时备份binlog，在这两个条件都具备的情况下，假如有人中午12点删了一个库，恢复数据的流程如下：
+
+1. 取最近一次全量备份，假设这个库是一天一备，上次备份是当天0点
+2. 用备份恢复出一个临时库
+3. 从日志备份里面，取出凌晨0点之后的日志
+4. 把这些日志，除了误删数据的语句外，全部应用到临时库
+
+这个流程的示意图如下：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220208233711540.png" alt="image-20220208233711540" style="zoom:67%;" />
+
+关于这个过程的说明：
+
+1. 为了加速数据恢复，如果这个临时库上有多个数据库，那么可以在使用mysqlbinlog命令时，加上一个-database参数，用来指定误删表所在的库。这样，就避免了在恢复数据时还要应用其它库日志的情况
+2. 在应用日志的时候，需要跳过12点误操作的那个语句的binlog：
+	- 如果原实例没有使用GTID模式，只能在应用到包含12点的binlog文件的时候，先用-stop-position参数执行到误操作之前的日志，然后再用-start-position从误操作之后的日志继续执行
+	- 如果实例使用了GTID模式，就方便多了。假设误操作命令的GTID是gtid1，那么只需要执行`set gtid_next=gtid1;begin;commit;`，先把这个GTID加到临时实例的GTID集合，之后按顺序执行binlog的时候，就会自动跳过误操作的语句
+
+不过即使这样，使用mysqlbinlog方法恢复数据还是不够快，主要原因有两个：
+
+1. 如果是误删表，最好就是只恢复这张表，也就是只重放这张表的操作，但是mysqlbinlog工具并不能指定只解析一个表的日志
+2. 用mysqlbinlog解析出日志应用，应用日志的过程就只能是单线程。
+
+一种加速方式是，在用备份恢复出临时实例之后，将这个临时实例设置成线上备库的从库，这样：
+
+1. 在start slave之前，先通过执行`change replication filter replicate_do_table = (tbl_name) `命令，就可以让临时库只同步误操作的表
+2. 这样做也可以用上并行复制技术，来加速整个数据恢复过程
+
+这个过程的示意图如下：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220209234951355.png" alt="image-20220209234951355" style="zoom: 67%;" />
+
+图中binlog备份系统到线上备库有一条虚线，是指如果由于时间太久，备库上已经删除了临时实例需要的binlog的话，我们可以从binlog备份系统中找到需要的binlog，再放回备库中。假设，我们发现当前临时实例需要的binlog是从master.000005开始的，但是在备库上执行`show binlogs`显示的最小的binlog文件是master.000007，意味着少了两个binlog文件。这时，我们就需要去binlog备份系统中找到这两个文件，把之前删掉的binlog放回备库的操作如下：
+
+1. 从备份系统下载master.000005和master.000006这两个文件，放到备库的日志目录下
+2. 打开日志目录下的master.index文件，在文件开头加入两行，内容分别是“./master.000005”和“.、master.000006”
+3. 重启备库，目的是要让备库重新识别这两个日志文件
+4. 现在这个备库上就有了临时库需要的所有binlog了，建立主备关系，就可以正常同步了
+
+无论是把mysqlbinlog工具解析出的binlog文件应用到临时库，还是把临时库接到备库上，这两个方案的共同点是：误删库或者表后，恢复数据的思路主要就是通过备份，再加上应用binlog的方式。也就是说，这两个方案都要求备份系统定期备份全量日志，而且需要确保binlog在被从本地删除之前已经做了备份，但是一个系统不可能无限制的备份日志，还需要根据成本和磁盘空间资源，设定一个日志保留的天数。
+
+### 延迟复制备库
+
+虽然可以通过利用并行复制来加速恢复数据的过程，但是这个方案仍然存在“恢复时间不可控”的问题。如果一个库的备份特别大，或者误操作的时间距离上一个全量备份的时间较长，比如一周一备的实例，在备份之后的第6天发生误操作，就需要恢复6天的日志，这个恢复时间可能是要按天来计算的。
+
+这种情况下，就可以考虑搭建延迟复制的备库，这个功能是MySQL5.6版本引入的。一般的主备复制结构存在的问题是，如果主库上有个表被误删了，这个命令很快也会被发给所有从库，进而导致所有从库的数据表也都一起被误删了。
+
+延迟复制的备库是一种特殊的备库，通过`CHANGE MASTER TO MASTER_DELAY=N`命令，可以指定这个备库持续保持跟主库有N秒的延迟。比如将N设置为3600，这就代表了如果主库上有数据被误删了，并且在1小时内发现了这个误操作命令，这个命令就还没有在这个延迟复制的备库执行，这个时候在备库上执行`stop slave`，再通过之前介绍的方法，跳过误操作的命令，就可以恢复出需要的数据，这样的话就得到了一个最多只需要追加1个小时，就可以恢复出数据的临时实例，也就缩短了整个数据恢复需要的时间。
+
+### 预防误删库/表的方法
+
+1. 账号分离。这样做的目的是，避免写错命令，比如：
+	- 只给业务开发DML权限，而不给`truncate/drop`权限，而如果业务开发人员有DDL需求话，可以通过开发管理系统得到支持
+	- 即使是DBA团队成员，日常也都规定只使用只读账号，必要的时候才使用有更新权限的账号
+2. 制定操作规范。这样做的目的，是避免写错要删除的表名，比如：
+	- 在删除数据表之前，必须先对表做改名操作，然后，观察一段时间，确保对业务无影响以后再删除这张表
+	- 改表名的时候，要求给表名加固定的后缀（比如加_to_be_deleted），删除表的动作必须通过管理系统执行。并且，管理系统删除表的时候，只能删除固定后缀的表
+
+### rm删除数据
+
+其实，对于一个有高可用机制的MySQL集群来说，最不怕的就是rm删除数据了，只要不是恶意地把整个集群删除，而只是删掉了其中某一个节点的数据的话，HA系统就会开始工作，选出一个新的主库，从而保证整个集群的正常工作，这是，你要做的就是在这个节点上把数据恢复回来，再接入整个集群。
+
+当然了，现在不止是DBA有自动化系统，SA（系统管理员）也有自动化系统，所以也许一个批量下线机器的操作，会让整个MySQL集群的所有节点都全军覆没，应对这种情况，只能尽量将备份跨机房，或者最好是跨城市保存。
+
+## 自增主键
+
+
+
+自增主键可以让主键索引尽量地保持递增顺序插入，避免了页分裂，因此索引更紧凑，但业务设计不应该依赖于自增主键的连续性，因为自增主键不能保证连续递增，有可能会出现“空洞”。为了便于说明，我们创建一个表t，其中id是自增主键字段，c是唯一索引：
+
+```sql
+CREATE TABLE `t` (
+  `id` int(11) NOT NULL AUTO_INCREMENT, 
+  `c` int(11) DEFAULT NULL, 
+  `d` int(11) DEFAULT NULL, 
+  PRIMARY KEY (`id`), 
+  -- 注意这里设置了唯一约束
+  UNIQUE KEY `c` (`c`)
+) ENGINE = InnoDB;
 ```
+
+### 自增主键的存储
+
+在这个空表里面执行`insert into values(null,1,1);`插入一行数据，再执行`show create table;`命令，就可以看到如下结果：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220117234809443.png" alt="image-20220117234809443" style="zoom:67%;" />
+
+可以看到，表定义里面出现了AUTO_INCREMENT=2，表示下一次插入数时，如果需要自动生成自增值，会生成id=2。实际上，自增值并不是保存在表结构定义里的，表结构的定义是存放在后缀名为.frm的文件中，但是并不会保存自增值。
+
+不同的引擎对于自增值的保存策略是不同的：
+
+- MyISAM引擎的自增值保存在数据文件中
+- InnoDB引擎的自增值，其实是保存在了内存里，并且只有在MySQL8.0版本后，才有了“自增值持久化”的能力，也就是才实现了“如果发生重启，表的自增值可以恢复为MySQL重启前的值”，具体情况是：
+	- 在MySQL5.7及之前的版本，自增值保存在内存里，并没有持久化，每次重启后，第一次打开表的时候，都会去找自增量的最大值max(id)，然后将max(id)+1作为这个表当前的自增值。举例来说，如果一个表当前数据行里最大的id是10，AUTO_INCREMENT=11,这个时候如果删除id=10的行，AUTO_INCREMENT还是11，但是如果马上重启实例，重启后这个表的AUTO_INCREMENT就会变成10，也就是说，MySQL重启可能会修改一个表的AUTO_INCREMENT的值
+	- 在MySQL8.0版本，将自增值的变更记录在了redo log中，重启的时候依靠redo log恢复重启之前的值
+
+### 自增值的修改
+
+在MySQL里面，如果字段id被定义为AUTO_INCREMENT，在插入一行数据的时候，自增值的行为如下：
+
+- 如果插入数据时id字段指定为0、null、或未指定值，那么就把这个表当前的AUTO_INCREMENT值填到自增字段
+- 如果插入数据时id字段执行了具体的值，就直接使用语句里指定的值
+
+根据要插入的值和当前自增值的大小关系，自增值的变更结果也会有所不同，假设某次要插入的值是X，当前的自增值是Y：
+
+- 如果X<Y，那么这个表的自增值不变
+- 如果X≥Y，就需要把当前自增值修改为新的自增值
+
+新的自增值的生成算法是：从`auto_increment_offset`开始，以`auto_increment_increment`为步长，持续叠加，直到找到第一个大于X的值，作为新的自增值。其中，`auto_increment_offset`和`auto_increment_increment`是两个系统参数，分别用来表示自增的初始值和步长，默认值都是1。
+
+<div class="note info"><p>在一些场景下，使用的就不全是默认值。比如，双M的主备结构里要求双写的时候，我们就可能会设置auto_increment_increment=2，让一个库的自增id多是奇数，另一个库的自增id都是偶数，避免两个库生成的主键发生冲突。</p></div>
+
+那么，当这两个参数都设置为1的时候，自增主键为什么还是不能保证连续呢？常见的导致自增主键的原因有：
+
+- 唯一键冲突
+- 事务回滚
+- 自增锁的优化
+
+接下来我们通过例子来说明这三点，假设表t里面已经有了（1，1，1）这条记录，此时执行如下插入命令：
+
+```sql
+insert into t values(null, 1, 1);
+```
+
+这条语句的执行流程如下：
+
+1. 执行器调用InnoDB引擎接口写入一行，传入的这一行的值是（0，1，1）
+2. InnoDB发现用户没有指定自增id的值，获取表t当前的自增值2
+3. 将传入的行的值改成（2，1，1）
+4. 将表的自增值改成3
+5. 继续执行插入数据的操作，由于已经存在c=1的记录（字段c有唯一约束），所以报Duplicate key error，语句返回
+
+对应的流程图如下：
+
+![image-20220118233718587](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220118233718587.png)
+
+可以看到，这个表的自增值改成3，是在真正执行插入数据的操作之前，这个语句真正执行的时候，因为碰到了唯一键c冲突，所以id=2这一行并没有插入成功，但也没有将自增值再该回去，所以，在这之后，再插入新的数据行是，拿到的自增id就是3，也就是说，出现了自增主键不连续的情况。
+
+完整的演示过程如下：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220118234714144.png" alt="image-20220118234714144" style="zoom:50%;" />
+
+可以看到，这个操作序列复现了一个自增主键id不连续的情况（没有id=2的行）。
+
+事务回滚也会发生类似的情况，以下语句序列可以说明这一点：
+
+```sql
+insert into t values(null,1,1);
+begin;
+insert into t values(null,2,2);
+rollback;
+insert into t values(null,2,2);
+// 插入的行是 (3,2,2)
+```
+
+那么当出现唯一键冲突和事务回滚的时候，MySQL为什么不会把表t的自增值改回去呢？答案是为了性能，假设有两个并行执行的事务，在申请自增值的时候，为了避免两个事务申请到相同的自增id，肯定要加锁，然后顺序申请：
+
+1. 假设事务A申请到了id=2，事务B申请到id=3，那么这个时候表t的自增值是4，之后继续执行
+2. 事务B正确提交了，但事务A出现了唯一键冲突
+3. 如果允许事务A把自增id回退，也就是把表t的当前自增值改回2，那么就会出现这样的情况：表里面已经有了id=3的行，而当前的自增id的值是2
+4. 接下来，继续执行的其它事务就会申请到id=3，这时，就会出现插入语句报错“主键冲突”
+
+而为了解决这个主键冲突，有两种方法：
+
+1. 每次申请id之前，先判断表里面是否已经存在这个id，如果存在，就跳过这个id。但是，这个方法的成本很高，因为，本来申请id是一个很快的操作，现在还要再去主键索引树上判断id是否存在
+2. 把自增id的锁范围扩大，必须等到一个事务执行完成并提交，下一个事务才能再申请自增id，这个方法的问题是锁的粒度太大，系统并发能力会大幅下降
+
+因此，InnoDB放弃了这个设计，语句执行失败也不会回退自增id，也正是这样，才只保证了自增id是递增的，但不保证是连续的。
+
+### 自增锁的优化
+
+可以看到，自增id锁并不是一个事务锁，而是每次申请完就马上释放，以便允许别的事务再申请。其实，在MySQL5.1版本之前，并不是这样的，在MySQL5.0版本的时候，自增锁的范围是语句级别，也就是说，如果一个语句申请了一个表自增锁，这个锁会等执行结束以后才释放，显然，这会影响并发度。MySQL5.1.22版本引入了一个新策略，新增参数`innodb_autoinc_lock_mode`，默认值是1，并且：
+
+- 这个参数的值被设置为0时，表示采用之前MySQL5.0版本的策略，即语句执行结束后才释放锁
+- 这个参数的值被设置为1时：
+	- 普通insert语句，自增锁在申请之后就马上释放
+	- 类似insert...select这样的批量插入数据的语句，自增锁还是要等语句结束后才被释放
+- 这个参数的值被设置为2时，所有的申请自增主键的动作都是申请后就释放锁
+
+不难发现，insert...select语句在默认设置下，使用了语句级的锁，这主要是出于数据的一致性的考虑，假设有以下场景：
+
+![image-20220123115117649](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220123115117649.png)
+
+
+
+在这个例子中，session A往表t1中插入了4行数据，然后session B创建了一个相同结构的表t2，然后两个session 同时执行向表t2中插入数据的操作，如果session B是申请了自增值以后马上就释放自增锁，就可能出现这样的情况：
+
+1. session B先插入了两个记录（1，1，1）、（2，2，2）
+2. 然后，session A来申请自增id得到id=3，插入了（3，5，5）
+3. 之后，session B继续执行，插入两条记录（4，3，3）、（5，4，4）
+
+假设数据库的`binlog_format=statment`，由于session是同时执行插入数据命令的，所以binlog里面对表t2的更新日志只有两种情况：要么先记session A的，那么先记session B的，但不论是哪一种，这个binlog在从库执行或者用来恢复临时实例，备库和临时实例里面，session B这个语句执行出来，生成的结果里面，id都是连续的，这时，这个库就发生了数据不一致。
+
+产生这个问题的原因是session B的insert语句，生成的id不连续，这个不连续的id，用statement格式的binlog来串行执行，是执行不出来的，要解决这个问题，有两种思路：
+
+1. 让原库的批量插入数据语句，固定生成连续的id的值，所以，自增锁直到语句执行结束才释放，就是为了达到这个目的
+2. 在binlog里面把插入数据的操作都如实记录进来，到备库执行的时候，不再依赖于自增主键去生成，这种情况，其实就是`innodb_autoinc_lock_mode`设置为2，同时设置`binlog_format=row`
+
+因此，在生产上，尤其是有insert...select这种批量插入数据的场景时，从并发插入数据性能的角度考虑，可以考虑思路2，这样做，既能提升并发性，又不会出现数据一致性问题。
+
+普通的insert语句里面包含多个value值的情况下，即使`innodb_autoinc_lock_mode`设置为1，也不会等语句执行完成才释放锁，因为这类语句在申请自增id的时候，是可以精确计算出需要多少个id的，然后一次性申请，申请完成后锁就可以释放了。也就是说，批量插入数据的语句，之所以需要这么设置，是因为“不知道要预先申请多少个id”，既然预先不知道要申请多少个自增id，那么一种直接的想法就是需要一个时申请一个，但如果一个select...insert语句要插入10万行数据，按照这个逻辑的话就要申请10万次，显然，这种申请自增id的策略，在大批量插入数据的情况下，不但速度慢，还会影响并发插入的性能。因此，对于批量插入数据的语句，MySQL有一个批量申请自增id的策略：
+
+1. 语句执行过程中，第一次申请自增id，会分配1个
+2. 1个用完以后，这个语句第二次申请自增id，会分配2个
+3. 2个用完以后，还是这个语句，第三次申请自增id，会分配4个
+4. 以此类推，同一个语句去申请自增id，每次申请到的自增id个数都是上一次的两倍
+
+insert...select，实际上往表t2插入了4行数据，但是，这四行数据是分三次申请的自增id，第一次申请到了id=1，第二次被分配了id=2和id=3，第三次被分配到id=4到id=7，由于这条语句实际只用上了4个id，所以id=5到id=7就被浪费掉了，之后，再执行`insert into t2 values(null,5,)`，实际上插入的数据就是（8，5，5）,这也导致出现了自增id不连续的情况。
+
+### 自增主键的上限
+
+MySQL里有很多自增的id，每个自增id都是定义了初始值，然后不停地往上加步长，虽然自然数是没有上限的，但是在计算机里，只要定义了表示这个数的字节长度，那它就有上限。比如，无符号整型（unsigned int）是4个字节，上限就是2<sup>23</sup>-1。
+
+#### 表定义自增值id
+
+表定义的自增值达到上限后的逻辑是：再申请下一个id时，得到的值保持不变，我们可以通过下面的语句序列验证：
+
+```sql
+create table t(id int unsigned auto_increment primary key) auto_increment=4294967295;
+insert into t values(null);
+// 成功插入一行 4294967295
+show create table t;
+/* CREATE TABLE `t` (
+`id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=4294967295;
+*/
+insert into t values(null);
+//Duplicate entry '4294967295' for key 'PRIMARY'
+```
+
+可以看到，第一个insert语句插入数据成功后，这个表的`AUTO_INCREMENT`没有改变（还是4294967295），就导致了第二个insert语句又拿到相同的自增id值，再试图执行插入语句，报主键冲突错误。2<sup>23</sup>-1（4294967295）不是一个特别大的数，对于一个频繁插入删除数据的表来说，是可能会被用完的，因此在建表的时候需要考察是否可能达到这个上限，如果有可能，就应该创建成8个字节bigint unsigned。
+
+#### InnoDB系统自增row_id
+
+如果创建的InnoDB表没有指定主键，那么InnoDB会默认创建一个不可见的，长度为6个字节的row_id，InnoDB维护了一个全局的dict_sys.row_id的值，所有无主键的InnoDB表，每插入一行数据，都将当前的dict_sys.row_id的值作为要插入数据的row_id，然后把dict_sys.row_id的值加1。实际上，在代码实现时row_id是一个长度为8字节的无符号长整型（bigint unsigned），但是，InnoDB在设计时，给row_id留的只是6个字节的长度，这样写到数据表中只放了最后6个字节，所以row_id能写到数据表中的值，就有两个特征：
+
+1. row_id写入表中的值范围，是从0到2<sup>48</sup>-1
+2. 当dict_sys.row_id=2<sup>48</sup>时，如果再有插入数据的行为要来申请row_id，拿到以后再取最后6个字节的话就是0
+
+也就是说，写入表的row_id是从0开始到2<sup>48</sup>-1，达到上限后，下一个值就是0，然后继续循环，虽然2<sup>48</sup>-1这个值本身已经很大了，但是如果一个MySQL实例跑得足够久得话，还是可能达到这个上限的，在InnoDB逻辑里，申请row_id=N后，就将这行数据写入表中，如果表中已经存在row_id=N的行，新写入的行就会覆盖原有的行。
+
+从这个角度来看，我们还是应该在InnoDB表中主动创建自增主键，因为表自增id达到上限后，再插入数据时报主键冲突错误，是更能被接受的，毕竟覆盖数据，就意味着数据丢失，影响的是数据可靠性，报主键冲突，是插入失败，影响的是可用性，而一般情况下，可靠性优于可用性。
+
+#### Xid
+
+redo log和binlog有一个共同的字段叫做Xid，它在MySQL中是用来对应事务的。MySQL在内部维护了一个全局变量`global_query_id`，每次执行语句的时候将它赋值给Query_id，然后给这个变量加1。如果当前语句是这个事务执行的第一条语句，那么MySQL还会同时把query_id赋值给这个事务的Xid。`global_query_id`是一个纯内存变量，重启之后就会清零，因此，在同一个数据库实例中，不同事务的Xid也是有可能相同的。但是MySQL重启之后会生成新的binlog文件，这就保证了，同一个binlog文件里，Xid一定是唯一的。
+
+虽然MySQL重启不会导致同一个binlog里面出现两个相同的Xid，但是如果`global_query_id`达到上限后，就会继续从0开始计数，从理论上将，还是会出现同一个binlog里面出现相同Xid的场景。由于`global_query_id`定义的长度是8个字节，这个自增值得上限是2<sup>64</sup>-1，要出现这样得情况，必须出现如下场景：
+
+1. 执行一个事务，假设Xid是A
+2. 接下来执行2<sup>64</sup>次查询语句，让`global_query_id`回到A
+3. 再启动一个事务，这个事务的Xid也是A
+
+不过，2<sup>64</sup>这个值太大了，这种场景只会存在于理论中。
+
+#### Innodb trx_id
+
+Xid和InnoDB的trx_id是两个容易混淆的概念。Xid是由server层维护的，InnoDB内部使用Xid，就是为了能够在InnoDB事务和server之间做关联。但是，InnoDB自己的trx_id，是另外维护的。InnoDB内部维护了一个max_trx_id全局变量，每次申请一个新的trx_id时，就获得max_trx_id的当前值，然后并将max_trx_id加1.
+
+InnoDB数据可见性的核心思想是：每一行数据都记录了更新它的trx_id，当一个事务读到一行数据的时候，判断这个数据是否可见的方法，就是通过事务的一致性视图与这行数据的trx_id做对比。对于正在执行的事务，可以从infomation_schema.innodb_trx表中看到事务的trx_id。
+
+接下来，我们观察如下事务序列：
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220123175439810.png" alt="image-20220123175439810" style="zoom:67%;" />
+
+session B中从innodb_trx表里查出来的两个字段，第二个字段`trx_mysql_thread_id`就是线程id。显示线程id，是为了说明这两次查询看到的事务对应的线程id都是5，也就是session A所在的线程。可以看到，T2时刻显示的trx_id是一个很大的数；T4时刻显示的trx_id是1289，看上去是一个比较正常的数字，这是因为，在T1时刻，session A还没有涉及到更新，是一个只读事务，而对于只读事务，InnoDB并不会分配trx_id，也就是说：
+
+- 在T1时刻，trx_id的值其实就是0，而这个很大的数，只是显示用的
+- 直到session A在T3时刻执行insert语句的时候，InnoDB才真正分配了trx_id。所以，T4时刻，session B查到的这个trx_id的值就是1289
+
+<div class="note warning"><p>需要注意的是，除了显而易见的修改类语句外，如果在select语句后面加上for update，这个事务也不是只读事务。</p></div>
+
+T2时刻这个数字是每次查询的时候由系统临时计算出来的。它的算法是：把当前事务的trx变量的指针地址转成整数，再加上2<sup>48</sup>，使用这个算法，就可以保证两点：
+
+- 因为同一个只读事务在执行期间，它的指针地址是不会变的，所以不论是在innodb_trx还是在innodb_locks表里，同一个只读事务查出来的trx_id就会是一样的
+- 如果有并行的多个只读事务，每个事务trx变量的指针地址肯定不同。这样，不同的并发只读事务，查出来的trx_id就是不同的
+
+而在显示值里面加上2<sup>48</sup>，目的是为了保证只读事务显示的trx_id值比较大，正常情况下就会区别于读事务的id。但是trx_id跟row_id的逻辑类似，定义长度也是8个字节。因此，在理论上还是可能出现一个读写事务于一个只读事务显示trx_id相同的情况，不过这个概率很低，并且没有什么实质危害。
+
+那么，只读事务不分配trx_id有什么好处呢？
+
+- 一个好处是，这样做可以减少事务视图里面活跃事务数组的大小。因为当前正在运行的只读事务，是不影响数据的可见性判断的。所以，在创建事务的一致性视图时，InnoDB就只需要拷贝读写事务的trx_id
+- 另一好处是，可以减少trx_id的申请次数。在InnoDB里，即使只是执行一个普通的select语句，在执行过程中，也是要对应一个只读事务的。所以只读事务优化后，普通的查询语句不需要申请trx_id，就大大减少了并发事务申请trx_id的锁冲突
+
+由于只读事务不分配trx_id，一个自然而然的结果就是trx_id的增加速度变慢了。但是，max_trx_id会持久化存储，重启也不会重置为0，那么从理论上讲，只要一个MySQL服务跑得足够久，就可能出现max_trx_id达到2<sup>48</sup>-1的上限，然后从0开始的情况。当达到这个状态后，MySQL就会持续出现一个脏读的bug。
+
+首先我们需要把当前的max_trx_id先修成2<sup>48</sup>-1。注意：这里使用的是可重复读隔离级别，具体的操作流程如下：
+
+![image-20220123221738366](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220123221738366.png)
+
+<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220123221826819.png" alt="image-20220123221826819" style="zoom:67%;" />
+
+由于此时系统的max_trx_id设置成了2<sup>48</sup>-1，所以在session A启动的事务TA的低水位就是2<sup>48</sup>-1，在T2时刻，session B执行第一条update语句的事务id就是2<sup>48</sup>-1，而第二条update语句的事务id就是0了，这条update语句执行后生成的数据版本上的trx_id就是0，在T3时刻，session A执行select语句的时候，判断可见性发现，c=3这个数据版本的trx_id，小于事务TA的低水位，因此认为这个数据可见，但，这个是脏读，由于低水位值会持续增加，而事务id从0开始计数，就导致了系统在这个时刻之后，所有的查询都会出现脏读的。而且，MySQL重启时max_trx_id也不会清0，也就是说重启MySQL，这个bug仍然存在。
+
+假设一个MySQL实例的TPS是每秒50万，持续这个压力的话，在17.8年后，就会出现这个情况。如果TPS更高，这个年限自然也就更短了。但是，从MySQL的真正开始流行到现在，恐怕都还没有实例跑到过这个上限。不过，这个bug是只要MySQL实例服务时间够长，就必然会出现。
+
+#### thread_id
+
+thread_id的逻辑是，系统保存了一个全局变量thread_id_counter，每新建一个连接，就将thread_id_counter赋值给这个新连接的线程变量。thread_id_counter定义的大小是4个字节，因此达到2<sup>32</sup>-1后，它就会重置为0，然后继续增加。但是，但是，你不会在`show processlist`里看到两个相同的thread_id，这是因为MySQL设计了一个唯一数组的逻辑，给新线程分配thread_id的时候，逻辑代码如下：
+
+```c++
+do {
+	new_id = thread_id_counter++;
+} while (!thread_ids.insert_unique(new_id).second);
+```
+
+#### 自增主键总结
+
+总的来说，每种自增id有各自的应用场景，在达到上限后的表现也不同：
+
+- 表的自增主键id达到上限后，再申请时它的值就不会改变，进而导致继续插入数据时报主键冲突的错误
+- row_id达到上限后，则会归0再重新递增，如果出现相同的row_id，后写入的数据会覆盖之前的数据
+- Xid只需要不在同一个binlog文件中出现重复值接口，但是概率极小，可以忽略不计
+- InnoDB的max_trx_id递增值MySQL每次重启都会被保存起来，所以上文中脏读的例子就是一个必现的bug
+- thread_id是使用中最常见的，也是处理的最好的自增id逻辑
 
 ---
 
