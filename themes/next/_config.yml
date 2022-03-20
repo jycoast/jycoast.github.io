@@ -124,6 +124,7 @@ menu:
   文集: https://www.wolai.com/p7EcXEWp3EsR9BeGRZWNgf?theme=dark/ || fa fa-book
   commonweal: /404/ || fa fa-heartbeat
   infoQ: https://www.infoq.cn/profile/3479D9A8F57FEF/publish/ || fa fa-sitemap
+  路线: /route/ || fa fa-home
   about: /about/ || fa fa-user
 
 # Enable / Disable menu icons / item badges.
@@ -435,7 +436,7 @@ font:
   headings:
     external: true
     family:
-    size: 
+    size:
 
   # Font settings for posts (.post-body).
   posts:
