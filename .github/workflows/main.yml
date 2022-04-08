@@ -30,9 +30,9 @@ jobs:
         hexo g
     - name: Deploy to Github Pages
       env:
-        GIT_NAME: jiyongchao-qf
+        GIT_NAME: jycoast
         GIT_EMAIL: ${{ secrets.GIT_EMAIL }}
-        REPO: github.com/jiyongchao-qf/jiyongchao-qf.github.io
+        REPO: github.com/jycoast/jycoast.github.io
         GH_TOKEN: ${{ secrets.ACCESS_TOKEN }}
       run: |
         cd ./public && git init && git add .
