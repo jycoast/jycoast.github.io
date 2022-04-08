@@ -37,6 +37,7 @@ jobs:
       run: |
         cd ./public && git init && git add .
         git config --global user.name $GIT_NAME
-        git config --global user.email $GIT_EMAIL
+        git config --global user.email jiyongchaowy@163.com
         git commit -m "Site deployed by GitHub Actions"
+        git remote add origin https://github.com/jycoast/jycoast.github.io.git
         git push --force --quiet "https://$GH_TOKEN@$REPO" master:master
