@@ -38,5 +38,6 @@ jobs:
         cd ./public && git init && git add .
         git config --global user.name $GIT_NAME
         git config --global user.email jiyongchaowy@163.com
+        git config --global credential.helper wincred
         git commit -m "Site deployed by GitHub Actions"
         git push --force --quiet "https://$GH_TOKEN@$REPO" master:master
