@@ -40,4 +40,6 @@ jobs:
         git config --global user.email jiyongchaowy@163.com
         git config --global credential.helper store
         git commit -m "Site deployed by GitHub Actions"
+        git remote -v
+        git remote add origin https://github.com/jycoast/jycoast.github.io.git
         git push --force --quiet "https://$GH_TOKEN@$REPO" master:master
