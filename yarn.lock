@@ -110,7 +110,7 @@
   "resolved" "https://registry.npm.taobao.org/binary-extensions/download/binary-extensions-2.2.0.tgz?cache=0&sync_timestamp=1610299308660&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2Fbinary-extensions%2Fdownload%2Fbinary-extensions-2.2.0.tgz"
   "version" "2.2.0"
 
-"bluebird@^3.2.2", "bluebird@^3.5.1", "bluebird@^3.5.2", "bluebird@^3.5.5":
+"bluebird@^3.2.2", "bluebird@^3.5.0", "bluebird@^3.5.1", "bluebird@^3.5.2", "bluebird@^3.5.5":
   "integrity" "sha1-nyKcFb4nJFT/qXOs4NvueaGww28="
   "resolved" "https://registry.npm.taobao.org/bluebird/download/bluebird-3.7.2.tgz"
   "version" "3.7.2"
@@ -482,6 +482,18 @@
     "resolve" "^1.11.0"
     "tildify" "^2.0.0"
 
+"hexo-deployer-git@^3.0.0":
+  "integrity" "sha512-U2Xewjab+rvUDNTcuYYnOxitkDXL3f5VMUH32jKDHs3OC4YFVGRoEaTTDVHskqr3KRi78Wohjc6BSRHOoG3oxA=="
+  "resolved" "https://registry.npmjs.org/hexo-deployer-git/-/hexo-deployer-git-3.0.0.tgz"
+  "version" "3.0.0"
+  dependencies:
+    "bluebird" "^3.5.0"
+    "chalk" "^4.0.0"
+    "hexo-fs" "^3.0.1"
+    "hexo-util" "^2.1.0"
+    "moment" "^2.18.0"
+    "nunjucks" "^3.2.1"
+
 "hexo-front-matter@^2.0.0":
   "integrity" "sha1-A/Oanu2xbFRI27O+x9/yxOIkAGw="
   "resolved" "https://registry.npm.taobao.org/hexo-front-matter/download/hexo-front-matter-2.0.0.tgz?cache=0&sync_timestamp=1596018795995&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2Fhexo-front-matter%2Fdownload%2Fhexo-front-matter-2.0.0.tgz"
@@ -554,11 +566,12 @@
   dependencies:
     "chalk" "^4.0.0"
 
-"hexo-markmap@^1.0.3":
-  "integrity" "sha512-BMouy2V2uQzd3gJjBBuk0mRHtPnKfmhpBfrnUz3bhYRGXtWV0cAe0uSV7eZlTAaUb+2W2UOm0/DummOW7Cz8mg=="
-  "resolved" "https://registry.npmjs.org/hexo-markmap/-/hexo-markmap-1.0.3.tgz"
-  "version" "1.0.3"
+"hexo-markmap@^1.0.0":
+  "integrity" "sha512-8jht8Ka/0ucW5c5vDZv/AnZLB9+9QwYxbnK53QOuIiXnFJeBm1KuNCvpzaoADGyxIM5TOEaHdhhVcrpEgzUR9w=="
+  "resolved" "https://registry.npmjs.org/hexo-markmap/-/hexo-markmap-1.0.4.tgz"
+  "version" "1.0.4"
   dependencies:
+    "markmap-common" "^0.1.6"
     "markmap-lib" "^0.11.6"
 
 "hexo-pagination@0.0.2":
@@ -622,6 +635,13 @@
     "open" "^7.0.0"
     "serve-static" "^1.14.1"
 
+"hexo-simple-mindmap@^0.8.0":
+  "integrity" "sha512-4euOtZAXQXuC+j7PeUQ6DBi2627kMwPExEanh5eIxZMASNexPV5X1c29fsy886BM+yrkFlSn7Gk040rQAJDJ5g=="
+  "resolved" "https://registry.npmjs.org/hexo-simple-mindmap/-/hexo-simple-mindmap-0.8.0.tgz"
+  "version" "0.8.0"
+  dependencies:
+    "hexo-util" "^2"
+
 "hexo-symbols-count-time@^0.6.2":
   "integrity" "sha512-E/LzwPVv+0+r4JrFlIoC+NPw5C337vJGR/lITMLrG4vUFldKMsc9UUwFYxHPr9K8duAKxeM0Hyp2/WaE8rEx+A=="
   "resolved" "https://registry.npmjs.org/hexo-symbols-count-time/-/hexo-symbols-count-time-0.6.2.tgz"
@@ -632,7 +652,7 @@
   "resolved" "https://registry.npm.taobao.org/hexo-theme-landscape/download/hexo-theme-landscape-0.0.3.tgz"
   "version" "0.0.3"
 
-"hexo-util@^2.0.0", "hexo-util@^2.4.0":
+"hexo-util@^2", "hexo-util@^2.0.0", "hexo-util@^2.1.0", "hexo-util@^2.4.0":
   "integrity" "sha1-3lY1NBEWuiVjp4mg6861WodSIa0="
   "resolved" "https://registry.nlark.com/hexo-util/download/hexo-util-2.5.0.tgz?cache=0&sync_timestamp=1620209575591&other_urls=https%3A%2F%2Fregistry.nlark.com%2Fhexo-util%2Fdownload%2Fhexo-util-2.5.0.tgz"
   "version" "2.5.0"
@@ -923,7 +943,7 @@
     "mdurl" "^1.0.1"
     "uc.micro" "^1.0.5"
 
-"markmap-common@^0.1.5":
+"markmap-common@^0.1.5", "markmap-common@^0.1.6":
   "integrity" "sha512-fx4YUo6gZFFr08mi8qX8i6RH9xm5yieLKHr9hAdaTMP+CkPmgzB65F/+t39aFH5HcyEgs5vtTrRZ40lkhalETA=="
   "resolved" "https://registry.npmjs.org/markmap-common/-/markmap-common-0.1.6.tgz"
   "version" "0.1.6"
@@ -1018,7 +1038,7 @@
   dependencies:
     "moment" ">= 2.9.0"
 
-"moment@^2.22.2", "moment@>= 2.9.0":
+"moment@^2.18.0", "moment@^2.22.2", "moment@>= 2.9.0":
   "integrity" "sha1-sr52n6MZQL6e7qZGnAdeNQBvo9M="
   "resolved" "https://registry.npm.taobao.org/moment/download/moment-2.29.1.tgz"
   "version" "2.29.1"

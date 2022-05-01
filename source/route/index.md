@@ -1,8 +1,6 @@
 ---
-title:
+title: 
 ---
-
-{% markmap 1000px %}
 
 - 编程之旅
 
@@ -75,16 +73,10 @@ title:
       - [深入理解git](https://www.bilibili.com/video/BV1G4411a7Jk?spm_id_from=333.788.top_right_bar_window_custom_collection.content.click)
 
     - 设计模式
-
       - [高鹏-设计模式](https://www.bilibili.com/video/BV1Qx411o7tN?spm_id_from=333.788.top_right_bar_window_custom_collection.content.click)
       - [大话设计模式](https://www.52doc.com/detail/816)
-
     - 数据结构和算法
-
       - [大话数据结构](https://www.52doc.com/detail/2869)
-
       - [算法训练营](https://www.youtube.com/watch?v=ozSyNPc5m2k&list=PLoZQ0sz6CBHH_DngliTZAhHxamus0gofC)
       - [leetCode](https://leetcode-cn.com/problemset/all/)
       - [牛客网](https://www.nowcoder.com/)
-
-  {%endmarkmap%}

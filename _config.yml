@@ -102,7 +102,9 @@ theme: next
 # Deployment
 ## Docs: https://hexo.io/docs/one-command-deployment
 deploy:
-  type: ''
+  type: git
+  repo: git@github.com:jycoast/jycoast.github.io.git
+  branch: master
 
 symbols_count_time:
  #文章内是否显示

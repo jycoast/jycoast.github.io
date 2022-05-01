@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="{{ config.language }}">
-<meta name="referrer" content="no-referrer" />
+
 <head>
   {{ partial('_partials/head/head.swig', {}, {cache: theme.cache.enable}) }}
   {% include '_partials/head/head-unique.swig' %}
