@@ -1,33 +1,35 @@
-name: CI
+name: Github Page # 名字随意 
+
 on:
   push:
     branches:
-      - gh-pages
+      - gh-pages  # 私有仓库的默认分支名字 
+
 jobs:
-  build:
+  pages:
     runs-on: ubuntu-latest
     steps:
-      - name: 切换分支
-        uses: actions/checkout@v2
-
-      - name: 安装依赖
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: npm ci
-
-      - name: 清除Hexo
-        uses: heowc/action-hexo@main
+      - uses: actions/checkout@v2
+      - name: Use Node.js 12.x
+        uses: actions/setup-node@v1
         with:
-          args: clean
-
-      - name: 生成Hexo
-        uses: heowc/action-hexo@main
+          node-version: '12.x'
+      - name: Cache NPM dependencies
+        uses: actions/cache@v2
         with:
-          args: generate
-
-      - name: 部署到master分支
+          path: node_modules
+          key: ${{ runner.OS }}-npm-cache
+          restore-keys: |
+            ${{ runner.OS }}-npm-cache
+      - name: Install Dependencies
+        run: npm install
+      - name: Build
+        run: npm run build
+      - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
-          personal_token: ${{ secrets.CI_TOKEN }}
-          external_repository: jycoast/jycoast.github.io
-          publish_branch: master
+          personal_token: ${{ secrets.ACCESS_TOKEN }}
+          # 下面内容按需修改 
+          external_repository: jycoast/jycoast.github.io # 目标仓库 (存放静态页面)
+          publish_branch: master # 目标仓库的默认分支名字 
           publish_dir: ./public
