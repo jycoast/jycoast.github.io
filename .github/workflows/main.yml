@@ -28,7 +28,7 @@ jobs:
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
-          personal_token: ${{ secrets.ACCESS_TOKEN }}
+          personal_token: ${{ secrets.DEPLOY_KEY }}
           # 下面内容按需修改 
           external_repository: jycoast/jycoast.github.io # 目标仓库 (存放静态页面)
           publish_branch: master # 目标仓库的默认分支名字 
