@@ -40,4 +40,4 @@ jobs:
         git config --global user.email $GIT_EMAIL
         git commit -m "Site deployed by GitHub Actions"
         git remote add origin git%40github.com:jycoast/jycoast.github.io.git
-        git push --force --quiet "https://$GH_TOKEN@github.com/jycoast/jycoast.github.io" master:master
+        git push --force --quiet "https://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@github.com/jycoast/jycoast.github.io" master:master
