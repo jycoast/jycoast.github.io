@@ -2,6 +2,8 @@
 title: 
 ---
 
+{% markmap 1000px %}
+
 - 编程之旅
 
   - Java
@@ -80,3 +82,5 @@ title:
       - [算法训练营](https://www.youtube.com/watch?v=ozSyNPc5m2k&list=PLoZQ0sz6CBHH_DngliTZAhHxamus0gofC)
       - [leetCode](https://leetcode-cn.com/problemset/all/)
       - [牛客网](https://www.nowcoder.com/)
+
+{%endmarkmap%}
