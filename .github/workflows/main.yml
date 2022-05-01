@@ -12,14 +12,14 @@ jobs:
 
     steps:
     - name: Checkout source
-      uses: actions/checkout@v2
+      uses: actions/checkout@v1
       with:
         submodules: true
 
     - name: Setup Node.js
       uses: actions/setup-node@v1
       with:
-        node-version: '12.x'
+        node-version: '16.x'
 
     - name: Install dependencies & Generate static files
       run: |
@@ -41,4 +41,3 @@ jobs:
         git commit -m "Site deployed by GitHub Actions"
         git remote add origin git@github.com:jycoast/jycoast.github.io.git
         git push --force --quiet "https://$GH_TOKEN@github.com/jycoast/jycoast.github.io.git" master:master
-        git push https://<GITHUB_ACCESS_TOKEN>@github.com/<GITHUB_USERNAME>/<REPOSITORY_NAME>.git
