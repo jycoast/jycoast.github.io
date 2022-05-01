@@ -12,15 +12,13 @@ author: 吉永超
 可以说，Java 8中新增功能是自Java发布以来，Java发生变化最大的一次，而函数式编程一直被认为是少数人的“游戏”，实际上函数式编程在近年来，在各个语言当中得到了大力的发展，掌握函数式编程的思想是必经的路途。本文希望在了解Java语言中函数式编程的核心思想之上，融会贯通，对函数式编程不再感到陌生和畏惧，而是变成编程兵器库的中的一把利器。
 <!-- more -->
 
-## 函数式编程初识
+# 函数式编程概览
 
-JDK8或者说Java8是目前企业开发中最常用的JDK版本，Java8可谓Java语言历史上变化最大的一个版本，其承诺要调整Java编程向着函数式风格迈进，这有助于编写出更为简洁、表达力更强，并且在很多情况下能够利用并行运行的代码。
+## 函数式编程的意义
 
-但是很多人在使用Java8的时候，还是使用传统的面向对象的编程方式，这样在使用Java8的好处也仅仅停留在JVM带来的性能上的提升，而事实上Java8的新特性可以极大提升我们的开发效率，面向函数式编程也是将来编程语言的重要趋势，可以说，学习函数式编程风格，刻不容缓。
+JDK8或者说Java8是目前企业开发中最常用的JDK版本，Java8可谓Java语言历史上变化最大的一个版本，从这个版本开始，Java的编程向着函数式风格迈进，这有助于编写出更为简洁、表达力更强，并且在很多情况下能够利用并行运行的代码。但是很多人在使用Java8的时候，还是使用传统的面向对象的编程方式，这样在使用Java8的好处也仅仅停留在JVM带来的性能上的提升，而事实上Java8的新特性可以极大提升我们的开发效率。不仅如此，几乎所有的高级编程语言都支持了函数式编程的特性，掌握其中一门的设计理念与思想，在面对其他任何编程语言的函数式编程时，都能做到游刃有余。
 
-### 匿名内部类
-
-在以往的使用传统面向对象的编程中，我们不得不这样编写代码：
+在以往的使用传统面向对象的编程中，我们可能会编写这样的代码：
 
 ``` java
 import javax.swing.*;
@@ -32,6 +30,7 @@ public class anonymousTest {
 
         JFrame jFrame = new JFrame("My JFrame");
         JButton jButton = new JButton("My Button");
+        // 使用匿名内部类编程
         jButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -45,7 +44,6 @@ public class anonymousTest {
         jFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     }
 }
-
 ```
 
 这段代码我们实际上需要的其实只有System.out.println("Button Pressed")这一行，但却不得不编写很多没有实际意义的代码，如果改用函数式风格编程，我们的代码就变成了：
@@ -60,6 +58,7 @@ public class anonymousTest {
 
         JFrame jFrame = new JFrame("My JFrame");
         JButton jButton = new JButton("My Button");
+        // 使用函数式编程
         jButton.addActionListener(e -> System.out.println("Button Pressed"));
 
         jFrame.add(jButton);
@@ -70,9 +69,7 @@ public class anonymousTest {
 }
 ```
 
-可以看到，瞬间代码的易读性提高了很多。
-
-再比如我们经常会用到的创建线程的例子：
+可以看到，瞬间代码的易读性提高了很多。再比如我们经常会用到的创建线程的例子：
 
 ``` java
 package com.czxy.test;
@@ -81,13 +78,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 
 /**
- * Created by ${sunxin} on 2019/3/7
- * Lambda可以简循环遍历的写法，不是一般的简化，少些很多代码，简化创建线程的代码，简化以后的代码很少，不易懂，像前端javaScrpit
+ *  Lambda 在创建线程方面可以简化写法
  */
 public class Lambda {
-    /**
-     *     Lambda 在创建线程方面可以简化写法
-     */
+  
     //原来的写法
     public static void main(String[] args) throws IOException {
 
@@ -115,7 +109,7 @@ public class Lambda {
          */
         //获取执行前的毫秒值
         long old1 = System.currentTimeMillis();
-        for (int a =0;a<100000;a++){
+        for (int a =0; a<100000; a++){
             Thread threadLambda = new Thread(()-> System.out.println("使用Lambda创建了线程了"));
             threadLambda.start();
         }
@@ -129,9 +123,11 @@ public class Lambda {
 }
 ```
 
-不难看出，Lambda表达式在简化代码上，是非常有效的，Lambda表达式看起来特别像是原来Java中匿名内部类的一种特殊写法，对于初学者而言，暂时不妨可以认为Lambda表达式就是匿名内部类的一种新的写法，或者说是一种语法糖，但其实两者有着本质的区别，Lambda表达式就是一种全新的语法。
+不难看出，Lambda表达式在简化代码上，是非常有效的。
 
-这里通过一个例子来说明Lambda表达式和匿名内部类的区别：
+## Lambda表达式和匿名内部类
+
+Lambda表达式看起来特别像是Java中匿名内部类的一种特殊写法，对于初学者而言，暂时不妨可以认为Lambda表达式就是匿名内部类的一种新的写法，或者说是一种语法糖。下面通过一个例子来说明，Lambda表达式就是一种全新的语法：
 
 ```java
 public class LambdaTest {
@@ -163,13 +159,15 @@ Stream2.LambdaTest@362872a1
 Stream2.LambdaTest$1@60c8c409
 ```
 
-首先来看第二行，它表示当前对象指的是LambdaTest$1，在Java中表示匿名内部类会使用类名称+"$"+顺序的方式来表示，"@"后面的表示类的哈希值，而第一个Lamda表达式所打印的就是当前类LambdaTest的地址，这说明使用Lambda表达式的这种方式与它所在的类是同一个作用域。通过这个例子说明了Lambda表达式与匿名内部类有着本质的区别，两者是完全不同的，并不是匿名内部类的语法糖或者另一种表达形式，只不过在某些场景下，可以使用Lambda表达式来替代匿名内部类完成相同的功能。
+首先来看第二行，它表示当前对象指的是LambdaTest$1，在Java中表示匿名内部类会使用类名称+"\$"+顺序的方式来表示，"@"后面的表示类的哈希值，而第一个Lamda表达式所打印的就是当前类LambdaTest的地址，这说明使用Lambda表达式的这种方式与它所在的类是同一个作用域。
 
-而使用Lambda表达式所带来的好处其实远不止简化代码，它还可以为我们带来代码执行效率上的提升，所以，无论是处于开发效率，还是代码的执行速度上来看，都应该使用Lambda表达式，在后面的文章中，我们首先认识一下函数式编程中两个核心的概念Lambda表达式和Stream。
+通过这个例子说明了Lambda表达式与匿名内部类有着本质的区别，两者是完全不同的，并不是匿名内部类的语法糖或者另一种表达形式，只不过在某些场景下，可以使用Lambda表达式来替代匿名内部类完成相同的功能。
 
-### Lambda表达式和Stream
+实际上，使用Lambda表达式所带来的好处其实远不止简化代码，它还可以为我们带来代码执行效率上的提升，所以，无论是处于开发效率，还是代码的执行速度上来看，都应该使用Lambda表达式。
 
-Lambda表达式与Stream是java8中新增加的重要新特性，Lambda表达式与Stream相互配合，可以非常高效的处理一些集合的运算。
+## Lambda表达式和Stream
+
+在实际使用中，Lambda表达式往往与Stream相互配合，才会发挥其特性，通常用来高效的处理一些集合的运算。
 
 我们首先从遍历打印集合中元素这样非常常见的例子开始，以往遍历集合通常的做法是：
 
@@ -246,11 +244,9 @@ public class LambdaTest {
 
 也是java8中新增的一个语法糖。后续的文章我们有专门的篇幅来介绍方法引用，使用方法引用可以写出更加简洁优雅的代码。
 
-看了这么几个例子，你可能很疑惑，到底什么是Lambda表达式呢？
-在回答这个问题之前，我们首先需要了解我们为什么需要需要Lambda表达式。
+看了这么几个例子，你可能很疑惑，到底什么是Lambda表达式呢？在回答这个问题之前，我们首先需要了解我们为什么需要需要Lambda表达式。
 
-在以往的Java中，方法可以参数的传递总共有两种，一种是传递值，另有一种是传递引用，或者说对象的地址，但是我们无法将函数作为参数传递给一个方法，也无法声明返回一个函数的方法，而在其他语言中，比如面向函数式编程语言JavaScript中，函数的参数是一个函数，返回值是另一个函数的情况是非常常见的（回调函数）
-例如：
+在以往的Java中，方法可以参数的传递总共有两种，一种是传递值，另有一种是传递引用，或者说对象的地址，但是我们无法将函数作为参数传递给一个方法，也无法声明返回一个函数的方法，而在其他语言中，比如面向函数式编程语言JavaScript中，函数的参数是一个函数，返回值是另一个函数的情况是非常常见的（回调函数），例如：
 
 ``` javaScript
 images_upload_handler: function(blobInfo, success, failure) {
@@ -259,9 +255,7 @@ images_upload_handler: function(blobInfo, success, failure) {
 }
 ```
 
-这个函数总共接收三个参数，第一个参数就是一个普通的变量，success就是这个函数执行成功的回调函数，failure就是这个函数执行失败的回调函数。
-
-可以说，JavaScript是一门非常典型的函数式语言。而使用Lambda表达式就可以实现传递行为这种高阶函数（参数可以接收行为的方法们就称这个方法为高阶函数）的使用。
+这个函数总共接收三个参数，第一个参数就是一个普通的变量，success就是这个函数执行成功的回调函数，failure就是这个函数执行失败的回调函数。可以说，JavaScript是一门非常典型的函数式语言。而使用Lambda表达式就可以实现传递行为这种高阶函数（参数可以接收行为的方法们就称这个方法为高阶函数）的使用。
 
 当然Lambda表达式肯定不止只是能用来遍历集合这个简单，实际上，更多的情况下，我们都是需要配合Stream（流）来实现各种各样的操作。对于前面使用Lambda表达式来实现集合遍历的例子还可以这样做：
 
@@ -278,24 +272,18 @@ public class LambdaTest {
 ```
 
 看起来只是增加了一步，将list这个集合转化为了Stream，但是两者的实现有着本质的区别。我们可以简单的了解一下他们之前的区别。
-对于第一种，
-
-![](https://user-gold-cdn.xitu.io/2020/3/8/170b964aac39b7b7?w=973&h=519&f=png&s=54757)
-可以看到list.forEach实际上是调用Iterable这个类中jdk1.8新增的forEach方法，我们都知道List本身继承了Collection集合接口，而Collection接口又继承了Iterable这个类，所以可以完成调用，方法实现本身并没有特别复杂的地方，其实本质上看起来和我们传统的使用迭代器的方式并没有区别，接下来，我们查看一下第二种方式：
-
-![](https://user-gold-cdn.xitu.io/2020/3/8/170b969f366bdfc9?w=1049&h=416&f=png&s=60500)
+对于第一种：
+可以看到`list.forEach`实际上是调用Iterable这个类中jdk1.8新增的forEach方法，我们都知道List本身继承了Collection集合接口，而Collection接口又继承了Iterable这个类，所以可以完成调用，方法实现本身并没有特别复杂的地方，其实本质上看起来和我们传统的使用迭代器的方式并没有区别，接下来，我们查看一下第二种方式：
 首先同样的是在Collection接口中新增加了一个default method（我们称之为默认方法），在jdk1.8中接口是又具体的方法实现，实际上对于java这一门非常庞大臃肿的语言，为了向函数式编程迈进，jdk的设计者匠心独具，设计非常巧妙。这个方法将返回了一个新的对象Stream，并且调用了StreamSupport这个类中的stream（）方法：
-
-![](https://user-gold-cdn.xitu.io/2020/3/8/170b970249e81bcc?w=983&h=207&f=png&s=28200)
 追踪下去，我们也可以看到，同样的也是一个名叫forEach的方法，但其实这里的forEach()方法与之前的forEach（）方法存在本质的差别，这里的forEach实际上表示一种终止操作，而jdk会在集合进行流操作的时候，调用终止操作。
 
-在这两个方法中都接受一个Consumer<? super T> action 这样的一个参数，实际上，对于java而言，为了实现函数式编程，java引入了一个全新的概念：函数式接口，它是java实现整个函数式编程的手段，也是函数式编程中一个及其重要的概念，这个概念会贯穿整个函数式编程的全过程，理解了函数式接口，才能Lambda表达式真正的含义，接下来的时间，我们非常有必要首来认识一下，什么是函数式接口。
+在这两个方法中都接受一个`Consumer<? super T> action` 这样的一个参数，实际上，对于java而言，为了实现函数式编程，java引入了一个全新的概念：函数式接口，它是java实现整个函数式编程的手段，也是函数式编程中一个及其重要的概念，这个概念会贯穿整个函数式编程的全过程，理解了函数式接口，才能Lambda表达式真正的含义，接下来的时间，我们非常有必要首来认识一下，什么是函数式接口。
 
-## 函数式接口
+# 函数式接口
 
 函数式接口是函数式编程中最重要的概念，函数式编程与传统的编码方式相比最明显的区别就是，它允许把函数（或者说表达式）当成参数传递给另一个函数，在其他编程语言中，Lambda表达式的类型是函数，但在Java中，Lambda表达式是对象，他们必须依附于一类特别的对象--函数式接口（functional interface）。
 
-### 函数式接口定义
+## 函数式接口定义
 
 在之前的这个例子中：
 
@@ -515,7 +503,7 @@ public interface MyInterface {
 
 其实forEach()方法接收的函数式接口就是我们上面举得第一个例子Consumer，然后调用Consumer接口中的accept方法，诸多的函数式接口，为我们方便的传递各种不同需求的行为提供了可能。
 
-### 为什么是函数式接口？
+## 为什么是函数式接口？
 
 在前面我们了解了函数式接口的概念之后，我们来具体看一个例子：
 
@@ -709,17 +697,19 @@ public class LambdaTest {
 不妨来读一下这段文档：
 
  ``` txt
-      Performs the given action for each element of the {@code Iterable}
-      until all elements have been processed or the action throws an
-      exception.  Unless otherwise specified by the implementing class,
-      actions are performed in the order of iteration (if an iteration order
-      is specified).  Exceptions thrown by the action are relayed to the
-      caller
+     Performs the given action for each element of the {@code Iterable}
+     until all elements have been processed or the action throws an
+     exception.  Unless otherwise specified by the implementing class,
+     actions are performed in the order of iteration (if an iteration order
+     is specified).  Exceptions thrown by the action are relayed to the
+     caller
  ```
 
 针对于Iterable每一个元素去执行给定的动作，换句话说，这里并不是将值作为参数，而是将行为作为参数进行传递，执行到集合中所有的元素执行完或者抛出异常为止，如果没有被实现类所指定的话，那么动作就会按照迭代的顺序去执行，是不是抛出异常取决于调用者。
 
 其实这里最关键的就是Consumer这个参数，接下来我们重点分析Consumer这个函数式接口。
+
+## 常见的函数式接口
 
 ### Consumer函数式接口
 
@@ -778,15 +768,17 @@ public interface Consumer<T> {
   Represents an operation that accepts a single input argument and returns no
   result. Unlike most other functional interfaces, {@code Consumer} is expected
   to operate via side-effects.
- 
 ```
-Consumer代表了一种接收单个输入并且不返回结果的操作，与大多数其他的函数式接口不同的是，它可能会有副作用，这里的副作用指的是可能会修改传入参数的值。
+Consumer代表了一种接收单个输入并且不返回结果的操作，与大多数其他的函数式接口不同的是，它可能会有副作用。
+
+<div class="note info"><p>这里的副作用指的是可能会修改传入参数的值。</p></div>
+
 ``` txt
-  <p>This is a <a href="package-summary.html">functional interface</a>
-  whose functional method is {@link #accept(Object)}.
+This is a functional interface whose functional method is {@link #accept(Object)}.
 ```
 这是一个函数式接口，接口中的抽象方法是accept()。
 对于前面List集合遍历的例子，  我们可以通过匿名内部类的方式来操作：
+
 ``` java
 public class LambdaTest {
 
@@ -802,7 +794,7 @@ public class LambdaTest {
 }
 ```
 由于所有的匿名内部类又可以使用Lambda表达式来进行替换，所以：
-``` 
+``` java
 public class LambdaTest {
 
     public static void main(String[] args) {
@@ -811,7 +803,7 @@ public class LambdaTest {
     }
 }
 ```
-相信看到这里，对于函数式接口，大家已经有了一定的理解。这里因为类型推断的原因，编译器会自动推断Item的数据类型，所以无需说明item的类型。
+这里因为类型推断的原因，编译器会自动推断Item的数据类型，所以无需说明item的类型。
 
 ### Function函数式接口
 
@@ -895,7 +887,7 @@ public interface Function<T, R> {
 }
 ```
 同样的，与之前介绍的Consumer函数一样，都是一个函数式接口，都是从JDK8开始提供的。
-```
+```txt
   Represents a function that accepts one argument and produces a result.
  
   <p>This is a <a href="package-summary.html">functional interface</a>
@@ -1346,10 +1338,10 @@ public class PredicateTest2 {
     }
 }
 ```
-可以想象的到，如果要使用传统的方式实现这些需求，我们就需要编写很多个具体的方法，但是如果使用Lambda表达式，我们就可以定义一个通用的函数，具体的行为再在调用的时候传入。
+可以想象，如果要使用传统的方式实现这些需求，我们就必须要编写很多个具体的方法，但是如果使用Lambda表达式，我们就可以定义一个通用的函数，具体的行为在调用的时候再传入。
 
 Predicate中除了抽象方法test()，还有：
-``` txt
+``` java
     /**
      * Returns a composed predicate that represents a short-circuiting logical
      * AND of this predicate and another.  When evaluating the composed
@@ -1372,7 +1364,7 @@ Predicate中除了抽象方法test()，还有：
     }
 ```
 这个函数表示当前的Predicate与另一个Predicate的短路与，当计算这个复合函数的时候，如果前面的Predicate的值为false,那么后面的将不再会被计算，如果在计算过程中，任何一个Predicate会抛出异常的话，怎么做取决于调用者，如果当前的Predicate抛出了异常，那么后者也不会被计算。
-```txt
+```java
    /**
      * Returns a predicate that represents the logical negation of this
      * predicate.
@@ -1385,7 +1377,7 @@ Predicate中除了抽象方法test()，还有：
     }
 ```
 negate本身是否定的意思，表示返回当前Predicate的逻辑非。
-``` txt
+``` java
     /**
      * Returns a composed predicate that represents a short-circuiting logical
      * OR of this predicate and another.  When evaluating the composed
@@ -1562,7 +1554,7 @@ public class SupplierJyc {
 
 显然，控制台会打印出以下结果：
 
-```txt
+```shell
 > Task :SupplierJyc.main()
 hello word
 ```
@@ -1651,11 +1643,11 @@ public class StudentTest {
 
 以上就是几个最基础也是最重要的几个函数式接口，在此基础上，JDK还为我们提供了一些其他的函数式接口，例如BinaryOperator，他们可以看成是前面几个函数式接口的扩展。
 
-### 函数式接口扩展
+## 函数式接口扩展
 
 相同的方式，我们首先来阅读一下BinaryOperator这个函数式接口的文档：
 
-```txt
+```java
 /**
  * Represents an operation upon two operands of the same type, producing a result
  * of the same type as the operands.  This is a specialization of
@@ -2166,7 +2158,7 @@ public class MyClass2 extends MyInterface1Impl implements MyInterface2 {
 
 增加默认方法也可以看到，接口和抽象类的区别越来越小了。
 
-## Stream实践
+# Stream实践
 
 在前面的章节我们花费了不少的章节整理了Lambda表达式的相关特性，也举出了不少的例子来展示了Lambda表达式的应用，但总有种纸上谈兵的感觉，还是无法理解Lambda表达式到底可以帮我们做哪些事情？函数式编程又指的是什么？在接下来的章节中，我们就会围绕这两个问题展开。
 
@@ -2315,7 +2307,7 @@ public class StreamTest3 {
 
 这里我们对于集合中的元素先乘以2，然后求和，这里的map描述的是一种映射，而reduce描述的一种聚合，只有当表达式中具有reduce这样的终止操作的方法的时候，流才会被真正的执行，这就是所谓的终止操作，而map就称之为中间操作。不难看出，与传统的方式，使用函数式的方式，代码变的异常简洁和优雅。
 
-### Stream类源码解析
+## Stream类源码解析
 
 在初步了解了Sream给我们来了些什么之后，我们来了解一些关于流的特性：
 
@@ -2506,7 +2498,7 @@ supplier会创建一个新的结果容器，在并行流中可能会多次调用
     }
 ```
 
-### Stream实例剖析
+## Stream实例剖析
 
 首先来看一个具体的例子：
 
@@ -2711,7 +2703,7 @@ public class StreamTest6 {
 
 需要注意的是，这里之所以使用limit是因为如果不加限制，程序将一直运行下去，这是因为iterate他是无限的。
 
-### Stream陷阱剖析
+## Stream陷阱剖析
 
 首先来看这样一个例子，假设有这样一个流，流中的元素为1，3，5，6，7，11，我们要找出流中大于2的元素，然后将每个元素乘以2，忽略掉流中的前两个元素之后，再取出流中的前两个元素，然后求出流中元素的总和：
 
@@ -2874,7 +2866,7 @@ IntStream.iterate(0, i -> (i + 1) % 2).limit(6).distinct().forEach(System.out::p
 
 可以看到，控制台在输出了0，1之后就停止了，这是因为我们限制了只取流中的前六个元素，这提示我们在使用流的使用后一定要注意编写的顺序和流的相关特性。
 
-### 内部迭代和外部迭代
+## 内部迭代和外部迭代
 
 Stream和SQL语句其实非常的相似，例如，要完成这样的一个SQL的功能，使用SQL语句：
 
@@ -2933,7 +2925,7 @@ where age > 20 and address = ‘beijing’ order by age desc;
 
 我们一直再说中间操作和终止操作，那如何判断一个操作是中间操作还是终止操作呢？简单来说，中间操纵都会返回一个Stream对象，而终止操作则不会返回Stream类型，可能不返回值，也可能返回其他类型的单个值。
 
-### 流的短路与并发流
+## 流的短路与并发流
 
 单从使用的角度而言，并发流与串行流的区别并不是很大，但在底层实现上是完全不同的。
 
@@ -2998,7 +2990,7 @@ hello
 
 为什么会只打印hello呢？原因就在于虽然我们采用的是链式的调用，但其实在调用这些方法的时候并没有先后的顺序，对于流中元素进行处理的时候，会从流中的第一个元素开始应用所有对于流元素的操作，并且对于流的操作也有短路的特性，我们要找到长度为5的字符串，第一个元素就已经满足了所有的操作，所以后面的就不再执行了。
 
-### 分区于分组
+## 分区与分组
 
 我们曾经在内部迭代与外部迭代的章节中提到过，使用Stream的API很像在使用SQL语句，使用SQL语句进行分组的查询是一个很常见的需求，实际上，Stream也对分组提供了强有力的支持。
 
@@ -3160,7 +3152,7 @@ students.stream().collect(Collectors.partitioningBy(student -> student.getScore(
 
 至此，对于JDK8中的重要的API全部都介绍完成，学会使用是第一步也是非常重要的一步，在长时间的练习和记忆中，我们才能体会到函数式编程带给我们巨大好处，如果只是从使用的角度而言，掌握本章及之前的内容对于一般的开发者，完全是够用的，然而我想这是远远不够的，学习JDK中优秀的源码，反过来加深我们使用的时候的理解，达到相互促进的作用，这才是更重要的，因此，从下一章节开始，我们将系统而全面的分析JDK是如何实现函数式编程，以及我们之前使用的诸多的API在底层到底是如何实现的。
 
-## Collector接口
+# Collector接口
 
 Stream的源码复杂而多变，要掌握整个的流程，我们就不得不先要理清楚一些及其重要的概念和几个核心类的作用，当然一开始这是不太容易能够理解的，但是，这会为后面我们能完整的看到流的整个调用顺序打下良好的基础。
 
@@ -3203,7 +3195,7 @@ public class Student {
 
 ```
 
-### Comparator源码分析及实践
+## Comparator源码分析及实践
 
 Comparator并不是JDK8新增加的内容，但是JDK8对它做了一定程度的增强，在函数式编程中非常的常见，所以也非常的重要，在正式进入Stream源码分析之前，有必要了解关于Comparator比较器的内容。
 
@@ -3376,7 +3368,7 @@ Collections.sort(list, Comparator.comparingInt(String::length).thenComparing(Str
 Collections.sort(list,Comparator.comparingInt(String::length).reversed().thenComparing(String::toLowerCase, Comparator.reverseOrder()));
 ```
 
-### Collector源码分析
+## Collector源码分析
 
 Collector无疑是整个Stream源码中及其重要的一个类，了解它对于我们认识Stream类有着及其关键的作用，首先回到我们之前的例子当中：
 
@@ -3642,7 +3634,7 @@ If we wanted to create a collector to tabulate the sum of salaries by department
 
 这里的第二个参数就是我们上面定义过的收集器，这就实现了收集器的复合。
 
-### Collector实践
+## Collector实践
 
 Collector接口有且仅有唯一的实现类CollectorImpl：
 
@@ -3821,7 +3813,7 @@ students.stream().collect(Collectors.partitioningBy(student -> student.getScore(
 students.stream().collect(Collectors.groupingBy(Student::getName,Collectors.collectingAndThen(Collectors.minBy(Comparator.comparingInt(Student::getScore)), Optional::get)));
 ```
 
-### 自定义Collector
+## 自定义Collector
 
 在进行Collector源码分析的时候，我们提到过Characteristics这个内部枚举类，接下来我们首先分析每一个枚举项代表的含义：
 
@@ -4263,7 +4255,7 @@ Map<String, String> map = set.stream().sequential().collect(new MySetCollector2<
     private boolean parallel;
 ```
 
-### Collectors源码分析
+## Collectors源码分析
 
 自定义Collector的过程帮助我们很好的理解了关于Collector的基本概念，我们也尝试着自己实现了两个相对比较简单的例子，Collectors作为生产Collector的静态工厂类，里面有大量的关于Collector的实现，本节我们就分析JDK已经帮我们实现的Collector的例子，学习这些例子，有助于我们强化对于Collector的理解。
 
@@ -4685,11 +4677,11 @@ groupingBy方法返回的Collector不是并发的，对于并行流管道，comb
 
 之所以这么做的原因是，分区一定是固定的两组结果，如果再使用Map类描述的话并不是特别清晰。
 
-## Stream原理
+# Stream原理
 
 收集器是我们认识整个Stream的第一步，在了解了有关收集器的内容之后，可以为我们了解Stream打下良好的基础，这一部分是整个函数式编程最核心的部分，我们将会看到JDK在底层到底是如何巧妙的实现函数式编程。
 
-### Stream源码分析
+## Stream源码分析
 
 在正式开始介绍之前，需要有一些预备的知识，从JDK1.7开始增加了这样一个接口：
 
@@ -4960,7 +4952,7 @@ java.lang.NullPointerException: exception
 FAILURE: Build failed with an exception.
 ```
 
-### Spliterator源码分析
+## Spliterator源码分析
 
 Spliterator被称之为分割迭代器，是整个流实现非常重要的一环，从本节开始，就正式进入的流源码的分析。
 
@@ -5565,7 +5557,7 @@ public class ConsumerTest {
 
 除了OfInt之外还有其他两种OfLong、OfDouble，原理和功能都是类似的。
 
-### Pipeline源码分析
+## Pipeline源码分析
 
 分割迭代器无疑是函数式编程中一个相当核心的概念，其地位与收集器相同，在了解了分割迭代器的相关内容之后，我们再回到一开始的例子当中，看看JDK是如何使用分割迭代器来构造流源的，还是回到最开始的入口这里：
 
@@ -5818,7 +5810,7 @@ supplier的元，只会head pipeline起作用，在管道被消费之前，如�
 
 可以看到这两个成员变量可以认为是互斥的，必须要保证其中一个不为空，在流消费之后都要置为空，表示流已经消费完成，至此为止，流源的对象也已经构造完成。
 
-### 流调用机制与原理
+## 流调用机制与原理
 
 回到一开始的例子当中：
 
@@ -6040,7 +6032,7 @@ Constructor for appending an intermediate operation stage onto an existing pipel
 
 这里也可以看到这个构造方法与我们之前见过的有关构造流源的构造方法的作用完全不同，回到刚才的例子当中，除了上面追加中间操作的部分，还涉及到了另外一个及其重要的类Sink，一般翻译为饮水槽，这是我们了解整个流调用机制的最后一个类。
 
-### Sink源码分析
+## Sink源码分析
 
 ```txt
 An extension of Consumer used to conduct values through the stages of a stream pipeline, with additional methods to manage size information, control flow, etc. Before calling the accept() method on a Sink for the first time, you must first call the begin() method to inform it that data is coming (optionally informing the sink how much data is coming), and after all data has been sent, you must call the end() method. After calling end(), you should not call accept() without again calling begin(). Sink also offers a mechanism by which the sink can cooperatively signal that it does not wish to receive any more data (the cancellationRequested() method), which a source can poll before sending more data to the Sink.
@@ -6371,7 +6363,7 @@ Pushes elements obtained from the Spliterator into the provided Sink. If the str
 
 TerminalSink是Sink最终的形态。
 
-  ### Stream调用流程
+  ## Stream调用流程
 
 BaseStream->Stream->AbstractPipline->ReferencePipline->(Head（流源）、StatelessOp（无状态的中间操作）、StatefulOp（有状态的中间操作））
 
