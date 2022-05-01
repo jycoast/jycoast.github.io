@@ -31,7 +31,6 @@ jobs:
     - name: Deploy to Github Pages
       env:
         GIT_NAME: jycoast
-        GIT_EMAIL: ${{ secrets.GIT_EMAIL }}
         REPO: github.com/jycoast/jycoast.github.io
         GH_TOKEN: ${{ secrets.DEPLOY_KEY }}
       run: |
