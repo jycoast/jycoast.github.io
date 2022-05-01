@@ -35,7 +35,7 @@ jobs:
         GH_TOKEN: ${{ secrets.DEPLOY_KEY }}
       run: |
         cd ./public && git init && git add .
-        git config --global user.name $GIT_NAME
+        git config --global user.name jycoast
         git config --global user.email jiyongchaowy@163.com
         git config --global credential.helper store
         git commit -m "Site deployed by GitHub Actions"
