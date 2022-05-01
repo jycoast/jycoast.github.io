@@ -33,7 +33,7 @@ jobs:
         GIT_NAME: jycoast
         GIT_EMAIL: ${{ secrets.GIT_EMAIL }}
         REPO: github.com/jycoast/jycoast.github.io
-        GH_TOKEN: ${{ secrets.DEPLOY_KEY }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         cd ./public && git init && git add .
         git config --global user.name $GIT_NAME
