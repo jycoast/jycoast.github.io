@@ -5,39 +5,34 @@ on:
     branches: gh-pages
 
 jobs:
-  hexo-deployment:
+  build:
     runs-on: ubuntu-latest
-    env:
-      TZ: Asia/Shanghai
+    strategy:
+      matrix:
+        node-version: [14.x]
 
     steps:
-    - name: Checkout source
-      uses: actions/checkout@v1
-      with:
-        submodules: true
+      - uses: actions/checkout@v1
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v1
-      with:
-        node-version: '16.x'
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
 
-    - name: Install dependencies & Generate static files
-      run: |
-        node -v
-        npm i -g hexo-cli
-        npm i
-        hexo clean
-        hexo g
-    - name: Deploy to Github Pages
-      env:
-        GIT_NAME: jycoast
-        GIT_EMAIL: ${{ secrets.GIT_EMAIL }}
-        REPO: github.com/jycoast/jycoast.github.io
-        GH_TOKEN: ${{ secrets.ACCESS_TOKEN }}
-      run: |
-        cd ./public && git init && git add .
-        git config --global user.name $GIT_NAME
-        git config --global user.email $GIT_EMAIL
-        git commit -m "Site deployed by GitHub Actions"
-        git remote add origin git@github.com:jycoast/jycoast.github.io.git
-        git push --force --quiet "https://$GH_TOKEN@github.com/jycoast/jycoast.github.io" master:master
+      - name: Configuration environment
+        env:
+          HEXO_DEPLOY_PRI: ${{secrets.HEXO_DEPLOY_PRI}}
+        run: |
+          mkdir -p ~/.ssh/
+          echo "$HEXO_DEPLOY_PRI" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          git config --global user.name "jycoast"
+          git config --global user.email "jiyongchao.19961"
+      - name: Install dependencies
+        run: |
+          npm i -g hexo-cli
+          npm i
+      - name: Deploy hexo
+        run: |
+          hexo clean && hexo generate && hexo deploy
