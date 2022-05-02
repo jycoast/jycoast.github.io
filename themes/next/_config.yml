@@ -146,7 +146,7 @@ sidebar:
   # Manual define the sidebar width. If commented, will be default for:
   # Muse | Mist: 320
   # Pisces | Gemini: 240
-  #width: 300
+  width: 390
 
   # Sidebar Display (only for Muse | Mist), available values:
   #  - post    expand on posts automatically. Default.
@@ -424,7 +424,7 @@ font:
   global:
     external: true
     family: Roboto Mono
-    size: 0.7
+    size: 0.9
 
   # Font settings for site title (.site-title).
   title:
@@ -448,7 +448,7 @@ font:
   codes:
     external: true
     family:
-    size: 0.7
+    size: 0.9
 
 
 # ---------------------------------------------------------------
@@ -810,7 +810,7 @@ tabs:
 # So, you have to install the dependency of pdf.js if you want to use pdf tag and make it available to all browsers.
 # See: https://github.com/theme-next/theme-next-pdf
 pdf:
-  enable: false
+  enable: true
   # Default height
   height: 500px
 
