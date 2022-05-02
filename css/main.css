@@ -178,7 +178,7 @@ body {
   background: var(--body-bg-color);
   color: var(--text-color);
   font-family: 'Roboto Mono', "PingFang SC", "Microsoft YaHei", sans-serif;
-  font-size: 0.7em;
+  font-size: 0.9em;
   line-height: 2;
 }
 @media (max-width: 991px) {
@@ -889,6 +889,11 @@ pre .javascript .function {
   content: "\f056";
   color: #d9534f;
 }
+.pdfobject-container iframe,
+.pdfobject-container embed {
+  height: 500px;
+  width: 100%;
+}
 .pagination .prev,
 .pagination .next,
 .pagination .page-number,
@@ -1005,7 +1010,7 @@ pre .javascript .function {
 }
 @media (min-width: 1200px) {
   .main-inner {
-    width: 800px;
+    width: 950px;
   }
 }
 @media (min-width: 1600px) {
@@ -1027,7 +1032,7 @@ pre .javascript .function {
 }
 @media (min-width: 1200px) {
   .header-inner {
-    width: 800px;
+    width: 950px;
   }
 }
 @media (min-width: 1600px) {
@@ -1313,14 +1318,14 @@ pre .javascript .function {
 .links-of-author span.exturl {
   border-bottom-color: #555;
   display: inline-block;
-  font-size: 0.8125em;
+  font-size: 1em;
   margin-bottom: 10px;
   margin-right: 10px;
   vertical-align: middle;
 }
 .links-of-author a::before,
 .links-of-author span.exturl::before {
-  background: #f12f8a;
+  background: #fff90a;
   border-radius: 50%;
   content: ' ';
   display: inline-block;
@@ -1357,7 +1362,7 @@ pre .javascript .function {
   color: #fff;
 }
 .links-of-blogroll {
-  font-size: 0.8125em;
+  font-size: 1em;
   margin-top: 10px;
 }
 .links-of-blogroll-title {
@@ -1446,7 +1451,7 @@ pre .javascript .function {
   background: #f00;
 }
 .post-toc {
-  font-size: 0.875em;
+  font-size: 1em;
 }
 .post-toc ol {
   list-style: none;
@@ -1510,7 +1515,7 @@ pre .javascript .function {
 }
 @media (min-width: 1200px) {
   .footer-inner {
-    width: 800px;
+    width: 950px;
   }
 }
 @media (min-width: 1600px) {
@@ -2577,13 +2582,13 @@ hr {
   border-bottom-color: var(--btn-default-hover-border-color);
 }
 .sidebar {
-  left: -320px;
+  left: -390px;
 }
 .sidebar.sidebar-active {
   left: 0;
 }
 .sidebar {
-  width: 320px;
+  width: 390px;
   z-index: 1200;
   transition-delay: 0s;
   transition-duration: 0.2s;
