@@ -14709,8 +14709,10 @@ dp[start+1] = max(nums[start],nums[start+1]) &amp; 只有两件房屋，偷窃�
 <div class="note warning"><p>迭代出来的元素都是原来集合元素的拷贝，Java集合元素实质是对象的引用，而非对象本身，迭代出的对象也是引用的拷贝，结果还是引用。那么如果集合中保存的元素是可变类型的，那么可以通过迭代出的元素修改原集合中的对象</p></div>
 <p>总的来说，两者的区别主要在于遍历和集合本身是否分离，从数据结构的角度分析，如果使用Iterator来遍历集合的元素，并不需要考虑集合类的内部实现（只要），而如果使用for循环进行遍历，那么遍历此集合的算法都得做相应的调整。</p>
 <h3 id="过滤器和拦截器的区别"><a class="markdownIt-Anchor" href="#过滤器和拦截器的区别"></a> 过滤器和拦截器的区别？</h3>
-<p>过滤器指的是在java web中，传入的request、response提前过滤一些信息，或者提前设置一些参数，然后传入servlet或者struts的action进行业务逻辑，比如过滤掉非法url。</p>
-<p>拦截器，是在面向切面编程的时候，使用动态代理拦截方法等。</p>
+<ul>
+<li>过滤器指的是，在java web中，传入的request、response提前过滤一些信息，或者提前设置一些参数，然后传入servlet或者struts的action进行业务逻辑，比如过滤掉非法url。</li>
+<li>拦截器指的是，是在面向切面编程的时候，使用动态代理拦截方法等。</li>
+</ul>
 <h2 id="java集合"><a class="markdownIt-Anchor" href="#java集合"></a> Java集合</h2>
 <h3 id="list-set-map三者的区别"><a class="markdownIt-Anchor" href="#list-set-map三者的区别"></a> List、Set、Map三者的区别？</h3>
 <p>List用来存储一组不唯一（可以重复），有序的对象；</p>
@@ -14752,9 +14754,12 @@ dp[start+1] = max(nums[start],nums[start+1]) &amp; 只有两件房屋，偷窃�
 <li>如何设计一个不可变类</li>
 </ul>
 <h3 id="hashset实现原理"><a class="markdownIt-Anchor" href="#hashset实现原理"></a> HashSet实现原理？</h3>
+<p>底层使用HashMap实现：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// hashMap的value是Object类型</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">transient</span> HashMap&lt;E,Object&gt; map;</span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Object PRESENT = <span class="keyword">new</span> Object();</span><br><span class="line"></span><br><span class="line"><span class="comment">// HashSet添加元素的方法</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">add</span><span class="params">(E e)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> map.put(e, PRESENT)==<span class="keyword">null</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// HashSet删除元素的方法</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">remove</span><span class="params">(Object o)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> map.remove(o)==PRESENT;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h3 id="currenthashmap的实现原理"><a class="markdownIt-Anchor" href="#currenthashmap的实现原理"></a> CurrentHashMap的实现原理？</h3>
 <p>JDK1.7分段锁的设计，JDK1.8：Node + CAS + Synchronized</p>
 <h3 id="arraylist的实现原理"><a class="markdownIt-Anchor" href="#arraylist的实现原理"></a> ArrayList的实现原理？</h3>
+<p>ArrayList底层使用一个支持自动扩容的数组来保存所有元素。ArrayList并不是线程安全的，只能在单线程环境下使用，多线程环境下可以使用<code>java.util.Collections.SynchronizedList</code>或<code>java.util.concurrent.CopyOnWriteArrayList</code>来代替。</p>
 <h2 id="java并发"><a class="markdownIt-Anchor" href="#java并发"></a> Java并发</h2>
 <h3 id="并发编程的三要素"><a class="markdownIt-Anchor" href="#并发编程的三要素"></a> 并发编程的三要素？</h3>
 <p>线程安全性的问题主要体现在：</p>
@@ -14779,7 +14784,7 @@ dp[start+1] = max(nums[start],nums[start+1]) &amp; 只有两件房屋，偷窃�
 <p>进程是程序运行时的状态，是操作系统分配资源的最小单元，进程的主要作用是管理资源。线程是操作系统调度的最小的单元，一个程序至少有一个进程，一个进程至少有一个线程，线程是进程当中的一条执行流程。</p>
 <h3 id="守护线程和用户线程的区别"><a class="markdownIt-Anchor" href="#守护线程和用户线程的区别"></a> 守护线程和用户线程的区别？</h3>
 <p>Java中的线程分为两种：守护线程（Daemon）和用户线程（User），其中用户线程又称本地线程。守护线程可以理解为JVM自动创建的线程（通常），用户线程是程序创建的线程。一般情况下，两者的区别在于，当JVM中所有的线程都是守护线程的时候，JVM就可以退出，如果还有一个或以上的非守护线程则不会退出。</p>
-<p>可以通过 java.lang.Thread#setDaemon 方法设置线程为守护线程或者用户线程。</p>
+<p>可以通过 <code>java.lang.Thread#setDaemon</code>方法设置线程为守护线程或者用户线程。</p>
 <h3 id="什么是线程安全"><a class="markdownIt-Anchor" href="#什么是线程安全"></a> 什么是线程安全？</h3>
 <p>指某个函数、函数库在多线程的环境中被调用时，能够正确地处理多个线程之间的共享变量，使程序功能正确完成。</p>
 <h3 id="java如何开启线程怎么保证线程安全"><a class="markdownIt-Anchor" href="#java如何开启线程怎么保证线程安全"></a> Java如何开启线程？怎么保证线程安全？</h3>
@@ -15178,7 +15183,62 @@ dp[start+1] = max(nums[start],nums[start+1]) &amp; 只有两件房屋，偷窃�
 <li>初始化：创建对象</li>
 </ol>
 <h3 id="你了解分代理论吗"><a class="markdownIt-Anchor" href="#你了解分代理论吗"></a> 你了解分代理论吗？</h3>
+<p>目前绝大部分的JJVM，在针对对象进行垃圾收集的时候，会将对象熬过垃圾收集的次数，视为对象的年龄，依次将对象至少划分为新生代和老年代。分代收集理论基于以下三种假说和经验法则：</p>
+<ul>
+<li>
+<p>弱分代假说</p>
+<p>绝大数对象，在第一次垃圾收集时就会被回收，按照经验法则，这个值高达百分之九十八</p>
+</li>
+<li>
+<p>强分代假说</p>
+<p>熬过越多次收集过程的对象就越难以消亡</p>
+</li>
+<li>
+<p>跨代引用假说</p>
+<p>该假说认为只会存在很少的跨代引用。因为只要经过一些次数的垃圾收集，即使还存在跨代引用，新生代会变成老年代，跨代引用也就自然小时了，所以跨代引用的数量不会多</p>
+</li>
+</ul>
+<p>Java堆分为新生代和老年代，针对收集对象处于哪一代，一共有以下四种收集方式：</p>
+<ul>
+<li>部分收集</li>
+<li>新生代收集（Minor GC/Young GC），只收集新生代垃圾对象</li>
+<li>老年代收集（Major GC/Old GC），只收集老年代垃圾对象，目前只有CMS收集器会单独收集老年代对象</li>
+<li>混合收集（Mixed GC），收集来自整个新生代以及部分老年代中的垃圾对象，目前只有G1会有这种行为</li>
+<li>整堆收集（Full GC）：收集整个Java堆和方法区的垃圾收集</li>
+</ul>
 <h3 id="jdk-中有几种引用类型分别的特点是什么"><a class="markdownIt-Anchor" href="#jdk-中有几种引用类型分别的特点是什么"></a> JDK 中有几种引用类型？分别的特点是什么？</h3>
+<p>在JDK1.2之前，一个对象只有“被引用”或者“未被引用”两种状态，但这种描述方式不能满足所有的场景，譬如我们希望描述一类对象：当内存空间还足够时，能保留在内存之中，如果内存空间在垃圾收集器后仍然非常警长，那就可以抛弃这些对象，这个时候就需要对引用的概念进行扩充。</p>
+<table>
+<thead>
+<tr>
+<th>引用类型</th>
+<th>定义</th>
+<th>特点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>强引用（Strong Reference）</td>
+<td>通过new关键赋值的引用</td>
+<td>只要强引用关系还存在，垃圾收集器永远不会回收掉引用的对象</td>
+</tr>
+<tr>
+<td>软引用（Soft Reference）</td>
+<td>还有用，但非必须的对象</td>
+<td>内存不够时一定会被GC，长期不用也会被GC</td>
+</tr>
+<tr>
+<td>弱引用（Weak Reference）</td>
+<td>非必须对象</td>
+<td>被弱引用关联的对象只能生存到下一次垃圾收集发生为止。无论当前内存是否足够，都会回收</td>
+</tr>
+<tr>
+<td>虚引用（Phantom Reference）</td>
+<td>“幽灵引用”或者“幻影引用”</td>
+<td>对象被垃圾收集器回收时收到一个系统通知</td>
+</tr>
+</tbody>
+</table>
 <h3 id="一个对象从加载到jvm再到gc清除都经历了什么过程"><a class="markdownIt-Anchor" href="#一个对象从加载到jvm再到gc清除都经历了什么过程"></a> 一个对象从加载到JVM，再到GC清除，都经历了什么过程？</h3>
 <p>详细步骤说明：</p>
 <ol>
@@ -15625,7 +15685,7 @@ dp[start+1] = max(nums[start],nums[start+1]) &amp; 只有两件房屋，偷窃�
 <p>因为要保证主从之间的数据一致，写数据的操作只能在主节点完成。而读数据的操作，可以在主节点或者从节点上完成。</p>
 <p>这种方式有丢失数据的风险，可以采用半同步的方式：</p>
   <img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210630005820.png" alt="img" style="zoom:67%;" />
-<h3 id="谈谈如何对mysql进行分库分表多大数据量需要进行分库分表分库分表的方式和分片策略由哪些分库分表后sql语句执行流程是怎样的"><a class="markdownIt-Anchor" href="#谈谈如何对mysql进行分库分表多大数据量需要进行分库分表分库分表的方式和分片策略由哪些分库分表后sql语句执行流程是怎样的"></a> 谈谈如何对MySQL进行分库分表？多大数据量需要进行分库分表？分库分表的方式和分片策略由哪些？分库分表后，SQL语句执行流程是怎样的？</h3>
+<h3 id="mysql如何进行分库分表多大数据量需要进行分库分表分库分表的方式和分片策略由哪些分库分表后sql语句执行流程是怎样的"><a class="markdownIt-Anchor" href="#mysql如何进行分库分表多大数据量需要进行分库分表分库分表的方式和分片策略由哪些分库分表后sql语句执行流程是怎样的"></a> MySQL如何进行分库分表？多大数据量需要进行分库分表？分库分表的方式和分片策略由哪些？分库分表后，SQL语句执行流程是怎样的？</h3>
 <p>什么是分库分表：就是当表中的数据量过大时，整个查询效率就会降低的非常明显，这是为了提升查询效率，就要将一个表中的数据分散到多个数据库的多个表当中。</p>
 <p>数据分片的方式有垂直分片和水平分片。垂直分片就是从业务角度将不同的表拆分到不同的表中，能够解决数据库数据文件过大的问题，但是不能从根本上解决查询问题。水平分片就是从数据角度将一个表中的数据拆分到不同的库或者表中，这样可以从根本上解决数据量过大造成的查询效率低的问题。</p>
 <p>常见的分片策略有：</p>
@@ -15648,10 +15708,18 @@ dp[start+1] = max(nums[start],nums[start+1]) &amp; 只有两件房屋，偷窃�
 <li>主键避重</li>
 </ul>
 <h3 id="mysql的索引结构为什么使用b树"><a class="markdownIt-Anchor" href="#mysql的索引结构为什么使用b树"></a> Mysql的索引结构为什么使用B+树？</h3>
-<p>B+树只有叶结点存放数据，其余结点用来索引，而B-树是每个索引结点都会有Data域。所以从MySQL（Innodb）的角度来看，B+树是用来充当索引的，一般来说索引非常大，尤其是关系型数据库这种数据量大的索引能达到亿级别，所以为了减少内存占用，索引也会被存储在磁盘上。</p>
-<p>另外，B-树/B+树的特点就是每层节点数目非常多，层数很少，目的就是为了减少磁盘IO次数，但是B-树的每个节点都有data域（指针），这无疑增大了节点的大小，说白了增加了磁盘IO次数（磁盘IO一次读出的数据量大小是固定的，单个数据变大，每次读出的就少，IO次数增多，一次IO多耗时），而B+树除了叶子节点其它节点并不存储数据，节点小，磁盘IO次数就少，这是优点之一。</p>
-<p>另一个优点是：B+树所有Data域在叶子节点，一般来说都会进行一个优化，就是将所有的叶子节点用指针穿起来。这样遍历叶子节点就能获得全部数据，这样就能进行区间访问，在数据库中基于范围的查询时非常频繁的，而B树不支持这样的遍历操作。</p>
-<p>总而言之，B树在提高了IO性能的同时并没有解决元素遍历的我效率低下的问题，正是为了解决这个问题，B+树应用而生。B+树只需要去遍历叶子节点就可以实现整棵树的遍历。而且在数据库中基于范围的查询是非常频繁的，而B树不支持这样的操作或者说效率太低。</p>
+<p>总体来说有以下好处：</p>
+<ul>
+<li>可以减少磁盘IO的次数</li>
+<li>能够很好的同时支持等值查询和范围查询
+<ul>
+<li>等值查询：哈希表、跳表不适合范围查询</li>
+<li>范围查询：二叉树/红黑树可以很好的满足范围查询，但当树过高时，会带来磁盘IO过高的问题；B树的范围查询，会一直到根节点再到叶子节点查询，B+树解决了范围查询的带来的问题</li>
+</ul>
+</li>
+<li>B的查询效率不稳定，在O(1-logN)之前，而B+树可以稳定在O(logN)</li>
+</ul>
+<p>完整链接：<a href="https://juejin.cn/post/7081065180301361183">https://juejin.cn/post/7081065180301361183</a></p>
 <h3 id="mysql的三种删除方式的区别"><a class="markdownIt-Anchor" href="#mysql的三种删除方式的区别"></a> Mysql的三种删除方式的区别？</h3>
 <table>
 <thead>
@@ -15935,6 +16003,15 @@ dp[start+1] = max(nums[start],nums[start+1]) &amp; 只有两件房屋，偷窃�
 <p>而Redis很好的解决了这个问题，并且还有其它的特性，例如可以搭建在其它服务器上，缓存的容量可扩展等。</p>
 <h3 id="mybatis如何开启二级缓存"><a class="markdownIt-Anchor" href="#mybatis如何开启二级缓存"></a> Mybatis如何开启二级缓存？</h3>
 <p><a href="https://tech.meituan.com/2018/01/19/mybatis-cache.html">https://tech.meituan.com/2018/01/19/mybatis-cache.html</a></p>
+<h2 id="netty面试题"><a class="markdownIt-Anchor" href="#netty面试题"></a> Netty面试题</h2>
+<h3 id="netty-核心组件有哪些分别有什么作用"><a class="markdownIt-Anchor" href="#netty-核心组件有哪些分别有什么作用"></a> Netty 核心组件有哪些？分别有什么作用？</h3>
+<h3 id="eventloopgroup-了解么和-eventloop-啥关系"><a class="markdownIt-Anchor" href="#eventloopgroup-了解么和-eventloop-啥关系"></a> EventloopGroup 了解么?和 EventLoop 啥关系?</h3>
+<h3 id="bootstrap-和-serverbootstrap-了解么"><a class="markdownIt-Anchor" href="#bootstrap-和-serverbootstrap-了解么"></a> Bootstrap 和 ServerBootstrap 了解么？</h3>
+<h3 id="nioeventloopgroup-默认的构造函数会起多少线程"><a class="markdownIt-Anchor" href="#nioeventloopgroup-默认的构造函数会起多少线程"></a> NioEventLoopGroup 默认的构造函数会起多少线程？</h3>
+<h3 id="netty-线程模型了解么"><a class="markdownIt-Anchor" href="#netty-线程模型了解么"></a> Netty 线程模型了解么？</h3>
+<h3 id="netty-服务端和客户端的启动过程了解么"><a class="markdownIt-Anchor" href="#netty-服务端和客户端的启动过程了解么"></a> Netty 服务端和客户端的启动过程了解么？</h3>
+<h3 id="netty-长连接-心跳机制了解么"><a class="markdownIt-Anchor" href="#netty-长连接-心跳机制了解么"></a> Netty 长连接、心跳机制了解么？</h3>
+<h3 id="netty-的零拷贝了解么"><a class="markdownIt-Anchor" href="#netty-的零拷贝了解么"></a> Netty 的零拷贝了解么？</h3>
 <h1 id="认证授权"><a class="markdownIt-Anchor" href="#认证授权"></a> 认证授权</h1>
 <h2 id="网络安全"><a class="markdownIt-Anchor" href="#网络安全"></a> 网络安全</h2>
 <h3 id="什么是认证和授权如何设计一个权限认证框架"><a class="markdownIt-Anchor" href="#什么是认证和授权如何设计一个权限认证框架"></a> 什么是认证和授权？如何设计一个权限认证框架？</h3>
@@ -15957,10 +16034,10 @@ dp[start+1] = max(nums[start],nums[start+1]) &amp; 只有两件房屋，偷窃�
 <p>攻击过程：</p>
 <ol>
 <li>
-<p>某银行网站A可以以GET请求的方式发起转账操作。<a href="http://www.xxx.com/transfor.do?accountNum=100&amp;money=1000">www.xxx.com/transfor.do?accountNum=100&amp;money=1000</a> accountNum表示目标账户，这个请求肯定是需要登录才可以正常访问的，</p>
+<p>某银行网站A可以以GET请求的方式发起转账操作。<em><a href="http://www.xxx.com/transfor.do?accountNum=100&amp;money=1000">www.xxx.com/transfor.do?accountNum=100&amp;money=1000</a></em> accountNum表示目标账户，这个请求肯定是需要登录才可以正常访问的，</p>
 </li>
 <li>
-<p>攻击者在某个论坛或者网站上上传一个图片，<a href="http://xn--www-iq6eycq56gc8d4y2j.xxx.com/transfor.do?accountNum=100&amp;money=1000%EF%BC%8C%E5%85%B6%E4%B8%ADaccountNum%E5%B0%B1%E6%98%AF%E6%94%BB%E5%87%BB%E8%80%85%E8%87%AA%E5%B7%B1%E7%9A%84%E9%93%B6%E8%A1%8C%E8%B4%A6%E6%88%B7%E3%80%82">链接地址是www.xxx.com/transfor.do?accountNum=100&amp;money=1000，其中accountNum就是攻击者自己的银行账户。</a></p>
+<p>攻击者在某个论坛或者网站上上传一个图片，链接地址是 <em><a href="http://www.xxx.com/transfor.do?accountNum=100&amp;money=1000">www.xxx.com/transfor.do?accountNum=100&amp;money=1000</a></em>，其中accountNum就是攻击者自己的银行账户。</p>
 </li>
 <li>
 <p>如果有一个用户，登录了银行网站，然后又打开浏览器的另一个Tab页，点击了这个图片，这时，银行就会受理到一个带了正确的cookie的请求，就会完成转账，用户的钱就被盗了。</p>
@@ -16082,15 +16159,15 @@ dp[start+1] = max(nums[start],nums[start+1]) &amp; 只有两件房屋，偷窃�
 <h2 id="消息队列"><a class="markdownIt-Anchor" href="#消息队列"></a> 消息队列</h2>
 <h3 id="mq有什么用有哪些具体的使用场景"><a class="markdownIt-Anchor" href="#mq有什么用有哪些具体的使用场景"></a> ＭＱ有什么用？有哪些具体的使用场景？</h3>
 <p>队列是一种FIFO先进先出的数据结构，而MQ（Message Queue）即消息队列消息，主要作用就是由生产者发送到ＭＱ进行排队，然后由消费者对消息进行处理，具体使用场景如下：</p>
-<ol>
+<ul>
 <li>异步：作用能提高系统的响应速度和吞吐量。</li>
 <li>解耦：服务之间解耦，可以减少服务之间的影响，提高系统的稳定性和可扩展性，另外，解耦之后可以实现数据分发，生产者发送一个消息后，可以由多个消费者来处理。</li>
 <li>削峰：以稳定的系统资源应对突发的流量冲击。</li>
-</ol>
-<p>ＭＱ也有一些缺点：</p>
+</ul>
+<p>不过，ＭＱ也有一些缺点：</p>
 <ul>
 <li>系统的可用性降低：一旦ＭＱ宕机，整个服务就会产生影响。</li>
-<li>系统的复杂度提高：引入ＭＱ之后，数据链路就会变得很复杂，并伴随着很多的问题，例如如何保证消息不丢失？消息不会重复调用？怎么保证消息的顺序性？　．．．</li>
+<li>系统的复杂度提高：引入ＭＱ之后，数据链路就会变得很复杂，并伴随着很多的问题，例如如何保证消息不丢失？消息不会重复调用？怎么保证消息的顺序性？等等</li>
 <li>数据一致性：Ａ系统发消息，需要B、Ｃ两个系统一同处理。如果Ｂ系统处理成功，Ｃ系统处理失败，这就会造成数据一致性的问题。</li>
 </ul>
 <h3 id="如何进行产品选型"><a class="markdownIt-Anchor" href="#如何进行产品选型"></a> 如何进行产品选型？</h3>
@@ -16135,29 +16212,29 @@ dp[start+1] = max(nums[start],nums[start+1]) &amp; 只有两件房屋，偷窃�
 <table>
 <thead>
 <tr>
-<th>产品类型</th>
+<th style="text-align:center">产品类型</th>
 <th>保证生产者发送消息不丢失策略</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>kafka</td>
+<td style="text-align:center">kafka</td>
 <td>消息发送+回调</td>
 </tr>
 <tr>
-<td>RocketMQ</td>
+<td style="text-align:center">RocketMQ</td>
 <td>事务消息</td>
 </tr>
 <tr>
-<td>RabbitMQ</td>
+<td style="text-align:center">RabbitMQ</td>
 <td>消息发送+回调</td>
 </tr>
 <tr>
-<td></td>
+<td style="text-align:center"></td>
 <td>手动事务：Channel：txSelect()开启事务，Channel.txCommit()提交事务，Channel.txRollback()回滚事务，这种方式对channel是会产生阻塞的，造成吞吐量下降</td>
 </tr>
 <tr>
-<td></td>
+<td style="text-align:center"></td>
 <td>publisher confirms。整个处理流程跟RocketMQ的事务消息，基本是一样的。</td>
 </tr>
 </tbody>
@@ -18011,7 +18088,7 @@ dp[start+1] = max(nums[start],nums[start+1]) &amp; 只有两件房屋，偷窃�
 <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Stream2.LambdaTest@362872a1</span><br><span class="line">Stream2.LambdaTest$1@60c8c409</span><br></pre></td></tr></table></figure>
 <p>首先来看第二行，它表示当前对象指的是LambdaTest$1，在Java中表示匿名内部类会使用类名称+&quot;$&quot;+顺序的方式来表示，&quot;@&quot;后面的表示类的哈希值，而第一个Lamda表达式所打印的就是当前类LambdaTest的地址，这说明使用Lambda表达式的这种方式与它所在的类是同一个作用域。</p>
 <p>通过这个例子说明了Lambda表达式与匿名内部类有着本质的区别，两者是完全不同的，并不是匿名内部类的语法糖或者另一种表达形式，只不过在某些场景下，可以使用Lambda表达式来替代匿名内部类完成相同的功能。</p>
-<p>实际上，使用Lambda表达式所带来的好处其实远不止简化代码，它还可以为我们带来代码执行效率上的提升，所以，无论是处于开发效率，还是代码的执行速度上来看，都应该使用Lambda表达式。</p>
+<p>实际上，使用Lambda表达式所带来的好处其实远不止简化代码，它还可以为我们带来代码执行效率上的提升，所以，无论是出于开发效率，还是代码的执行速度上来看，都应该使用Lambda表达式。</p>
 <h2 id="lambda表达式和stream"><a class="markdownIt-Anchor" href="#lambda表达式和stream"></a> Lambda表达式和Stream</h2>
 <p>在实际使用中，Lambda表达式往往与Stream相互配合，才会发挥其特性，通常用来高效的处理一些集合的运算。</p>
 <p>我们首先从遍历打印集合中元素这样非常常见的例子开始，以往遍历集合通常的做法是：</p>
