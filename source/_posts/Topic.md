@@ -74,7 +74,7 @@ author: 吉永超
 
 Map接口的不同实现之间的关系：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210820170511.png" alt="image-20210820170511315" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210820170511.png" alt="image-20210820170511315" style="zoom:50%;" />
 
 具体实现类特点的说明：
 
@@ -93,7 +93,7 @@ HashMap是Java程序员使用频率最高的用于映射（键值对）处理的
 
 从结构实现来讲，HashMap是数组+链表+红黑树（JDK1.8增加红黑树部分）实现的，如下图所示：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210820172615.png" alt="image-20210820172450491" style="zoom:33%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210820172615.png" alt="image-20210820172450491" style="zoom:33%;" />
 
 在HashMap的底层存储实现上是存储在：
 
@@ -183,13 +183,13 @@ static int indexFor(int h, int length) {  //jdk1.7的源码，jdk1.8没有这个
 
 下面举例说明，n位table的长度：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210820191752.png" alt="image-20210820191752063" style="zoom: 50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210820191752.png" alt="image-20210820191752063" style="zoom: 50%;" />
 
 ##### put方法
 
 put方法的整体执行过程如下图：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210820192026.png" alt="image-20210820192026243" style="zoom: 67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210820192026.png" alt="image-20210820192026243" style="zoom: 67%;" />
 
 JDK1.8put方法的源代码如下：
 
@@ -285,7 +285,7 @@ newTable[i]的引用赋给了e.next，也就是使用了单链表的头插入方
 
 下面通过具体的例子来说明扩容过程。假设我们所使用的哈希算法就是简单的用key mod 一下表的大小（也就是数组的长度）。其中的哈希桶数组table的size等于2，所以key3、5、7，put顺序依次为5、7、3/在mod 2以后冲突都在table[1]这里了。这里假设负载因子loadFactor=1，即当键值对的实际大小size大于table的实际大小时进行扩容。接下来三个步骤时哈希桶数组resize成4，然后所有的Node重新rehash的过程。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210822172355.png" alt="image-20210822172315873" style="zoom: 67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210822172355.png" alt="image-20210822172315873" style="zoom: 67%;" />
 
 在JDK1.8中，由于融入了红黑树，相对而言就比较复杂：
 
@@ -375,15 +375,15 @@ newTable[i]的引用赋给了e.next，也就是使用了单链表的头插入方
 
 JDK1.8中对扩容做了一些优化，经过观察可以发现，我们每次扩容都会将长度扩容为原来的2倍，所以，元素的位置要么是在原来的位置，要么就是在原位置再移动2次幂的位置。在下图中，n为table的长度，图（a）表示扩容前key1和key2两种key确定索引位置的示例，图（b）表示扩容后key1和key2两种key确定索引位置的示例，其中hash1是key1对应的哈希与高位运算的结果。
 
-![image-20210822173845756](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210822174738.png)
+![image-20210822173845756](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210822174738.png)
 
 元素在重新计算hash之后，因为n变为2倍，那么n-1的mask范围在高位多1bit（红色），因此新的index就会发生这样的变化：
 
-![image-20210822175112399](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210822175112.png)
+![image-20210822175112399](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210822175112.png)
 
 因此，我们在扩充HashMap的时候，不再需要像JDK1.7的实现那样重新计算hash，只需要看看原来的hash值新增的哪个bit是1还是0就好了，是0就表示索引没有变化，是1就表示索引变成了“原索引+oldCap”，下图为16扩充至32的过程的示意图：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210822175500.png" alt="image-20210822175500642" style="zoom: 67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210822175500.png" alt="image-20210822175500642" style="zoom: 67%;" />
 
 这个设计非常的巧妙，既省去了重新计算hash值得时间，同时，由于新增的1bit是0还是1可以认为是随机的，因为resize的过程，均匀的把之前的冲突节点分散到新的bucket了。需要注意的是，JDK1.7中rehash的时候，旧链表迁移新链表的时候，如果在新表的数组索引位置相同，则链表元素会倒置，但从上图可以看出，JDK1.8不会倒置。
 
@@ -422,17 +422,17 @@ public class HashMapInfiniteLoop {
 
 通过设置断点让线程1和线程2同时debug到transfer方法的首行，注意此时两个线程已经成功添加数据。放开thread1的断点至transfer方法的`Entry next = e.next`，这一行，然后放开线程2的断点，让线程2进行resize，结果如下图：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210823212826.png" alt="image-20210823212826409" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210823212826.png" alt="image-20210823212826409" style="zoom:50%;" />
 
 注意，Thread1的e指向了key(3)，而next指向了key(7)，其在线程二rehash后，指向了线程二重组后的链表。
 
 线程一被调度回来执行，先是执行newTable[i] = e，然后是e = next，导致了e指向了key(7)，而下一次循环的next = e.next导致了next指向了key(3)。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210823213103.png" alt="image-20210823213103782" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210823213103.png" alt="image-20210823213103782" style="zoom:50%;" />
 
 e.next = newTable[i]导致key(3)指向了key(7)。注意：此时的key(7).next已经指向了key(3)，环形链表就这样出现了。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210823213234.png" alt="image-20210823213234071" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210823213234.png" alt="image-20210823213234071" style="zoom:50%;" />
 
 此时，再对map做索引位置为3的get操作，就会死循环在这里，CPU成功达到100%，比如，调用map.get(11)，即会引起死循环，而且map中还丢失了元素，(5,“c”)也已经不再map中了。
 
@@ -448,7 +448,7 @@ ConcurrentHashMap的成员变量中，包含了一个Segment的数组，Segment�
 
 简单来说，ConcurrentHashMap数据结构为一个Segment数组，Segment的数组结构为HashEntry的数组，而HashEntry存放的就是我们的键值对，可以构成链表，它们之间的关系如下图：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210826161224.png" alt="image-20210826161224347" style="zoom:70%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210826161224.png" alt="image-20210826161224347" style="zoom:70%;" />
 
 它的put方法：
 
@@ -539,7 +539,7 @@ static class Node<K,V> implements Map.Entry<K,V> {
 
 JDK1.8的ConcurrentHashMap的示意图如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210826163233.png" alt="ConcurrentHashMap示意图" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210826163233.png" alt="ConcurrentHashMap示意图" style="zoom:67%;" />
 
 ConcurrentHashMap新增的核心方法有两个：putVal（新增）和transfer（扩容）。
 

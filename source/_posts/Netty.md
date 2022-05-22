@@ -16,7 +16,7 @@ Netty is an asynchronous event-driven network application framework for rapid de
 
 Netty是一个基于NIO的服务端/客户端框架，整体的架构设计如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210910173546.png" alt="Netty架构示意图" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210910173546.png" alt="Netty架构示意图" style="zoom:50%;" />
 
 ## Netty特点
 
@@ -110,7 +110,7 @@ public class TestHttpServerHandler extends SimpleChannelInboundHandler<HttpObjec
 
 接下来就可以通过GET、POST、PUT等Http请求去调用，需要注意的是，如果是通过浏览器访问，浏览器会自动调用另外一个请求：
 
-![image-20210913212924732](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210913212924.png)
+![image-20210913212924732](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210913212924.png)
 
 因此对于处理器我们做如下修改：
 
@@ -655,7 +655,7 @@ public class TextWebSocketFrameHandler extends SimpleChannelInboundHandler<TextW
 
 测试结果：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210915235332.png" alt="image-20210915235325539" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210915235332.png" alt="image-20210915235325539" style="zoom:50%;" />
 
 
 
@@ -1624,7 +1624,7 @@ java.io中最为核心的一个概念是流（Stream），面向流的编程。J
 
 nio一种说法是new io，也可以认为是阻塞io，java.nio中拥有3个核心概念：Selector、Channel与Buffer。在java.nio中，我们是面向块（block）或是缓冲区（buffer）来编程的，nio的模型如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210922230347.png" alt="NIO示意图" style="zoom: 50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210922230347.png" alt="NIO示意图" style="zoom: 50%;" />
 
 nio的程序的简单示例：
 
@@ -1650,7 +1650,7 @@ public class NioTest1 {
 
 Buffer本身就是一块内存，底层实现上，它实际上就是一个数组。数据的读、写都是通过Buffer来实现的。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210922230615.png" alt="Buffer示意图" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210922230615.png" alt="Buffer示意图" style="zoom:50%;" />
 
 除了数组之外，Buffer还提供了对于数据的结构化访问方式，并且可以追踪到系统的读写过程。Java中的7种原生数据类型都有各自对应的Buffer类型，如IntBuffer、LongBuffer、ByteBuffer以及CharBuffer等。
 
@@ -2015,11 +2015,11 @@ UTF-8，变长的表示形式，一般来说，UTF-8会通过1个字节表示一
 
 ### 传统的IO流程
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211004213017.png" alt="image-20211004213017091" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211004213017.png" alt="image-20211004213017091" style="zoom:50%;" />
 
 ### 零拷贝实现原理
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211004213138.png" alt="image-20211004213138652" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211004213138.png" alt="image-20211004213138652" style="zoom:50%;" />
 
 
 
@@ -2043,19 +2043,19 @@ EFAULT_EVENT_LOOP_THREADS = Math.max(1, SystemPropertyUtil.getInt(
 
 接下来我们需要验证这一点，首先是NioEventLoopGroup的构造方法的调用：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211006155857.png" alt="image-20211006155857113" style="zoom:100%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211006155857.png" alt="image-20211006155857113" style="zoom:100%;" />
 
 一直找到最终调用的构造方法：
 
-![image-20211006160311773](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211006160311.png)
+![image-20211006160311773](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211006160311.png)
 
 在父类io.netty.channel.MultithreadEventLoopGroup的构造方法中我们可以看到：
 
-![image-20211006160410350](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211006160410.png)
+![image-20211006160410350](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211006160410.png)
 
 其中DEFAULT_EVENT_LOOP_THREADS：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211006160533.png" alt="image-20211006160533457" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211006160533.png" alt="image-20211006160533457" style="zoom:50%;" />
 
 还可以更近一步，再去寻找它的父类就会看到变量赋值的地方：
 
@@ -2143,11 +2143,11 @@ netty当中的所有的I/O操作都是异步的，它使用了对于JDK的Future
 
 另外，在JDK中的Future接口中，对于任务执行完成的状态也没有进行细分，完成可能是成功执行，也可能抛出了异常，这一点，在Netty中也得到了增强：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211007111001.png" alt="Future状态" style="zoom: 67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211007111001.png" alt="Future状态" style="zoom: 67%;" />
 
 ### 异步读写架构
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211017185947.png" alt="Future架构实现" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211017185947.png" alt="Future架构实现" style="zoom:67%;" />
 
 JDK所提供的Future只能通过手工的方式检查执行结果，而这个操作是会阻塞的，Netty则对ChannelFuture进行了增强，通过ChannelFutureListener以回调的方式来获取执行结果，去除了手工检查阻塞的操作，值得注意的是，io.netty.util.concurrent.GenericFutureListener#operationComplete方法是由I/O线程执行的，因此要注意的是不要在这里执行耗时的操作，否则需要通过另外的线程或线程池来执行。
 
@@ -2307,7 +2307,7 @@ Reactor是对于不同的IO事件使用它所恰当的handler来进行处理的�
 
 经典的客户端与服务器处理模型：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211007195847.png" alt="经典模型" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211007195847.png" alt="经典模型" style="zoom:67%;" />
 
 其中每个handler都需要启动一个新的线程进行执行。
 
@@ -2324,7 +2324,7 @@ Reactor是对于不同的IO事件使用它所恰当的handler来进行处理的�
 
 Reactor模式的经典设计如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211010113404.png" alt="Reactor模式" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211010113404.png" alt="Reactor模式" style="zoom:67%;" />
 
 Reactor模式一共有5种角色构成，其含义分别如下：
 
@@ -2347,19 +2347,19 @@ Reactor模式的流程：
 
 在Netty中，单线程的Reactor的整体设计如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211007201641.png" alt="单线程Reactor模型" style="zoom: 67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211007201641.png" alt="单线程Reactor模型" style="zoom: 67%;" />
 
 <div class="note info"><p>在netty中，EventLoop就是这里的Reactor。</p></div>
 
 使用线程池的版本：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211007203522.png" alt="线程池Reactor模型" style="zoom: 50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211007203522.png" alt="线程池Reactor模型" style="zoom: 50%;" />
 
 
 
 使用多个Reactor的模型：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211007210842.png" alt="image-20211007210842204" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211007210842.png" alt="image-20211007210842204" style="zoom:67%;" />
 
 ## 自适应缓冲区
 
@@ -2589,7 +2589,7 @@ ChannelHandler既可以通知下一个ChannelHandler，也可以修改它所属�
 
 在Netty4.1以后的版本中，ChannelHandlerContext#attr与Channel#attr方法的作用域是相同的：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211017141629.png" alt="attr方法"  />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211017141629.png" alt="attr方法"  />
 
 ### Channel选择器
 
@@ -2646,7 +2646,7 @@ EventExecutorChooserFactory使用round-robin来选择下一个EventExecutor，Ne
 
 ### Channel注册流程
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211017144056.png" alt="注册方法" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211017144056.png" alt="注册方法" style="zoom:67%;" />
 
 首先来看config方法的实现：
 
@@ -2826,7 +2826,7 @@ public class ByteBufTest1 {
 
 ByteBuf提供了两个指针变量来进行数据的读写，分别是readerIndex（读操作）和writerIndex（写操作），这两个指针将整个ByteBuf分为了三个部分：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211018235157.png" alt="ByteBuf" style="zoom:80%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211018235157.png" alt="ByteBuf" style="zoom:80%;" />
 
 核心API：
 
@@ -3107,7 +3107,7 @@ Netty会不断的从TCP缓冲区中读取数据，每次读取完都需要判断
 
 实现原理：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211017190514.png" alt="观察者模式" style="zoom:100%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211017190514.png" alt="观察者模式" style="zoom:100%;" />
 
 ## 适配器模式
 
@@ -3125,7 +3125,7 @@ SimpleChannelInboundHandler会在消息消费完成之后自动的调用`Referen
 
 核心API - io.netty.channel.SimpleChannelInboundHandler
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211017224849.png" alt="模板方法设计模式" style="zoom:100%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211017224849.png" alt="模板方法设计模式" style="zoom:100%;" />
 
 ---
 

@@ -1094,11 +1094,11 @@ public class InterruptedAndIsInterruptedDistinct {
 
 多线程访问同一个共享变量的时候特别容易出现并发问题，特别是多个线程需要对一个共享变量进行写入时。为了保证线程安全，一般使用者在访问共享变量时需要进行适当的同步，如下入所示：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210811150448.png" alt="image-20210811150420172" style="zoom: 67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210811150448.png" alt="image-20210811150420172" style="zoom: 67%;" />
 
 除了同步这种方式之外，还可以使用ThreadLocal来完成，它提供了线程本地变量，也就是如果你创建了一个ThreadLocal变量，那么访问这个变量的每个线程都会有这个变量的一个本地副本。当多个线程操作这个变量时，实际操作的是自己本地内存里面的变量，从而避免了线程安全问题。创建一个ThreadLocal变量后，每个线程都会复制一个变量到自己的本地内存，如图所示：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210811150805.png" alt="image-20210811150805565" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210811150805.png" alt="image-20210811150805565" style="zoom:67%;" />
 
 使用示例：
 
@@ -1209,7 +1209,7 @@ ThreadLocalMap的核心属性和方法：
 
 可以看到在ThreadLocalMap中实际上是通过Entry数组来维护多个ThreadLocal的对象，而Entry对象本上是一个键值对的结构，key就是ThreadLocal对象，而value就是具体要使用ThreadLocal存储的值的对象，它们之间的关系如下图：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210813111035.png" alt="image-20210813111035556" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210813111035.png" alt="image-20210813111035556" style="zoom:50%;" />
 
 通常情况下我们使用完这个对象就等待GC进行清理，但是对于ThreadLocal来说，即使我们使用结果，也会因为线程本身存在该对象引用，处理对象可达状态，垃圾回收器无法回收。这个时候当ThreadLocal太多的时候就会出现内存泄漏的问题。
 
@@ -1221,7 +1221,7 @@ ThreadLocalMap的核心属性和方法：
 
 多个线程使用ThreadLocal变量的时候的示意图：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210813114932.png" alt="image-20210813114931970" style="zoom: 45%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210813114932.png" alt="image-20210813114931970" style="zoom: 45%;" />
 
 通过这种方式，就做到了变量的“私有化”，每个线程都拥有了自己独立的一个变量。
 
@@ -1242,7 +1242,7 @@ ThreadLocalMap的核心属性和方法：
 
 方法的流程图：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210813114704.png" alt="image-20210813114448736" style="zoom:65%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210813114704.png" alt="image-20210813114448736" style="zoom:65%;" />
 
 方法的源代码：
 
@@ -3768,7 +3768,7 @@ CLH锁的数据结构类似一个链表队列，所有请求获取锁的线程�
 
 下图展示了CLH锁从获取到释放锁的过程：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210816122706.png" alt="CLH锁示意图" style="zoom:60%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210816122706.png" alt="CLH锁示意图" style="zoom:60%;" />
 
 详细说明：
 
@@ -3782,7 +3782,7 @@ CLH锁是一种隐式的链表队列，没有显式的维护前驱或者后继�
 
 可以在CLH锁的基础上，在节点中显式地维护前驱节点，CLH锁就可以处理“超时”和各种形式地“取消”：如果一个节点的前驱节点取消了，这个节点就可以滑动去使用前面一个节点的状态字段，对于通过自旋获取锁的CLH锁来说，只需要显式的维护前驱节点就可以实现取消功能，如下图所示：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210816121517.png" alt="image-20210816121517012" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210816121517.png" alt="image-20210816121517012" style="zoom:67%;" />
 
 CLH锁作为自旋锁的改进，有以下优点：
 
@@ -3846,7 +3846,7 @@ static final class Node {
 
 可以看到，与CLH锁不同的是，AQS显式的维护前驱节点和后驱节点，这是因为AQS用阻塞等待替换了自旋操作，线程会阻塞等待锁的释放，不能主动感知到前驱结点状态的变化信息。AQS中显式的维护前驱节点和后续节点，需要方式锁的节点会显式通知下一个节点解决阻塞，如下图所示，T1释放锁后主动唤醒T2，使T2检测到锁已释放，获取锁成功。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210816120319.png" alt="AQS队列示意图" style="zoom:60%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210816120319.png" alt="AQS队列示意图" style="zoom:60%;" />
 
 ## ReentrantLock
 
@@ -3953,7 +3953,7 @@ acquire来自于AQS：
 
 ThreadA是首个获取锁的线程，所以上述方法会返回true，第一阶段结束。（ThreadA一直保持占有锁的状态），此时。AQS中的等待队列还是空：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210816163854.png" alt="image-20210816163854093" style="zoom: 67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210816163854.png" alt="image-20210816163854093" style="zoom: 67%;" />
 
 接下来是ThreadB要调用lock方法，最终调用AQS的acquire方法：
 
@@ -4012,11 +4012,11 @@ ThreadA是首个获取锁的线程，所以上述方法会返回true，第一阶
 
 - 当队列为空的时候，先创建一个dummy头结点：
 
-	<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210816164745.png" alt="image-20210816164745147" style="zoom:50%;" />
+	<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210816164745.png" alt="image-20210816164745147" style="zoom:50%;" />
 
 - 进入下一次循环，插入队尾结点：
 
-	<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210816164911.png" alt="image-20210816164911775" style="zoom: 50%;" />
+	<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210816164911.png" alt="image-20210816164911775" style="zoom: 50%;" />
 
 此时，ThreadB已经被包装成结点插入队尾了，接下来会调用acquireQueued方法，这也是AQS中最重要的方法之一：
 
@@ -4083,21 +4083,21 @@ ThreadA是首个获取锁的线程，所以上述方法会返回true，第一阶
 
 - 插入完成ThreadB后，队列的初始状态如下：
 
-	<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210816175853.png" alt="image-20210816175853692" style="zoom:60%;" />
+	<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210816175853.png" alt="image-20210816175853692" style="zoom:60%;" />
 
 - 虽然ThreadB是队首结点，但是它拿不到锁（被ThreadA占有着），所以ThreadB会阻塞，但是在阻塞前需要设置下前驱的状态，以便将来可以被唤醒：
 
-	<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210816180059.png" alt="image-20210816180059755" style="zoom:60%;" />
+	<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210816180059.png" alt="image-20210816180059755" style="zoom:60%;" />
 
 > 如果ThreadB阻塞过程中被中断，其实是不会抛出异常的，只会在acquireQueued方法返回时，告诉调用者在阻塞器件有没有被中断过，具体如何处理，要不要抛出异常，取决于调用者，这其实是一种延时中断机制。
 
 ThreadC的调用过程和ThreadB完成一样，同样拿不到锁，然后加入到等待队列队尾：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210816180828.png" alt="image-20210816180827996" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210816180828.png" alt="image-20210816180827996" style="zoom:50%;" />
 
 然后，ThreadC在阻塞前需要把前驱结点的状态值SIGNAL置为-1，以确保将来可以被唤醒：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210816181023.png" alt="image-20210816181023560" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210816181023.png" alt="image-20210816181023560" style="zoom:50%;" />
 
 
 
@@ -4174,7 +4174,7 @@ unlock调用了AQS的release方法：
 
 此时，队列的状态为：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210816183415.png" alt="image-20210816183414910" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210816183415.png" alt="image-20210816183414910" style="zoom:67%;" />
 
 队首结点ThreadB被唤醒之后会从以下为止开始执行，先返回一个中断标识，用于标识ThreadB在阻塞期间有没有被中断过：
 
@@ -4224,15 +4224,15 @@ unlock调用了AQS的release方法：
 
 最终的队列状态如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210816184310.png" alt="image-20210816184310249" style="zoom: 67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210816184310.png" alt="image-20210816184310249" style="zoom: 67%;" />
 
 ThreadB在使用完了临界资源之后开始释放锁，过程和ThreadA释放时一样，释放成功后，会调用unparkSucessor方法，唤醒队列中的首结点：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210816214823.png" alt="image-20210816214823695" style="zoom:60%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210816214823.png" alt="image-20210816214823695" style="zoom:60%;" />
 
 队首结点（ThreadC）被唤醒后，继续从原来的阻塞处向下执行，并尝试获取锁，获取成功，最终队列的状态如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210816214945.png" alt="image-20210816214945139" style="zoom: 67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210816214945.png" alt="image-20210816214945139" style="zoom: 67%;" />
 
 ThreadB在使用完了临界资源之后开始释放锁，释放成功之后，调用unparkSucessor方法，唤醒队列中的首结点，此时队列中只剩一个头结点（dummy），所以这个方法其实什么都不做。最终队列的状态就是只有一个dummy头结点。
 
@@ -4240,7 +4240,7 @@ ThreadB在使用完了临界资源之后开始释放锁，释放成功之后，�
 
 非公平策略和公平策略的内部实现没有什么太大的区别，主要区别在于，公平锁获取锁时，会判断等待队列中是否有线程排在当前线程前面。只有没有的情况下，才会去获取锁：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210816215900.png" alt="image-20210816215900560" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210816215900.png" alt="image-20210816215900560" style="zoom:50%;" />
 
 而非公平锁获取锁时，会立即尝试修改同步状态，失败后再调用AQS的acquire方法。
 
@@ -4255,7 +4255,7 @@ ThreadB在使用完了临界资源之后开始释放锁，释放成功之后，�
 
 acquire方法转调非公平锁自身的tryAcquire方法，其实最终是调了nonfairTryAcquire方法，而该方法相对公平锁，只是少了“队列中是否具有其它线程排在当前线程前”这一判断：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210816220515.png" alt="image-20210816220515041" style="zoom:60%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210816220515.png" alt="image-20210816220515041" style="zoom:60%;" />
 
 不过需要注意的时，这个方法并没有位于ReentrantLock.NonfairSync，而是位于ReentrantLock.Sync。
 
@@ -4444,15 +4444,15 @@ ReentrantLock lock=new ReentrantLock(true);
 
 - ThreadA首先获取到锁，ThreadB和ThreadC依次尝试去获取锁，ThreadB和ThreadC经过两轮自旋操作后，等待队列的情况如下：
 
-	<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210816223527.png" alt="image-20210816223527173" style="zoom:60%;" />
+	<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210816223527.png" alt="image-20210816223527173" style="zoom:60%;" />
 
 - ThreadB先到超时时间，调用了cancelAcquire方法取消操作，队列状态变成了：
 
-	<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210816223639.png" alt="image-20210816223639064" style="zoom:60%;" />
+	<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210816223639.png" alt="image-20210816223639064" style="zoom:60%;" />
 
 - ThreadC到达超时时间，调用了cancelAcquire方法取消操作，队列状态变成了：
 
-	<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210816223745.png" alt="image-20210816223745229" style="zoom:60%;" />
+	<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210816223745.png" alt="image-20210816223745229" style="zoom:60%;" />
 
 	在退出cancelAcquire后，原来ThreadB和ThreadC对应的结点会被JVM垃圾回收器回收。
 
@@ -4566,7 +4566,7 @@ Random的实现原理：
 
 可以看出，Random的缺点是多个线程会使用同一个原子性种子变量，从而导致对原子变量更新的竞争，如图所示：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210811222619.png" alt="image-20210811222618820" style="zoom: 67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210811222619.png" alt="image-20210811222618820" style="zoom: 67%;" />
 
 为了改进这一点，在Random中还有一个方法：
 
@@ -4588,7 +4588,7 @@ Random的实现原理：
 
 那么，如果每个线程都维护一个种子变量，则每个线程生成随机数时都根据自己老的种子计算新的种子，并使用新种子更新老的种子，再根据新种子计算随机数，就不会存在竞争问题了，这会大大提高并发性能。ThreadLocalRandom原理如图：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210811222655.png" alt="image-20210811222654854" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210811222655.png" alt="image-20210811222654854" style="zoom:67%;" />
 
 ThreadLocalRandom的实现：
 
@@ -4636,7 +4636,7 @@ ThreadLocalRandom的实现：
 
 线程池的API设计图：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210813172202.png" alt="image-20210813172201839" style="zoom: 60%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210813172202.png" alt="image-20210813172201839" style="zoom: 60%;" />
 
 各个接口/类的关系和作用：
 
@@ -4716,7 +4716,7 @@ ThreadLocalRandom的实现：
 
 具体如下图所示：
 
-![image-20210826150648498](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210826150648.png)
+![image-20210826150648498](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210826150648.png)
 
 ### 线程池的类型
 
@@ -5025,7 +5025,7 @@ pinpoint的拒绝策略实现很有特点，和其它的实现都不同。他定
 
 总体过程如下图：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210826145615.png" alt="线程池运行示意图" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210826145615.png" alt="线程池运行示意图" style="zoom:50%;" />
 
 详细说明：
 

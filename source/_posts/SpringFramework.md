@@ -88,7 +88,7 @@ Spring毫无疑问是当下Web开发的事实标准，修炼好Web开发中这�
 
 [仓库链接](https://github.com/spring-projects/spring-framework)
 
-![image-20210624205130273](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210624205130273.png)
+![image-20210624205130273](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20210624205130273.png)
 
 ## Spring编程模型
 
@@ -2663,11 +2663,11 @@ public class AnnotationDependencyInjectionResolutionDemo {
 
 我们在DefaultListableBeanFactory#resolveDependency处打个断点进行观察：
 
-![image-20210624205345978](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210624205345978.png)
+![image-20210624205345978](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20210624205345978.png)
 
 方法会继续往下执行到doResolveDependency方法：
 
-![image-20210624205434583](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210624205434583.png)
+![image-20210624205434583](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20210624205434583.png)
 
 集合注入和单个类型的注入略微有点差别，首先我们增加一个成员变量：
 
@@ -3109,13 +3109,13 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 
 在InitDestroyAnnotationBeanPostProcessor中也可以看到postProcessMergedBeanDefinition这个方法：
 
-![image-20210624205533354](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210624205533354.png)
+![image-20210624205533354](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20210624205533354.png)
 
 这里只是元信息不太一样，这主要是LifecycleMetadata中包含了初始化和销毁两个阶段。
 
 同样CommonAnnotationBeanPostProcessor也有postProcessProperties的方法：
 
-![image-20210624205605481](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210624205605481.png)
+![image-20210624205605481](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20210624205605481.png)
 
 对于生命周期的注解的处理，可以从构造方法中看出：
 
@@ -3472,7 +3472,7 @@ public class ExternalConfigurationDependencySourceDemo {
 
 实现原理就是DefaultListableBeanFactory#doResolveDependency中：
 
-![image-20210624205723539](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210624205723539.png)
+![image-20210624205723539](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20210624205723539.png)
 
 会通过接下来的方法进行替换，将属性替换为配置文件中的值：
 
@@ -3521,7 +3521,7 @@ Spring BeanDefinition、单例对象、Resolvable Dependency、@Value外部化�
 
 单例模式的示例图：
 
-![image-20210624205747975](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210624205747975.png)
+![image-20210624205747975](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20210624205747975.png)
 
 这里有一个误区就是，singleton和prototype并没有互斥的关系，是可以同时存在的，当然，如果同时存在的话，可能行为会有一些问题。
 
@@ -3531,7 +3531,7 @@ Spring BeanDefinition、单例对象、Resolvable Dependency、@Value外部化�
 
 多例模式的示意图：
 
-![image-20210624205818521](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210624205818521.png)
+![image-20210624205818521](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20210624205818521.png)
 
 多例和单例比较的示例：
 
@@ -8740,7 +8740,7 @@ Environment底层实现：
 
 相关的核心源代码：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210625173747553.png" alt="image-20210625173747553" style="zoom: 67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20210625173747553.png" alt="image-20210625173747553" style="zoom: 67%;" />
 
 ## Spring类型转换在@Value中的运用
 
@@ -8755,7 +8755,7 @@ Environment底层实现：
 
 相关的核心源代码：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210625174810362.png" alt="image-20210625174810362" style="zoom: 50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20210625174810362.png" alt="image-20210625174810362" style="zoom: 50%;" />
 
 ## Spring配置属性源PropertySource
 
@@ -9540,11 +9540,11 @@ public class ShutdownHookThreadDemo {
 
 ## Spring核心特性
 
-![image-20210628202410655](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210628202410655.png)
+![image-20210628202410655](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20210628202410655.png)
 
 ## Spring核心价值
 
-![image-20210628202440062](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210628202440062.png)
+![image-20210628202440062](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20210628202440062.png)
 
 # 附录
 
@@ -9605,7 +9605,7 @@ public class ObjectFactoryLazyLookupDemo {
 
 也可以在DefaultListableBeanFactory.DependencyObjectProvider中看到相关的原理，只有在调用getObject的时候，才会根据泛型的具体化进行依赖查找，创建对象，而不是直接去查找，也就是所谓的延迟依赖查找。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210629102005648.png" alt="image-20210629102005648" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20210629102005648.png" alt="image-20210629102005648" style="zoom:50%;" />
 
 ## 依赖查找（注入）的Bean会被缓存嘛？
 
@@ -9655,7 +9655,7 @@ public class BeanCachingDemo {
 
 其中单例对象的最为复杂，在DefaultSingletonBeanRegistry#getSingleton中可以看到核心的逻辑：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210629104114854.png" style="zoom: 50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20210629104114854.png" style="zoom: 50%;" />
 
 在每次进行依赖查找（注入）的时候不是直接创建对象，而是会现在缓存的字段singletonObjects中进行获取。
 
@@ -9672,7 +9672,7 @@ public class BeanCachingDemo {
 
 ConfigurationClassBeanDefinitionReader#loadBeanDefinitionsForBeanMethod方法中，另外在解析静态方法和实例方法的时候，有一些差别：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210629112032376.png" alt="image-20210629112032376" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20210629112032376.png" alt="image-20210629112032376" style="zoom:50%;" />
 
 可以看到，如果是实例方法，那么首先要获取到实例方法所在的类的实例，静态方法的初始化会更早。
 
@@ -9811,7 +9811,7 @@ public class CircularReferencesDemo {
 
 处理循环依赖的核心代码：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210629152452981.png" alt="image-20210629152452981" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20210629152452981.png" alt="image-20210629152452981" style="zoom:50%;" />
 
 
 

@@ -30,7 +30,7 @@ JVM（Java虚拟机）是运行Java字节码的虚拟机，JVM针对于不同的
 
 Java程序从源代码到运行一般经历下面3个步骤：
 
-![image-20210629231212350](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210629231212350.png)
+![image-20210629231212350](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20210629231212350.png)
 
 JDK（Java Development Kit）是功能齐全的Java SDK，它不止有JRE，还有编译器（Javac）和工具（例如Java doc 和Jdb），它可以创建和编译程序。
 
@@ -240,7 +240,7 @@ HashMap为了存取高效，要尽量较少碰撞，就是要尽量把数据分�
 
 hashcode碰撞次数与泊松分布有关，选择8是根据概率统计而选择的。泊松分布的示意图：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210823233913.png" alt="image-20210823233717518" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210823233913.png" alt="image-20210823233717518" style="zoom:50%;" />
 
 ### 当链表转为红黑树，什么时候退化为链表？
 
@@ -359,7 +359,7 @@ Java中的线程分为两种：守护线程（Daemon）和用户线程（User）
 
 如图：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210817203732.png" alt="线程状态示意图" style="zoom: 50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210817203732.png" alt="线程状态示意图" style="zoom: 50%;" />
 
 ### 如何停止一个正在运行的线程？
 
@@ -522,7 +522,7 @@ Java的锁就是在对象的MarkWord中记录一个锁状态、无锁、偏向�
 
   偏向锁、轻量级锁、重量级锁及锁机制具体如下图：
 
-![1623338358489](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/%E9%94%81%E6%9C%BA%E5%88%B6.png)
+![1623338358489](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/%E9%94%81%E6%9C%BA%E5%88%B6.png)
 
 ### 什么是可重入锁？有哪些实现？
 
@@ -540,7 +540,7 @@ Java的锁就是在对象的MarkWord中记录一个锁状态、无锁、偏向�
 
   在可重入锁这个场景下，state就用来表示枷锁的次数，0标识加锁的次数，每加一次锁，state就加1，释放锁state就减1。      
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210630102031.png" alt="img" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630102031.png" alt="img" style="zoom:67%;" />
 
 ### SynchronizedMap和ConcurrentHashMap有什么区别？
 
@@ -803,7 +803,7 @@ UDP的特点：类似广播，不需要连接，发送方不管接受方有没�
 
   TCP建立连接三次握手，断开连接四次挥手。 如果是两次握手，可能会造成连接资源浪费的情况，server端会建立通道一直等待连接，但是client端会认为连接失败，放弃本次通信。
 
-  <img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210630005545.png" alt="img" style="zoom: 67%;" />
+  <img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630005545.png" alt="img" style="zoom: 67%;" />
 
 ### Java有哪几种IO模型？有什么区别？
 
@@ -825,21 +825,21 @@ UDP的特点：类似广播，不需要连接，发送方不管接受方有没�
 
   BIO模式：可靠性差，吞吐量低，适用于连接比较少且比较固定的场景，JDK1.4之前唯一的选择。编程模型最简单。
 
-  <img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210630005609.png" alt="img" style="zoom: 67%;" />
+  <img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630005609.png" alt="img" style="zoom: 67%;" />
 
   NIO模型：可靠性比较好，吞吐量比较高，适用于连接多，并且连接比较短（轻操作），例如聊天室，JDK1.4开始支持，变成模型最复杂。
 
-  <img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210630005650.png" alt="img" style="zoom:67%;" />
+  <img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630005650.png" alt="img" style="zoom:67%;" />
 
   AIO模型：可靠性是最好的，吞吐量也是最高的，适用于连接比较多，并且连接比较长（重操作），例如相册服务器，JDK7开始支持的，变成模型相对简单，但是需要操作系统支持。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210630005707.png" alt="img"  />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630005707.png" alt="img"  />
 
 ### Java NIO的几个核心组件是什么？分别有什么作用？
 
   Java NIO的几个核心组件有：Channel、Buffer、Selector
 
-![img](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210630005725.png)
+![img](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630005725.png)
 
   Channel类似于流，每个Channel对应一个Buffer缓冲区，Channel会注册到Selector，Selector会根据Channel上发生的读写时间，将请求交由某个空闲的线程处理，Selector对应一个或者多个线程。Buffer和Channel都是可读可写的。
 
@@ -895,19 +895,19 @@ UDP的特点：类似广播，不需要连接，发送方不管接受方有没�
 
 在socket编程中，客户端执行`connect`时，将触发三次握手：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210824102759.png" alt="三次握手示意图" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210824102759.png" alt="三次握手示意图" style="zoom:50%;" />
 
 TCP的连接的拆除需要发送四个包，因此称为四次握手，也叫做改进的三次握手。客户端或服务器均可主动发起挥手动作，在socket编程中，任何一方执行`close()`操作即可产生挥手操作：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210824103028.png" alt="四次挥手示意图" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210824103028.png" alt="四次挥手示意图" style="zoom:50%;" />
 
 ## JVM
 
 ### 运行时数据区中包含哪些区域？哪些线程共享？哪些线程独享？
 
-![img](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210630004443.png)
+![img](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630004443.png)
 
-![img](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210630004452.png)
+![img](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630004452.png)
 
 ### Java 创建一个对象的过程？
 
@@ -934,7 +934,7 @@ Java的类加载器：AppClassLoader -> ExtClassLoader -> BootStrapClassLoader
 
 每一种类加载器都有自己的加载目录，Java中的AppClassLoader、ExtClassLoader 都继承了URLClassLoader，URLClassLoader继承了SecureClassLoader，SecureClassLoader又继承了ClassLoader，每个类加载器对他加载过的类，都是有一个缓存的：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210630004512.png" alt="img" style="zoom: 50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630004512.png" alt="img" style="zoom: 50%;" />
 
 双亲委派：向上委托查找，向下委托，作用：保护Java的层的类不会被应用程序覆盖
 
@@ -982,7 +982,7 @@ protected Class<?> loadClass(String name, boolean resolve)
 
 ### Java类加载的全过程是怎么样的？
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210727230233.png" alt="Java类加载过程" style="zoom: 67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210727230233.png" alt="Java类加载过程" style="zoom: 67%;" />
 
 类加载过程：加载 -> 连接 -> 初始化 -> 使用 -> 卸载
 
@@ -1208,7 +1208,7 @@ JVM参数大致可以分为三类：
 
 2、高可用
 
-![img](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210630004746.png)
+![img](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630004746.png)
 
 ### 什么是缓存穿透？缓存击穿？缓存雪崩？怎么解决？
 
@@ -1216,7 +1216,7 @@ JVM参数大致可以分为三类：
 
   解决方案：1.对参数进行合法性校验 2.将数据库中没有查到的结果的数据也写入到缓存，这时要注意为了防止Redis被无用的key占满，这一类缓存的有效期要设置得短一点。3.引入布隆过滤器，在访问Redis之前判断数据是否存在。要注意布隆过滤器存在一定的误判率，并且，不空过滤器只能加数据不能删数据。
 
- <img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210630102137.png" alt="img" style="zoom:67%;" />
+ <img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630102137.png" alt="img" style="zoom:67%;" />
 
   2）缓存击穿：缓存中没有，数据库中有，一般是出现在数据初始化以及key过期了的情况，他的问题在于，重新写入缓存需要一定的时间，如果是在高并发场景下，过多的请求就会瞬间写到DB上，给DB造成了很大的压力。
 
@@ -1477,7 +1477,7 @@ https://segmentfault.com/a/1190000039737646
 
   MySQL主从结构原理：
 
-  <img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210630005801.png" alt="img" style="zoom:67%;" />
+  <img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630005801.png" alt="img" style="zoom:67%;" />
 
   MySQL通过将主节点的Binlog同步给从节点完成主从之间的数据同步。
 
@@ -1487,7 +1487,7 @@ https://segmentfault.com/a/1190000039737646
 
    这种方式有丢失数据的风险，可以采用半同步的方式：
 
-  <img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210630005820.png" alt="img" style="zoom:67%;" />
+  <img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630005820.png" alt="img" style="zoom:67%;" />
 
 ### MySQL如何进行分库分表？多大数据量需要进行分库分表？分库分表的方式和分片策略由哪些？分库分表后，SQL语句执行流程是怎样的？
 
@@ -1507,7 +1507,7 @@ https://segmentfault.com/a/1190000039737646
 
 ShardingSphere分库分表的执行流程：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210630005831.png" alt="img" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630005831.png" alt="img" style="zoom:50%;" />
 
 与之相关的会衍生出一系列的问题，例如一个user表，按照userid进行了分片，然后我需要按照sex字段去查，这样怎么查？强制指定只查一个数据库，要怎么做？查询结果按照userid来排序，要怎么排？
 
@@ -1600,7 +1600,7 @@ IK分词器。HanLp中文分词器。
 
 5. 等promary sharding 和 replica sharding都保存好文档了之后，返回客户端响应
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210630005849.png" alt="img" style="zoom: 67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630005849.png" alt="img" style="zoom: 67%;" />
 
 查询数据的原理：
 
@@ -1671,7 +1671,7 @@ Spring中的作用域：1、Sington 2、prototype：为每个Bean请求创建给
 
 三级缓存：如果引用的对象配置了AOP，那在单例池中最终就会需要注入动态代理对象，而不是原对象，而生成动态代理是要在对象初始化完成之后才开始的。于是Spring增加了三级缓存，保存所有对象的动态代理配置信息，在发现有循环依赖时，将这个对象的动态代理信息获取出来，提前进行AOP，生成动态代理。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210630003757.png" alt="img" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630003757.png" alt="img" style="zoom:67%;" />
 
 ### Spring如何处理事务?
 
@@ -1711,7 +1711,7 @@ Spring中保证线程安全的方法
 
 核心原理的示意图：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210825110153.png" alt="Spring MVC示意图" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210825110153.png" alt="Spring MVC示意图" style="zoom:50%;" />
 
 
 
@@ -1727,7 +1727,7 @@ Spring中保证线程安全的方法
 
 详细的示意图：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210825111017.png" alt="Spring MVC详细示意图" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210825111017.png" alt="Spring MVC详细示意图" style="zoom:50%;" />
 
 ### Spring事务失效的场景有哪些？
 
@@ -2020,19 +2020,19 @@ OAuth2.0协议有四种模式：
 
 授权码模式：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210630010003.png" alt="img" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630010003.png" alt="img" style="zoom:67%;" />
 
 简化模式：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210630010013.png" alt="img" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630010013.png" alt="img" style="zoom:67%;" />
 
 密码模式：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210630010023.png" alt="img" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630010023.png" alt="img" style="zoom:67%;" />
 
 客户端模式：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210630010030.png" alt="img" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630010030.png" alt="img" style="zoom:67%;" />
 
 在梳理OAuth2.0协议流程的过程中，其实有一个主线，就是三方参与者的信任程度。
 
@@ -2088,11 +2088,11 @@ OAuth2.0协议有四种模式：
 
 SpringCloud NetFlix:
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210630003155.png" alt="img" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630003155.png" alt="img" style="zoom:67%;" />
 
 SpringCloudAlibaba:
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210630003208.png" alt="img" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630003208.png" alt="img" style="zoom:67%;" />
 
 ### SpringCloud和Dubbo的区别？
 
@@ -2138,7 +2138,7 @@ Martin Flowler - 贫血模型 - 贫血失忆症 充血模型
 
 MVC架构 -> 领域优先的四层架构
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210630002318.png" alt="img" style="zoom: 67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630002318.png" alt="img" style="zoom: 67%;" />
 
 大泥团：不利于微服务的拆分，大泥团结构拆分出来的微服务就是泥团结构，当服务业务逐渐复杂，这个泥团又会膨胀成为大泥团。
 
@@ -2216,7 +2216,7 @@ https://zhuanlan.zhihu.com/p/61363959
 
   总的来说，消息传递过程中如果存在跨网络的请求，或者由IO操作，就有可能会造成消息丢失，具体如下图：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210630002742.png" alt="img" style="zoom:67%;" /> 
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630002742.png" alt="img" style="zoom:67%;" /> 
 
   那么如何保证消息不丢失呢？需要按照上面不同场景来单独处理
 
@@ -2232,7 +2232,7 @@ https://zhuanlan.zhihu.com/p/61363959
 
   具体见下图：
 
-  ![img](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210630002758.png)
+  ![img](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630002758.png)
 
   2. MQ主从消息同步不丢失
 
@@ -2276,7 +2276,7 @@ https://zhuanlan.zhihu.com/p/61363959
 
   全局有序和局部有序，MQ只需要保证局部有序，不需要保证全局有序。
 
-  ![img](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210630003411.png)
+  ![img](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630003411.png)
 
   Java当中对零拷贝进行了封装，Mmap方式通过MappedByteBuffer对象进行操作，而transfer通过FileChannel来进行操作。
 
@@ -2292,11 +2292,11 @@ https://zhuanlan.zhihu.com/p/61363959
 
 传统文件复制方式：需要对文件在内存中进行四次拷贝。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210630003425.png" alt="img" style="zoom: 50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630003425.png" alt="img" style="zoom: 50%;" />
 
 零拷贝：有两种方式：mmap和   transfile
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210630003438.png" alt="img" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630003438.png" alt="img" style="zoom:50%;" />
 
 Java当中对零拷贝进行了封装，Mmap方式通过MappedByteBuffer对象进行操作，而transfer通过FileChannel来进行操作。
 

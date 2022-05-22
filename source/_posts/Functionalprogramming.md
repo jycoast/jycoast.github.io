@@ -2905,21 +2905,21 @@ where age > 20 and address = ‘beijing’ order by age desc;
 
 针对一个集合：
 
-![image-20210630100236383](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210630100236383.png)
+![image-20210630100236383](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20210630100236383.png)
 
 对于上面的例子而言：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210630100257451.png" alt="image-20210630100257451" style="zoom: 67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20210630100257451.png" alt="image-20210630100257451" style="zoom: 67%;" />
 
 集合与我们编写的处理逻辑之间是有清晰的划分的：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210630100312346.png" alt="image-20210630100312346" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20210630100312346.png" alt="image-20210630100312346" style="zoom:67%;" />
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210630100332734.png" alt="image-20210630100332734" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20210630100332734.png" alt="image-20210630100332734" style="zoom:67%;" />
 
 那对于Stream内部迭代的方式呢？
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210630100352583.png" alt="image-20210630100352583" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20210630100352583.png" alt="image-20210630100352583" style="zoom:67%;" />
 
 总的来说，集合关注的是数据与数据存储本身；而流关注的则是对数据的计算。流与迭代器类似的一点是：流是无法重复使用或消费的，并且流在调用的时候，并不是对于集合中所有的元素先调用第一个filter方法，再调用第二个filter方法，再调用其他方法，实际上并不是这样的，流会将执行的调用链的时候，会有一个容器将所有的操作保存下来，并且针对具体的操作，会优化调用顺序，这一点，在后面源代码分析的时候，就可以看到。
 

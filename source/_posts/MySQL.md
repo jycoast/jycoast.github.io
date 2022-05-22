@@ -22,7 +22,7 @@ select * from T where ID=10;
 
 我们看到的只是输入一条语句，返回一个结果，却不知道这条语句在MySQL内部的执行过程，要想更深入的了解，就需要了解MySQL的逻辑架构：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211128225619.png" alt="MySQL存储引擎架构图" style="zoom: 67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211128225619.png" alt="MySQL存储引擎架构图" style="zoom: 67%;" />
 
 大体来说，MySQL可以分为Server层和存储引擎两部分。
 
@@ -53,7 +53,7 @@ mysql -h$ip -P$port -u$user -p
 
 连接完成之后，如果你没有后续的动作，这个连接就处于空闲状态，可以使用`show processlist`命令中看到它，其中Command列显示为“Sleep”的这一行，就表示现在系统里面有一个空闲连接。
 
-![image-20211128232149339](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211128232149.png)
+![image-20211128232149339](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211128232149.png)
 
 客户端如果太长时间没有动静，连接器就会自动将他断开，这个时间是由参数`wait_timeout`控制的，默认值是8小时。
 
@@ -142,7 +142,7 @@ update T set c=c+1 where ID=2;
 
 同样的更新语句也会按照SQL语句的基本执行链路执行：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211129235536.png" alt="image-20211129235535854" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211129235536.png" alt="image-20211129235535854" style="zoom:67%;" />
 
 与查询流程不一样的是，更新流程还设计两个重要的的日志模块：redo log（重做日志）和binlog（归档日志），这是MySQL中两个核心概念。
 
@@ -152,7 +152,7 @@ update T set c=c+1 where ID=2;
 
 具体来说，当有一条记录需要更新的时候，InnoDB引擎就会先把记录写到redo log里面，并更新内存，这个时候更新就算完成了。同时，InnoDB引擎会在适当的时候，将这个操作记录到磁盘里面，而这个更新往往是在系统比较空闲的时候做。InnoDB的redo log是固定大小的，比如可以配置一组4个文件，每个文件的大小是1GB，那么总共就可以记录4GB的操作。从头开始写入，到末尾又回到开头循环写入，如下图所示：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211130232906.png" alt="image-20211130232906506" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211130232906.png" alt="image-20211130232906506" style="zoom:67%;" />
 
 其中write pos是当前记录的位置，一边写一边后移，写到第3号文件末尾后就回到0号文件开头，checkpoint是当前要擦除的位置，也是往后推移并且循环的，擦除记录前要把记录更新到数据文件。write pos和checkpoint之间还空着的部分，就可以用来记录新的操作，如果write pos追上了checkpoint，那么就表示不能再执行新的更新操作了，就得先停下来擦掉一些记录，然后将checkpoint向后移动。
 
@@ -180,7 +180,7 @@ redo log和binlog有以下区别：
 
 update语句的执行如下图：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211130235424.png" alt="image-20211130235424315" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211130235424.png" alt="image-20211130235424315" style="zoom:67%;" />
 
 注意这里并不是直接写入redo log，而是将redo log的写入拆成了两个步骤：prepare和commit，这就是“两阶段提交”。
 
@@ -459,7 +459,7 @@ possible_keys: NULL
 
 假设现在维护着一个身份证信息和姓名的表，需要根据身份证号查找对应的名字，这时对应的哈希索引的示意图如下所示：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211202233834.png" alt="image-20211202233834367" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211202233834.png" alt="image-20211202233834367" style="zoom:67%;" />
 
 图中，User2和User4根据身份证号算出来的值都是N，但是没有关系，后面还有一个链表。假设这个时候要查ID_card_n2对应的名字是什么，首先将ID_card_n2通过哈希函数算出N，然后，按顺序遍历，找到User2。
 
@@ -469,7 +469,7 @@ possible_keys: NULL
 
 有序数组在等值查询和范围查询场景中的性能就都非常优秀。还是上面根据身份证号查询名字的例子，如果我们使用有序数组来实现的话，示意图如下所示：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211202234913.png" alt="image-20211202234913046" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211202234913.png" alt="image-20211202234913046" style="zoom:67%;" />
 
 这里我们假设身份证号没有重复，这个数组就是按照身份证号递增的顺序保存的。这时候如果要查询ID_card_n2对应的名字，用二分法就可以快速得到，时间复杂度为O（logN）。同理，如果要查询区间的时间复杂度也是O（logN）。
 
@@ -479,7 +479,7 @@ possible_keys: NULL
 
 如果我们用二叉搜索树来实现上述的例子：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211202235620.png" alt="image-20211202235620443" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211202235620.png" alt="image-20211202235620443" style="zoom:67%;" />
 
 二叉搜索树的特点是：每个节点的左儿子小于父节点，父节点又小于右儿子。这样如果要查询ID_card_n2的话，按照途中搜索的顺序就是按照UserA -> UserC -> UserF -> User2这个路径得到，这个时间复杂度是O（logN）。
 
@@ -508,7 +508,7 @@ CREATE TABLE T (
 
 然后向表中插入5条记录，表中R1~R5的（ID，K）的值分别为（100，1）、（200，2）、（300，3）、（500，5）、（600，6），两棵树的示例示意图如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211204115523.png" alt="image-20211204115523479" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211204115523.png" alt="image-20211204115523479" style="zoom:67%;" />
 
 从图中不难看出，根据叶子节点的内容，索引类型分为主键索引和非主键索引。主键索引的叶子节点存储的是整行数据，在InnoDB中，主键索引也被称为聚簇索引（clustered index）。非主键索引的叶子节点内容是主键的值，在InnoDB里，非主键索引也被称为二级索引（secondary index）。
 
@@ -557,7 +557,7 @@ insert into T values(100,1, 'aa'),(200,2,'bb'),(300,3,'cc'),(500,5,'ee'),(600,6,
 
 此时表中的索引结构如下图所示：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211205110531.png" alt="image-20211205110530992" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211205110531.png" alt="image-20211205110530992" style="zoom:67%;" />
 
 ### 回表
 
@@ -605,7 +605,7 @@ CREATE TABLE `tuser` (
 
 如果要为每一种查询都设计一个索引，会导致索引数量激增，在B+树这种索引结构中，可以利用索引的“最左前缀”来定位记录，为了直观地说明这个概念，我们用（name，age）这个联合索引来分析。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211205113629.png" alt="image-20211205113628876" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211205113629.png" alt="image-20211205113628876" style="zoom:67%;" />
 
 可以看到，索引项是按照索引定义里面出现的字段顺序排序的。当需要查到所有名字是“张三”的人时，可以快速定位到ID4，然后向后遍历得到所有需要的结果。
 
@@ -627,9 +627,9 @@ select * from tuser where name like '张%' and age=10 and ismale=1;
 
 这个语句在搜索索引树的时候，只能用“张”，找到第一个满足条件的记录ID3，然后判断其它条件是否满足。在MySQL 5.6之前，只能从ID3开始一个个回表，到主键索引上找出数据行，再对比字段值，而在MySQL 5.6之后引入的索引下推优化（index condition pushdown），可以在索引遍历的过程中，对索引中包含的字段先做判断，直接过滤掉不满足条件的记录，减少回表次数，下面是这两个过程的执行流程图：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211205173708.png" alt="image-20211205173708482" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211205173708.png" alt="image-20211205173708482" style="zoom:67%;" />
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211205173743.png" alt="image-20211205173743641" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211205173743.png" alt="image-20211205173743641" style="zoom:67%;" />
 
 
 
@@ -645,7 +645,7 @@ select name from CUser where id_card = 'xxxxxxxyyyyyyzzzzz';
 
 如果要在id_card字段上创建索引，由于身份证号字段比较大，作为主键并不合适，那么可以给id_card字段创建唯一索引，也可以创建一个普通索引。如果业务代码已经保证了不会写入重复的身份证号，那么这两个选择逻辑上都是正确的，但在性能上有所差别。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211205224925.png" alt="image-20211205224925129" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211205224925.png" alt="image-20211205224925129" style="zoom:67%;" />
 
 接下来，我们就从这两种索引对查询语句和更新语句的性能来进行分析。
 
@@ -707,7 +707,7 @@ INSERT INTO t (id, k) VALUES (id1, k1), (id2, k2);
 
 这里，我们假设当前k索引树的状态，查找到位置后，k1所在的数据页在内存（InnoDB buffer pool）中，k2所在的数据页不在内存中。下图所示是带change buffer的更新状态图：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211206231723.png" alt="image-20211206231723229" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211206231723.png" alt="image-20211206231723229" style="zoom:67%;" />
 
 这条更新语句，共涉及了四个部分：内存、redo log（ib_log_fileX）、数据表空间（t.ibd）、系统表空间（ibdata1）。
 
@@ -721,7 +721,7 @@ INSERT INTO t (id, k) VALUES (id1, k1), (id2, k2);
 
 完成上述操作之后，假设要执行`select * from t where k in(k1, k2)`，执行的流程图如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211206235019.png" alt="image-20211206235019581" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211206235019.png" alt="image-20211206235019581" style="zoom:67%;" />
 
 从图中可以看到：
 
@@ -757,11 +757,11 @@ select * from t where a between 10000 and 20000;
 
 通过explain命令可以这条语句执行的情况：
 
-![image-20211211165917452](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211211165917.png)
+![image-20211211165917452](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211211165917.png)
 
 我们在字段‘a’上建立了普通索引，从分析的结果来看，优化器也选择了索引a，但实际上并没有这么简单，假设这张表上包含了10万行的数据，然后做如下操作：
 
-![image-20211211170335749](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211211170335.png)
+![image-20211211170335749](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211211170335.png)
 
 session A开启一个事务，然后，seesion B把数据都删除后，又调用idata这个存储过程，插入了10万行数据。这时候，session B的查询语句`select * from where a between 10000 and 20000`就不会再选择索引a了。我们可以通过慢查询日志（show log）来查看以下具体的执行情况。为了说明优化器选择的结果是否正确，这里使用了`force index(a)`来让优化器强制使用索引a。
 
@@ -777,7 +777,7 @@ select * from t force index(a) where a between 10000 and 20000;/*Q2*/
 
 这三条SQL语句执行完成后的慢查询日志如下：
 
-![image-20211211171316832](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211211171316.png)
+![image-20211211171316832](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211211171316.png)
 
 可以看到，Q1扫描了10万行，显然是走了全表扫描，执行时间是40毫秒。Q2扫描了10001行，执行了21毫秒。也就是说，我们在没有使用force index的时候，MySQL用错了索引，导致了更长的执行时间，要理解这个现象，就必须了解优化器选择索引的策略。
 
@@ -789,7 +789,7 @@ MySQL在真正开始执行语句之前，并不能精确地知道满足这个条
 
 我们可以使用`show index`方法，看到一个索引的基数，如下图所示：
 
-![image-20211211172622989](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211211172623.png)
+![image-20211211172622989](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211211172623.png)
 
 可以看到，虽然这个表的每一行的三个字段值都是一样的，但是在统计信息中，这三个索引的基数值并不同，而且其实都不准确。
 
@@ -806,7 +806,7 @@ MySQL会通过采样统计的方式来得到索引的基数，采用采样统计
 
 MySQL的优化器除了会统计索引的基数，还会判断这个语句本身要扫描的行数，可以通过`explain`的rows列来查看：
 
-![image-20211211174403746](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211211174403.png)
+![image-20211211174403746](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211211174403.png)
 
 可以看到，Q2的rows的值是37116，与实际的10000相差较大，这里实际上存在两个问题，一是语句Q1优化器为什么没有选择索引‘a’，二是语句Q2为什么优化器没有选择37116行的执行计划，而是选择扫描行数是100000的执行计划，
 
@@ -814,7 +814,7 @@ MySQL的优化器除了会统计索引的基数，还会判断这个语句本身
 
 使用普通索引需要把回表的代价算进去，所以，MySQL选错索引，最根本的原因是没有能准确地判断出扫描行数，我们可以使用`analyze table t`命令，可以用来重新统计索引信息，我们来看一下执行效果。
 
-![image-20211211180509121](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211211194056.png)
+![image-20211211180509121](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211211194056.png)
 
 如果explain的结果预估的rows的值跟实际情况差距比较大，都可以采用这个方法来处理。
 
@@ -826,11 +826,11 @@ select * from t where (a between 1 and 1000) and (b between 50000 and 100000) or
 
 从查询条件来看，这个查询没有符合条件的记录，因此将会返回空集合。为了方便理解这条语句的索引选择过程，首先来看一下a、b这两个索引的结构图：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211211194001.png" alt="image-20211211181122391" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211211194001.png" alt="image-20211211181122391" style="zoom:67%;" />
 
 如果使用索引a进行查询，首先扫描索引a的前1000个值，然后取到对应的id，再到主键索引上去查出每一行，然后根据字段b来过滤，显然这样需要扫描1000行。如果使用索引b进行查询，首先扫描索引b的最后50001个值，然后取到对应的id，再回到主键索引上取值再判断，所以需要扫描50001行。显然，使用索引a，执行速度明显会快很多，我们来看看MySQL是如何选择的：
 
-![image-20211211181647822](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211211193956.png)
+![image-20211211181647822](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211211193956.png)
 
 可以看到，返回结果中key字段显式，这次优化器选择了索引b，而rows字段显式需要扫描的行数是50198。也就是说，扫描的行数的估计值依然不准确，并且MySQL又选错了索引。
 
@@ -840,13 +840,13 @@ select * from t where (a between 1 and 1000) and (b between 50000 and 100000) or
 
 一种方法是，就像我们的第一个例子一样，采用force index强行选择一个索引。MySQL会根据词法解析的结果分析出可能可以使用的索引作为候选项，然后在候选列表中依次判断每个索引需要扫描多少行。如果force index指定的索引在候选索引列表中，就直接选择这个索引，不会再评估其它索引的执行代价了，执行的效果如下：
 
-![image-20211211195432111](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211211195432.png)
+![image-20211211195432111](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211211195432.png)
 
 原本语句需要执行2.23秒，而使用force index（a）的时候，只用了0.05秒，比优化器的选择快了40多倍。但这种方法并不完美，一是这么写不足够优雅，二是如果索引改了名字，这个语句也需要同步修改，三是这个语法并不是所有的数据库都支持，迁移比较麻烦。
 
 既然优化器放弃了使用索引a，说明a还不够合适，所以第二种方法就是，修改语句，引导MySQL使用我们期望的索引。比如，在这个例子中，显然把“order by b limit 1”改成“order by b，a limit 1”，语义的逻辑是相同的，我们看一下修改之后的效果：
 
-![image-20211211200251618](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211211200251.png)
+![image-20211211200251618](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211211200251.png)
 
 之前优化器选择使用索引b，是因为它认为使用索引b可以避免排序（b本身是索引，已经是有序的了，如果选择索引b的话，不需要再做排序，只需要遍历），所以即使扫描的行数多，也判定为代价更小。将语句修改为order by b，a，要求按照b，a排序，就意味着使用这两个索引都需要排序。因此，扫描行数成了影响决策的主要条件，于是此时优化器选了只需要扫描1000行的索引a。
 
@@ -858,7 +858,7 @@ select * from (select * from t where (a between 1 and 1000) and (b between 50000
 
 执行的效果如下：
 
-![image-20211211201036594](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211211201036.png)
+![image-20211211201036594](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211211201036.png)
 
 在这个例子中，我们用limit 100让优化器意识到，使用b索引的代价是很高的，其实是我们根据数据特征诱导了一下优化器，也不具备通用性。
 
@@ -898,9 +898,9 @@ alter table SUser add index index2(email(6));
 
 第一个语句创建的index1索引里面，包含了每个记录的整个字符串，而第二个语句创建的index2索引里面，对于每个记录都是只取前6个字节，它们的示意图如下所示：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211208225514.png" alt="image-20211208225514256" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211208225514.png" alt="image-20211208225514256" style="zoom:67%;" />
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211208225549.png" alt="image-20211208225549732" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211208225549.png" alt="image-20211208225549732" style="zoom:67%;" />
 
 从图中可以看到，由于email(6)这个索引结构中每个邮箱的字段都只取6个字节（即：zhangs），索引占用的空间会更小，这就是使用前缀索引的优势，但同时，前缀索引也可能会增加额外的记录扫描次数，通过它们的执行过程能更加清楚看到这一点。
 
@@ -1022,11 +1022,11 @@ select city,name,age from t where city=' 杭州 ' order by name limit 1000;
 
 为了避免全表扫描，我们需要在city字段加上索引，city这个索引的示意图如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211211222605.png" alt="image-20211211222605665" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211211222605.png" alt="image-20211211222605665" style="zoom:67%;" />
 
 在city字段上创建索引之后，使用explain查看执行情况：
 
-![image-20211211222422522](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211211222422.png)
+![image-20211211222422522](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211211222422.png)
 
 Extra这个字段中的“Using filesort”表示就是需要排序，MySQL会给每个线程分配一块内存用于排序，称为sort_buffer。
 
@@ -1042,7 +1042,7 @@ Extra这个字段中的“Using filesort”表示就是需要排序，MySQL会�
 
 这个过程就称为全字段排序，执行流程的示意图如下所示：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211211225315.png" alt="image-20211211225315510" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211211225315.png" alt="image-20211211225315510" style="zoom:67%;" />
 
 图中“按name排序”这个动作，可能在内存中完成，也可能需要使用外部排序，这取决于排序所需要的内存和参数sort_buffer_size。sort_buffer_size就是MySQL为排序开辟的内存（sort_buffer）的大小，如果要排序的数据量小于sort_buffer_size，排序就在内存中完成，但如果排序数据量太大，内存放不下，则不得不利用磁盘临时文件辅助排序。可以通过如下命令来查看
 
@@ -1063,7 +1063,7 @@ select @b-@a;
 
 这个方法是通过查看OPTIMIZER_TRACE的结果来确认的，也可以从number_of_tmp_files中看到是否使用了临时文件。
 
-![image-20211214233110080](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211214233110.png)
+![image-20211214233110080](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211214233110.png)
 
 图中number_of_tmp_files表示的是，排序过程中使用的临时的文件数，之所以是12个文件，是当内存放不下时，就需要外部排序，外部排序一般使用归并排序算法，MySQL将需要排序的数据分成12份，每一份单独排序后存在这些临时文件中，然后把这12个有序文件再合并成一个有序的大文件。如果sort_buffer_size超过了需要排序的数据量的大小，number_of_tmp_files就是0，表示排序可以直接在内存中完成，否则就需要放在临时文件中排序。sort_buffer_size越小，需要的分成的份数就越多，number_of_tmp_files的值就越大。
 
@@ -1097,11 +1097,11 @@ SET max_length_for_sort_data = 16;
 
 执行的示意图如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211214235751.png" alt="image-20211214235751360" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211214235751.png" alt="image-20211214235751360" style="zoom:67%;" />
 
 对于全字段的排序流程图会发现，rowid排序多访问了一次表t的主键索引，也就是步骤7。需要说明的是，最后的“结果集”是一个逻辑概念，实际上MySQL服务端从排序后的sort_buffer中依次取出id，然后原表查到city、name和age这三个字段的结果，不需要在服务端再耗费内存存储结果，是直接返回给客户端的，此时的OPTIMIZER_TRACE的结果如下：
 
-![image-20211215230833238](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211215230833.png)
+![image-20211215230833238](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211215230833.png)
 
 可以发现：
 
@@ -1120,7 +1120,7 @@ alter table t add index city_user(city, name);
 
 索引的示意图：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211215232534.png" alt="image-20211215232534687" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211215232534.png" alt="image-20211215232534687" style="zoom:67%;" />
 
 在这个索引里面，我们依然可以用树搜索的方式定位到第一个满足city="杭州"的记录，并且额外确保了，接下来按顺序取“下一条记录”的遍历过程中，只要city的值是杭州，name的值就一定是有序的。这样整个查询过程的流程就变成了：
 
@@ -1131,7 +1131,7 @@ alter table t add index city_user(city, name);
 
 可以看到，这个查询过程不需要临时表，也不需要排序，explain的结果如下：
 
-![image-20211215233134766](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211215233134.png)
+![image-20211215233134766](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211215233134.png)
 
 可以看到，Extra字段中没有Using filesort了，也就是不需要排序了，而且由于（city，name）这个联合索引本身有序，所以这个查询也不用把4000行全都读一遍，只要找到满足条件的前1000条记录就可以退出了，也就是说，在这个例子中，只需要扫描1000次。
 
@@ -1147,11 +1147,11 @@ alter table t add index city_user_age(city, name, age);
 2. 从索引（city，name，age）取下一个记录，同样取出这三个字段的值，作为结果集的一部分直接返回
 3. 重复执行步骤2，直到查到第1000条记录，或者是不满足city="杭州"条件时循环结束
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211215234018.png" alt="image-20211215234018038" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211215234018.png" alt="image-20211215234018038" style="zoom:67%;" />
 
 explain的结果如下：
 
-![image-20211215234055979](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211215234056.png)
+![image-20211215234055979](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211215234056.png)
 
 可以看到Extra字段里面多了“Using index”，表示的就是使用了覆盖索引，性能上会快很多，不过索引还是有维护代价的，这是一个需要权衡的决定。
 
@@ -1475,7 +1475,7 @@ select d.* from tradelog l, trade_detail d where d.tradeid=l.tradeid and l.id=2;
 
 explain的详细过程如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220112235754324.png" alt="image-20220112235754324" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220112235754324.png" alt="image-20220112235754324" style="zoom:67%;" />
 
 图中：
 
@@ -1501,7 +1501,7 @@ select l.operator from tradelog l , trade_detail d where d.tradeid=l.tradeid and
 
 explain的结果：
 
-![image-20220113234214053](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220113234214053.png)
+![image-20220113234214053](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220113234214053.png)
 
 这个语句里trade_detail表成了驱动表，但是explain结果的第二行显示，这次的查询操作用上了被驱动表tradelog里的索引（tradeied），扫描行数是1，这也是两个tradeied字段的join操作，为什么这次能用上被驱动表的tradeied索引呢？假设驱动表trade_detail里id=4的行记为R4，那么在连接的时候。被驱动表tradelog上执行的就是类似这样的SQL语句：
 
@@ -2119,7 +2119,7 @@ SELECT * FROM post WHERE post.id in (123,456,567,9098,8904);
 
 这里我们假设从上到下是按照时间顺序执行的，同一行语句是在同一时刻执行的。
 
-![image-20211211213023360](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211211213023.png)
+![image-20211211213023360](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211211213023.png)
 
 可以看到，在最后的同一个时刻，三个会话A、B、C会同时查询表t的总行数，但拿到的结果却不同，这和InnoDB的事务设计有关系，可重复读是它默认的隔离级别，在代码上就是通过多版本并发控制，也就是MVCC来实现的，每一行记录都要判断自己是否对这个会话可见，因此对于count（*）请求来说，InnoDB只好把数据一行一行地读出依次判断，可见的行才能够用于计算“基于这个查询”的表的总行数。
 
@@ -2194,7 +2194,7 @@ select * from t1 straight_join t2 on (t1.a=t2.a);
 
 如果直接使用join语句，MySQL优化器可能会选择表t1或t2作为驱动表，这样会影响我们分析SQL语句的执行过程，使用straight_join可以让MySQL使用固定的连接方式执行查询，这样优化器只会按照我们指定的方式去join，在这个语句里，t1是驱动表，t2是被驱动表，explain的结果如下：
 
-![image-20211215235731451](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211215235731.png)
+![image-20211215235731451](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211215235731.png)
 
 可以看到，在这条语句里，被驱动表t2的字段上有索引，join过程用上了这个索引，因此这个语句的执行流程如下：
 
@@ -2205,7 +2205,7 @@ select * from t1 straight_join t2 on (t1.a=t2.a);
 
 这个过程是现遍历表t1，然后根据从表t1中取出的每行数据中a的值，去表t2查找满足条件的记录，在形式上，这个过程就跟我们写程序时的嵌套查询类似，并且可以用上被驱动表的索引，所以我们称之为“Index Nested-Loop Join”，简称NLJ。对应的流程图如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211216233223.png" alt="image-20211216233222986" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211216233223.png" alt="image-20211216233222986" style="zoom:67%;" />
 
 在这个流程里：
 
@@ -2249,11 +2249,11 @@ BNL的执行流程如下：
 
 流程图如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211219110609.png" alt="image-20211219110609522" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211219110609.png" alt="image-20211219110609522" style="zoom:67%;" />
 
 explain的结果如下：
 
-![image-20211219110725871](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211219110725.png)
+![image-20211219110725871](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211219110725.png)
 
 可以看到，在这个过程中，对表t1和t2都做了一次全表扫描，因此总的扫描行数是1100。由于join_buffer是以无序数组的方式组织的，因此对表t2中的每一行，都要做100次判断，总共需要在内存中做判断的次数是100*1000=10万次。
 
@@ -2281,7 +2281,7 @@ select * from t1 straight_join t2 on (t1.a=t2.b);
 
 执行的流程图如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211219113254.png" alt="image-20211219113254308" style="zoom: 67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211219113254.png" alt="image-20211219113254308" style="zoom: 67%;" />
 
 图中的步骤4和5表示清空join_buffer复用，这也体现出了这个算法名字中“Block”的由来，表示“分块去join”。由于表t1被分成了两次放入join_buffer中，导致表t2会被扫描两次，虽然分成两次放入join_buffer，但是判断等值条件的次数还是不变的，依然是（88+12）\*1000=10万次。
 
@@ -2356,7 +2356,7 @@ select * from t1 where a >= 1 and a <= 100;
 
 由于主键索引是一颗B+树，在这棵树上，每次只能根据一个主键id查到一行数据。因此，回表肯定是一行行搜索主键索引的，基本流程如图所示：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211219225104.png" alt="image-20211219225104477" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211219225104.png" alt="image-20211219225104477" style="zoom:67%;" />
 
 如果随着a的值递增顺序查询的话，id的值就变成随机的，那么就会出现随机访问，性能相对较差。虽然还是按行查，但是可以通过调整查询的顺序，还是可以加速查询的效率，因为大多数的数据都是按照主键递增顺序插入得到的，所以我们可以认为，如果按照主键的递增顺序查询的话，对磁盘的读比较接近顺序读，能够提升读性能。这就是MRR优化的设计思路，此时语句的执行流程就变成了这样：
 
@@ -2368,11 +2368,11 @@ select * from t1 where a >= 1 and a <= 100;
 
 <div class="note info"><p>如果想要稳定地使用MRR优化的话，需要设置`set optimizer_switch="mrr_cost_based=off"`，因为目前的优化器会更倾向于不使用MRR，通过这个设置就可以保证一定可以使用MRR优化。</p></div>
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211219230645.png" alt="image-20211219230645249" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211219230645.png" alt="image-20211219230645249" style="zoom:67%;" />
 
 explain的结果：
 
-![image-20211219230712320](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211219230712.png)
+![image-20211219230712320](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211219230712.png)
 
 从explain的结果来看，Extra字段多了Using MRR，表示的是用上了MRR优化，而且，由于我们在read_md_buffer中按照id做了排序，所以最后得到的结果集也是按照主键id递增顺序的，与没有适用MRR的结果集顺序刚好相反。
 
@@ -2382,11 +2382,11 @@ explain的结果：
 
 MySQL在5.6版本后开始引入了Batched Key Acess（BKA）算法，这个算法其实就是对NLJ算法的优化。首先我们来回顾一下NLJ算法的执行流程：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211219232052.png" alt="image-20211219232052731" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211219232052.png" alt="image-20211219232052731" style="zoom:67%;" />
 
 NLJ算法执行的逻辑是：从驱动表t1，一行行地取出a的值，再到被驱动表t2去做join。也就是说，对于表t2来说，每次都是匹配一个值，这时，MRR的优势就用不上了。那怎么才能一次性地多穿些值给表t2呢？从表t1里一次性地多拿些出来，放入到join_buffer，然后一起传给表t2，这就是BKA算法，简而言之，使用join_buffer优化的NLJ算法就是BKA算法，算法的流程图如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211219235052.png" alt="image-20211219235052154" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211219235052.png" alt="image-20211219235052154" style="zoom:67%;" />
 
 
 
@@ -2431,7 +2431,7 @@ select * from t1 join t2 on (t1.b = t2.b) where t2.b >= 1 and t2.b <= 2000;
 
 explain的结果如下：
 
-![image-20211221000258809](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211221000258.png)
+![image-20211221000258809](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211221000258.png)
 
 可以发现，判断join是否满足的时候，会扫描表t2的每一行，判断条件的次数是1000*100万=10亿次，这个判断的工作量很大。但是经过where条件过滤后，需要参与join的实际上只有2000行数据。如果这条语句是一个低频的SQL语句，那么再为这个语句在表t2的字段b上创建一个索引就很浪费了。
 
@@ -2454,7 +2454,7 @@ select * from t1 join temp_t on (t1.b=temp_t.b);
 
 执行的效果如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211221000900.png" alt="image-20211221000900031" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211221000900.png" alt="image-20211221000900031" style="zoom:67%;" />
 
 总体来看，不论是在原表上加索引，还是用有索引的临时表，我们的思路都是让join语句能够用上被驱动表上的索引，来触发BKA算法，提升查询性能。
 
@@ -2486,7 +2486,7 @@ select * from t1 join temp_t on (t1.b = temp_t.b);
 
 以下列操作序列为例：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211221234203.png" alt="image-20211221234203605" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211221234203.png" alt="image-20211221234203605" style="zoom:67%;" />
 
 可以看到，临时表有以下几个特点：
 
@@ -2507,7 +2507,7 @@ select * from t1 join temp_t on (t1.b = temp_t.b);
 
 一般分库分表的场景，就是要把一个逻辑上的大表分散到不同的数据库实例上。比如，将一个大表ht，按照字段f，拆分成1024个分表，然后分布到32个数据库实例上，如下图所示：
 
-![image-20211222000035457](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211222000035.png)
+![image-20211222000035457](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211222000035.png)
 
 一般情况下，这种分库分表系统都有一个中间层proxy，不过，也有一些方案会让客户端直接连接数据，也就是没有proxy这一层。在这个架构中，分区key的选择是以“减少跨库和跨表查询”为依据的。如果大部分的语句都会包含f的等值条件，那么就要用f做分区键。这样，在proxy这一层解析完SQL语句以后，就能确定将这条语句到哪个分表做查询。
 
@@ -2539,7 +2539,7 @@ select v from ht where k >= M order by t_modified desc limit 100;
 
 第二种思路的示意图如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211226130032.png" alt="image-20211226130031919" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211226130032.png" alt="image-20211226130031919" style="zoom:67%;" />
 
 <div class="note info"><p>实践中，由于每个分库的计算量都不饱和，所以会直接把临时表temp_ht放到32个分库中的某一个上。</p></div>
 
@@ -2562,7 +2562,7 @@ create temporary table temp_t(id int primary key)engine=innodb;
 
 示例如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211226131704.png" alt="image-20211226131648061" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211226131704.png" alt="image-20211226131648061" style="zoom:67%;" />
 
 这个进程的进程号是4d2，session A的线程id是4，session B的线程id是5，所以，session A和 session B创建的临时表，在磁盘上的文件不会重名。
 
@@ -2606,7 +2606,7 @@ DROP TABLE `t_normal` /* generated by server */
 
 主库上不同的线程创建同名的临时表是没有关系的，但是传到备库执行时如何处理的呢？下面的序列中实例S是M的备库：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211226182104.png" alt="image-20211226182104322" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211226182104.png" alt="image-20211226182104322" style="zoom:67%;" />
 
 主库M上的两个session创建了同名的临时表t1，这两个`create temporary table t1`语句都会被传到备库S上，但是，备库的应用日志线程是共用的，也就是说要在应用线程里面先后执行这个create语句两次。（即使开了多线程复制，也可能被分配到从库的同一个worker中执行），如果直接执行，那么显然可能会出现冲突。MySQL在记录binlog的时候，会把主库执行的这个语句的线程id写到binlog中，这样，在备库的应用线程就能够知道执行每个语句的主库线程id，并利用这个线程id来构造临时表的table_def_key，具体流程下：
 
@@ -2647,7 +2647,7 @@ call idata();
 
 这条语句用到了union，它的语义是，取这两个子查询结果的并集，下面是这个语句explain的结果：
 
-![image-20211226185633150](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211226185633.png)
+![image-20211226185633150](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211226185633.png)
 
 可以看到：
 
@@ -2665,11 +2665,11 @@ call idata();
 
 这个过程的示意图如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211226190524.png" alt="image-20211226190524454" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211226190524.png" alt="image-20211226190524454" style="zoom:67%;" />
 
 可以看到，这里的内存临时表起到了暂存数据的作用，而且计算过程还用上了临时表主键id的唯一性约束，实现了union的语义。如果将这个语句中的union改成union all的话，就没有了“去重”的语义。这样执行的时候，就依次执行子查询，得到的结果直接作为结果集的一部分，发给客户端，因此也就不需要临时表了。
 
-![image-20211226190854967](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211226190855.png)
+![image-20211226190854967](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211226190855.png)
 
 可以看到，第二行的Extra字段显示的是Using index，表示只使用了覆盖索引，没有用临时表了。
 
@@ -2685,7 +2685,7 @@ select id % 10 as m, count(*) as c from t1 group by m;
 
 这个语句的逻辑是把表t1里的数据，按照id%10进行分组统计，并按照m的结果排序后输出，它的explain结果如下：
 
-![image-20211226191521497](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211226191521.png)
+![image-20211226191521497](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211226191521.png)
 
 在Extra字段里面，我们可以看到：
 
@@ -2703,15 +2703,15 @@ select id % 10 as m, count(*) as c from t1 group by m;
 
 流程图如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211226204524.png" alt="image-20211226204524315" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211226204524.png" alt="image-20211226204524315" style="zoom:67%;" />
 
 其中，虚线框内表示临时表的排序过程：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211226204657.png" alt="image-20211226204657634" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211226204657.png" alt="image-20211226204657634" style="zoom:67%;" />
 
 这条语句的执行结果如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211226204808.png" alt="image-20211226204808711" style="zoom: 50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211226204808.png" alt="image-20211226204808711" style="zoom: 50%;" />
 
 如果并不需要对结果进行排序，那么可以在SQL语句末尾增加order by null：
 
@@ -2721,7 +2721,7 @@ select id % 10 as m, count(*) as c from t1 group by m order by null;
 
 这样就跳过了最后排序的阶段，直接从临时表中取数据返回，返回的结果如图所示：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211226205042.png" alt="image-20211226205042481" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211226205042.png" alt="image-20211226205042481" style="zoom:50%;" />
 
 
 
@@ -2736,7 +2736,7 @@ select id % 100 as m, count(*) as c from t1 group by m order by null limit 10;
 
 把内存临时表的大小限制为最大1024字节，并把语句改为id%100，这样返回结果里有100行数据。但是，这时的内存临时表大小不够存下这100行数据，也就是说，执行过程中会发现内存临时表大小不够存下这100行数据，也就是说，执行过程中会发现内存临时表大小达到了上限（1024字节）。这个时候，MySQL就会把内存临时表转成磁盘临时表，磁盘临时表默认使用的引擎是InnoDB，这时返回的结果如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211226210055.png" alt="image-20211226210055235" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211226210055.png" alt="image-20211226210055235" style="zoom:50%;" />
 
 如果这个表t1的数据量很大，很可能这个查询需要的磁盘临时表就会占用大量的磁盘空间。
 
@@ -2746,7 +2746,7 @@ select id % 100 as m, count(*) as c from t1 group by m order by null limit 10;
 
 在优化group by问题之前，我们得清楚，为什么执行group by语句需要临时表，group by的语义逻辑是统计不同的值出现的个数，但是，由于每一行的id%100的结果是无序的，所以，我们需要一个临时表，来记录并统计结果。那么，如果扫描过程中可以保证出现的数据是有序的，那么group by语句就可以不再需要临时表，假设有如下数据结构：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211226223201.png" alt="image-20211226223201473" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211226223201.png" alt="image-20211226223201473" style="zoom:67%;" />
 
 可以看到，如果可以确保输入的数据是有序的，那么计算group by的时候，就只需要从左到右，顺序扫描，依次累加，也就是下面的这个过程：
 
@@ -2767,7 +2767,7 @@ select z, count(*) as c from t1 group by z;
 
 优化后的group by语句的explain结果，如下图所示：
 
-![image-20211226224059201](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211226224059.png)
+![image-20211226224059201](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211226224059.png)
 
 可以看到这个语句的执行不再需要临时表，也不需要排序了。
 
@@ -2788,11 +2788,11 @@ select SQL_BIG_RESULT id % 100 as m, count(*) as c from t1 group by m;
 
 根据有序数组，得到数组里面的不同值，以及每个值得出现次数，执行的流程图如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211226225313.png" alt="image-20211226225313194" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211226225313.png" alt="image-20211226225313194" style="zoom:67%;" />
 
 explain的结果如下：
 
-![image-20211226225353695](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211226225353.png)
+![image-20211226225353695](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211226225353.png)
 
 从Extra字段可以看到，这个语句的执行没有再使用临时表，而是直接使用了排序算法。
 
@@ -2851,7 +2851,7 @@ select word from words order by rand() limit 3;
 
 上述SQL的explain的结果如下：
 
-![image-20220116105216709](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220116105216709.png)
+![image-20220116105216709](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220116105216709.png)
 
 Extra字段显示Using temporary，表示的是需要使用临时表，Using filesort表示的是需要执行排序操作，也就是说这个SQL需要临时表，并且需要在临时表上排序。
 
@@ -2877,7 +2877,7 @@ select word from words order by rand() limit 3;
 
 其中，Rows_examined：20003就表示这个语句执行过程中扫描了20003行。完整的排序的执行流程图如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220116112157514.png" alt="image-20220116112157514" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220116112157514.png" alt="image-20220116112157514" style="zoom:67%;" />
 
 图中的pos指的是位置信息。在InnoDB中，如果创建的表没有主键，获取把一个表的主键删掉了，那么InnoDB会自己生成一个长度为6字节的rowid来作为主键，这也就是排序模式里面，rowid名字的来历，实际上它表示的就是每个引擎用来唯一标识数据行的信息。
 
@@ -2905,7 +2905,7 @@ select word from words order by rand() limit 3;
 SELECT * FROM `information_schema`.`OPTIMIZER_TRACE`\G
 ```
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220116114409076.png" alt="image-20220116114409076" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220116114409076.png" alt="image-20220116114409076" style="zoom:67%;" />
 
 因为将`max_length_for_sort_data`设置成16，小于word字段的长度定义，所以我们看到sort_mode里面显式的是rowid排序，这个是符合预期的，参与排序的是随机值R字段和rowid段组成的行。
 
@@ -2917,7 +2917,7 @@ R字段存放的随机值是8个字段，rowid是6个字节，数据总行数是
 
 优先队列排序地示意图如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220116120330311.png" alt="image-20220116120330311" style="zoom: 80%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220116120330311.png" alt="image-20220116120330311" style="zoom: 80%;" />
 
 
 
@@ -3025,7 +3025,7 @@ PARTITION BY RANGE (
 insert into t values('2017-4-1',1),('2018-4-1',1);
 ```
 
-![image-20220116181122059](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220116181122059.png)
+![image-20220116181122059](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220116181122059.png)
 
 此时表中有两行记录，按照定义的分区的规则，这两行记录分别落在p_2018和p_2019这两个分区上，可以看到，这个表包含了一个.frm文件和4个.ibd文件，每个分区对应一个.ibd文件，也就是说：
 
@@ -3034,25 +3034,25 @@ insert into t values('2017-4-1',1),('2018-4-1',1);
 
 接下来我们通过观察分区表加间隙锁的例子来说明对于InnoDB来说，这是4个表：
 
-![image-20220116193146452](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220116193146452.png)
+![image-20220116193146452](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220116193146452.png)
 
 我们初始化表t的时候，只插入了两行数据，ftime的值分别是，'2017-4-1'和'2018-4-1'，session A的select语句对索引ftime上这两个记录之间的间隙加了锁。如果是一个普通表的话，那么T1时刻，在表t的ftime索引，间隙和加锁状态应该如下图：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220116193512618.png" alt="image-20220116193512618" style="zoom: 67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220116193512618.png" alt="image-20220116193512618" style="zoom: 67%;" />
 
 也就是说，'2017-4-1'和'2018-4-1'这两个记录之间的间隙是会被锁住的，那么session B的两条插入语句应该都要进入锁等待状态。但是从上面的实验效果可以看出，session B的第一个insert语句是可以执行成功，因为，对于引擎来说，p_2018和p_2019是两个不同的表，也就是说2017-4-1的下一个记录并不是2018-4-1，而是p_2018分区的supermum，所以在T1时刻，在表t的ftime索引上，间隙和加锁的状态其实是这样的：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220116193910224.png" alt="image-20220116193910224" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220116193910224.png" alt="image-20220116193910224" style="zoom:67%;" />
 
 由于分区表的规则，session A的select语句其实只操作了分区p_2018，因此加锁范围就是图中深绿色的部分，所以，session B要写入一行ftime是2018-2-1的时候是可以成功的，而要写入2017-12-1这个记录，就要等session A的间隙锁。
 
 此时`show engine innodb status`的部分结果如下：
 
-![image-20220116194133483](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220116194133483.png)
+![image-20220116194133483](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220116194133483.png)
 
 接下来我们看看在MyISAM引擎中的情况，首先使用`alter table t engine`将表t改成MyISAM表，然后执行如下序列：
 
-![image-20220116194544996](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220116194544996.png)
+![image-20220116194544996](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220116194544996.png)
 
 在session A里面，使用sleep(100)将这条语句的执行时间设置为100秒，由于MyISAM引擎只支持表锁，所以这条update语句会锁住整个表t上的读，但是我们看到的结果是，session B的第一条查询语句是可以正常执行的，第二条语句才进入锁等待状态，这正是因为MyISAM的表锁是在引擎层实现的，session A加的表锁，其实是锁在分区p_2018上。因此，只会堵住在这个分区上执行的查询，落到其它分区的查询时不受影响的。
 
@@ -3066,7 +3066,7 @@ insert into t values('2017-4-1',1),('2018-4-1',1);
 
 下图是创建的一个包含了很多分区的表t_myisam，执行一条插入语句后报错的情况。：
 
-![image-20220116191126999](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220116191126999.png)
+![image-20220116191126999](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220116191126999.png)
 
 可以看到，这条insert语句，明显只需要访问一个分区，但语句却无法执行。实际上使用InnoDB引擎并不会出现这个问题，MyISAM分区表使用的分区策略，我们称为通用分区策略（generic partitioning），每次访问分区都由server层控制，通用分区策略，是MySQL一开始支持分区表的时候就存在的代码，在文件管理、表管理的实现上很粗糙，因此有比较严重的性能问题。
 
@@ -3074,9 +3074,9 @@ insert into t values('2017-4-1',1),('2018-4-1',1);
 
 如果从server层看的话，一个分区表就只是一个表。下面我们通过例子来说明，下面两张图分别是这个例子的操作序列和执行结果图。
 
-![image-20220116192048055](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220116192048055.png)
+![image-20220116192048055](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220116192048055.png)
 
-![image-20220116192111558](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220116192111558.png)
+![image-20220116192111558](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220116192111558.png)
 
 可以看到，虽然session B只需要操作p_2017这个分区，但是由于session A持有整个表t的MDL锁，就导致了session B的alter语句被堵住，实际上，分区表在做DDL的时候，影响会更大，但是如果是在普通的分表上操作的时候并不会出现这样的问题。
 
@@ -3402,7 +3402,7 @@ insert into T(c) values (1);
 
 下面是按照时间顺序执行两个事务的行为：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220103112251081.png" alt="image-20220103112251081" style="zoom: 50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220103112251081.png" alt="image-20220103112251081" style="zoom: 50%;" />
 
 我们来看下在不同的隔离级别下，事务A会查询到的V1、V2、V3的返回值分别是什么：
 
@@ -3421,7 +3421,7 @@ insert into T(c) values (1);
 
 那么事务隔离是怎么实现的呢？实际上，在MySQL中，每条记录在更新的时候都会同时记录一条回滚操作，记录上最新的值，通过回滚操作，都可以得到前一个状态的值。假设一个值从1被顺序改成了2、3、4，在回滚日志里面就会有类似下面的记录：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220103115424619.png" alt="image-20220103115424619" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220103115424619.png" alt="image-20220103115424619" style="zoom:50%;" />
 
 当前值是4，但是在查询这条记录的时候，不同时刻启动的事务会有不同的read-view。如图中看到的，在视图A、B、C里面，这一个记录的值分别是1、2、4，同一条记录在系统中可以存在多个版本，就是数据库的多版本并发控制（MVCC）。对于read-view A要得到1，就必须将当前的值依次执行图中所有的回滚操作得到。
 
@@ -3482,7 +3482,7 @@ MySQL里面表级别的锁有两种：一种是表锁，一种是元数据锁（
 
 给一个表加字段或者修改字段、添加索引，都需要扫描全表的数据，因此，操作不慎的话，就可能导致生产事故：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211228232542.png" alt="image-20211228232542111" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211228232542.png" alt="image-20211228232542111" style="zoom:50%;" />
 
 session A先启动，这时候会对表t加上一个MDL读锁，由于session B需要的也是MDL读锁，因此可以正常执行。之后session C会被blocked，因为session A的MDL读锁还没有释放，而session C需要MDL写锁，因此只能被阻塞。之后所有在表上新申请MDL读锁的请求也会被session C阻塞，也就是说，所有对表的增删改查都需要先申请MDL读锁，都被锁住导致表完全不可读写。如果这个表上的查询语句频繁，而且客户端有重试机制，也就是超时后会再起一个新的session 再请求的话，这个库的线程很快就会爆满。
 
@@ -3508,7 +3508,7 @@ ALTER TABLE tbl_name WAIT N add column ...
 
 为了更好的说明行锁，我们以下面的操作序列为例，假设id是表t的主键：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211228234751.png" alt="image-20211228234751212" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211228234751.png" alt="image-20211228234751212" style="zoom:50%;" />
 
 这个例子中事务B的update语句会被阻塞，直到事务A执行commit之后，事务B才能继续执行，在这个过程中，事务A持有两个记录的行锁，都是在commit的时候才释放的，也就是说，在InnoDB事务中，行锁是在需要的时候才加上的，但并不是不需要了就立刻释放，而是要等到事务结束时才释放，这就是两阶段锁协议。基于这个协议，我们在使用事务的时候，如果事务中需要锁多个行，要把最可能造成锁冲突，最可能影响并发度的锁尽量完后放，接下来我们通过一个实例来说明这一点。
 
@@ -3524,7 +3524,7 @@ ALTER TABLE tbl_name WAIT N add column ...
 
 当并发系统中不同线程出现循环资源以来，设计的线程都在等待别的线程释放资源时，就会导致这几个线程都进入无限等待的状态，称为死锁。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220102184417933.png" alt="image-20220102184417933" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220102184417933.png" alt="image-20220102184417933" style="zoom:50%;" />
 
 这时候，事务A在等待事务B释放id=2的行锁，而事务B在等待事务A释放id=1的行锁。事务A和事务B在互相等待对方的资源释放，就是进入了死锁状态。当出现死锁以后，有两种策略：
 
@@ -3563,7 +3563,7 @@ INSERT INTO t VALUES (0, 0, 0), (5, 5, 5), (10, 10, 10), (15, 15, 15), (20, 20, 
 
 假设执行的场景序列如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220103172302968.png" alt="image-20220103172302968" style="zoom: 67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220103172302968.png" alt="image-20220103172302968" style="zoom: 67%;" />
 
 可以看到，session A里执行了三次查询，分别是Q1、Q2和Q3，具体的执行结果如下：
 
@@ -3582,13 +3582,13 @@ INSERT INTO t VALUES (0, 0, 0), (5, 5, 5), (10, 10, 10), (15, 15, 15), (20, 20, 
 
 幻读会带来一些问题，假设时序图如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220103174549152.png" alt="image-20220103174549152" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220103174549152.png" alt="image-20220103174549152" style="zoom:67%;" />
 
 session B的第二条语句`update t set c = 5 where id = 0`，语义是把id=0、d=5这一行的c的值，改成了5。由于在T1时刻，session A还只是给id=5这一行加了行锁，并没有给id=0这行加上锁。因此，session B在T2时刻，是可以执行这两条update语句的，这样，就破坏了session A里Q1语句要锁住所有d=5的行的加锁声明。session C也是相同的道理，对id=1这一行的修改，也是破坏了Q1的加锁声明。
 
 其次，还有数据一致性的问题，我们直到，锁的设计是为了保证数据的一致性，而这个一致性，不止是数据库内部数据状态在此刻的一致性，还包含了数据和日志在逻辑上的一致性。为了说明这个问题，给session A在T1时刻再加上一个更新语句，即：`update t set d = 100 where d = 5;`，此时的序列图如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220103215449655.png" alt="image-20220103215449655" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220103215449655.png" alt="image-20220103215449655" style="zoom:67%;" />
 
 update加锁的语义和`select ... for update`是一致的，所以这时候加上这条update语句也很合理。session A声明说“要给d=5的语句加上锁”，就是为了要更新数据，新加的这条update语句就是把它认为加上了锁的这一行的d的值修改成了100。
 
@@ -3617,7 +3617,7 @@ update t set d=100 where d=5;/* 所有 d=5 的行， d 改成 100*/
 
 这个语句序列，不论是拿到备库去执行，还是以后用binlog克隆，这三行的结果，都变成了（0，5，100）、（1，5，100）和（5，5，100）。也就是说，id=0和id=1这两行，发生了数据不一致，经过分析不难发现，我们只给d=5这一行加了锁，假设我们给扫描过程中碰到的所有行都加上写锁，再观察执行效果：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220103233722467.png" alt="image-20220103233722467" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220103233722467.png" alt="image-20220103233722467" style="zoom:67%;" />
 
 由于session A把所有的行都加上了写锁，所在session B在执行第一个update语句的时候就被锁住了，需要等到T6时刻session A提交以后，session B才能继续执行，这样对于id=0这一行，在数据库里的最终结果还是（0，5，5）。在binlog里面，执行的序列如下：
 
@@ -3635,13 +3635,13 @@ update t set c=5 where id=0; /*(0,5,5)*/
 
 产生幻读的原因是，行锁只能锁住行，但是新插入记录这个动作，要更新的是记录之间的“间隙”。因此为了解决幻读问题，InnoDB引入了间隙锁（Gap Lock）来解决。顾名思义，间隙锁，锁的就是两个值之间的空隙，比如本节中的表t，初始化插入6个记录，就产生了7个间隙。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220103220303233.png" alt="image-20220103220303233" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220103220303233.png" alt="image-20220103220303233" style="zoom:67%;" />
 
 这样。在执行`select * from t where d = 5 for update;`的时候，就不止是给数据库已有的6个记录加上了行锁，还同时加了7个间隙锁，这样就确保了无法再插入新的记录，也就是说这时候，在一行行扫描的过程中，不仅将给行加上了行锁，还给行两边的空袭，也加上了间隙锁。
 
 虽然间隙锁也是一种锁，但是它和之前介绍过的锁都不太一样，它是加载数据行之间间隙上的，行锁的之间的冲突关系是“另外一个行锁”，但间隙锁不一样，跟间隙锁存在冲突关系的，是“往这个间隙中插入一个记录”这个操作，间隙锁之间不存在冲突关系。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220103220843354.png" alt="image-20220103220843354" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220103220843354.png" alt="image-20220103220843354" style="zoom:67%;" />
 
 这里的session B并不会被阻塞，因为表t中没有c=7这个记录，因此session A加的是间隙锁（5，10），而session B也是再这个间隙加的间隙锁，它们有共同的目标，即：保护这个间隙，不允许插入值，但，它们之间是不冲突的。
 
@@ -3655,7 +3655,7 @@ update t set c=5 where id=0; /*(0,5,5)*/
 
 binlog的吸入逻辑比较简单：事务执行过程中，先把日志写到binlog cache，事务提交的时候，再把binlog cache写入到binlog文件中。一个事务的binlog是不能被拆开的，因此不论这个事务多大，也要确保一次性写入。这就涉及到binlog cache的保存问题，系统给binlog cache分配了一片内存，每个线程一个，参数`binlog_cache_size`用于控制单个线程内binlog cache所占内存的大小。如果超过了这个参数规定的大小，就要暂存到磁盘。事务提交的时候，执行器把binlog cache里的完整事务写入到binlog中，并清空binlog cache。状态图如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220210094732836.png" alt="image-20220210094732836" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220210094732836.png" alt="image-20220210094732836" style="zoom:67%;" />
 
 可以看到，每个线程有自己binlog cache，但是共用同一份binlog文件。
 
@@ -3674,7 +3674,7 @@ write和fsync的时机，是由参数sync_binlog控制的：
 
 事务在执行过程中，生成的redo log会先写入到redo log buffer中，并且并不是每次生成后都会持久化到磁盘中。这意味着如果事务执行期间MySQL发生异常重启，那么这部分日志就丢失了，由于事务没有提交，所以这时日志丢了也不会有损失，那么事务还没有提交的时候，redo log buffer中的部分日志有没有可能被持久化到磁盘呢？这就和redo log的三种状态有关：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220210225451762.png" alt="image-20220210225451762" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220210225451762.png" alt="image-20220210225451762" style="zoom:67%;" />
 
 这三种状态分别是：
 
@@ -3705,9 +3705,9 @@ MySQL的TPS会高于磁盘的TPS，这是因为MySQL中使用了组提交（grou
 
 下图表示的是，三个并发事务（trx1，trx2，trx3）在prepare阶段，都写完redo log buffer，持久化到磁盘的过程，对应的LSN分别是50、120和160。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220210234121462.png" alt="image-20220210234121462" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220210234121462.png" alt="image-20220210234121462" style="zoom:67%;" />
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220210234201404.png" alt="image-20220210234201404" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220210234201404.png" alt="image-20220210234201404" style="zoom:67%;" />
 
 从图中可以看到：
 
@@ -3718,7 +3718,7 @@ MySQL的TPS会高于磁盘的TPS，这是因为MySQL中使用了组提交（grou
 
 所以，一次组提交里面，组员越多，节约磁盘IOPS效果越好，但如果只有单线程压测，那么就是一个事务对应一次持久化操作了。在并发场景下，第一个事务写完redo log buffer以后，接下来这个fsync越晚调用，组员可能越多，节约IOPS的效果就越好，为了让一次fsync带的组员更多，MySQL还有另一个优化：拖时间。两阶段提交的示意图如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220210235251648.png" alt="image-20220210235251648" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220210235251648.png" alt="image-20220210235251648" style="zoom:67%;" />
 
 其实，写binlog其实是分成两步的：
 
@@ -3727,7 +3727,7 @@ MySQL的TPS会高于磁盘的TPS，这是因为MySQL中使用了组提交（grou
 
 MySQL为了让组提交的效果更好，把redo log做fsync的时间拖到了步骤1之后。也就是说，上面的图变成了这样：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220210235504487.png" alt="image-20220210235504487" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220210235504487.png" alt="image-20220210235504487" style="zoom:67%;" />
 
 这么以来，binlog也可以组提交了。在执行图5中第4步把binlog fsync到磁盘时，如果有多个事务的binlog已经写完了，也是一起持久化的，这样也可以减少IOPS的消耗。
 
@@ -3752,7 +3752,7 @@ MySQL为了让组提交的效果更好，把redo log做fsync的时间拖到了�
 
 下图表示的是基本主备切换流程：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220213170252460.png" alt="image-20220213170252460" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220213170252460.png" alt="image-20220213170252460" style="zoom:67%;" />
 
 在状态1中，客户端的读写都直接访问节点A，而节点B是A的备库，只是将A的更新都同步过来，到本地执行，这样可以保持节点B和A的数据是相同的。当需要切换的时候，就切成状态2，这时候客户端读写访问的都是节点B，而节点A是B的备库。
 
@@ -3766,7 +3766,7 @@ MySQL为了让组提交的效果更好，把redo log做fsync的时间拖到了�
 
 语句在节点A执行，然后同步到节点B的完整示意图如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220213171430906.png" alt="image-20220213171430906" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220213171430906.png" alt="image-20220213171430906" style="zoom:67%;" />
 
 可以看到：主库接收到客户端的更新请求后，执行内部事务的更新逻辑，同时写binlog。备库B和主库A之间维持了一个长连接。主库A内部有一个线程，专门用于服务备库B的这个长连接，一个事务日志同步的完整过程如下：
 
@@ -3813,7 +3813,7 @@ mysql> show binlog events in 'master.000001';
 
 查看binlog中的内容：
 
-![image-20220213173317686](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220213173317686.png)
+![image-20220213173317686](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220213173317686.png)
 
 
 
@@ -3826,7 +3826,7 @@ mysql> show binlog events in 'master.000001';
 
 为了说明statement和row格式的区别，delete命令的执行效果如下：
 
-![image-20220213202550075](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220213202550075.png)
+![image-20220213202550075](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220213202550075.png)
 
 可以看到，运行这条delete命令产生了一个warning，原因是当前binlog设置的是statement格式，并且语句中有limit，所以这个命令可能是unsafe的。为什么会这样呢？这是因为delete带limit，很可能会出现主备数据不一致的情况，比如上面的这个例子：
 
@@ -3837,7 +3837,7 @@ mysql> show binlog events in 'master.000001';
 
 将binlog的格式修改为`binlog_format='row'`,此时，binlog中的内容如下：
 
-![image-20220213203155674](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220213203155674.png)
+![image-20220213203155674](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220213203155674.png)
 可以看到，与statement格式的binlog相比，前后的BEGIN和COMMIT是一样的。但是，row格式的binlog里没有了SQL语句的原文，而是替换成了两个event：Table_map和Delete_rows:
 
 - Table_map event用于说明接下来要操作的表是test库的表t
@@ -3849,7 +3849,7 @@ mysql> show binlog events in 'master.000001';
 mysqlbinlog -w data/master.000001 --start-position=8900; /** 根据上图，这个事务的binlog是从8900这个位置开始的。 */
 ```
 
-![image-20220213203942182](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220213203942182.png)
+![image-20220213203942182](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220213203942182.png)
 
 说明如下：
 
@@ -3886,11 +3886,11 @@ mysql> insert into t values(10,10, now());
 
 执行的效果如下：
 
-![image-20220213221234250](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220213221234250.png)
+![image-20220213221234250](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220213221234250.png)
 
 可以看到，MySQL此时使用的statement格式，那么，如果这个binlog过了1分钟才传给备库的话，那主备的数据不就不一致了吗？使用 mysqlbinlog工具查看执行的详情：
 
-![image-20220213221344241](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220213221344241.png)
+![image-20220213221344241](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220213221344241.png)
 
 从图中的结果可以看到，binlog在记录event的时候，会多记录`SET TIMESTAMP=1546103491`，它用`SET TIMESTAMP`命令约定了接下来`now()`函数的返回时间。因此，不论这个binlog是1分钟之后被备库执行，还是3天后用来恢复这个库的备库，这个insert语句插入的行，值都是固定的。也就是说，通过`SET TIMESTAMP`命令，MySQL就确保了主备数据的一致性。
 
@@ -3906,7 +3906,7 @@ mysqlbinlog master.000001 --start-position=2738 --stop-position=2973 | mysql -h1
 
 上文中主备的结构实际上是M-S结果，但实际生产上使用比较多的是双M结构，也就是下图所展示的主备切换流程：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220213222320129.png" alt="image-20220213222320129" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220213222320129.png" alt="image-20220213222320129" style="zoom:50%;" />
 
 对比双M结构和M-S结构，其实区别只是多了一条线，即：节点A和B之间总是互为主备关系，这样在切换的时候就不用再修改主备关系。但是，双M结构有一个显著的问题需要解决：
 
@@ -3926,7 +3926,7 @@ mysqlbinlog master.000001 --start-position=2738 --stop-position=2973 | mysql -h1
 
 正常情况下，只要主库执行更新生成的所有binlog，都可以传到备库并被正确地执行，备库就能达到跟主库一致的状态，这就是最终以执行，但是，MySQL要提供高可用能力，只有最终一致性是不够的，上文中提到的双M结构的主备切换流程图如下：
 
-![image-20220313163317617](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220313163317617.png)
+![image-20220313163317617](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220313163317617.png)
 
 ### 主备延迟及其来源
 
@@ -3974,7 +3974,7 @@ mysqlbinlog master.000001 --start-position=2738 --stop-position=2973 | mysql -h1
 
 这个切换过程就称为可靠性优先策略，执行的流程图如下：
 
-![image-20220313213531273](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220313213531273.png)
+![image-20220313213531273](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220313213531273.png)
 
 <div class="note info"><p>图中SBM是seconds_behind_master的简称</p></div>
 
@@ -4005,13 +4005,13 @@ insert into t(c) values(5);
 
 假设现在主库上有其他的数据表有大量的更新，导致主备延迟达到5秒，在插入一条`c=4`的语句后，发起了主备切换。下图是`binlog_format=mixed`时，切换的流程和结果：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220313222405986.png" alt="image-20220313222405986" style="zoom:80%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220313222405986.png" alt="image-20220313222405986" style="zoom:80%;" />
 
 可以看到，由于采用了可用性优先策略，主库A和备库B上出现了两行不一致的数据。那么，如果设置`binlog_format=row`情况又会如何呢？
 
 因为row格式在记录binlog的时候，会记录插入的行的所有字段的值，所以最后只会有一行不一致。而且，两边的主备同步的应用线程会报错duplicate key error并停止。也就是说，这种情况下，备库B的（5，4）和主库A的（5，5）这两行数据，都不会被对方执行。详细过程如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220313223114222.png" alt="image-20220313223114222" style="zoom:80%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220313223114222.png" alt="image-20220313223114222" style="zoom:80%;" />
 
 不难发现：
 
@@ -4020,7 +4020,7 @@ insert into t(c) values(5);
 
 那么时候应该使用可用性优化策略呢？一种场景就是一场切换。假设主库A和备库B的主备延迟是30分钟，这时候主库A掉电了，HA系统要切换B作为主库，通常我们在主动切换的时候，需要等到主备延迟小于5秒的时候再启动切换，但这个时候已经别无选择了。
 
-![image-20220313224647402](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220313224647402.png)
+![image-20220313224647402](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220313224647402.png)
 
 采用可靠性优先策略的话，就必须等到备库B的`seconds_behind_master=0`之后，才能切换，但现在的情况比较严重，系统已经处于完全不可用的状态。我们就必须先切换到备库B，并且设置备库B`readonly=false`。只切换备库，而不设置备只读也是不行的，因为这段时间内，中转日志还没有应用完成，如果直接发起主备切换，客户端查询看不到之前执行完成的事务，会认为有“数据丢失”。虽然随着中转日志的继续应用，这些数据会恢复回来，但是对于一些业务来说，查询到“暂时丢失数据的状态”也是不能被接受的。
 
@@ -4030,13 +4030,13 @@ insert into t(c) values(5);
 
 前面的小节中我们介绍过MySQL主备流程图：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220315233013490.png" alt="image-20220315233013490" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220315233013490.png" alt="image-20220315233013490" style="zoom:67%;" />
 
 图中两个黑色的箭头，一个箭头代表了客户端写入库，另一个箭头代表的是备库上sql_thread执行中转日志（relay log）。这里使用箭头的粗细来表示并行度，可以看到，第一个箭头明显粗于第二个箭头，这是由于在主库上，各种锁都会影响并发度。
 
 图中备库上sql_thread更新数据（DATA）的过程如果使用的是单线程的话，就会导致备库应用日志不够快，造成主备延迟，在5.6版本之前，MySQL只支持单线程复制，从单线程复制到最新版本的多线程复制，中间演化经历多个版本，不过，所有的多线程复制都符合下面的这个模型：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220315233935209.png" alt="image-20220315233935209" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220315233935209.png" alt="image-20220315233935209" style="zoom:67%;" />
 
 上图中，coordinator就是原来的sql_thread，不过现在它并不再直接更新数据，只负责读取中转日志和分发事务，真正更新日志的，变成了worker线程，work线程的个数，是由参数`slave_parallel_workers`决定的。
 
@@ -4053,7 +4053,7 @@ insert into t(c) values(5);
 
 按表分发事务的基本思路是，如果两个事务更新不同的表，它们就可以并行，因为数据是存储在表里的，所以按表分发，可以保证两个worker不会更新同一行。不过，如果有跨表的事务，还是要把两张表放在一起，具体如下图所示：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220316000412695.png" alt="image-20220316000412695" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220316000412695.png" alt="image-20220316000412695" style="zoom:67%;" />
 
 
 
@@ -4098,7 +4098,7 @@ insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5);
 
 假设，接下来我们要在主库执行下面这两个事务：
 
-![image-20220319231335851](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220319231335851.png)
+![image-20220319231335851](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220319231335851.png)
 
 可以看到，这两个事务要更新的行的主键值不同，但是如果它们被分到不同的worker，就有可能session B的语句先执行，这时候`id=1`的行的a的值还是1，就会报唯一键冲突。因此，基于行的策略，事务哈希表还需要考虑唯一键，即key应该是“库名+表名+索引a的名字+a的值”，比如，在上面这个例子中，要在表t1上执行`update t1 set a = 1 where id = 2`语句，在binlog里面记录了整行的数据修改前各个字段的值，和修改后各个字段的值。因此，corrdinator在解析这个语句的binlog的时候，这个事务的哈希表就有三个项：
 
@@ -4155,11 +4155,11 @@ MariaDB中的并行复制策略：
 
 下图中，假设了三组事务在主库的执行情况，可以看到trx1、trx2和trx3提交的时候，trx4、trx5和trx6是在执行的。这样，在第一组事务提交完成的时候，下一组事务很快就会进入commit状态。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220319234841629.png" alt="image-20220319234841629" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220319234841629.png" alt="image-20220319234841629" style="zoom:67%;" />
 
 而按照MariaDB的并行复制策略，备库上的执行效果如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220319234944025.png" alt="image-20220319234944025" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220319234944025.png" alt="image-20220319234944025" style="zoom:67%;" />
 
 可以看到，在备库上执行的时候，要等第一组事务完全执行完成后，第二组事务才能开始执行，这样系统的吞吐量就不够。另外，这个方案很容易被大事务拖后腿。假设trx2是一个超大事务，那么在备库应用的时候，trx1和trx3执行完成后，就只能等trx2完全执行完成，下一组才能开始执行，这段时间，只有一个worker线程在工作，是对资源的浪费，不过即使如此，这个策略仍然是一个令人感到惊艳的创新。
 
@@ -4202,13 +4202,13 @@ binlog的组提交中，有这样两个参数：
 
 大多数的互联网应用都是读多写少，因此，在业务不断发展的过程中，很可能会先遇到读性能的问题，而在数据层解决读性能问题，就会涉及到一主多从的架构。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220320123410458.png" alt="image-20220320123410458" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220320123410458.png" alt="image-20220320123410458" style="zoom:67%;" />
 
 图中，虚线箭头表示的是主备关系，也就是A和A<sup>'</sup>互为主备，从库B、C、D指向的是主库A。一主多从的设置，一般用于读写分离，主库负责所有的写入和一部分读，其他的读请求则由从库分担。
 
 在一主多从的架构下，主库故障后的主备切换流程如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220320125816253.png" alt="image-20220320125816253" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220320125816253.png" alt="image-20220320125816253" style="zoom:67%;" />
 
 相比于一主一备的切换流程，一主多从的结构在切换完成后，A<sup>'</sup>会称为新的主库，从库B、C、D也要改接到A<sup>'</sup>，正是由于多了从库B、C、D重新指向的这个过程，所以主备切换的复杂性也相应增加了。
 
@@ -4247,7 +4247,7 @@ MASTER_LOG_POS=$master_log_pos
    mysqlbinlog File --stop-datetime=T --start-datetime=T
    ```
 
-   ![image-20220320131636375](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220320131636375.png)
+   ![image-20220320131636375](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220320131636375.png)
 
 图中，end_log_pos后面的值“123”，表示的就是A<sup>'</sup>这个实例，在T时刻写入新的binlog的位置，那么，我们就可以把123这个作为$master_log_pos的值。
 
@@ -4317,7 +4317,7 @@ CREATE TABLE `t` (
 insert into t values(1,1);
 ```
 
-![image-20220320221847024](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220320221847024.png)
+![image-20220320221847024](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220320221847024.png)
 
 可以看到，事务的BEGIN之前有一条`SET SESSION.GTID_NEXT`命令。这时，如果实例X有从库，那么将`CREATE TABLE`和`insert`语句的binlog同步过去执行的话，执行事务之前就会先执行这两个SET命令，这样被加入从库的GTID集合的，就是图中的这两个GTID。假设，现在这个实例X是另外一个实例Y的从库，并且此时在实例Y上执行下面的这条插入语句：
 
@@ -4336,7 +4336,7 @@ start slave;
 
 其中，前三条语句的作用，是通过提交一个空事务，把这个GTID加到实例X的GTID集合中。下图表示了执行完这个空事务之后的`show master status`的结果：
 
-![image-20220320222841433](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220320222841433.png)
+![image-20220320222841433](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220320222841433.png)
 
 可以看到实例X的Executed_Gtid_set里面，已经加入了这个GTID，这样，我再执行`start slave`命令让同步线程执行起来的时候，虽然实例X还是会继续执行实例Y传过来的事务，但是由于“aaaaaaaa-cccc-dddd-eeee-ffffffffffff:10”已经存在于实例X的GTID集合中了，所以实例X就会直接跳过这个事务，也就不会再出现主键冲突的错误。
 
@@ -4372,7 +4372,7 @@ master_auto_position=1
 
 读写分离的主要目标就是分摊主库的压力，上文提到的一主多从的架构师客户端主动做负载均衡，这种模式下一般会把数据库的连接信息放在客户端的连接层。也就是说，由客户端来选择后端数据库进行查询。还有一种架构是，在MySQL和客户端之间有一个中间代理层proxy，客户端只连接proxy，由proxy根据请求类型和上下文决定请求的分发路由。
 
-![image-20220320232030366](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220320232030366.png)
+![image-20220320232030366](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220320232030366.png)
 
 客户端直连和带proxy的读写分离架构的优劣势：
 
@@ -4794,7 +4794,7 @@ MySQL客户端默认采用第一种方式，而如果加上`-quick`参数，就�
 
 这个流程的示意图如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220208233711540.png" alt="image-20220208233711540" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220208233711540.png" alt="image-20220208233711540" style="zoom:67%;" />
 
 关于这个过程的说明：
 
@@ -4815,7 +4815,7 @@ MySQL客户端默认采用第一种方式，而如果加上`-quick`参数，就�
 
 这个过程的示意图如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220209234951355.png" alt="image-20220209234951355" style="zoom: 67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220209234951355.png" alt="image-20220209234951355" style="zoom: 67%;" />
 
 图中binlog备份系统到线上备库有一条虚线，是指如果由于时间太久，备库上已经删除了临时实例需要的binlog的话，我们可以从binlog备份系统中找到需要的binlog，再放回备库中。假设，我们发现当前临时实例需要的binlog是从master.000005开始的，但是在备库上执行`show binlogs`显示的最小的binlog文件是master.000007，意味着少了两个binlog文件。这时，我们就需要去binlog备份系统中找到这两个文件，把之前删掉的binlog放回备库的操作如下：
 
@@ -4870,7 +4870,7 @@ CREATE TABLE `t` (
 
 在这个空表里面执行`insert into values(null,1,1);`插入一行数据，再执行`show create table;`命令，就可以看到如下结果：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220117234809443.png" alt="image-20220117234809443" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220117234809443.png" alt="image-20220117234809443" style="zoom:67%;" />
 
 可以看到，表定义里面出现了AUTO_INCREMENT=2，表示下一次插入数时，如果需要自动生成自增值，会生成id=2。实际上，自增值并不是保存在表结构定义里的，表结构的定义是存放在后缀名为.frm的文件中，但是并不会保存自增值。
 
@@ -4919,13 +4919,13 @@ insert into t values(null, 1, 1);
 
 对应的流程图如下：
 
-![image-20220118233718587](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220118233718587.png)
+![image-20220118233718587](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220118233718587.png)
 
 可以看到，这个表的自增值改成3，是在真正执行插入数据的操作之前，这个语句真正执行的时候，因为碰到了唯一键c冲突，所以id=2这一行并没有插入成功，但也没有将自增值再该回去，所以，在这之后，再插入新的数据行是，拿到的自增id就是3，也就是说，出现了自增主键不连续的情况。
 
 完整的演示过程如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220118234714144.png" alt="image-20220118234714144" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220118234714144.png" alt="image-20220118234714144" style="zoom:50%;" />
 
 可以看到，这个操作序列复现了一个自增主键id不连续的情况（没有id=2的行）。
 
@@ -4966,7 +4966,7 @@ insert into t values(null,2,2);
 
 不难发现，insert...select语句在默认设置下，使用了语句级的锁，这主要是出于数据的一致性的考虑，假设有以下场景：
 
-![image-20220123115117649](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220123115117649.png)
+![image-20220123115117649](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220123115117649.png)
 
 
 
@@ -5049,7 +5049,7 @@ InnoDB数据可见性的核心思想是：每一行数据都记录了更新它�
 
 接下来，我们观察如下事务序列：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220123175439810.png" alt="image-20220123175439810" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220123175439810.png" alt="image-20220123175439810" style="zoom:67%;" />
 
 session B中从innodb_trx表里查出来的两个字段，第二个字段`trx_mysql_thread_id`就是线程id。显示线程id，是为了说明这两次查询看到的事务对应的线程id都是5，也就是session A所在的线程。可以看到，T2时刻显示的trx_id是一个很大的数；T4时刻显示的trx_id是1289，看上去是一个比较正常的数字，这是因为，在T1时刻，session A还没有涉及到更新，是一个只读事务，而对于只读事务，InnoDB并不会分配trx_id，也就是说：
 
@@ -5074,9 +5074,9 @@ T2时刻这个数字是每次查询的时候由系统临时计算出来的。它
 
 首先我们需要把当前的max_trx_id先修成2<sup>48</sup>-1。注意：这里使用的是可重复读隔离级别，具体的操作流程如下：
 
-![image-20220123221738366](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220123221738366.png)
+![image-20220123221738366](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220123221738366.png)
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20220123221826819.png" alt="image-20220123221826819" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20220123221826819.png" alt="image-20220123221826819" style="zoom:67%;" />
 
 由于此时系统的max_trx_id设置成了2<sup>48</sup>-1，所以在session A启动的事务TA的低水位就是2<sup>48</sup>-1，在T2时刻，session B执行第一条update语句的事务id就是2<sup>48</sup>-1，而第二条update语句的事务id就是0了，这条update语句执行后生成的数据版本上的trx_id就是0，在T3时刻，session A执行select语句的时候，判断可见性发现，c=3这个数据版本的trx_id，小于事务TA的低水位，因此认为这个数据可见，但，这个是脏读，由于低水位值会持续增加，而事务id从0开始计数，就导致了系统在这个时刻之后，所有的查询都会出现脏读的。而且，MySQL重启时max_trx_id也不会清0，也就是说重启MySQL，这个bug仍然存在。
 

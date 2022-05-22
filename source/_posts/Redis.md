@@ -37,7 +37,7 @@ Redis（Remote Dictionary Server )，即远程字典服务，是一个开源的�
 
 Redis是一个字典结构的存储服务器，一个Redis实例提供了多个用来存储数据的字典，客户端可以指定将这数据存储在哪个字典中，这与在一个关系型数据库实例（以MySQL为例）中可以创建多个数据库类似，可以将其中的每个字典都理解成一个独立的数据库。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210828102202.png" alt="image-20210828102202300" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210828102202.png" alt="image-20210828102202300" style="zoom:50%;" />
 
 16个数据库分别为：DB 0~DB 15，默认使用DB 0 ，可以使用`select n`切换到DB n，`dbsize`可以查看当前数据库的大小，与key数量相关。
 
@@ -160,7 +160,7 @@ Redis的key，通过TTL命令返回key的过期时间，一般来说有3种：
 
 实际上每种数据结构都有自己底层的内部编码实现，而且是多种实现，这样Redis会在合适的场景选择合适的内部编码，如下图所示：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210828115030.png" alt="Redis内部编码实现" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210828115030.png" alt="Redis内部编码实现" style="zoom:50%;" />
 
 Redis这样设计有两个好处：
 
@@ -202,7 +202,7 @@ Redis列表是简单的字符串列表，按照插入顺序排序。你可以添
 
 首先我们列表，可以经过规则定义将其变为队列、栈、双端队列等
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210828102958.png" alt="image-20210828102918813" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210828102958.png" alt="image-20210828102918813" style="zoom:50%;" />
 
 正如图Redis中List是可以进行双端操作的，所以命令也就分为了LXXX和RLLL两类，有时候L也表示List例如LLEN
 
@@ -1273,7 +1273,7 @@ Redis支持RDB和AOF两种持久化机制，持久化功能有效避免因进程
 
 Redis持久化文件加载的流程：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210828174806.png" alt="Redis加载持久化文件" style="zoom:60%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210828174806.png" alt="Redis加载持久化文件" style="zoom:60%;" />
 
 ## RDB持久化
 
@@ -1302,7 +1302,7 @@ save 60 10000：表示60 秒内如果至少有 10000 个 key 的值变化，则�
 
 bgsave是异步进行，进行持久化的时候，Redis还可以将继续响应客户端请求 ；
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210828115659.png" alt="bgsave命令的运作方式" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210828115659.png" alt="bgsave命令的运作方式" style="zoom:67%;" />
 
 详细具体步骤如下：
 
@@ -1350,7 +1350,7 @@ AOF表示Append Only File，这种模式会将所有的命令都记录下来，�
 
 快照功能（RDB）并不是非常耐久（durable）： 如果 Redis 因为某些原因而造成故障停机， 那么服务器将丢失最近写入、以及未保存到快照中的那些数据。 从 1.1 版本开始， Redis 增加了一种完全耐久的持久化方式： AOF 持久化。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210828174606.png" alt="image-20210828174605782" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210828174606.png" alt="image-20210828174605782" style="zoom:50%;" />
 
 
 
@@ -1471,7 +1471,7 @@ Reading messages... (press Ctrl-C to quit) # 等待接收消息
 
 当我们调用套节字的读写方法，默认它们是阻塞的，比如read方法要传递进去一个参数n，表示读取这么多字节后再返回，如果没有读够线程就会卡在那里，直到新的数据刀来或者连接关闭了，read方法才会返回，线程才能继续处理。而write方法一般来说不会阻塞，除非内核为套接字分配的写缓冲区已经满了，write方法就会阻塞，直到缓存区中有空闲空间挪出来了。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210827184844.png" alt="非阻塞IO示意图" style="zoom:87%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210827184844.png" alt="非阻塞IO示意图" style="zoom:87%;" />
 
 
 
@@ -1483,7 +1483,7 @@ Reading messages... (press Ctrl-C to quit) # 等待接收消息
 
 非阻塞IO有个问题，那就是线程要读数据，结果读了一部分就返回了，线程如何知道何时才应该继续。也就是当数据到来时，线程如何得到通知。写也是一样，如果缓冲区满了，写不完，剩下的数据何时才应该续写，线程也应该得到通知。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210827185654.png" alt="事件轮询API示意图" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210827185654.png" alt="事件轮询API示意图" style="zoom:67%;" />
 
 多路复用（事件轮询）API就是用来解决这个问题的，最简单的事件轮询API是select函数，它是操作系统提供给用户程序的API。输入是读写描述符列表read_fds & write_fds，输出是与之对应的可读可写事件。同时还提供了timeout参数，如果没有任何事件到来，那么久最多等待timeout时间，线程处于阻塞状态。一旦期间有任何事情刀来，就可以立即返回。时间过了之后还是没有任何事件到来，也会立即返回。拿到事件后，线程就可以继续挨个处理相应的事件。处理完了继续过来轮询。于是线程就进入了一个死循环，我们把这个死循环称为事件循环，一个循环为一个周期。
 
@@ -1626,7 +1626,7 @@ repl_backlog_histlen:0
 
 主节点不但负责数据读写，还负责把写命令同步给从节点。写命令的发送过程是异步完成的，也就是说主节点自身处理完写命令后直接返回给客户端，并不等待从节点复制完成，如下图所示：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210828172159.png" alt="image-20210828172159313" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210828172159.png" alt="image-20210828172159313" style="zoom:50%;" />
 
 # 哨兵模式
 
@@ -1656,11 +1656,11 @@ Redis的主从复制模式可以将主节点的数据改变同步给从节点，
 
 当主节点出现故障时，Redis的哨兵模式能自动完成故障发现和故障转移，并通知应用方，从而实现真正的高可用。Redis Sentinel是一个分布式架构，其中包含了若干个Sentinel节点和Redis数据节点，每个Sentinel节点会对数据节点和其余Sentinel节点进行监控，当它发现节点不可达时，会对节点但做下线标识。如果被标识的是主节点，它还会和其他Sentinel节点进行“协商”，当大多数Sentinel节点都认为主节点不可达时，它们会选举出一个Sentinel节点来完成自动故障转移的工作，同时会将这个变化实时通知给Redis应用方。整个过程完全时自动的，不需要人工来介入，所以这套方案很有效地解决了Redis高可用的问题。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210828165734.png" alt="Redis Sentinel拓扑结构" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210828165734.png" alt="Redis Sentinel拓扑结构" style="zoom:50%;" />
 
 哨兵模式与主从复制的区别：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210828165535.png" alt="image-20210828165534966" style="zoom: 67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210828165535.png" alt="image-20210828165534966" style="zoom: 67%;" />
 
 
 
@@ -1788,7 +1788,7 @@ Redis当中使用了[Raft算法](https://zhuanlan.zhihu.com/p/32052223)实现领
 
 布隆过滤器：对所有可能查询的参数以Hash的形式存储，以便快速确定是否存在这个值，在控制层先进行拦截校验，校验不通过直接打回，减轻了存储系统的压力。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210828162856.png" alt="image-20210828162856553" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210828162856.png" alt="image-20210828162856553" style="zoom:50%;" />
 
 缓存空对象:一次请求若在缓存和数据库中都没找到，就在缓存中方一个空对象用于处理后续这个请求。
 

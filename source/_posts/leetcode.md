@@ -19,7 +19,7 @@ author: 吉永超
 
 整个算法与数据结构需要掌握的内容大致有：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210708155818.png" alt="image-20210708155818510"  />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210708155818.png" alt="image-20210708155818510"  />
 
 # 数据结构
 
@@ -258,7 +258,7 @@ public class TreeNode {
 
 一颗简单的红黑树如下图所示：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210829231754.png" alt="一颗简单的红黑树" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210829231754.png" alt="一颗简单的红黑树" style="zoom:50%;" />
 
 红黑树并不是一个完美平衡二叉查找树，从图1可以看到，根节点P的左子树显然比右子树高，但左子树和右子树的黑结点的层数是相等的，也即任意一个结点到每个叶子结点的路径都包含数量相同的黑结点（性质5）。所以我们叫红黑树这种平衡为黑色完美平衡。
 
@@ -270,11 +270,11 @@ public class TreeNode {
 
 左旋的示意图：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210829233108.png" alt="左旋" style="zoom: 67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210829233108.png" alt="左旋" style="zoom: 67%;" />
 
 右旋的示意图：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210829233211.png" alt="右旋" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210829233211.png" alt="右旋" style="zoom:67%;" />
 
 如果我们暂时忽略颜色，可以看到旋转操作不会影响旋转结点的父结点，父结点以上的结构还是保持不变的。
 
@@ -285,7 +285,7 @@ public class TreeNode {
 
 整体的示意图如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210829233651.png" alt="红黑树的查找" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210829233651.png" alt="红黑树的查找" style="zoom:50%;" />
 
 因为红黑树也是一颗二叉平衡树，并且查找不会破坏树的平衡，所以查找跟二叉平衡树的查找无异：
 
@@ -300,7 +300,7 @@ public class TreeNode {
 
 整体的示意图如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210829233941.png" alt="红黑树的插入" style="zoom: 67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210829233941.png" alt="红黑树的插入" style="zoom: 67%;" />
 
 插入操作包括两部分工作：一个是查找插入的位置，而是插入后自平衡。查找插入的父结点很简单，跟查找操作的区别不大：
 
@@ -316,7 +316,7 @@ public class TreeNode {
 
 所有可能的插入的情景：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210830094135.png" alt="红黑树插入情景"/>
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210830094135.png" alt="红黑树插入情景"/>
 
 
 
@@ -349,7 +349,7 @@ B+树应文件系统所需而出的一种B树的变形树，注意严格意义�
 
 堆是具有下列性质的完全二叉树：每个结点的值都大于或等于其左右孩子结点的值，称为大顶堆，或者每个结点的值都小于或等于其左右孩子结点的值，称为小顶堆，如下图所示：
 
-![image-20210707172409423](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210707172409.png)
+![image-20210707172409423](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210707172409.png)
 
 这里由定义可知，根节点一定是堆中所有结点最大（小）者。
 
@@ -361,7 +361,7 @@ B+树应文件系统所需而出的一种B树的变形树，注意严格意义�
 
 Java中的PriorityQueue实现了Queue接口，不允许放入null元素，其通过堆实现，具体是通过完全二叉树实现的小顶堆，这也意味着可以通过数组来作为PriorityQueue的底层实现。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210707223529.png" alt="PriorityQueue_base.png" style="zoom: 50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210707223529.png" alt="PriorityQueue_base.png" style="zoom: 50%;" />
 
 优先队列的插入操作时间复杂度是：O(1)，取出操作：O(logN) ，底层具体实现的数据结构较为多样和复杂：heap、bst、treap...。
 
@@ -369,15 +369,15 @@ Java中的PriorityQueue实现了Queue接口，不允许放入null元素，其通
 
 `add(E e)`和`offer(E e)`的语义相同，都是向队列中插入元素，二者的区别在于插入失败情况的处理，前者插入失败是抛出异常，后者则返回false。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210707224316.png" alt="PriorityQueue_offer.png" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210707224316.png" alt="PriorityQueue_offer.png" style="zoom:50%;" />
 
 `element()`和`peek()`语义完全相同，都是获取但不删除队首元素，也就是队列中权值最小的那个元素，二者的区别在于获取失败的情况的处理，前者会抛出异常，后者会返回null。根据小顶堆的性质，堆顶那个元素就是全局最小的那个，如果用数组来存储堆，根据下标关系，`0`下标处的那个元素即是堆顶元素，因此，直接返回数组`0`下标处的那个元素即可。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210707225025.png" alt="PriorityQueue_peek.png" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210707225025.png" alt="PriorityQueue_peek.png" style="zoom:50%;" />
 
 `romve()`和`poll()`方法的语义也完全相同，都是获取并删除队首元素，二者的区别在于删除失败的情况的处理，前者会抛出异常，后者会返回null。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210707225501.png" alt="PriorityQueue_poll.png" style="zoom: 50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210707225501.png" alt="PriorityQueue_poll.png" style="zoom: 50%;" />
 
 ## 图
 
@@ -782,25 +782,25 @@ public class TrieTree {
 
 布隆过滤器本质上是由长度为m的位向量或位列表（仅包含0或1位值的列表）组成，最初初始值均为0，如下图所示。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210705232804.webp" alt="img" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210705232804.webp" alt="img" style="zoom:67%;" />
 
 使用多个哈希函数产生多个哈希值：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210705232745.webp" alt="img" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210705232745.webp" alt="img" style="zoom:67%;" />
 
 如上图所示，当输入"semlinker"时，预设的3个哈希函数将输出2、4、6，假设另一个输入"kakuqo"，哈希函数输出3、4和7。4这个位置已经被"semlinker"标记了，在布隆过滤器中是可以共用这个标记位的，此时，当前位向量的标记状态为：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210706001503.webp" alt="img" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210706001503.webp" alt="img" style="zoom:67%;" />
 
 
 
 此时，假设我们要判断"fullstack"是否在集合中，对其使用散列函数，获取哈希函数输出的 3 个索引值分别是 2、3 和 7：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210706001722.webp" alt="img" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210706001722.webp" alt="img" style="zoom:67%;" />
 
 可以看到，虽然"fullstack"不在集合中，但是计算出的索引值均为1，说明它在集合中，这就产生了误报，产生的原因是由于哈希碰撞导致的巧合而将不同的元素存储在相同的比特位上。相应的，布隆过滤器有一个可预测的误判率。
 
-![img](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210706001934.webp)
+![img](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210706001934.webp)
 
 布隆过滤器的优点是空间效率和查询时间都远远超过一般的算法，缺点是有一定的误别率和删除困难。
 
@@ -1436,7 +1436,7 @@ public int maxDepthByBFS(TreeNode root) {
 
 直接暴力递归的时间复杂度是O(2<sup>n</sup>)，因为需要优化，优化的思路大致分为两种，一种是记忆化搜索，一种是动态规划，使用记忆化搜索相当于剪枝，记忆化搜索的递归树：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210727102616.png" alt="image-20210727102609636" style="zoom: 67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210727102616.png" alt="image-20210727102609636" style="zoom: 67%;" />
 
 代码：
 
@@ -1794,7 +1794,7 @@ public List<List<String>> groupAnagrams(String[] strs) {
 
 括号生成的状态树：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210712114808.png" alt="image.png" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210712114808.png" alt="image.png" style="zoom:50%;" />
 
 ```java
     public List<String> generateParenthesis(int n) {
@@ -1875,11 +1875,11 @@ public List<List<String>> groupAnagrams(String[] strs) {
 
 树的祖先的定义：若节点P在节点root的左（右）子树中，或P=root，则称root是p的祖先。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210713224143.png" alt="Picture1.png" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210713224143.png" alt="Picture1.png" style="zoom:50%;" />
 
 最近公共祖先的定义：设节点root为节点p，q的某公共祖先，若其左子节点root.left和右子节点root.right都不是p,q的公共祖先，则称root是"最近的公共祖先"。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210713224306.png" alt="Picture2.png" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210713224306.png" alt="Picture2.png" style="zoom:50%;" />
 
 根据以上定义，若root是p,q的最近公共祖先，则只可能为以下情况之一：
 
@@ -1968,7 +1968,7 @@ public double myPow2(double x, int n) {
 
 以求解[1,2,3]的子集为例，画出的树形图如下所示：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210711180106.png" alt="image.png" style="zoom: 50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210711180106.png" alt="image.png" style="zoom: 50%;" />
 
 使用回溯算法：
 
@@ -1993,7 +1993,7 @@ public double myPow2(double x, int n) {
 
 题目的状态树：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210712235154.png" alt="17. 电话号码的字母组合" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210712235154.png" alt="17. 电话号码的字母组合" style="zoom:50%;" />
 
 使用回溯法：
 
@@ -2067,11 +2067,11 @@ public List<List<Integer>> levelOrder(TreeNode root) {
 
 岛屿问题是一类典型的网格问题。通常而言，网格中的格子的相邻的格子节点分别是上下左右四个。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210713174441.jpeg" alt="网格结构中四个相邻的格子" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210713174441.jpeg" alt="网格结构中四个相邻的格子" style="zoom:50%;" />
 
 在这类问题中，深度优先遍历的终止条件：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210713174700.jpeg" alt="网格 DFS 的 base case" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210713174700.jpeg" alt="网格 DFS 的 base case" style="zoom:50%;" />
 
 这样我们就得到了网格DFS遍历的框架代码：
 
@@ -2098,7 +2098,7 @@ boolean inArea(int[][] grid, int r, int c) {
 
 与二叉树的深度遍历不同的是，网格的遍历可能会遍历重复的节点：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210713174948.gif" alt="DFS 遍历可能会兜圈子（动图）" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210713174948.gif" alt="DFS 遍历可能会兜圈子（动图）" style="zoom:50%;" />
 
 为了避免这样重复的遍历，我们可以将已经遍历过的格子进行标记，也就是说，每个格子可能取三个值：
 
@@ -2186,7 +2186,7 @@ public
 
 使用贪心算法：
 
-![image-20210719235247657](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210719235247.png)
+![image-20210719235247657](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210719235247.png)
 
 此时0这个位置的下标是4，但是之前最大的可达步数是3，因为无法再进行跳跃。
 
@@ -2304,7 +2304,7 @@ max(dp[i-1][j],dp[i][j-1]), & text_1[i-1] \neq text_2[j-1]
 $$
 示意图：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210819120336.png" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210819120336.png" style="zoom:67%;" />
 
 直接求解即可：
 
@@ -2335,7 +2335,7 @@ $$
 
 假设一共有$n$个房子，每个房子的金额分别是$H_0,H_1,...H_{n-1}$，子问题$f(k)$表示从前$k$个房子（即$H_0，H_1,...,H_{k-1}$）中能偷盗的最大金额。那么偷$k$个房子有两种偷法：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210820105009.png" alt="image-20210820104524320" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210820105009.png" alt="image-20210820104524320" style="zoom:67%;" />
 
 状态转移方程为：
 $$
@@ -2411,7 +2411,7 @@ class{
 
 使用暴力法求解：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210713190144.png" alt="image.png" style="zoom: 33%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210713190144.png" alt="image.png" style="zoom: 33%;" />
 
 对于每一个位置，我们需要：
 

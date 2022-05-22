@@ -147,7 +147,7 @@ public abstract class SpringFactoriesLoader {
 
 去掉事件通知点后，整体流程大体如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210624210942919.png" alt="image-20210624210942919" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20210624210942919.png" alt="image-20210624210942919" style="zoom:50%;" />
 
 简单一点，也可以将启动流程分为三个部分：
 
@@ -367,7 +367,7 @@ public ConfigurableApplicationContext run(String... args) {
 
 自动配置流程如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210624211216303.png" alt="image-20210624211216303" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20210624211216303.png" alt="image-20210624211216303" style="zoom:50%;" />
 
 `mybatis-spring-boot-starter`、`spring-boot-starter-web`等组件的META-INF文件下均含有`spring.factories`文件，自动配置模块中，`SpringFactoriesLoader`收集到文件中的类全名并返回一个类全名的数组，返回的类全名通过反射被实例化，就形成了具体的工厂实例，工厂实例来生成组件具体需要的bean。
 
@@ -596,7 +596,7 @@ CMD ["-jar", "-Xmx512m", "@project.build.finalName@.@project.packaging@"]
 
 由于这里直接使用java8的镜像，本身就有600多M，加上业务模块本身的大小，大约有了800多M，这样每次打包构建，非常的耗时，也很占用磁盘空间。
 
-![image-20210624210110566](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210624210110566.png)
+![image-20210624210110566](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20210624210110566.png)
 
 ## 使用Alpine镜像
 
@@ -608,7 +608,7 @@ $ apk add --no-cache <package>
 
 这里我们使用Alpine提供的docker镜像：
 
-![image-20210624210052799](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/image-20210624210052799.png)
+![image-20210624210052799](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/image-20210624210052799.png)
 
 因此这里我们使用`Alpine`镜像，并且将RUN的指令合并在一起，减少构建的层数，修改之后的dockerfile，：
 

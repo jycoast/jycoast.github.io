@@ -48,7 +48,7 @@ RocketMQ主要由Producer、Broker、Consumer三部分组成，其中Producer负
 
 与分区相关的还有一个概念：分片（Sharding）。分片不同于分区。在RocketMQ中，分片指的是存放相同Topic的Broker。每个分片中会创建相应数量的分区，即Queue，每个Queue的大小都是相同的。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211104235000.png" alt="分片" style="zoom: 67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211104235000.png" alt="分片" style="zoom: 67%;" />
 
 ### 协议
 
@@ -95,7 +95,7 @@ RocketMQ将这种正常情况下无法被消费的消息称为死信消息（Dea
 
 RocketMQ架构上主要分为四部分，如下图所示：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211102235603.png" alt="RocketMQ架构" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211102235603.png" alt="RocketMQ架构" />
 
 其中各个部分的详细作用：
 
@@ -128,7 +128,7 @@ RocketMQ架构上主要分为四部分，如下图所示：
 
 #### 消息存储整体架构
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211031234114.png" alt="RockeMQ消息存储" style="zoom:100%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211031234114.png" alt="RockeMQ消息存储" style="zoom:100%;" />
 
 消息存储的架构中主要由三个部分构成：
 
@@ -148,7 +148,7 @@ RocketMQ架构上主要分为四部分，如下图所示：
 
 #### 消息刷盘
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211101233904.png" alt="RocketMQ消息刷盘" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211101233904.png" alt="RocketMQ消息刷盘" style="zoom:67%;" />
 
 刷盘的方式有以下两种：
 
@@ -168,13 +168,13 @@ RoketMQ集群中的角色几乎都会进行通信，rocketmq-remoting模块是Ro
 
 #### RocketMQ通信类结构
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211102232119.png" alt="RocketMQ通信"  />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211102232119.png" alt="RocketMQ通信"  />
 
 在RocketMQ中使用了自定义协议，RemotingCommand这个类在消息传输过程中对所有数据内容的封装，不但包含了所有的数据结构，还包含了编解码的操作。
 
 传输的内容主要分为4个部分：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211102232727.png" alt="传输内容" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211102232727.png" alt="传输内容" style="zoom:67%;" />
 
 详细含义如下：
 
@@ -187,7 +187,7 @@ RoketMQ集群中的角色几乎都会进行通信，rocketmq-remoting模块是Ro
 
 RocketMQ的RPC通信采用Netty组件作为底层通信库，同样也遵循了Reactor线程模型，同时又在这之上做了一些扩展和优化。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211102233040.png" alt="Reactor线程模型"  />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211102233040.png" alt="Reactor线程模型"  />
 
 
 
@@ -195,7 +195,7 @@ RocketMQ的RPC通信采用Netty组件作为底层通信库，同样也遵循了R
 
 RocketMQ分布式消息队列的消息过滤方式有别于其它MQ中间件，是在Consumer端订阅消息时再做消息过滤的。RocketMQ这么做是在于其Producer端写入消息和Consumer订阅消息采用分离存储的机制来实现的。Consumer端订阅消息是需要通过ConsumerQueue这个消息消费的逻辑队列拿到一个索引，然后再从CommitLog里面读取真正的消息实体内容，所以说到底也还是绕不开其存储结构。其ConsumerQueue的存储结构如下，可以看到其中有8个字节存储的Message Tag的哈希值，基于Tag的消息过滤正是基于这个字段值的。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211102233703.png" alt="ConsumerQueue的存储结构" style="zoom:100%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211102233703.png" alt="ConsumerQueue的存储结构" style="zoom:100%;" />
 
 主要支持如下两种的方式的过滤：
 
@@ -335,7 +335,7 @@ public class ConcurrentConsumer {
 
 #### 全局有序
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211104235910.png" alt="RocketMQ全局有序" style="zoom: 67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211104235910.png" alt="RocketMQ全局有序" style="zoom: 67%;" />
 
 当发送和消费参与的Queue只有一个时所保证的有序是整个Topic中消息的顺序，称为全局有序。创建Topic时指定Queue的数量有以下三种方式：
 
@@ -345,7 +345,7 @@ public class ConcurrentConsumer {
 
 #### 分区有序
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211105000246.png" alt="RocketMQ分区有序" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211105000246.png" alt="RocketMQ分区有序" style="zoom:67%;" />
 
 如果有多个Queue参与，其仅可保证在该Queue分区队列上的消息顺序，则称为分区有序。那么我们该如何Queue的选择呢？在定义Producer的时候我们可以指定消息队列选择器，这个选择器是我们自己实现了MessageQueueSelector接口定义的。
 
@@ -434,13 +434,13 @@ public class OrderedConsumer {
 
 多个消费者组订阅了多个Topic，并且每个消费者组里的多个消费者实例的订阅关系保持了一致。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211107115839.png" alt="正确的订阅关系" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211107115839.png" alt="正确的订阅关系" style="zoom:67%;" />
 
 ### 错误的订阅关系
 
 一个消费者组订阅了多个Topic，但是该消费者组里的多个Consumer实例的订阅关系并没有保持一致。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211107120022.png" alt="错误的订阅关系" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211107120022.png" alt="错误的订阅关系" style="zoom:67%;" />
 
 #### 订阅了不同的Topic
 
@@ -874,21 +874,21 @@ producer.start();
 
 发送消息的整体流程如下：
 
-![image-20211107223834662](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211107223834.png)
+![image-20211107223834662](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211107223834.png)
 
 ### 选择发送的路由
 
 使用RocketMQ的时候通常我们都会使用集群部署：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211107215834.png" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211107215834.png" style="zoom:67%;" />
 
 客户端在发送消息之前首先要询问NameServer才能确定一个合适的Broker以进行消息的发送：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211107215941.png" alt="image-20211107215941618" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211107215941.png" alt="image-20211107215941618" style="zoom:67%;" />
 
 显然，所有的NameServer中的数据都是一致的，在Broker启动的时候，其会将自己在本地存储的Topic配置文件（默认位于`$HOME/store/config/topics.json`目录）中所有的Topic加载到内存中去，然后会将这些所有的Topic全部同步到所有的NameServer中，与此同时，Broker也会启动一个定时任务，默认每隔30s来执行一次Topic同步：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211107220352.png" alt="image-20211107220352693" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211107220352.png" alt="image-20211107220352693" style="zoom:67%;" />
 
 由于NameServer服务去中每台机器存储的数据都是一致的，因为客户端任意选择一台服务器进行发送即可。客户端选择NameServer的源码如下：
 
@@ -935,7 +935,7 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
 
 在客户端发送消息的时候，其首先会尝试寻找话题路由信息，即这条消息应该被发送到哪个地方去。客户端在内存中维护了一份和Topic相关的路由信息表topicPublishInfoTable，当发送消息的时候，会首先尝试从表中获取信息。如果此表中不存在这条话题的话，那么便会从NameServer获取路由信息。
 
-![image-20211107221722033](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211107221722.png)
+![image-20211107221722033](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211107221722.png)
 
 源码如下：
 
@@ -963,15 +963,15 @@ public class DefaultMQProducerImpl implements MQProducerInner {
 
 当Topic是新建的，NameServer不存在和此Topic相关的信息：
 
-![image-20211107222224495](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211107222224.png)
+![image-20211107222224495](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211107222224.png)
 
 Topic之前已经创建过，NameServer存在此Topic的信息：
 
-![image-20211107222435046](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211107222435.png)
+![image-20211107222435046](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211107222435.png)
 
 服务器返回的Topic路由信息包括以下内容：
 
-![image-20211107222558636](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211107222558.png)
+![image-20211107222558636](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211107222558.png)
 
 “Broker-1”、“Broker-2”分别为两个Broker服务器的名称，相同名称下可以有主从Broker，因此每个Broker又都有brokerId，默认情况下，BokerId如果为MixAll.Master_ID（值为0）的话，那么认为这个Broker为MASTER主机，其余位于相同名称下的Broker为这台MASTER主机的SLAVE从机。
 
@@ -992,13 +992,13 @@ public class MQClientInstance {
 
 每个Broker上面可以绑定多个可写消息队列和多个可读消息队列，客户端根据返回的所有Broker地址列表和每个Broker的可写消息队列列表会在内存中构建一份所有的消息队列列表。之后客户端每次发送消息，都会在消息队列列表上轮询选择队列（这里我们假设返回了两个Broker，每个Broker均又4个可写消息队列）：
 
-![image-20211107223431720](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211107223431.png)
+![image-20211107223431720](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211107223431.png)
 
 ### 向Broker发送消息
 
 在确定了Master Broker地址和这个Broker的消息队列之后，客户端才开始真正地发送消息给这个Broker，也是从这里客户端才开始与Broker进行交互：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211107223723.png" alt="image-20211107223723904" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211107223723.png" alt="image-20211107223723904" style="zoom:67%;" />
 
 上节说到，如果Topic的信息在NameServer不存在的话，那么会使用默认的Topic信息进行消息的发送。然而一旦这条消息到来之后，Broker端还没有这个话题，所以Broker需要检查Topic的存在性：
 
@@ -1053,11 +1053,11 @@ public class TopicConfigManager extends ConfigManager {
 
 Topic检查的整体的流程如下图：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211107224552.png" alt="Topic检查"  />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211107224552.png" alt="Topic检查"  />
 
 当Broker对消息的一些字段做过一番必要的检查之后，便会存储到磁盘中去：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211107223937.png" alt="消息存盘" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211107223937.png" alt="消息存盘" style="zoom:67%;" />
 
 
 
@@ -1067,19 +1067,19 @@ Topic检查的整体的流程如下图：
 
 当有一条消息过来之后，Broker首先需要做的就是确定这条消息应该存储在哪个文件里面。在RokcetMQ中，这个用来存储消息的文件被称为MappedFile。这个文件默认创建的大小为1GB。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211107225625.png" alt="image-20211107225625058" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211107225625.png" alt="image-20211107225625058" style="zoom:67%;" />
 
 一个文件为1GB大小，也即1024\*1024\*1024 = 1073741824字节，每个文件的命名是按照总的字节偏移量来命名的。例如一个第一个文件偏移量为0，那么它的名字为00000000000000000000，当这个1G文件被存储满了之后，就会创建下以恶搞文件，下一个文件的偏移量为1GB，那么它的名字为00000000001073741824，一次类推。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211107230004.png" alt="image-20211107230004089" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211107230004.png" alt="image-20211107230004089" style="zoom:67%;" />
 
 默认情况下这些消息文件位于 `$HOME/store/commitlog` 目录下，如下图所示:
 
-![image-20211107230106222](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211107230106.png)
+![image-20211107230106222](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211107230106.png)
 
 当Broker启动的时候，其会将位于存储目录下的所有消息文件加载到一个列表中：
 
-![image-20211107230237636](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211107230237.png)
+![image-20211107230237636](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211107230237.png)
 
 当有新的消息到来的时候，其会默认选择列表中的最后一个文件来进行消息的保存：
 
@@ -1167,7 +1167,7 @@ public class AllocateMappedFileService extends ServiceThread {
 
 整体流程如下：
 
-![image-20211108233122734](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211108233122.png)
+![image-20211108233122734](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211108233122.png)
 
 等待MappedFIle创建完毕之后，其便会从请求表requestTable中取出并删除表中记录：
 
@@ -1224,7 +1224,7 @@ public class MappedFileQueue {
 }
 ```
 
-![image-20211108233313275](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211108233313.png)
+![image-20211108233313275](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211108233313.png)
 
 至此，`MappedFile` 已经创建完毕，也即可以进行下一步的操作了。
 
@@ -1280,7 +1280,7 @@ public class MappedFile extends ReferenceResource {
 
 整体的流程图如下：
 
-![image-20211108235023817](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211108235023.png)
+![image-20211108235023817](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211108235023.png)
 
 #### 文件不可以完全存储消息
 
@@ -1309,11 +1309,11 @@ public class CommitLog {
 
 每条消息的存储是按照一个4字节的长度来做界限的，这个长度本身就是整个消息体的长度，当读完这整条消息体的长度之后，下一次再取出来的一个4字节的数字，便又是下一条消息的长度：
 
-![image-20211113112431832](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211113112431.png)
+![image-20211113112431832](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211113112431.png)
 
 围绕一条消息，还会存储许多其它内容，我们这里只需要了解前两位是4字节的长度和4字节的MAGICCODE（魔数）即可：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211113112616.png" alt="image-20211113112616916" style="zoom: 80%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211113112616.png" alt="image-20211113112616916" style="zoom: 80%;" />
 
 MAGICCODE的值可能会是：
 
@@ -1357,7 +1357,7 @@ class DefaultAppendMessageCallback implements AppendMessageCallback {
 
 由上述方法我们看出在这种情况下返回的结果是END_OF_FILE。当检测到这种返回结果的时候，CommitLog接着又会申请创建新的MappedFile并尝试写入消息：
 
-![image-20211113114410647](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211113114410.png)
+![image-20211113114410647](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211113114410.png)
 
 <div class="note info"><p>在消息文件加载的过程中，其也是通过判断MAGICCODE的类型，来判断是否继续读取下一个MappedFile来计算整体消息偏移量的。</p></div>
 
@@ -1420,7 +1420,7 @@ public class CommitLog {
 
 当配置为同步刷盘策略的时候，Broker运行一个叫做GroupCommitService服务。在这个服务内部维护了写请求队列和一个读请求队列，其中这两个队列每隔10ms就交换一下“身份”，这么做的目的就是为了读写分离：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211108235940.png" alt="image-20211108235940275" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211108235940.png" alt="image-20211108235940275" style="zoom:67%;" />
 
 在这个服务内部，每隔10ms就会检查读请求队列是否不为空，如果不为空，则会将读队列中的所有请求执行刷盘，并清空读请求队列：
 
@@ -1476,7 +1476,7 @@ public class CommitLog {
 
 通过方法 `putRequest` 放入请求后的服务执行流程：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211109234713.png" alt="image-20211109234713144" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211109234713.png" alt="image-20211109234713144" style="zoom:67%;" />
 
 这里我们已经知道消息刷盘有同步刷盘和异步刷盘策略，对应的是GroupCommitService和FlushRealTimeService这两种不同的服务。这两种服务都有定时请求刷盘的机制，但是机制背后最终调用的方式都是flush方法：
 
@@ -1492,7 +1492,7 @@ public class MappedFileQueue {
 
 再继续向下分析这个方法之前，我们先对照这这张图说明一下使用MappedByteBuffer来简要阐述读和写文件的简单过程：
 
-![image-20211109235137409](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211109235137.png)
+![image-20211109235137409](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211109235137.png)
 
 操作系统为了能够使多个进程同时使用内存，又保证各个进程访问内存互相独立，于是为每个进程引入了地址空间的概念，地址空间上的地址叫做虚拟地址，而程序想要运行必须放到物理地址上运行才可以。地址空间为进程营造了一种假象：“整台计算机只有我一个程序在运行，这台计算机内存很大”。一个地址空间内包含这个进程所需要的全部状态信息。通常一个进程的地址空间会按照逻辑分为好多段，比如代码段、堆段、栈段等。为了进一步有效利用内存，每一段又细分成了不同的页（Page）。与此相对对应，计算机的物理内存被切成了页帧（page frame），文件被分成了不同的页（Page）。与此相对应，计算机的物理内存被切成了页帧（Page frame），文件被分成了块（block）。既然程序实际运行的时候还是得依赖物理内存的地址，那么就需要将虚拟地址转换为物理地址，这个映射关系是由**页表（Page table）\*\*来完成的。
 
@@ -1507,11 +1507,11 @@ int totalSize = byteBuffer.getInt();
 
 这个时候，操作系统通过查询页表，会发现文件的这部分数据还不在内存中。于是就会触发一个缺页异常（page faults），这个时候操作系统会开始从磁盘读取这一页数据，然后放入到页缓存中，然后再放入内存中。在第一次读取文件的时候，操作系统会读入所请求的页面，并读入紧随其后的少数几个页面（不少于一个页面，通常是三个页面），这时的预读称为同步预读（如下图所示，红色部分是需要读取的页面，蓝色的那三个框是操作系统预先读取的）：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211111233553.png" alt="image-20211111233552919" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211111233553.png" alt="image-20211111233552919" style="zoom:67%;" />
 
 当随着时间推移，预读命中的话，那么相应的预读页面数量也会增加，但是能够确认的是，一个文件至少有4个页面处于页缓存中。当文件一直处于顺序读取的情况下，那么基本上可以保证每次预读命中：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211111233846.png" alt="image-20211111233846690" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211111233846.png" alt="image-20211111233846690" style="zoom:67%;" />
 
 下面我们来说文件写，正常情况下，当尝试调用writeInt()写数据到文件里面的话，其写到页缓存层，这个方法就会返回了，这个时候数据还没有真正的保存到文件中去，Linux仅仅将页缓存中的这一页数据标记为“脏”，并且被加入到脏页链表中，然后由一群进程（flusher回写进程）周期性将脏页链表中的页写到磁盘，从而让磁盘中的数据和内存中保持一致，最后清理“脏”标识。在以下三种情况下，脏页会被写回磁盘：
 
@@ -1521,19 +1521,19 @@ int totalSize = byteBuffer.getInt();
 
 可见，在正常情况下，即使不采用刷盘策略，数据最终也是会被同步到磁盘中去的：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211111234937.png" alt="image-20211111234937867" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211111234937.png" alt="image-20211111234937867" style="zoom:67%;" />
 
 但是，即便由flusher线程来定时同步数据，如果此时机器断电的话，消息依然有可能丢失。RocketMQ为了保证消息尽可能的不丢失，为了最大的高可靠性，做了同步和异步刷盘策略，来手动进行同步：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211111235132.png" alt="image-20211111235132052" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211111235132.png" alt="image-20211111235132052" style="zoom:67%;" />
 
 在理解了消息刷盘背后的一些机制和理念后，我们再来分析刷盘的整个过程。首先，无论同步刷盘还是异步刷盘，其线程都在一直周期性的尝试执行刷盘，在真正执行刷盘函数的调用之前，Broker会检查文件的写位置是否大于flush位置，避免执行无意义的刷盘：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211111235433.png" alt="image-20211111235433232" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211111235433.png" alt="image-20211111235433232" style="zoom:67%;" />
 
 其次，对于异步刷盘来讲，Broker执行了更为严格的刷盘限制策略，当在某个时间点尝试执行刷盘之后，在接下来10秒内，如果想要继刷盘，那么脏页面数量必须不小于4页，如下图所示：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211111235602.png" alt="image-20211111235602869" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211111235602.png" alt="image-20211111235602869" style="zoom:67%;" />
 
 下面时执行刷盘前最后检查的刷盘条件：
 
@@ -1562,7 +1562,7 @@ public class MappedFile extends ReferenceResource {
 
 当刷盘完毕之后，首先会更新这个文件的flush位置，然后再更新MappedFileQueue的整体的flush位置：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211111235758.png" alt="image-20211111235758236" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211111235758.png" alt="image-20211111235758236" style="zoom:67%;" />
 
 当刷盘完毕之后，便会将结果通知给客户端，告知发送消息成功，至此，整个存储过程完毕。
 
@@ -1604,7 +1604,7 @@ public class MQClientInstance {
 
 前面我们提到过，RocketMQ在发送消息的时候，每条消息会以轮询的方式均衡地分发到不同Broker的不同队列去。因此，消费者客户端从服务器获取下来的便是Topic的所有消息队列：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211113115530.png" alt="image-20211113115530436" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211113115530.png" alt="image-20211113115530436" style="zoom:67%;" />
 
 在获取话题路由信息的时候，客户端还会将Topic的路由信息中所有Broker地址保存到本地：
 
@@ -1647,7 +1647,7 @@ public class ConsumerManager {
 
 消费者客户端与 Broker 服务器进行沟通的整体流程如下图所示：
 
-![image-20211113120120162](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211113120120.png)
+![image-20211113120120162](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211113120120.png)
 
 ### 消息队列
 
@@ -1661,7 +1661,7 @@ public class ConsumerManager {
 
 广播模式是指所有消息队列中的消息都会广播给所有的消费者客户端，如下图所示，每一个消费者都能收到这8条消息：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211114125450.png" alt="image-20211114125450124" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211114125450.png" alt="image-20211114125450124" style="zoom:67%;" />
 
 #### 集群模式
 
@@ -1679,7 +1679,7 @@ public class ConsumerManager {
 - Consumer-2消费中间3个消息队列中的消息
 - Consumer-3消费最后2个消息队列中的消息
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211114130108.png" alt="image-20211114130108058" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211114130108.png" alt="image-20211114130108058" style="zoom:67%;" />
 
 ##### 平均分配轮询策略
 
@@ -1689,7 +1689,7 @@ public class ConsumerManager {
 - Consumer-2消费2、5、8消息队列中的消息
 - Consumer-3消费3、6消息队列中的消息
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211114130507.png" alt="image-20211114130506983" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211114130507.png" alt="image-20211114130506983" style="zoom:67%;" />
 
 ##### 一致性哈希策略
 
@@ -1707,7 +1707,7 @@ public class ConsumerManager {
 
 计算完这9个哈希值以后，我们按照从到大的顺序来排列成一个环（如图所示）。这个时候我们需要对这个8个消息队列也计算一下哈希值，当哈希值落在两个圈之间的时候，我们就选取沿着环的方向的那个结点作为这个消息队列的消费者。如下图所示（注意：图只是示例，并非真正的消费情况）：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211114131458.png" alt="image-20211114131458279" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211114131458.png" alt="image-20211114131458279" style="zoom:67%;" />
 
 消息队列的负载均衡是由一个不停运行的均衡服务来定时执行的：
 
@@ -1899,11 +1899,11 @@ class FlushConsumeQueueService extends ServiceThread {
 
 上述过程体现在磁盘文件的变化如下图所示，commitLog文件夹下面存放的是完整的消息，来一条消息，向文件中追加一条消息。同时，根据这一条消息属于TopicTest Topic下的哪一个队列，又会往相应的consumequeue文件下的相应消费队列文件中追加消息的偏移量、消息大小和标签码：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211114151056.png" alt="image-20211114151056635" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211114151056.png" alt="image-20211114151056635" style="zoom:67%;" />
 
 总流程图如下所示：
 
-![image-20211114151123921](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211114151124.png)
+![image-20211114151123921](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211114151124.png)
 
 Broker服务器存储了各个消息队列，客户端需要消费每隔消费队列中的消息。消费模式的不同，每个客户端所消费的消息队列也不同，那么客户端如何记录自己所消费得队列消费到哪里了呢？答案就是消费队列偏移量。
 
@@ -1937,7 +1937,7 @@ public class ConsumerOffsetManager extends ConfigManager {
 
 在消费者客户端，RebalanceService服务会定时地（默认20秒）从Broker服务器获取当前客户端所需要消费的消息队列，并于当前消费客户端的消费队列进行对比，看是否有变化。对于每个消费队列，会从Broker服务器查询这个队列当前的消费偏移量。然后根据这几个消费队列，创建对应的拉取请求PullRequest准备从Broker服务器拉取消息，如下图所示：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211114152641.png" alt="image-20211114152641194" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211114152641.png" alt="image-20211114152641194" style="zoom:67%;" />
 
 当从Broker服务器拉取下来消息以后，只有当用户成功消费的时候，才会更新本地的偏移量表。本地的偏移量表再通过定时服务每隔5s同步到Broker服务器端：
 
@@ -1977,11 +1977,11 @@ public class BrokerController {
 
 保存的格式如下：
 
-![](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211114152848.png)
+![](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211114152848.png)
 
 上述整体流程如下所示，红框框住的是这个Topic下面的队列的id，箭头指向的分别是每个队列的消费偏移量：
 
-![](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211114153026.png)
+![](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211114153026.png)
 
 #### 广播模式
 
@@ -2007,7 +2007,7 @@ public class LocalFileOffsetStore implements OffsetStore {
 }
 ```
 
-![image-20211114163325520](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211114163325.png)
+![image-20211114163325520](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211114163325.png)
 
 当消息消费成功后，偏移量的更新也是持久化到本地，而非更新到Broker服务器中。在广播模式下，消息队列的偏移量默认是放在用户目录下的.rocketmq_offsets目录下：
 
@@ -2027,11 +2027,11 @@ public class LocalFileOffsetStore implements OffsetStore {
 
 存储格式如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211114163639.png" alt="image-20211114163638987" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211114163639.png" alt="image-20211114163638987" style="zoom:67%;" />
 
 简要流程如下：
 
-![image-20211114163703851](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211114163703.png)
+![image-20211114163703851](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211114163703.png)
 
 ### 消费消息
 
@@ -2204,7 +2204,7 @@ public class DefaultMessageStore implements MessageStore {
 
 客户端和 Broker 服务器端完整拉取消息的流程图如下所示：
 
-![image-20211114170044849](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211114170044.png)
+![image-20211114170044849](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211114170044.png)
 
 根据用户指定的消息回调函数的不同，消息的消费方式可以分为两种：并发消费和有序消费。
 
@@ -2284,7 +2284,7 @@ public class ConsumeMessageConcurrentlyService implements ConsumeMessageService 
 }
 ```
 
-![image-20211114171439076](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211114171439.png)
+![image-20211114171439076](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211114171439.png)
 
 #### 有序消费
 
@@ -2351,7 +2351,7 @@ public abstract class RebalanceImpl {
 }
 ```
 
-![image-20211114175130250](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211114175130.png)
+![image-20211114175130250](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211114175130.png)
 
 RocketMQ的消息树是用TreeMap实现的，其内部基于消息偏移量维护了消息的有序性。每次消费请求都会从消息树中拿去偏移量最小的几条消息（默认为1条）给用户，以此来达到有序消费的目的：
 
@@ -2374,7 +2374,7 @@ public class ConsumeMessageOrderlyService implements ConsumeMessageService {
 }
 ```
 
-![image-20211114175326325](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211114175326.png)
+![image-20211114175326325](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211114175326.png)
 
 ## 消息过滤过程
 
@@ -2592,7 +2592,7 @@ public class ExpressionMessageFilter implements MessageFilter {
 
 下图是一幅标签匹配的简要流程图:
 
-![image-20211114181150764](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211114181150.png)
+![image-20211114181150764](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211114181150.png)
 
 ### SQL匹配
 
@@ -2642,11 +2642,11 @@ public class DefaultConsumerIdsChangeListener implements ConsumerIdsChangeListen
 }
 ```
 
-![image-20211114234506442](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211114234506.png)
+![image-20211114234506442](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211114234506.png)
 
 ConsumerFilterData中包含了消费者客户端注册的SQL表达式，由上图可以看到对于每一个Topic所对应的FilterDataMapByTopic，可以注册多个SQL表达式。但是这里需要注意的是，这多个SQL表达式是按照组来做区分的，也就是说一个组只能有一个SQL表达式，那么后注册的会覆盖掉之前注册的。因此，如果想要对同一个组使用不同的SQL语句来过滤自己想要的信息，这些不同的SQL语句必须划分到不同的组里面才可行。
 
-![image-20211114234934592](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211114234934.png)
+![image-20211114234934592](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211114234934.png)
 
 #### 生成BloomFilterData
 
@@ -2714,11 +2714,11 @@ public class BrokerController {
 
 磁盘文件 `consumerFilter.json` 中保存的数据信息如下示例:
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211116232759.png" alt="image-20211116232759174" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211116232759.png" alt="image-20211116232759174" style="zoom:67%;" />
 
 上述流程图如下所示：
 
-![image-20211116232920420](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211116232920.png)
+![image-20211116232920420](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211116232920.png)
 
 #### 编译SQL语句
 
@@ -2726,7 +2726,7 @@ JavaCC（Java Complier Complier）是一个能生成语法和词法分析的生�
 
 通过执行 `javacc SelectorParser.jj` 命令以后，其会生成如下七个 Java 文件，用以解析 SQL 语法:
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211116233413.png" alt="image-20211116233412898" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211116233413.png" alt="image-20211116233412898" style="zoom:67%;" />
 
 过滤器工厂FilterFactory在初次使用的时候，会注册一个SqlFilter类，这个类能够将消费者端指定的SQL语句编译解析为Expression表达式对象，方便后续消息的快速匹配于过滤。
 
@@ -2774,7 +2774,7 @@ public class BrokerController {
 
 因此，在每次接收到新的消息之后，分发请求的需要经过如下三个分发请求服务进行处理：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211116234137.png" alt="image-20211116234137312" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211116234137.png" alt="image-20211116234137312" style="zoom:67%;" />
 
 我们在这部分只介绍计算位映射的服务类实现。如下，dispatch方法用来分发请求里面的消息，对于这每一条消息，首先根据Topic取得所有的消费过滤数据。这每一条数据代表的就是一条SQL过滤语句信息。我们在这个地方，需要一一遍历这些过滤信息，从而完成计算位服务的需求：
 
@@ -2902,7 +2902,7 @@ public long unDecorate(final long address) {
 
 下图为ConsumeQueue文件和ConsumeQueueExt文件中存取信息的不同：
 
-![image-20211120115434045](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211120115434.png)
+![image-20211120115434045](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211120115434.png)
 
 #### 消息过滤
 
@@ -2950,7 +2950,7 @@ public class ExpressionMessageFilter implements MessageFilter {
 
 ExpressionMessageFilter依据CqExtUnit中存储的位数组重新创建了比特数组bitsArray，这个数组信息中已经存储了不同SQL表达式是否匹配这条消息的结果。isHit()函数会一一检查BloomFilterData中存储的位信息是否映射在BitsArray中。只要有任何一位没有映射，那么就可以立刻判断出这条消息肯定不符合SQL语句的条件。
 
-![image-20211118232929894](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211118232930.png)
+![image-20211118232929894](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211118232930.png)
 
 因为布隆过滤器有一定的错误率，其只能精确的判断消息是否一定不在集合中，返回成功的只能确定为消息可能在集合中。因此通过布隆过滤器检查后还需要经过第二道过滤机制，即SQL编译后的表达式亲自验证是否匹配：
 
@@ -2974,7 +2974,7 @@ public class ExpressionMessageFilter implements MessageFilter {
 
 通过在验证SQL表达式是否满足之前，提前验证是否命中布隆过滤器，可以有效的避免许多不必要的验证：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211118233425.png" alt="image-20211118233425627" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211118233425.png" alt="image-20211118233425627" style="zoom:67%;" />
 
 ### 自定义匹配
 
@@ -3036,7 +3036,7 @@ public class FilterServerManager {
 
 同样，Broker服务器也需要定时地将过滤服务器地址信息同步给所有Namesrv命名服务器，上述整个流程如下图所示：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211118234344.png" alt="image-20211118234344785" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211118234344.png" alt="image-20211118234344785" style="zoom:67%;" />
 
 #### 过滤类
 
@@ -3089,11 +3089,11 @@ public class DynaCode {
 
 默认情况下，编译后的类存放于目录下，类的源文件和类的字节码文件名也会相应的加上当前时间戳来确定：
 
-![image-20211118235708088](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211118235708.png)
+![image-20211118235708088](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211118235708.png)
 
 上述流程图如下：
 
-![image-20211118235741454](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211118235741.png)
+![image-20211118235741454](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211118235741.png)
 
 #### 过滤消息
 
@@ -3197,7 +3197,7 @@ public class DefaultRequestProcessor implements NettyRequestProcessor {
 
 上述流程如下图所示：
 
-![image-20211120114300366](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211120114300.png)
+![image-20211120114300366](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211120114300.png)
 
 
 
@@ -3238,7 +3238,7 @@ MQAdminStartup.main(new String[] {
 
 根据ID（偏移量）查询消息是指消息在发送成功后，其返回的SendResult类中包含了这条消息的唯一偏移量ID（注意此处指的是offsetMsgId）：
 
-![image-20211121222705163](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121222705.png)
+![image-20211121222705163](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211121222705.png)
 
 用户可以使用`queryMsgById`命令查询这条消息的详细信息：
 
@@ -3254,7 +3254,7 @@ MQAdminStartup.main(new String[] {
 
 根据唯一键查询消息指的是消息在发送成功之后，其返回的SendResult类包含了这条消息的唯一ID：
 
-![](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121223003.png)
+![](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211121223003.png)
 
 用户可以使用`queryMsgByUniqueKey`命令查询这条消息的详细信息：
 
@@ -3308,7 +3308,7 @@ ID（偏移量）是在消息发送到Broker服务器存储的时候生成的，
 - Broker服务器端口号
 - 消息文件CommitLog写偏移量
 
-![image-20211121223534356](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121223534.png)
+![image-20211121223534356](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211121223534.png)
 
 ```java
 public class CommitLog {
@@ -3362,7 +3362,7 @@ public class DefaultMessageStore implements MessageStore {
 }
 ```
 
-![image-20211121223857140](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121224006.png)
+![image-20211121223857140](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211121224006.png)
 
 根据队列偏移量查询是最简单的一种查询方式，Admin会启动一个PullConsumer，然后利用用户传递给Admin的队列ID、队列偏移量等信息，从服务器拉取一条消息过来：
 
@@ -3384,7 +3384,7 @@ public class QueryMsgByOffsetSubCommand implements SubCommand {
 }
 ```
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121224143.png" alt="image-20211121224143451" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211121224143.png" alt="image-20211121224143451" style="zoom:67%;" />
 
 ### 消息索引服务
 
@@ -3411,11 +3411,11 @@ class CommitLogDispatcherBuildIndex implements CommitLogDispatcher {
 - 中间一段存储了500万个哈希槽位，每个槽内部存储的是索引文件的地址（索引槽）
 - 最后一段存储了2000万个索引内容信息，是实际的索引信息存储的地方。每一个槽位存储了这条消息的键哈希值、存储偏移量、存储时间戳与下一个索引槽地址
 
-![image-20211121231107977](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121231108.png)
+![image-20211121231107977](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211121231108.png)
 
 RocketMQ在内存中还维护一个索引文件列表，对于每一个索引文件，前一个文件的最大存储时间是下一个文件的最小存储时间，前一个文件的最大偏移量是下一个文件的最大偏移量。每一个索引文件都索引了某个时间段内、某个偏移量段内的所有消息，当文件满了，就会用前一个文件的最大偏移量和最大存储时间作为起始值，创建下一个索引文件：
 
-![image-20211121231323420](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121231323.png)
+![image-20211121231323420](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211121231323.png)
 
 #### 添加消息
 
@@ -3437,7 +3437,7 @@ RocketMQ在内存中还维护一个索引文件列表，对于每一个索引文
 
 整个过程如下图所示：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121231418.png" alt="image-20211121231418459" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211121231418.png" alt="image-20211121231418459" style="zoom:67%;" />
 
 #### 查询消息
 
@@ -3483,7 +3483,7 @@ public class DefaultMessageStore implements MessageStore {
 
 以查询哈希值 16 的消息为例，图示如下:
 
-![image-20211121231905163](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121231905.png)
+![image-20211121231905163](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211121231905.png)
 
 ### 唯一键查询
 
@@ -3788,7 +3788,7 @@ public class CommitLog {
 
 如下是，发送了10条定时级别分别为1-10的消息以后，`$HOME/store/consumequeue`文件下消费队列文件的分布情况：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121190601.png" alt="image-20211121190601162" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211121190601.png" alt="image-20211121190601162" style="zoom:50%;" />
 
 
 
@@ -3991,11 +3991,11 @@ public class SendMessageProcessor
 }
 ```
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121203713.png" alt="image-20211121203713011" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211121203713.png" alt="image-20211121203713011" style="zoom:67%;" />
 
 上述客户端消费失败的流程图如下所示：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121203805.png" alt="image-20211121203805755" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211121203805.png" alt="image-20211121203805755" style="zoom:67%;" />
 
 ## 主备同步
 
@@ -4006,7 +4006,7 @@ RocketMQ通过Master-Slave主备机制，来实现整个系统的高可用，具
 
 假设我们在同一台机器上搭建了一个Master和一个Slave的环境：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121171339.png" alt="image-20211121171339365" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211121171339.png" alt="image-20211121171339365" style="zoom:67%;" />
 
 为了能够将Master和Slave搭建在同一台计算机上，我们除了需要将Broker的角色设置为SLAVE，还需要为其指定单独的brokerId、storePathRootDir、storePathCommitLog。
 
@@ -4047,13 +4047,13 @@ public class HAService {
 
 AcceptSocketService服务的功能是Master等待接收来自其它客户端Slave的连接，当成功建立连接后，会将这条连接HAConnecion放入到connectionList连接列表里面，而HAClient服务的功能是Slave主动发起同其它Master的连接。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121173400.png" alt="image-20211121173400580" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211121173400.png" alt="image-20211121173400580" style="zoom:67%;" />
 
 ### 数据传输
 
 当启动HAService之后，一旦Master发现和Slave不同步，那么Master会自动开始同步消息到Slave，无需其它的触发机制。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121173514.png" alt="image-20211121173514012" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211121173514.png" alt="image-20211121173514012" style="zoom:67%;" />
 
 消息的传输方式主要分为两种：
 
@@ -4269,7 +4269,7 @@ public static class GroupCommitRequest {
 
 完整的消息唤醒链：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121174957.png" alt="image-20211121174957641" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211121174957.png" alt="image-20211121174957641" style="zoom:67%;" />
 
 ### 消费建议
 
@@ -4463,7 +4463,7 @@ public static String buildHalfTopic() {
 
 下图是，刚发送完PREPARED消息后，consumequeue文件夹中存放的文件：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121205836.png" alt="image-20211121205835828" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211121205836.png" alt="image-20211121205835828" style="zoom:67%;" />
 
 PREPARED消息不会被消费吗？
 
@@ -4541,7 +4541,7 @@ if (sendResult.getCode() == ResponseCode.SUCCESS) {
 
 下图展示的是，执行COMMIT之后的，consumequeue存放文件的情况：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121221847.png" alt="image-20211121221847599" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211121221847.png" alt="image-20211121221847599" style="zoom:67%;" />
 
 RollBack回滚消息的实现：
 
@@ -4549,7 +4549,7 @@ RollBack回滚消息的实现：
 
 下图是消息执行ROLLBACK之后的consumequeue所存储的文件的状态：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121222041.png" alt="image-20211121222041279" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211121222041.png" alt="image-20211121222041279" style="zoom:67%;" />
 
 ### 扫描事务状态
 
@@ -4624,7 +4624,7 @@ public long queryOffset(final String group, final String topic, final int queueI
 
 offsetTable在后台也会定时地将里面的信息保存到磁盘上的config/consumerOffset.json文件中（如下图所示）。0：9的0表示queueId，9表示最新的offset。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121215138.png" alt="image-20211121215138254" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211121215138.png" alt="image-20211121215138254" style="zoom:67%;" />
 
 在获取到上一轮offset到最新的offset之间的消息列表后，那么就需要逐一检查这些消息的事务状态了：
 
@@ -4645,7 +4645,7 @@ while (true) {
 
 msgExt的内部状态：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121215312.png" alt="image-20211121215312432" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211121215312.png" alt="image-20211121215312432" style="zoom:50%;" />
 
 那么在每一轮循环中，即每一条消息内部，逻辑又是怎么样执行的呢？
 
@@ -4713,7 +4713,7 @@ if (channel != null) {
 }
 ```
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211121220206.png" alt="image-20211121220206065" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211121220206.png" alt="image-20211121220206065" style="zoom:67%;" />
 
 checkProducerTransactionState的内部实现，就是发送了CHECK_TRANSACTION_STATE报文给Client：
 
@@ -5166,35 +5166,35 @@ fileWatchService.start();
 
 ### 架构实现
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211120120210.png" alt="image-20211120120210815" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211120120210.png" alt="image-20211120120210815" style="zoom:67%;" />
 
 假设当前一个LogicalQueue从boker1迁移到了broker2，我们迁移仅仅是映射关系，而非实际的数据，所以broker1依然能够正常消费LogicalQueue-0这个逻辑队列里面的数据，我们会将这个队列的状态置为只读，故这个队列不能再写入消息：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211120120638.png" alt="image-20211120120638011" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211120120638.png" alt="image-20211120120638011" style="zoom:67%;" />
 
 当broker1从commit log和consume queue中清除了所有数据后，QueueStatus变为Expired（不可读也不可写）：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211120121405.png" alt="image-20211120121405761" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211120121405.png" alt="image-20211120121405761" style="zoom:67%;" />
 
 如果这个LogicQueue再次迁移回broker1,它会重用这个过期的MessageQueue：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211120121516.png" alt="image-20211120121516366" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211120121516.png" alt="image-20211120121516366" style="zoom:67%;" />
 
 如果这个LogicQueue再次迁移回broker1的时候，当前没有过期的MessageQueue，它会创建一个新的MessageQueue：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211120121640.png" alt="image-20211120121640261" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211120121640.png" alt="image-20211120121640261" style="zoom:67%;" />
 
 如果broker2下线了，那么上面的所有的LogicQueue都应该进行迁移：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211120121743.png" alt="image-20211120121743706" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211120121743.png" alt="image-20211120121743706" style="zoom:67%;" />
 
 当broker2上面的所有数据包括commit log和consume queue被消费完后，那么broker2可以被移除掉了：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211120121848.png" alt="image-20211120121848447" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211120121848.png" alt="image-20211120121848447" style="zoom:67%;" />
 
 当部署了新的broker后，我们可以使用命令来迁移一些LogicQueue到这个broker上，来分担一些流量：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20211120121957.png" alt="image-20211120121957775" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20211120121957.png" alt="image-20211120121957775" style="zoom:67%;" />
 
 ### 实现
 

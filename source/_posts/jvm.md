@@ -22,7 +22,7 @@ Java与C++之间有一堵由内存动态分配和垃圾收集技术所围成的�
 
 根据《Java虚拟机规范》的规定，Java虚拟机所管理的内存将会包括以下几个运行时数据区域：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210729153802.png" alt="image" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210729153802.png" alt="image" style="zoom:50%;" />
 
 主要部分的作用：
 
@@ -111,7 +111,7 @@ Java虚拟机把描述类的数据从Class文件加载到内存，并对数据�
 
 整个类加载的过程大致分为：
 
-![image-20210729173029886](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210729173029.png)
+![image-20210729173029886](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210729173029.png)
 
 JDK8以及之前的类加载器可以分为：
 
@@ -217,13 +217,13 @@ Java通过new关键字创建对象的3个步骤：
 
 如果使用句柄访问的话，Java堆中对象的内存布局就必须考虑如何放置访问类型数据的相关信息，reference中存储的直接就是对象的句柄地址，而句柄中包含了实例数据与类型数据各自具体的地址信息，其结构如下图：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210729225700.png" alt="image" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210729225700.png" alt="image" style="zoom:67%;" />
 
 
 
 如果使用直接指针访问的话，reference中存储的直接就是对象地址，如果只是访问对象本身的话，就不需要一次间接访问的开销。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210729225747.png" alt="image-20210729225747764" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210729225747.png" alt="image-20210729225747764" style="zoom:67%;" />
 
 使用句柄的好处是，在对象被移动的时候只会改变句柄中实例数据的指针，而reference本身不需要被修改。
 
@@ -245,7 +245,7 @@ Java通过new关键字创建对象的3个步骤：
 
 根搜索算法（Root Tracing）又叫做可达性分析算法（Reachability Analysis），通过一系列的称为“GC Roots”的点作为起始进行向下搜索，当某个对象到GC Roots没有任何引用链（Reference Chain）相连，或者说从GC Roots到这个对象不可达时，则证明此对象是不可用的。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210730101932.png" alt="image-20210730101932370" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210730101932.png" alt="image-20210730101932370" style="zoom:50%;" />
 
 在Java技术体系中，GC Roots主要包括：
 
@@ -310,7 +310,7 @@ Java通过new关键字创建对象的3个步骤：
 
 标记-清除算法（Mark-Sweep），分为“标记”和“清除”两个阶段要回收的对象，然后回收所有需要回收的对象，执行过程如图所示：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210730113924.png" alt="image" style="zoom: 50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210730113924.png" alt="image" style="zoom: 50%;" />
 
 缺点：
 
@@ -321,7 +321,7 @@ Java通过new关键字创建对象的3个步骤：
 
 标记-复制算法（Copying），将可用内存划分为两块，每次只使用其中的一块，当半区内存用完之后，仅将还存活的对象复制到另一块上面，然后就把原来整块内存空间一次性清理掉。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210730114144.png" alt="image" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210730114144.png" alt="image" style="zoom:50%;" />
 
 优点：
 
@@ -353,7 +353,7 @@ HotSpot虚拟机默认的eden和survivor的大小比例是8:1，也就是每次�
 
 标记-整理算法（Mark-Compact）标记过程仍然一样，但后续步骤不是进行直接清理，而是令所有存活的对象一端移动，然后直接清理掉这端边界以外的内存。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210730114926.png" alt="image" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210730114926.png" alt="image" style="zoom:50%;" />
 
 特点：
 
@@ -363,7 +363,7 @@ HotSpot虚拟机默认的eden和survivor的大小比例是8:1，也就是每次�
 
 HotSpot虚拟机的垃圾收集器：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210730121740.png" alt="image-20210730121739924" style="zoom: 50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210730121740.png" alt="image-20210730121739924" style="zoom: 50%;" />
 
 在垃圾收集器中，并发和并行的含义：
 
@@ -379,7 +379,7 @@ HotSpot虚拟机的垃圾收集器：
 
 单线程收集器，收集时会暂停所有工作线程（Stop The World，简称STW），使用复制算法，虚拟机运行在客户端模式时的默认新生代收集器，运行示意图如下：
 
-![image-20210730115205713](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210730115205.png)
+![image-20210730115205713](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210730115205.png)
 
 特点：
 
@@ -393,7 +393,7 @@ HotSpot虚拟机的垃圾收集器：
 
 ParNew收集器就是Serial的多线程版本，除了使用多个收集线程外，其余行为包括算法，STW，对象分配规则，回收策略等都与Serial收集器一摸一样。
 
-![image-20210730115727881](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210730115754.png)
+![image-20210730115727881](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210730115754.png)
 
 对应这种收集器是虚拟机运行在服务端模式的默认新生代收集器，在单CPU的环境中，ParNew收集器并不会比Serila收集器有更好的效果。
 
@@ -416,13 +416,13 @@ $$
 
 Serial Old收集器是单线程收集器，使用标记-整理算法，是老年代的收集器。
 
-![image-20210730121027807](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210730121027.png)
+![image-20210730121027807](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210730121027.png)
 
 ### Parallel Old收集器
 
 Parallel Old收集器时Parallel Scavenge的老年代版本，使用多线程和标记-整理算法，从JDK1.6开始提供，在此之前，新生代使用了Parallel Scavenge收集器的话，老年代除了Serial Old别无选择，因为Parallel Scavenge无法与CMS收集器配合工作。
 
-![image-20210730182344292](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210730182344.png)
+![image-20210730182344292](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210730182344.png)
 
 特点：
 
@@ -436,7 +436,7 @@ Parallel Old收集器时Parallel Scavenge的老年代版本，使用多线程和
 
 CMS收集器（Concurrent Mark Sweep）是一种以最短停顿时间为目标的收集器，使用CMS并不能达到GC效率最高（总体GC时间最小），但它能尽可能降低GC时服务的停顿时间，CMS收集器使用的是标记-清除算法。
 
-![image-20210730182623573](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210730182623.png)
+![image-20210730182623573](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210730182623.png)
 
 CMS（Concurrent Mark Sweep）收集器，以获取最短回收停顿时间（STW）为目标，多数应用于互联网站或者B/S系统的服务器端上。
 
@@ -579,11 +579,11 @@ G1收集器的设计目标
 
 传统的垃圾收集器将连续的内存空间划分为新生代、老年代和永久代（JDK8去除了永久代，引入了元空间Metaspace），这种划分的特点是各代的存储地址是连续的。如下图所示：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210804101940.png" alt="image-20210804101940161" style="zoom: 80%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210804101940.png" alt="image-20210804101940161" style="zoom: 80%;" />
 
 而G1的各代存储地址是不连续的，每一代都使用了n个不连续的大小相同的Region，每个Region占有一块连续的虚拟内存地址。如下图所示：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210804102450.png" alt="image-20210804102450160" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210804102450.png" alt="image-20210804102450160" style="zoom:50%;" />
 
 
 
@@ -662,7 +662,7 @@ RSet其实是一个hash table，key是别的Region的真实地址，value是一�
 
 下图表示了RSet、Card和Region的关系：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210804110735.png" alt="image-20210804110522846" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210804110735.png" alt="image-20210804110522846" style="zoom:50%;" />
 
 ##### CSet
 
@@ -739,7 +739,7 @@ global concurrent marking的执行过程类似CMS，但是不同的是，在G1 G
 
 global concurrent marking共分为如下四个步骤：
 
-![image-20210730190157084](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210804125927.png)
+![image-20210730190157084](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210804125927.png)
 
 - 初始标记（initial mark，STW）：它标记了从GC Root开始直接可达的对象
 - 并发标记（Concuurent Marking）:这个阶段从GC Root开始对heap中的对象进行标记，标记线程与应用程序线程并发执行，并且收集各个Region的存活对象信息
@@ -798,7 +798,7 @@ java -XX:+PrintCommandLineFlags -version
 
 执行结果：
 
-![image-20210730185108404](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210730185108.png)
+![image-20210730185108404](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210730185108.png)
 
 其中含义：
 
@@ -1029,7 +1029,7 @@ $ javap -verbose -p ...
 
 《Java虚拟机规范》中要求在Class文件必须应用许多强制性的语法和结构化约束，但是图灵完备的字节码格式，保证了任意一门功能性语言都可以表示一个能被虚拟机所接收的有效的Class文件，具体如下图所示：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210730193726.png" alt="image-20210730193726096" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210730193726.png" alt="image-20210730193726096" style="zoom:50%;" />
 
 > 在可计算性理论，如果一系列操作数据的规则（如指令集、编程语言、细胞自动机）可以用来模拟任何图灵机，那么它是图灵完备的。这意味着这个系统也可以识别其他数据处理规则集，图灵完备性被用作表达这种数据处理规则集的一种属性
 
@@ -1039,7 +1039,7 @@ $ javap -verbose -p ...
 
 整个Class文件可以使用如下结构描述：
 
-![image-20210802220940252](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210802220940.png)
+![image-20210802220940252](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210802220940.png)
 
 Class字节码中有两种数据类型：
 
@@ -1077,7 +1077,7 @@ Access_Flag访问标志信息包括，该Class文件是类还是接口，是否�
 
 访问标志以及标志的含义如表：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210801115314.png" alt="image-20210801115314201" style="zoom: 67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210801115314.png" alt="image-20210801115314201" style="zoom: 67%;" />
 
 访问标志是0x0021的含义：0x0020和0x0001的并集，表示ACC_PUBLIC与ACC_SUPER的并集。
 
@@ -1089,7 +1089,7 @@ Access_Flag访问标志信息包括，该Class文件是类还是接口，是否�
 
 字段表用于描述类和接口中声明的变量。这里的字段包含了类级别变量以及实例变量，但是不包括方法内部声明的局部变量。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210802215541.png" alt="image-20210802215541429" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210802215541.png" alt="image-20210802215541429" style="zoom:67%;" />
 
 > 字段表集合中不会列出从父类或者父接口中继承而来的字段。
 
@@ -1103,7 +1103,7 @@ Access_Flag访问标志信息包括，该Class文件是类还是接口，是否�
 
 方法表结构如下：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210802215205.png" alt="image-20210802215205812" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210802215205.png" alt="image-20210802215205812" style="zoom:67%;" />
 
 > 如果父类方法在子类中没有被重写，方法表集合就不会出现父类的方法。
 
@@ -1111,11 +1111,11 @@ Access_Flag访问标志信息包括，该Class文件是类还是接口，是否�
 
 属性表的结构如下：
 
-![image-20210802220825871](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210802220825.png)
+![image-20210802220825871](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210802220825.png)
 
 属性表的类型较多，这里以字段表属性为例，Code attribute的作用是保存该方法的结构：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210802222155.png" alt="image-20210802222155363" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210802222155.png" alt="image-20210802222155363" style="zoom:67%;" />
 
 具体含义如下：
 
@@ -1262,7 +1262,7 @@ Grandpa g1 = new Father();
 
 不同数据类型的零值如下：
 
-![image-20210802181522346](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210802181522.png)
+![image-20210802181522346](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210802181522.png)
 
 ### 解析
 
@@ -1314,7 +1314,7 @@ Java程序对类的使用方式可分为两种：主动使用、被动使用，�
 
 在双亲委派机制中，各个加载器按照父子关系形成了树形结构，除了根类加载器之外，其余的类加载器都有且只有一个父加载器。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210731161405.png" alt="image-20210731161405825" style="zoom:33%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210731161405.png" alt="image-20210731161405825" style="zoom:33%;" />
 
 双亲委派机制的有点是能够提高软件系统的安全性。因为在此机制下，用户自定义的类加载器不可能加载应该由父加载器加载的可靠类，从而防止不可靠甚至恶意的代码代替由父加载器的可靠代码。
 
@@ -1506,7 +1506,7 @@ Java虚拟机方法作为最基本的执行单元，“栈帧”则是用于支�
 
 一个线程中的方法调用链可能会很长，以Java程序的角度来看，同一时刻、同一条线程里面，在调用堆栈方法的所有方法都同时处于执行状态。而对于执行引擎来讲，在活动线程中，只有位于栈顶的方法才是运行的，只有位于栈顶的栈帧才是生效的，其被称为“当前栈帧”，与这个栈帧所关联的方法被称为“当前方法”。执行引擎所运行的所有字节码指令都针对当前栈帧进行操作，典型的栈帧结构表示如下图：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210804235025.png" alt="栈帧的概念结构" style="zoom: 50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210804235025.png" alt="栈帧的概念结构" style="zoom: 50%;" />
 
 ### 局部变量表
 
@@ -1537,17 +1537,17 @@ Java虚拟机通过索引定位的方式使用局部变量表，索引值的范�
 
 局部变量表中存储着a、b、c 三个局部变量，首先将b和c分别入栈：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210805170308.png" alt="image-20210805170308818" style="zoom: 67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210805170308.png" alt="image-20210805170308818" style="zoom: 67%;" />
 
 将栈顶的两个数出栈执行加法操作，并将结果保存至栈顶，之后将栈顶的数出栈赋值给a：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210805170345.png" alt="image-20210805170345449" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210805170345.png" alt="image-20210805170345449" style="zoom:67%;" />
 
 操作数栈中元素的数据类型必须与字节码指令的序列严格匹配，在编译程序代码的时候，编译器必须要严格保证这一点，在类校验阶段的数据流分析中还要再次验证这一点。
 
 另外在概念模型中，两个不同栈帧作为不同方法的虚拟机栈的元素，是完全相互独立的。但是在大多虚拟机的实现里都会进行一些优化处理，令两个栈帧出现一部分重叠。让下面栈帧的部分操作数栈与上面栈帧的部分局部变量表重叠在一起，这样做不仅节约了一些空间，更重要的是在进行方法调用时就可以直接共用一部分数据，无须进行额外的参数复制传递了，重叠的过程如图：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210805170917.png" alt="image-20210805170917346" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210805170917.png" alt="image-20210805170917346" style="zoom:50%;" />
 
 ### 动态连接
 
@@ -1645,7 +1645,7 @@ Java内存模型的主要目的是定义程序中各种变量的访问规则，�
 
 Java内存模型规定了所有的变量都存储在主内存中，每条线程还有子集的工作内存，线程的工作内存中保存了该线程使用的变量的主内存副本，线程堆变量的所有操作（读取、赋值等）都必须在工作内存中进行，而不能直接读写主内存中的数据。不同线程之间也无法直接访问对方工作内存中的变量，线程间变量值的传递均需要通过主内存来完成，线程、主内存、工作内存三者的交互关系如图：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210805230911.png" alt="image-20210805230911338" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210805230911.png" alt="image-20210805230911338" style="zoom:50%;" />
 
 ### volatile型变量
 
@@ -1677,7 +1677,7 @@ Java线程调度是系统自动完成的，一共设置了10个级别的线程�
 
 线程的不同状态可以转化，具体关系如下图：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210805233636.png" alt="image-20210805233636533" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210805233636.png" alt="image-20210805233636533" style="zoom:50%;" />
 
 # 线程安全与锁优化
 
@@ -1752,15 +1752,15 @@ synchronized对同一线程是可重入的，不会出现自己把自己锁死�
 
 HotSpot虚拟机对象头Mark Word示意图：
 
-![image-20210806104948711](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210806104948.png)
+![image-20210806104948711](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210806104948.png)
 
 在代码即将进入同步块的时候，如果此同步对象没有被锁定（锁标志位“01”状态），虚拟机首先将在当前线程的栈帧中建立一个名为锁记录（Lock Record）的空间，用于存储对象目前的Mark Word的拷贝（官方称为Displaced Mark Word），这时候线程堆栈与对象头的状态如图：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210806105450.png" alt="image-20210806105450428" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210806105450.png" alt="image-20210806105450428" style="zoom:50%;" />
 
 然后，虚拟机将使用CAS操作尝试把对象的Mark Word更新位为指向Lock Record的指针。如果这个更新动作成功了，即代表该线程拥有了这个对象的锁，并且对象Mark Word的锁标志位（Mark Word的最后两个比特）将转变为“00”，表示此对象处于轻量级锁定状态。这时候线程堆栈与对象头的状态如下图：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210806110157.png" alt="image-20210806105747996" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210806110157.png" alt="image-20210806105747996" style="zoom:50%;" />
 
 如果这个更新操作失败了，那就意味着至少存在一个线程与当前线程竞争获取该对象的锁。虚拟机首先会检查对象的Mark Word是否指向当前线程的栈帧，如果是，说明当前线程已经拥有了这个对象的锁，那直接进入同步块继续执行就可以了，否则就说明这个锁对象已经被其他线程抢占了。如果出现两条以上的线程争用同一个锁的情况，那轻量级锁就不再有效，必须要膨胀为重量级锁，锁标志的状态值变为“10”，此时Mark Word中存储的就是指向重量级锁（互斥量）的指针，后面等待锁的线程也必须进入阻塞状态。
 
@@ -1778,7 +1778,7 @@ HotSpot虚拟机对象头Mark Word示意图：
 
 一旦出现另一个线程去尝试获取这个锁的情况，偏向模式就马上宣告结束。根据锁对象目前是否处于被锁定的状态决定是否撤销偏向（偏向模式设置为“0”），撤销后标志位恢复到未锁定（标志位为“01”）或轻量级锁定（标志位为“00”）的状态，后续的同步操作就按照轻量级锁那样去执行。偏向锁、轻量级锁的状态转化及对象Mark Word的关系如图：
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210806102556.png" alt="image-20210806102556856" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210806102556.png" alt="image-20210806102556856" style="zoom:67%;" />
 
 ------
 

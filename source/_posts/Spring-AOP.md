@@ -44,7 +44,7 @@ public class ClassLoaderDemo {
 
 关于字节码框架部分，Spring内连了ASM框架。
 
-![image-20210712104930912](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210712104931.png)
+![image-20210712104930912](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210712104931.png)
 
 ### OOP 部分
 
@@ -135,7 +135,7 @@ Java OOP存在哪些局限性？
 - 切入点（Pointcut）：匹配连接点的断言，通知和一个切入点表达式关联，并在满足这个切入点的连接点上运行。
 - 织入（Weaving）：把切面连接到其他应用程序类型或者对象上，并创建一个被通知的对象。
 
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210718125653.jpeg" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210718125653.jpeg" style="zoom:50%;" />
 
 ## Java AOP设计模式
 
@@ -457,7 +457,7 @@ Spring AOP的代理实现主要有三种：
 
 为什么Proxy.newProxyInstance会生成新的字节码？
 
-![image-20210714132854720](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210714132854.png)
+![image-20210714132854720](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210714132854.png)
 
 JDK会操作字符数组，生成一个代理类的Class对象。
 
@@ -2266,11 +2266,11 @@ Spring AOP在Spring Framework中的应用的实现都大同小异，大致都分
 
 其中第一点是因为：
 
-![image-20210723140848060](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210723140848.png)
+![image-20210723140848060](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210723140848.png)
 
 需要被声明为Spring Bean的原因是：
 
-![image-20210723140929830](https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210723140929.png)
+![image-20210723140929830](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210723140929.png)
 
 接下来我们通过实例的方式演示EventPublicationInterceptor这个API的使用，首先定义好事件：
 
