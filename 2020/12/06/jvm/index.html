@@ -29,53 +29,53 @@
 <meta property="og:site_name" content="吉永超">
 <meta property="og:description" content="时至今日，JVM的重要性已经不言而喻，但是JVM本身的复杂性使得了解其原理与运作方式是一件极其困难的事情，本文主要结合张龙老师的视频：深入理解JVM虚拟机与《深入理解Java虚拟机》，系统而全面的介绍Java虚拟机的方方面面。">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210729153802.png">
-<meta property="og:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210729173029.png">
-<meta property="og:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210729225700.png">
-<meta property="og:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210729225747.png">
-<meta property="og:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210730101932.png">
-<meta property="og:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210730113924.png">
-<meta property="og:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210730114144.png">
-<meta property="og:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210730114926.png">
-<meta property="og:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210730121740.png">
-<meta property="og:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210730115205.png">
-<meta property="og:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210730115754.png">
-<meta property="og:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210730121027.png">
-<meta property="og:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210730182344.png">
-<meta property="og:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210730182623.png">
-<meta property="og:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210804101940.png">
-<meta property="og:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210804102450.png">
-<meta property="og:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210804110735.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210729153802.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210729173029.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210729225700.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210729225747.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210730101932.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210730113924.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210730114144.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210730114926.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210730121740.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210730115205.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210730115754.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210730121027.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210730182344.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210730182623.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210804101940.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210804102450.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210804110735.png">
 <meta property="og:image" content="c:/Users/jyc/AppData/Roaming/Typora/typora-user-images/image-20210804174604210.png">
-<meta property="og:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210804125927.png">
-<meta property="og:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210730185108.png">
-<meta property="og:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210730193726.png">
-<meta property="og:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210802220940.png">
-<meta property="og:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210801115314.png">
-<meta property="og:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210802215541.png">
-<meta property="og:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210802215205.png">
-<meta property="og:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210802220825.png">
-<meta property="og:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210802222155.png">
-<meta property="og:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210802181522.png">
-<meta property="og:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210731161405.png">
-<meta property="og:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210804235025.png">
-<meta property="og:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210805170308.png">
-<meta property="og:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210805170345.png">
-<meta property="og:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210805170917.png">
-<meta property="og:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210805230911.png">
-<meta property="og:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210805233636.png">
-<meta property="og:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210806104948.png">
-<meta property="og:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210806105450.png">
-<meta property="og:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210806110157.png">
-<meta property="og:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210806102556.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210804125927.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210730185108.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210730193726.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210802220940.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210801115314.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210802215541.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210802215205.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210802220825.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210802222155.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210802181522.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210731161405.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210804235025.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210805170308.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210805170345.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210805170917.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210805230911.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210805233636.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210806104948.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210806105450.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210806110157.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210806102556.png">
 <meta property="article:published_time" content="2020-12-06T00:00:00.000Z">
-<meta property="article:modified_time" content="2022-05-19T15:46:49.167Z">
+<meta property="article:modified_time" content="2022-05-22T10:20:36.883Z">
 <meta property="article:author" content="吉永超">
 <meta property="article:tag" content="JVM">
 <meta property="article:tag" content="垃圾回收">
 <meta property="article:tag" content="类加载">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210729153802.png">
+<meta name="twitter:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210729153802.png">
 
 <link rel="canonical" href="https://jycoder.club/2020/12/06/jvm/">
 
@@ -281,7 +281,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-05-19 15:46:49" itemprop="dateModified" datetime="2022-05-19T15:46:49+00:00">2022-05-19</time>
+                <time title="修改时间：2022-05-22 10:20:36" itemprop="dateModified" datetime="2022-05-22T10:20:36+00:00">2022-05-22</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -324,7 +324,7 @@
 <h2 id="内存管理"><a class="markdownIt-Anchor" href="#内存管理"></a> 内存管理</h2>
 <p>Java与C++之间有一堵由内存动态分配和垃圾收集技术所围成的高墙，墙外面的人想进去，墙里面的人却想出来。</p>
 <p>根据《Java虚拟机规范》的规定，Java虚拟机所管理的内存将会包括以下几个运行时数据区域：</p>
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210729153802.png" alt="image" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210729153802.png" alt="image" style="zoom:50%;" />
 <p>主要部分的作用：</p>
 <table>
 <thead>
@@ -563,7 +563,7 @@
 <h2 id="类加载机制"><a class="markdownIt-Anchor" href="#类加载机制"></a> 类加载机制</h2>
 <p>Java虚拟机把描述类的数据从Class文件加载到内存，并对数据进行校验、转换解析和初始化，最终可以形成可以被虚拟机直接适用的Java类型，这个过程被称作虚拟机的类加载机制。与其他语言不同的是，Java语言中，类的加载、链接、初始化过程都是在程序运行期间完成的，这为Java应用提供了极高的扩展性和灵活性。</p>
 <p>整个类加载的过程大致分为：</p>
-<p><img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210729173029.png" alt="image-20210729173029886" /></p>
+<p><img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210729173029.png" alt="image-20210729173029886" /></p>
 <p>JDK8以及之前的类加载器可以分为：</p>
 <ul>
 <li>启动类加载器</li>
@@ -674,9 +674,9 @@
 <p>句柄是用来标识被应用程序锁创建或使用的对象的整数。其本质相当于带有引用计数的智能指针。句柄与普通指针的区别在于，指针包含的是引用对象的内存地址，而句柄则是由系统所管理的应用标识，该标识可以被系统重新定位到一个内存地址上。</p>
 </blockquote>
 <p>如果使用句柄访问的话，Java堆中对象的内存布局就必须考虑如何放置访问类型数据的相关信息，reference中存储的直接就是对象的句柄地址，而句柄中包含了实例数据与类型数据各自具体的地址信息，其结构如下图：</p>
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210729225700.png" alt="image" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210729225700.png" alt="image" style="zoom:67%;" />
 <p>如果使用直接指针访问的话，reference中存储的直接就是对象地址，如果只是访问对象本身的话，就不需要一次间接访问的开销。</p>
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210729225747.png" alt="image-20210729225747764" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210729225747.png" alt="image-20210729225747764" style="zoom:67%;" />
 <p>使用句柄的好处是，在对象被移动的时候只会改变句柄中实例数据的指针，而reference本身不需要被修改。</p>
 <p>使用直接指针的好处是速度更快。</p>
 <h1 id="垃圾回收-2"><a class="markdownIt-Anchor" href="#垃圾回收-2"></a> 垃圾回收</h1>
@@ -689,7 +689,7 @@
 </blockquote>
 <h3 id="根搜索算法"><a class="markdownIt-Anchor" href="#根搜索算法"></a> 根搜索算法</h3>
 <p>根搜索算法（Root Tracing）又叫做可达性分析算法（Reachability Analysis），通过一系列的称为“GC Roots”的点作为起始进行向下搜索，当某个对象到GC Roots没有任何引用链（Reference Chain）相连，或者说从GC Roots到这个对象不可达时，则证明此对象是不可用的。</p>
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210730101932.png" alt="image-20210730101932370" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210730101932.png" alt="image-20210730101932370" style="zoom:50%;" />
 <p>在Java技术体系中，GC Roots主要包括：</p>
 <ul>
 <li>在虚拟机栈（栈帧中的本地变量表）中引用的对象，譬如各个线程被调用的方法堆栈中使用到的参数、局部变量、临时变量等。</li>
@@ -788,7 +788,7 @@
 </table>
 <h3 id="标记-清除算法"><a class="markdownIt-Anchor" href="#标记-清除算法"></a> 标记-清除算法</h3>
 <p>标记-清除算法（Mark-Sweep），分为“标记”和“清除”两个阶段要回收的对象，然后回收所有需要回收的对象，执行过程如图所示：</p>
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210730113924.png" alt="image" style="zoom: 50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210730113924.png" alt="image" style="zoom: 50%;" />
 <p>缺点：</p>
 <ul>
 <li>效率问题，标记和清理两个过程效率都不高，需要扫描所有对象，堆越大，GC越慢</li>
@@ -796,7 +796,7 @@
 </ul>
 <h3 id="标记-复制算法"><a class="markdownIt-Anchor" href="#标记-复制算法"></a> 标记-复制算法</h3>
 <p>标记-复制算法（Copying），将可用内存划分为两块，每次只使用其中的一块，当半区内存用完之后，仅将还存活的对象复制到另一块上面，然后就把原来整块内存空间一次性清理掉。</p>
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210730114144.png" alt="image" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210730114144.png" alt="image" style="zoom:50%;" />
 <p>优点：</p>
 <ul>
 <li>这样使得每次内存回收都是对整个搬去的回收，内存分配时也就不用考虑内存碎片等复杂情况，只要移动过堆顶指针，按顺序分配内存就可以了，实现简单，运行高效。</li>
@@ -819,14 +819,14 @@
 </ul>
 <h3 id="标记-整理算法"><a class="markdownIt-Anchor" href="#标记-整理算法"></a> 标记-整理算法</h3>
 <p>标记-整理算法（Mark-Compact）标记过程仍然一样，但后续步骤不是进行直接清理，而是令所有存活的对象一端移动，然后直接清理掉这端边界以外的内存。</p>
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210730114926.png" alt="image" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210730114926.png" alt="image" style="zoom:50%;" />
 <p>特点：</p>
 <ul>
 <li>没有内存碎片，但是需要耗费更多的时间进行整理</li>
 </ul>
 <h2 id="经典垃圾收集器"><a class="markdownIt-Anchor" href="#经典垃圾收集器"></a> 经典垃圾收集器</h2>
 <p>HotSpot虚拟机的垃圾收集器：</p>
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210730121740.png" alt="image-20210730121739924" style="zoom: 50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210730121740.png" alt="image-20210730121739924" style="zoom: 50%;" />
 <p>在垃圾收集器中，并发和并行的含义：</p>
 <ul>
 <li>
@@ -839,7 +839,7 @@
 <p>并发不代表解决了GC停顿的问题，在关键的步骤还是要停顿。比如在收集器标记垃圾的时候要停顿，但在清除垃圾的时候，用户线程可以和GC线程并发执行。</p>
 <h3 id="serial收集器"><a class="markdownIt-Anchor" href="#serial收集器"></a> Serial收集器</h3>
 <p>单线程收集器，收集时会暂停所有工作线程（Stop The World，简称STW），使用复制算法，虚拟机运行在客户端模式时的默认新生代收集器，运行示意图如下：</p>
-<p><img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210730115205.png" alt="image-20210730115205713" /></p>
+<p><img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210730115205.png" alt="image-20210730115205713" /></p>
 <p>特点：</p>
 <ul>
 <li>最早的收集器，单线程进行GC</li>
@@ -850,7 +850,7 @@
 </ul>
 <h3 id="parnew收集器"><a class="markdownIt-Anchor" href="#parnew收集器"></a> ParNew收集器</h3>
 <p>ParNew收集器就是Serial的多线程版本，除了使用多个收集线程外，其余行为包括算法，STW，对象分配规则，回收策略等都与Serial收集器一摸一样。</p>
-<p><img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210730115754.png" alt="image-20210730115727881" /></p>
+<p><img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210730115754.png" alt="image-20210730115727881" /></p>
 <p>对应这种收集器是虚拟机运行在服务端模式的默认新生代收集器，在单CPU的环境中，ParNew收集器并不会比Serila收集器有更好的效果。</p>
 <p>特点：</p>
 <ul>
@@ -867,10 +867,10 @@
 </blockquote>
 <h3 id="serial-old收集器"><a class="markdownIt-Anchor" href="#serial-old收集器"></a> Serial Old收集器</h3>
 <p>Serial Old收集器是单线程收集器，使用标记-整理算法，是老年代的收集器。</p>
-<p><img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210730121027.png" alt="image-20210730121027807" /></p>
+<p><img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210730121027.png" alt="image-20210730121027807" /></p>
 <h3 id="parallel-old收集器"><a class="markdownIt-Anchor" href="#parallel-old收集器"></a> Parallel Old收集器</h3>
 <p>Parallel Old收集器时Parallel Scavenge的老年代版本，使用多线程和标记-整理算法，从JDK1.6开始提供，在此之前，新生代使用了Parallel Scavenge收集器的话，老年代除了Serial Old别无选择，因为Parallel Scavenge无法与CMS收集器配合工作。</p>
-<p><img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210730182344.png" alt="image-20210730182344292" /></p>
+<p><img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210730182344.png" alt="image-20210730182344292" /></p>
 <p>特点：</p>
 <ul>
 <li>Parallel Scavenge + Parallel Old = 高吞吐量，但GC停顿可能不理想</li>
@@ -881,7 +881,7 @@
 <h3 id="cms收集器"><a class="markdownIt-Anchor" href="#cms收集器"></a> CMS收集器</h3>
 <h4 id="cms简介"><a class="markdownIt-Anchor" href="#cms简介"></a> CMS简介</h4>
 <p>CMS收集器（Concurrent Mark Sweep）是一种以最短停顿时间为目标的收集器，使用CMS并不能达到GC效率最高（总体GC时间最小），但它能尽可能降低GC时服务的停顿时间，CMS收集器使用的是标记-清除算法。</p>
-<p><img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210730182623.png" alt="image-20210730182623573" /></p>
+<p><img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210730182623.png" alt="image-20210730182623573" /></p>
 <p>CMS（Concurrent Mark Sweep）收集器，以获取最短回收停顿时间（STW）为目标，多数应用于互联网站或者B/S系统的服务器端上。</p>
 <p>CMS是基于“标记-清除“算法实现的，整个过程分为4个步骤：</p>
 <ol>
@@ -983,9 +983,9 @@
 <h4 id="重要概念"><a class="markdownIt-Anchor" href="#重要概念"></a> 重要概念</h4>
 <h5 id="region"><a class="markdownIt-Anchor" href="#region"></a> Region</h5>
 <p>传统的垃圾收集器将连续的内存空间划分为新生代、老年代和永久代（JDK8去除了永久代，引入了元空间Metaspace），这种划分的特点是各代的存储地址是连续的。如下图所示：</p>
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210804101940.png" alt="image-20210804101940161" style="zoom: 80%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210804101940.png" alt="image-20210804101940161" style="zoom: 80%;" />
 <p>而G1的各代存储地址是不连续的，每一代都使用了n个不连续的大小相同的Region，每个Region占有一块连续的虚拟内存地址。如下图所示：</p>
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210804102450.png" alt="image-20210804102450160" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210804102450.png" alt="image-20210804102450160" style="zoom:50%;" />
 <p>可以看到，每个region都有一个分代的角色：eden、survivor、old，对每个角色的数量并没有强制的限定，也就是说对每种分代内存的大小，可以动态变化，每个Region默认按照512Kb划分成多个Card。</p>
 <p>每个分区都可能是年轻代也可能是老年代，但是在同一时刻只能属于某个代。年轻代、幸存区、老年代这些概念还存在，成为逻辑上的概念，这样方便复用之前分代框架的逻辑。</p>
 <p>此外，还有一些Region标明了H，它代表Humongous，这表示这些Region存储的是巨大对象（humongous object），即大小大于或等于Region一半的对象。巨型对象默认直接会被分配在老年代，如果一个H区装不下一个巨型对象，那么G1会寻找连续的H分区来存储。为了能找到连续的H区，有时候不得不启动Full GC。</p>
@@ -1040,7 +1040,7 @@
 <p>已记忆集合（Remembered Set），是辅助GC过程的一种结构，典型的空间换时间工具，和Card Table有些类似。Rset记录了其他Region中的对象引用本Region中对象的关系，属于points-into结构（谁引用了我的对象），而Card Table则是一种points-out（我引用谁的对象）的结构，RSet的价值在于使得垃圾收集器不需要扫描整个堆到谁引用了当前分区中的对象，只需要扫描RSet即可。</p>
 <p>RSet其实是一个hash table，key是别的Region的真实地址，value是一个集合，里面的元素是Card Table和index。举例来说，如果RegionA的RSet里面有一项的key是RegionB，value里有index为1234的card，它的意思就是region B的一个card里有引用指向region A。所以对RegionA来说，该RSet记录的是points-into的关系；而card table仍然记录了points-out的关系。</p>
 <p>下图表示了RSet、Card和Region的关系：</p>
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210804110735.png" alt="image-20210804110522846" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210804110735.png" alt="image-20210804110522846" style="zoom:50%;" />
 <h5 id="cset"><a class="markdownIt-Anchor" href="#cset"></a> CSet</h5>
 <p>收集集合（Collection Set）：GC要收集的Region的集合。在CSet中存活的数据会在GC过程中被移动到另一个可用分区，CSet中的分区可以来自eden空间、survivor空间或者老年代。</p>
 <ul>
@@ -1116,7 +1116,7 @@
 <h5 id="global-concurrent-marking"><a class="markdownIt-Anchor" href="#global-concurrent-marking"></a> global concurrent marking</h5>
 <p>global concurrent marking的执行过程类似CMS，但是不同的是，在G1 GC中，它主要是为Mixed GC提供标记服务的，并不是一次GC过程的一个必须环节</p>
 <p>global concurrent marking共分为如下四个步骤：</p>
-<p><img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210804125927.png" alt="image-20210730190157084" /></p>
+<p><img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210804125927.png" alt="image-20210730190157084" /></p>
 <ul>
 <li>初始标记（initial mark，STW）：它标记了从GC Root开始直接可达的对象</li>
 <li>并发标记（Concuurent Marking）:这个阶段从GC Root开始对heap中的对象进行标记，标记线程与应用程序线程并发执行，并且收集各个Region的存活对象信息</li>
@@ -1141,7 +1141,7 @@
 <p>查看java虚拟机启动参数：</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -XX:+PrintCommandLineFlags -version </span><br></pre></td></tr></table></figure>
 <p>执行结果：</p>
-<p><img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210730185108.png" alt="image-20210730185108404" /></p>
+<p><img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210730185108.png" alt="image-20210730185108404" /></p>
 <p>其中含义：</p>
 <ul>
 <li>
@@ -1260,7 +1260,7 @@
 <h1 id="类文件结构-2"><a class="markdownIt-Anchor" href="#类文件结构-2"></a> 类文件结构</h1>
 <h2 id="class类文件的结构"><a class="markdownIt-Anchor" href="#class类文件的结构"></a> Class类文件的结构</h2>
 <p>《Java虚拟机规范》中要求在Class文件必须应用许多强制性的语法和结构化约束，但是图灵完备的字节码格式，保证了任意一门功能性语言都可以表示一个能被虚拟机所接收的有效的Class文件，具体如下图所示：</p>
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210730193726.png" alt="image-20210730193726096" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210730193726.png" alt="image-20210730193726096" style="zoom:50%;" />
 <blockquote>
 <p>在可计算性理论，如果一系列操作数据的规则（如指令集、编程语言、细胞自动机）可以用来模拟任何图灵机，那么它是图灵完备的。这意味着这个系统也可以识别其他数据处理规则集，图灵完备性被用作表达这种数据处理规则集的一种属性</p>
 </blockquote>
@@ -1269,7 +1269,7 @@
 <p><code>&lt;init&gt;</code>表示实例构造方法，<code>&lt;clint&gt;</code>表示静态构造方法。</p>
 </blockquote>
 <p>整个Class文件可以使用如下结构描述：</p>
-<p><img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210802220940.png" alt="image-20210802220940252" /></p>
+<p><img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210802220940.png" alt="image-20210802220940252" /></p>
 <p>Class字节码中有两种数据类型：</p>
 <ul>
 <li>字节数据直接量：这是基本数据类型。共细分为u1、u2、u4、u8四种，分别代表连续的1个字节、2个字节、4个字节、8个字节组成的整体数据。</li>
@@ -1297,13 +1297,13 @@
 <h3 id="访问标志"><a class="markdownIt-Anchor" href="#访问标志"></a> 访问标志</h3>
 <p>Access_Flag访问标志信息包括，该Class文件是类还是接口，是否被定位成public，是否是abstract，如果是类，是否被声明为final。</p>
 <p>访问标志以及标志的含义如表：</p>
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210801115314.png" alt="image-20210801115314201" style="zoom: 67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210801115314.png" alt="image-20210801115314201" style="zoom: 67%;" />
 <p>访问标志是0x0021的含义：0x0020和0x0001的并集，表示ACC_PUBLIC与ACC_SUPER的并集。</p>
 <h3 id="类索引-父类索引与接口索引集合"><a class="markdownIt-Anchor" href="#类索引-父类索引与接口索引集合"></a> 类索引、父类索引与接口索引集合</h3>
 <p>通过类索引可以得到类的全限定类名，通过父类索引可以得到父类的全限定类名，由于Java支持多接口，因此这里设计成了接口计数器和接口索引集合来实现，通过这三项就可以确定这个类的继承关系。</p>
 <h3 id="字段表集合"><a class="markdownIt-Anchor" href="#字段表集合"></a> 字段表集合</h3>
 <p>字段表用于描述类和接口中声明的变量。这里的字段包含了类级别变量以及实例变量，但是不包括方法内部声明的局部变量。</p>
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210802215541.png" alt="image-20210802215541429" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210802215541.png" alt="image-20210802215541429" style="zoom:67%;" />
 <blockquote>
 <p>字段表集合中不会列出从父类或者父接口中继承而来的字段。</p>
 </blockquote>
@@ -1312,15 +1312,15 @@
 <p>对于数组类型来说，每一个维度使用一个前置的[来表示，如int[]被记录为[I，String[][]，被记录为[[Ljava/lang/String；</p>
 <p>用描述符描述方法时，按照先参数列表，后返回值的顺序来描述。参数列表按照参数的严格顺序放在一组()之内，如方法：String getRealnamebyIdaAndNickname(int id,String name)的描述符为：（I，Ljava/lang/String;）Ljava/langString;</p>
 <p>方法表结构如下：</p>
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210802215205.png" alt="image-20210802215205812" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210802215205.png" alt="image-20210802215205812" style="zoom:67%;" />
 <blockquote>
 <p>如果父类方法在子类中没有被重写，方法表集合就不会出现父类的方法。</p>
 </blockquote>
 <h3 id="属性表集合"><a class="markdownIt-Anchor" href="#属性表集合"></a> 属性表集合</h3>
 <p>属性表的结构如下：</p>
-<p><img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210802220825.png" alt="image-20210802220825871" /></p>
+<p><img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210802220825.png" alt="image-20210802220825871" /></p>
 <p>属性表的类型较多，这里以字段表属性为例，Code attribute的作用是保存该方法的结构：</p>
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210802222155.png" alt="image-20210802222155363" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210802222155.png" alt="image-20210802222155363" style="zoom:67%;" />
 <p>具体含义如下：</p>
 <ul>
 <li>attribute_length表示attribute所包含的字节数，不包含attribute_name_index和attribute_length字段；</li>
@@ -1434,7 +1434,7 @@
 <h3 id="准备"><a class="markdownIt-Anchor" href="#准备"></a> 准备</h3>
 <p>准备阶段是正式为类中定义的变量（即静态变量，被static变量）分配内存并设置类变量初始值的阶段，这里所说的初始值“通常情况”下是数据类型的零值。</p>
 <p>不同数据类型的零值如下：</p>
-<p><img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210802181522.png" alt="image-20210802181522346" /></p>
+<p><img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210802181522.png" alt="image-20210802181522346" /></p>
 <h3 id="解析"><a class="markdownIt-Anchor" href="#解析"></a> 解析</h3>
 <p>解析阶段是Java虚拟机将常量池内的符号引用替换为直接引用的过程。</p>
 <h3 id="初始化"><a class="markdownIt-Anchor" href="#初始化"></a> 初始化</h3>
@@ -1484,7 +1484,7 @@
 </tbody>
 </table>
 <p>在双亲委派机制中，各个加载器按照父子关系形成了树形结构，除了根类加载器之外，其余的类加载器都有且只有一个父加载器。</p>
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210731161405.png" alt="image-20210731161405825" style="zoom:33%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210731161405.png" alt="image-20210731161405825" style="zoom:33%;" />
 <p>双亲委派机制的有点是能够提高软件系统的安全性。因为在此机制下，用户自定义的类加载器不可能加载应该由父加载器加载的可靠类，从而防止不可靠甚至恶意的代码代替由父加载器的可靠代码。</p>
 <p>每个类加载器都有自己的命名空间，命名空间由该加载器及所有父加载器所加载的类组成。</p>
 <p>在同一个命名空间中，不会出现类的完整名字（包括类的包名）相同的两个类，在不同的命名空间中，有可能会出出现类的完整名字（包括类的包名）相同的两个类</p>
@@ -1548,7 +1548,7 @@
 <h2 id="运行时栈帧结构"><a class="markdownIt-Anchor" href="#运行时栈帧结构"></a> 运行时栈帧结构</h2>
 <p>Java虚拟机方法作为最基本的执行单元，“栈帧”则是用于支持虚拟机进行方法调用和方法执行背后的数据结构，它也是虚拟机运行时数据区中的虚拟机栈中的栈元素。栈帧存储了方法的局部变量表、操作数栈、动态连接和方法返回地址等信息。</p>
 <p>一个线程中的方法调用链可能会很长，以Java程序的角度来看，同一时刻、同一条线程里面，在调用堆栈方法的所有方法都同时处于执行状态。而对于执行引擎来讲，在活动线程中，只有位于栈顶的方法才是运行的，只有位于栈顶的栈帧才是生效的，其被称为“当前栈帧”，与这个栈帧所关联的方法被称为“当前方法”。执行引擎所运行的所有字节码指令都针对当前栈帧进行操作，典型的栈帧结构表示如下图：</p>
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210804235025.png" alt="栈帧的概念结构" style="zoom: 50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210804235025.png" alt="栈帧的概念结构" style="zoom: 50%;" />
 <h3 id="局部变量表"><a class="markdownIt-Anchor" href="#局部变量表"></a> 局部变量表</h3>
 <p>局部变量表是一组变量值的存储空间，用于存放方法参数和方法内部定义的局部变量。在Java程序被编译为Class文件时，就在方法的Code属性的max_locals数据项中确定了该方法所需分配的局部变量表的最大容量。</p>
 <p>局部变量表的容量以变量槽为最小单位，一个变量槽可以存放一个32以内的数据类型，Java中占用不超过32位存储空间的数据类型有boolean、byte、char、short、int、float、reference和returnAddress。其中，第7中reference类型标识对一个对象实例的引用，通过这个引用，虚拟机可以：</p>
@@ -1566,12 +1566,12 @@
 <p>当一个方法刚刚开始执行的时候，这个方法的操作数栈式空的，在方法的执行过程中，会有各种字节码执行往操作数栈中写入和提取内容，也就是出栈和入栈操作。</p>
 <p>举例来说，在JVM中 执行 a = b + c 的字节码执行过程中操作数栈以及局部变量表的变化如下图所示。</p>
 <p>局部变量表中存储着a、b、c 三个局部变量，首先将b和c分别入栈：</p>
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210805170308.png" alt="image-20210805170308818" style="zoom: 67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210805170308.png" alt="image-20210805170308818" style="zoom: 67%;" />
 <p>将栈顶的两个数出栈执行加法操作，并将结果保存至栈顶，之后将栈顶的数出栈赋值给a：</p>
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210805170345.png" alt="image-20210805170345449" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210805170345.png" alt="image-20210805170345449" style="zoom:67%;" />
 <p>操作数栈中元素的数据类型必须与字节码指令的序列严格匹配，在编译程序代码的时候，编译器必须要严格保证这一点，在类校验阶段的数据流分析中还要再次验证这一点。</p>
 <p>另外在概念模型中，两个不同栈帧作为不同方法的虚拟机栈的元素，是完全相互独立的。但是在大多虚拟机的实现里都会进行一些优化处理，令两个栈帧出现一部分重叠。让下面栈帧的部分操作数栈与上面栈帧的部分局部变量表重叠在一起，这样做不仅节约了一些空间，更重要的是在进行方法调用时就可以直接共用一部分数据，无须进行额外的参数复制传递了，重叠的过程如图：</p>
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210805170917.png" alt="image-20210805170917346" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210805170917.png" alt="image-20210805170917346" style="zoom:50%;" />
 <h3 id="动态连接"><a class="markdownIt-Anchor" href="#动态连接"></a> 动态连接</h3>
 <p>每个栈帧都包含一个指向运行时常量池中该栈帧所属方法的引用，持有这个引用是为了支持方法调用过程中的动态连接。Class文件的常量池中存在大量的符号引用，字节码中的方法调用指令就以常量池里指向方法的符合引用作为参数。这些符号一部分在类加载阶段或者第一次使用的时候就被转化为直接引用，这种转化被称为静态解析。另一部分将在每一次运行期间都转化为直接引用，这部分称为动态连接。</p>
 <p>动态连接的例子：</p>
@@ -1678,7 +1678,7 @@
 <p>此处的变量包括了实例字段、静态字段和构成数组对象的元素，但是不包括局部变量与方法参数，因为后者是线程私有的，不会被共享，自然就不会存在竞争问题。</p>
 </blockquote>
 <p>Java内存模型规定了所有的变量都存储在主内存中，每条线程还有子集的工作内存，线程的工作内存中保存了该线程使用的变量的主内存副本，线程堆变量的所有操作（读取、赋值等）都必须在工作内存中进行，而不能直接读写主内存中的数据。不同线程之间也无法直接访问对方工作内存中的变量，线程间变量值的传递均需要通过主内存来完成，线程、主内存、工作内存三者的交互关系如图：</p>
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210805230911.png" alt="image-20210805230911338" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210805230911.png" alt="image-20210805230911338" style="zoom:50%;" />
 <h3 id="volatile型变量"><a class="markdownIt-Anchor" href="#volatile型变量"></a> volatile型变量</h3>
 <p>当一个变量被定义成volatile之后，它将具备两项特性：</p>
 <ul>
@@ -1702,7 +1702,7 @@
 <p>Java线程调度是系统自动完成的，一共设置了10个级别的线程优先级，线程优先级并不是一项稳定的调节手段，例如windows中只有七种优先级，这意味着有几个线程的优先级会对应到同一个操作系统优先级。</p>
 <h3 id="线程状态"><a class="markdownIt-Anchor" href="#线程状态"></a> 线程状态</h3>
 <p>线程的不同状态可以转化，具体关系如下图：</p>
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210805233636.png" alt="image-20210805233636533" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210805233636.png" alt="image-20210805233636533" style="zoom:50%;" />
 <h1 id="线程安全与锁优化"><a class="markdownIt-Anchor" href="#线程安全与锁优化"></a> 线程安全与锁优化</h1>
 <h2 id="线程安全"><a class="markdownIt-Anchor" href="#线程安全"></a> 线程安全</h2>
 <p>当多个线程同时访问一个对象时，如果不用考虑这些线程在运行时环境下的调度和交替执行，也不需要进行额外的同步，或者在调用方法进行任何其他的协同操作，调用这个对象的行为都可以获得正确的结果，那就称这个对象是线程安全的。</p>
@@ -1753,11 +1753,11 @@
 <h3 id="轻量级锁"><a class="markdownIt-Anchor" href="#轻量级锁"></a> 轻量级锁</h3>
 <p>“轻量级”是相对于使用操作系统互斥量来实现的传统锁而言的，因此传统的锁的机制就被称为“重量级”锁。</p>
 <p>HotSpot虚拟机对象头Mark Word示意图：</p>
-<p><img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210806104948.png" alt="image-20210806104948711" /></p>
+<p><img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210806104948.png" alt="image-20210806104948711" /></p>
 <p>在代码即将进入同步块的时候，如果此同步对象没有被锁定（锁标志位“01”状态），虚拟机首先将在当前线程的栈帧中建立一个名为锁记录（Lock Record）的空间，用于存储对象目前的Mark Word的拷贝（官方称为Displaced Mark Word），这时候线程堆栈与对象头的状态如图：</p>
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210806105450.png" alt="image-20210806105450428" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210806105450.png" alt="image-20210806105450428" style="zoom:50%;" />
 <p>然后，虚拟机将使用CAS操作尝试把对象的Mark Word更新位为指向Lock Record的指针。如果这个更新动作成功了，即代表该线程拥有了这个对象的锁，并且对象Mark Word的锁标志位（Mark Word的最后两个比特）将转变为“00”，表示此对象处于轻量级锁定状态。这时候线程堆栈与对象头的状态如下图：</p>
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210806110157.png" alt="image-20210806105747996" style="zoom:50%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210806110157.png" alt="image-20210806105747996" style="zoom:50%;" />
 <p>如果这个更新操作失败了，那就意味着至少存在一个线程与当前线程竞争获取该对象的锁。虚拟机首先会检查对象的Mark Word是否指向当前线程的栈帧，如果是，说明当前线程已经拥有了这个对象的锁，那直接进入同步块继续执行就可以了，否则就说明这个锁对象已经被其他线程抢占了。如果出现两条以上的线程争用同一个锁的情况，那轻量级锁就不再有效，必须要膨胀为重量级锁，锁标志的状态值变为“10”，此时Mark Word中存储的就是指向重量级锁（互斥量）的指针，后面等待锁的线程也必须进入阻塞状态。</p>
 <p>上述描述的是轻量级锁的加锁过程，解锁过程也同样是通过CAS操作来进行的，如果对象的Mark Word仍然指向线程的锁记录，那就用CAS操作把对象当前的Mark Word和线程中复制的Displaced Mark Word替换回来。假设能够成功替换，那整个同步过程就顺利完成了；如果替换失败，则说明有其他线程尝试过获取该锁，就要在释放锁的同时，唤醒被挂起的线程。</p>
 <p>轻量级锁能提升程序同步性能的依据是“对于绝大部分的锁，在整个同步周期内都是不存在竞争的”这一经验法则。如果没有竞争，轻量级锁便通过CAS操作成功避免了使用互斥量的开销；但如果确实存在锁竞争，除了互斥量的本身开销外，还额外发生了CAS操作的开销。因此在有竞争的情况下，轻量级锁反而会比传统的重量级锁更慢。</p>
@@ -1766,7 +1766,7 @@
 <p>偏向锁中的“偏”，就是偏心的“偏”，偏袒的“偏”，它的意思是这个锁会偏向于第一个获取它的线程，如果在接下来的执行过程中，该锁一直没有被其他的线程获取，则持有偏向锁的线程永远不需要再进行同步。</p>
 <p>假设虚拟机启用了偏向锁，那么当锁对象第一次被线程获取的时候，虚拟机将会把对象头中的标志位设置为“01”、把偏向模式设置为“1”，标识进入偏向模式。同时使用CAS操作把获取到这个锁的线程ID记录再对象的Mark World之中。如果CAS操作成功，持有偏向锁的线程以后每次进入这个锁相关的同步块是，虚拟机都可以不再进行任何同步操作。</p>
 <p>一旦出现另一个线程去尝试获取这个锁的情况，偏向模式就马上宣告结束。根据锁对象目前是否处于被锁定的状态决定是否撤销偏向（偏向模式设置为“0”），撤销后标志位恢复到未锁定（标志位为“01”）或轻量级锁定（标志位为“00”）的状态，后续的同步操作就按照轻量级锁那样去执行。偏向锁、轻量级锁的状态转化及对象Mark Word的关系如图：</p>
-<img src="https://gitee.com/ji_yong_chao/blog-img/raw/master/img/20210806102556.png" alt="image-20210806102556856" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210806102556.png" alt="image-20210806102556856" style="zoom:67%;" />
 <hr />
 <h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
 <p>[1] <a target="_blank" rel="noopener" href="https://github.com/weolwo/jvm-learn.git">圣思源张龙的JVM学习笔记</a></p>
