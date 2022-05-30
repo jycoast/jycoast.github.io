@@ -2443,7 +2443,7 @@ public class EventPublicationInterceptorDemo {
 
 ### 请解释Spring事务传播的原理？
 
-/这里最主要的是要掌握逻辑事务和物理事务的区别。
+这里最主要的是要掌握逻辑事务和物理事务的区别。
 
 ### 请总结Spring AOP与IoC功能整合的设计模式？
 

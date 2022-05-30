@@ -66,10 +66,10 @@ NexT provides Algolia search plugin for index your hexo website content. To use 
     vendors:
       ...
       # Algolia Search
-      # algolia_search: //cdn.jsdelivr.net/npm/algoliasearch@4/dist/algoliasearch-lite.umd.js
-      # instant_search: //cdn.jsdelivr.net/npm/instantsearch.js@4/dist/instantsearch.production.min.js
-      algolia_search: //cdn.jsdelivr.net/npm/algoliasearch@4/dist/algoliasearch-lite.umd.js
-      instant_search: //cdn.jsdelivr.net/npm/instantsearch.js@4/dist/instantsearch.production.min.js
+      # algolia_search: //fastly.jsdelivr.net/npm/algoliasearch@4/dist/algoliasearch-lite.umd.js
+      # instant_search: //fastly.jsdelivr.net/npm/instantsearch.js@4/dist/instantsearch.production.min.js
+      algolia_search: //fastly.jsdelivr.net/npm/algoliasearch@4/dist/algoliasearch-lite.umd.js
+      instant_search: //fastly.jsdelivr.net/npm/instantsearch.js@4/dist/instantsearch.production.min.js
       ...
     ```
 

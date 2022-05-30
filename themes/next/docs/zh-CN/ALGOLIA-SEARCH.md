@@ -65,10 +65,10 @@ NexT 内部提供 Algolia 的搜索功能，要使用此功能请确保所使用
     vendors:
       ...
       # Algolia Search
-      # algolia_search: //cdn.jsdelivr.net/npm/algoliasearch@4/dist/algoliasearch-lite.umd.js
-      # instant_search: //cdn.jsdelivr.net/npm/instantsearch.js@4/dist/instantsearch.production.min.js
-      algolia_search: //cdn.jsdelivr.net/npm/algoliasearch@4/dist/algoliasearch-lite.umd.js
-      instant_search: //cdn.jsdelivr.net/npm/instantsearch.js@4/dist/instantsearch.production.min.js
+      # algolia_search: //fastly.jsdelivr.net/npm/algoliasearch@4/dist/algoliasearch-lite.umd.js
+      # instant_search: //fastly.jsdelivr.net/npm/instantsearch.js@4/dist/instantsearch.production.min.js
+      algolia_search: //fastly.jsdelivr.net/npm/algoliasearch@4/dist/algoliasearch-lite.umd.js
+      instant_search: //fastly.jsdelivr.net/npm/instantsearch.js@4/dist/instantsearch.production.min.js
       ...
     ```
 
