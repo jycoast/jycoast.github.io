@@ -566,10 +566,10 @@
   dependencies:
     "chalk" "^4.0.0"
 
-"hexo-markmap@^1.0.5":
-  "integrity" "sha512-8nmixBwHpi98Srrotx60rfSyMfLaBFF2msnB67hpzr7pqcL/+/bCzN40M76NiYMwd2qmey2MFNgv124N1NwaYg=="
-  "resolved" "https://registry.npmjs.org/hexo-markmap/-/hexo-markmap-1.0.5.tgz"
-  "version" "1.0.5"
+"hexo-markmap@^1.1.1":
+  "integrity" "sha512-FKWXB5q+MZBMwKRFYrF0lIJTc3FB4rOvaWcctCB4ITqf9fcnr6ma1xukTaN04ctlkTDDovabSqEma8OAnGL8dw=="
+  "resolved" "https://registry.npmjs.org/hexo-markmap/-/hexo-markmap-1.1.1.tgz"
+  "version" "1.1.1"
   dependencies:
     "markmap-common" "^0.1.6"
     "markmap-lib" "^0.11.6"

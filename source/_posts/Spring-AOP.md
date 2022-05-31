@@ -48,6 +48,8 @@ public class ClassLoaderDemo {
 
 ### OOP 部分
 
+面向对象三大特性：
+
 - 封装
 - 继承
 - 多态
@@ -92,7 +94,7 @@ public class ClassLoaderDemo {
 - Spring 事件
 - Spring 注解
 
-## OOP局限性
+### OOP局限性
 
 Java OOP存在哪些局限性？
 
@@ -127,25 +129,20 @@ Java OOP存在哪些局限性？
 - 缓存，如Spring Cache
 - 超时控制
 
-## AOP概念
-
-- 切面（Aspect）：一个关注点的模块化，在Spring AOP中。
-- 连接点（Join Point）：在程序执行过程中某个特定的点，比如方法调用的时候或异常处理的时候。
-- 通知（Advice）：在切面的某个特定的连接点上执行的动作。
-- 切入点（Pointcut）：匹配连接点的断言，通知和一个切入点表达式关联，并在满足这个切入点的连接点上运行。
-- 织入（Weaving）：把切面连接到其他应用程序类型或者对象上，并创建一个被通知的对象。
-
-<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210718125653.jpeg" style="zoom:50%;" />
-
 ## Java AOP设计模式
 
-代理模式：静态和动态代理
+Spring仅支持基于代理模式的AOP实现，除此之外，AOP还可以是：
 
-判断模式：类、方法、注解、参数、异常....
+- 代理模式：静态和动态代理
 
-拦截模式：前置、后置、返回、异常
 
-## 代理模式
+- 判断模式：类、方法、注解、参数、异常....
+
+
+- 拦截模式：前置、后置、返回、异常
+
+
+### 代理模式
 
 Java静态代理的实现方式：
 
@@ -234,7 +231,7 @@ public class JdkDynamicProxyDemo {
 }
 ```
 
-## 判断模式
+### 判断模式
 
 判断来源：
 
@@ -278,7 +275,7 @@ public class TargetFilterDemo {
 }
 ```
 
-## 拦截模式
+### 拦截模式
 
 拦截类型大致分为三种：
 
@@ -390,6 +387,20 @@ class TimeFinallyInterceptor implements FinallyInterceptor {
 
 ## Spring AOP 功能概述
 
+### AOP设计核心
+
+Spring AOP 的整体设计如下：
+
+<img src="https://cdn.jsdelivr.net/gh/liu844869663/cdn@master/SpringAOP/Spring%20AOP%20API.png" style="zoom:50%;" />
+
+- 切面（Aspect）：一个关注点的模块化，在Spring AOP中。
+- 连接点（Join Point）：在程序执行过程中某个特定的点，比如方法调用的时候或异常处理的时候。
+- 通知（Advice）：在切面的某个特定的连接点上执行的动作。
+- 切入点（Pointcut）：匹配连接点的断言，通知和一个切入点表达式关联，并在满足这个切入点的连接点上运行。
+- 织入（Weaving）：把切面连接到其他应用程序类型或者对象上，并创建一个被通知的对象。
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210718125653.jpeg" style="zoom:50%;" />
+
 核心特性：
 
 - 纯Java实现、无编译时特殊处理，不修改和控制ClassLoader
@@ -398,7 +409,7 @@ class TimeFinallyInterceptor implements FinallyInterceptor {
 - Spring IoC容器整合
 - AspectJ注解驱动整合（非竞争关系）
 
-## Spring AOP编程模型
+### Spring AOP编程模型
 
 Spring AOP编程模型也主要分为三种：注解驱动、XML配置驱动和底层API
 
@@ -436,11 +447,11 @@ XML配置驱动：
 	- Pointcut：Ponintcut
 	- Advice：Advice、BeforeAdvice、AfterAdvice、AfterReturningAdvice、ThrowsAdvice
 
-## Spring AOP Advice类型
+### Spring AOP Advice类型
 
 Advice类型：环绕（Around）、前置（Before）、后置（After）、异常（Exception），其中后置又包括了方法执行和finally执行两种。
 
-## Spring AOP代理实现
+### Spring AOP代理实现
 
 Spring AOP的代理实现主要有三种：
 
@@ -453,7 +464,7 @@ Spring AOP的代理实现主要有三种：
 
 无论是哪一种实现，都实现了AopProxy接口，并且实现类都是非public的。
 
-## JDK动态代理
+#### JDK动态代理
 
 为什么Proxy.newProxyInstance会生成新的字节码？
 
@@ -461,7 +472,7 @@ Spring AOP的代理实现主要有三种：
 
 JDK会操作字符数组，生成一个代理类的Class对象。
 
-## CGLIB动态代理
+#### CGLIB动态代理
 
 在Java中，面向对象通常而言指的是面向接口编程，或者也可以认为是面向锲约编程，JDK的动态代理会依赖于接口的定义，在没有定义接口的情况，还要实现AOP的功能，就需要CGLIB动态代理来实现。
 
@@ -498,7 +509,7 @@ public class CglibDynamicProxyDemo {
 }
 ```
 
-## AspectJ代理
+#### AspectJ代理
 
 借助于AspectJ强大的编译器，AspectJ有一套自己的语法，AspectJ的主要语法有：Aspect、Join Points、Pointcuts、Advice、introduction。
 
@@ -508,7 +519,7 @@ public class CglibDynamicProxyDemo {
 
 ### Spring AOP和AspectJ AOP存在哪些差别？
 
-- Aspect是AOP完整实现，Spring AOP则是部分实现
+- AspectJ是AOP完整实现，Spring AOP则是部分实现
 - Spring AOP比AspectJ使用更简单
 - Spring AOP整合AspectJ注解与Spring IoC容器
 - Spring AOP仅支持基于代理模式的AOP
@@ -2037,11 +2048,13 @@ XML元素 - <aop:scoped-proxy />
 
 Spring Configuration Class CGLIB提升的原因是，方便Spring AOP的操作，无需显式的注册代理类，注入Advisor也比较容易，相当于天然的装配。
 
-# Spring AOP设计模式
+# Spring AOP中的设计模式
 
 总的来说，设计模式没有绝对的标准，像雨像雾又像风。
 
-## 抽象工厂模式
+## 创建模式
+
+### 抽象工厂模式
 
 基本概念：抽象工厂模式（Abstract factory）提供了一组具有同一主题的单独的工厂封装起来。在正常使用中，客户端程序需要创建抽象工厂的具体实现，然后使用抽象工厂作为接口来创建这一主题的具体对象。客户端程序不需要知道（或关心）它从这些内部工厂方法中获得对象的具体类型，因为客户端程序仅使用这些对象的通用接口。抽象工厂模式将一组对象的实现细节与他们的一般使用分离开来。
 
@@ -2050,7 +2063,7 @@ Spring AOP举例实现：
 - 接口 - org.springframework.aop.framework.AopProxyFactory
 - 实现 - org.springframework.aop.framework.DefaultAopProxyFactory
 
-## 构建器模式
+### 构建器模式
 
 基本概念：构建器模式（Builder）又名建造模式，是一种对象构建模式。它可以将复杂对象的建造过程抽象出来（抽象类别），使这个抽象过程的不同实现方法可以构造出不同表现（属性）的对象
 
@@ -2060,7 +2073,7 @@ Spring AOP举例实现：
 
 > 通常而言，构建器模式有两种实现，一种是线程安全的，一种是非线程安全的，不过大多数场景下，使用的都是非线程安全的，例如StringBuilder。
 
-## 工厂方法模式
+### 工厂方法模式
 
 基本概念：工厂方法模式（Factory method）就像其他创建型模式一样，它也是处理在不指定对象具体类型的情况下创建对象的问题。工厂方法模式的实质是“定义一个创建对象的接口，但让实现这个接口的类来决定实例化哪个类。工厂方法让类的实例化推迟到子类中进行。”
 
@@ -2070,7 +2083,7 @@ Spring AOP举例实现：
 
 > 工厂方法也分为两种，静态工厂和动态工厂，也就是说类的工厂方法或者对象的工厂方法。抽象工厂与工厂方法的区别在于，抽象工厂要求必须是抽象的，也就是说它必须是抽象类或者接口，但工厂可以是一个具体的类。
 
-## 原型模式
+### 原型模式
 
 基本概念：原型模式（Prototype）其特点在于通过`复制`一个已经存在的实例来返回新的实例，而不是新建实例。被复制的实例就是我们所称的`原型`，这个原型是可定制的。
 
@@ -2080,7 +2093,7 @@ Spring AOP举例实现：
 
 - 实现 - org.springframework.aop.target.PrototypeTargetSource
 
-## 单例模式
+### 单例模式
 
 基本概念：单例模式（Singleton）属于创建型模式的一种。在应用这个模式时，单例对象的类必须保证只有一个实例存在。许多时候整个系统只需要一个的全局对象，这样有利于我们协调系统整体的行为。比如在某个服务器程序中，该服务器的配置信息存放在一个文件中，这些配置数据由一个单例对象统一读取，然后服务器进程中的其他对象再通过这个单例对象或者这些配置信息。这种方式简化了在复杂环境下的配置管理。
 
@@ -2090,7 +2103,9 @@ Spring AOP举例实现：
 
 > 单例模式中需要注意对象存在的范围。
 
-## 适配器模式
+## 结构模式
+
+### 适配器模式
 
 基本概念：适配器模式（Adapter）有时候也称包装模式或者包装（Wrapper）。将一个类转换成另外一个类，通过适配器包装的方式可以使得本来不兼容的接口变得兼容。
 
@@ -2100,7 +2115,7 @@ Spring AOP举例实现：
 - 适配对象 - org.aopalliance.aop.Advice
 - 目标对象 - org.aopalliance.intercept.MethodInterceptor
 
-## 组合模式
+### 组合模式
 
 基本概念：组合模式（Composite）是把一组对象当成一个实例来进行处理，这个实例和这组对象时相同类型的。
 
@@ -2110,7 +2125,7 @@ Spring AOP举例实现：
 - 接口 - org.aspectj.lang.annotation.Pointcut
 - 成员 - org.aspectj.lang.annotation.Pointcut
 
-## 装饰器模式
+### 装饰器模式
 
 基本概念：装饰器模式（Decorator）是一种动态地往一个类中添加新的行为的设计模式。就功能而言，修饰模式相比生成子类更为灵活，这样可以给某个对象而不是整个类添加一些功能。
 
@@ -2135,7 +2150,7 @@ JDK举例实现：
 - 装饰角色
 - 具体装饰角色
 
-## 享元模式
+### 享元模式
 
 基本概念：享元，即共享的单元。享元模式（Flyweight）使用对象来尽可能减少内存的使用量，便于分享更多的数据。常见的作法是对象放在数据结构外部，等需要的时候在将它们传递给享元。
 
@@ -2145,7 +2160,7 @@ Spring AOP举例实现：
 
 > 享元模式与单例模式的区别在于，享元模式不一定是单例本身，它可能只是一个代理或者门面。
 
-## 代理模式
+### 代理模式
 
 基本概念：代理模式（Proxy）是指一个类型可以作为其他东西的界面。代理者可以作任何东西的介面：网络连接、内存等资源。
 
@@ -2157,7 +2172,9 @@ Spring AOP举例实现：
 
 > 装饰器模式和代理模式的区别在于，通常装饰器模式是静态的一种（比如植入一些辅助性的代码去修饰一些行为），而代理模式既有动态的也有静态的。
 
-## 模板方法模式
+## 行为模式
+
+### 模板方法模式
 
 基本概念：模板方法（Template Method）是一个定义在父类里面的方法，这个方法可能没有具体的实现，需要在子类中重写父类中这个方法，而父类已经安排好了这些抽象方法的执行顺序以及调用逻辑。
 
@@ -2169,7 +2186,7 @@ Spring AOP举例实现：
 	- org.springframework.aop.framework.autoproxy.InfrastructureAdvisorAutoProxyCreator
 	- org.springframework.aop.aspectj.annotation.AnnotationAwareAspectJAutoProxyCreator
 
-## 责任链模式
+### 责任链模式
 
 基本概念：责任链模式（Chain of Responsibility）包含了一些命令对象和一系列的处理对象。每一个处理对象决定它能处理哪些命令对象，它也知道如何将它不能处理的命令对象传递给该链中的下一个对象。该模式还描述了往该处理链的末尾添加新的处理对象的方法。
 
@@ -2180,7 +2197,7 @@ Spring AOP举例实现：
 
 > 责任链模式有时候有称为Pipline。
 
-## 观察者模式
+### 观察者模式
 
 基本概念：观察者模式（Observer）是指一个目标对象管理所有依赖它的观察者对象，并且在它本身的状态改变时主动发出通知。通常伴随着事件或者消息的方式来进行传递。
 
@@ -2190,7 +2207,7 @@ Spring AOP举例实现：
 - 被观察者 - org.springframework.aop.framework.AdvisedSupportListener
 - 通知对象 - org.springframework.aop.framework.AdvisedSupport
 
-## 策略模式
+### 策略模式
 
 基本概念：策略模式（Strategy）是指对象具有某个行为，但是在不同的场景中，该行为有不同的实现算法。
 
@@ -2201,7 +2218,7 @@ Spring AOP举例实现：
 
 > 策略模式通常被认为是面向对象多态的体现。
 
-## 命令模式
+### 命令模式
 
 基本概念：命令模式（Strategy）是以对象为代表实际行动，命令对象可以把方法及其参数封装起来，于是这些方法（动作）可以被：
 
@@ -2214,7 +2231,7 @@ Spring AOP举例实现：
 - org.aopalliance.intercept.MethodInvocation
 - org.aspectj.lang.ProceedingJoinPoint
 
-## 状态模式
+### 状态模式
 
 基本概念：状态模式（State）允许对象在内部状态发生变化时更改其行为。这种模式接近于有限状态机的概念，状态模式可以解释为策略模式，它能够通过调用模式接口中定义的方法来切换策略。
 
@@ -2433,7 +2450,7 @@ public class EventPublicationInterceptorDemo {
 
 ## 面试题
 
-### 请举例说明Spring AOP在Spring Framework特性运用？
+### Spring AOP在Spring Framework特性运用？
 
 - Spring 事件（Events）
 - Spring 事务（Transaction）
@@ -2441,11 +2458,11 @@ public class EventPublicationInterceptorDemo {
 - Spring 本地调度（Scheduling）
 - Spring远程（Remoting） 
 
-### 请解释Spring事务传播的原理？
+### Spring事务传播的原理？
 
 这里最主要的是要掌握逻辑事务和物理事务的区别。
 
-### 请总结Spring AOP与IoC功能整合的设计模式？
+### Spring AOP与IoC功能整合的设计模式？
 
 - 实现Advice或MethodInterceptor
 - 实现PointcutAdvisor

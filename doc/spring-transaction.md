@@ -170,6 +170,8 @@ public class TransactionDemo {
 
 完整文档：[Spring事务](https://docs.spring.io/spring-framework/docs/current/reference/html/data-access.html#tx-propagation)
 
+https://www.javainuse.com/spring/boot-transaction-propagation
+
 ### PROPAGATION_REQUIRED
 
 <img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202205232300625.png" alt="image-20220523230017497" style="zoom:67%;" />
@@ -210,6 +212,10 @@ AOP相关的API：
 - Spring事务PointcutAdvisor实现 - BeanFactoryTransactionAttrubuteSourceAdvisor
 - Spring事务MethodInterceptor实现 - TransactionInterceptor
 - Spring事务属性源 - TransactionAttributeSource
+
+其中，PlatformTransactionManager、TransactionDefinition、TransactionStatus最为重要，他们之间的关系如下：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/imgimage-20220530234248183.png" alt="image-20220530234248183" style="zoom: 80%;" />
 
 ### PlatformTransactionManager
 
@@ -319,23 +325,22 @@ public interface TransactionExecution {
 
 ## 事务实现过程分析
 
-### Spring AOP和IOC
+### @Transactional与AOP
 
-理解@Transactional的实现原理，首先需要理解Spring AOP的原理以及一部分Spring IOC的API。
+@Transactional基于Spring AOP实现，其执行流程大致如下：
 
-这里我们首先回顾AOP相关的知识：
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/imgimage-20220530234841511.png" alt="image-20220530234841511" style="zoom:80%;" />
 
-<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202205270007880.png" alt="image-20220527000754666" style="zoom:67%;" />
+针对于@Transactional的实现，几个关键点是：
 
-然后就是AOP中几个关键的类：
-
-
-
-了解这些基础知识，将帮助我们理解Spring事务的整个实现过程。
+- Spring中是如何定义Interceptor的？也就是说，哪些方法会被拦截？
+- 拦截后，代理类中invoke方法是如何执行的？
+- 当有多个逻辑事务时，Spring是如何保证物理事务正确提交的？
+- 事务的传播行为的处理细节是怎么样的？
 
 ### @Transactional的实现原理
 
-@Transactional的定义：
+首先我们来观察@Transactional的定义：
 
 ```java
 // 可以作用在类上面，也可以作用在方法上
@@ -367,7 +372,7 @@ public @interface Transactional {
 }
 ```
 
-在SpringBoot中要使用事务，我们需要添加@EnableTransactionManagement注解：
+如果需要在SpringBoot中要使用@Transactional，我们需要添加@EnableTransactionManagement注解：
 
 ```java
 @Target(ElementType.TYPE)
@@ -443,13 +448,48 @@ public class ProxyTransactionManagementConfiguration extends AbstractTransaction
 }
 ```
 
-这里我们比较关心的点有：
+TransactionAttributeSource前面我们介绍过，它是Spring事务属性源 ，进入AnnotationTransactionAttributeSource的构造方法，我们可以看到：
 
-- 获取需要拦截的注解，Spring不仅支持`org.springframework.transaction.annotation.Transactional`还支持`javax.transaction.Transactional.class`和`javax.ejb.TransactionAttribute`，在Spring统一的编程模型下，这三个注解都可以通用
+```java
+	public AnnotationTransactionAttributeSource(boolean publicMethodsOnly) {
+		this.publicMethodsOnly = publicMethodsOnly;
+		if (jta12Present || ejb3Present) {
+			this.annotationParsers = new LinkedHashSet<>(4);
+			this.annotationParsers.add(new SpringTransactionAnnotationParser());
+			if (jta12Present) {
+				this.annotationParsers.add(new JtaTransactionAnnotationParser());
+			}
+			if (ejb3Present) {
+				this.annotationParsers.add(new Ejb3TransactionAnnotationParser());
+			}
+		}
+		else {
+			this.annotationParsers = Collections.singleton(new SpringTransactionAnnotationParser());
+		}
+	}
+```
 
-BeanFactoryTransactionAttributeSourceAdvisor是带有IOC容器功能的Advisor，
+这里会将一些注解解析类添加到AnnotationTransactionAttributeSource的annotationParsers中，这里以默认的SpringTransactionAnnotationParser为例：
 
-TransactionInterceptor的invoke方法：
+```java
+	@Override
+	@Nullable
+	public TransactionAttribute parseTransactionAnnotation(AnnotatedElement element) {
+        // 获取拥有@Transactional注解的类或方法
+		AnnotationAttributes attributes = AnnotatedElementUtils.findMergedAnnotationAttributes(
+				element, Transactional.class, false, false);
+		if (attributes != null) {
+			return parseTransactionAnnotation(attributes);
+		}
+		else {
+			return null;
+		}
+	}
+```
+
+JtaTransactionAnnotationParser和Ejb3TransactionAnnotationParser也是类似的实现，也就是说Spring不仅支持`org.springframework.transaction.annotation.Transactional`还支持`javax.transaction.Transactional.class`和`javax.ejb.TransactionAttribute`，在Spring统一的编程模型下，这三个注解都可以通用。
+
+接下来我们查看执行的核心方法，即TransactionInterceptor的invoke方法：
 
 ```java
 @Override
@@ -791,8 +831,6 @@ public abstract class TransactionCallbackWithoutResult implements TransactionCal
 
 }
 ```
-
-
 
 # 事务失效及长事务
 
