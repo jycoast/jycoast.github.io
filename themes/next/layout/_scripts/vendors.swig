@@ -6,20 +6,20 @@
 {%- endif %}
 
 {%- if theme.fancybox %}
-  {%- set js_vendors = js_vendors | attr('jquery', '//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js') %}
-  {%- set js_vendors = js_vendors | attr('fancybox', '//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js') %}
+  {%- set js_vendors = js_vendors | attr('jquery', '//fastly.jsdelivr.net/npm/jquery@3/dist/jquery.min.js') %}
+  {%- set js_vendors = js_vendors | attr('fancybox', '//fastly.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js') %}
 {%- endif %}
 
 {%- if theme.mediumzoom %}
-  {%- set js_vendors = js_vendors | attr('mediumzoom', '//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js') %}
+  {%- set js_vendors = js_vendors | attr('mediumzoom', '//fastly.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js') %}
 {%- endif %}
 
 {%- if theme.lazyload %}
-  {%- set js_vendors = js_vendors | attr('lazyload', '//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js') %}
+  {%- set js_vendors = js_vendors | attr('lazyload', '//fastly.jsdelivr.net/npm/lozad@1/dist/lozad.min.js') %}
 {%- endif %}
 
 {%- if theme.pangu %}
-  {%- set js_vendors = js_vendors | attr('pangu', '//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js') %}
+  {%- set js_vendors = js_vendors | attr('pangu', '//fastly.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js') %}
 {%- endif %}
 
 {%- if theme.motion.enable %}
