@@ -3384,7 +3384,7 @@ mysql> SHOW PROFILE cpu,block io FOR QUERY 3;
 
 ### 隔离性和隔离级别
 
-当数据库上有多个事务同时执行的时候，就可能出现藏独（dirty read）、不可重复读（non-repeatable read）、幻读（phantom read）的问题，为了解决这些问题，就有了“隔离级别”的概念。隔离级别越高，执行的效率就会越低，因此很多时候，都需要在二者之间寻找一个平衡点。
+当数据库上有多个事务同时执行的时候，就可能出现脏读（dirty read）、不可重复读（non-repeatable read）、幻读（phantom read）的问题，为了解决这些问题，就有了“隔离级别”的概念。隔离级别越高，执行的效率就会越低，因此很多时候，都需要在二者之间寻找一个平衡点。
 
 SQL标准的事务隔离级别包括：读未提交（read uncommitted）、读提交（read committed）、可重复读（repeatable read）和串行化（serializable），它们的含义如下：
 
