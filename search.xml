@@ -8505,7 +8505,7 @@
 <h2 id="事务隔离"><a class="markdownIt-Anchor" href="#事务隔离"></a> 事务隔离</h2>
 <p>简单来说，事务就是要保证一组操作，要么全部成功，要么全部失败，事务具有ACID（Atomicity、Consistency、Isolation、Durability，即原子性、一致性、隔离性、持久性）的特性。在MySQL中，事务支持是在引擎层实现的，但并不是所有的引擎都支持事务，比如MySQL原生的MyISAM引擎就不支持事务，这也是MyISAM被InnoDB取代的重要原因之一。</p>
 <h3 id="隔离性和隔离级别"><a class="markdownIt-Anchor" href="#隔离性和隔离级别"></a> 隔离性和隔离级别</h3>
-<p>当数据库上有多个事务同时执行的时候，就可能出现藏独（dirty read）、不可重复读（non-repeatable read）、幻读（phantom read）的问题，为了解决这些问题，就有了“隔离级别”的概念。隔离级别越高，执行的效率就会越低，因此很多时候，都需要在二者之间寻找一个平衡点。</p>
+<p>当数据库上有多个事务同时执行的时候，就可能出现脏读（dirty read）、不可重复读（non-repeatable read）、幻读（phantom read）的问题，为了解决这些问题，就有了“隔离级别”的概念。隔离级别越高，执行的效率就会越低，因此很多时候，都需要在二者之间寻找一个平衡点。</p>
 <p>SQL标准的事务隔离级别包括：读未提交（read uncommitted）、读提交（read committed）、可重复读（repeatable read）和串行化（serializable），它们的含义如下：</p>
 <ul>
 <li>读未提交是指，一个事务还没有提交时，它做的变更就能被别的事务看到</li>
@@ -9878,6 +9878,7 @@
 <p>关于字节码框架部分，Spring内连了ASM框架。</p>
 <p><img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210712104931.png" alt="image-20210712104930912" /></p>
 <h3 id="oop-部分"><a class="markdownIt-Anchor" href="#oop-部分"></a> OOP 部分</h3>
+<p>面向对象三大特性：</p>
 <ul>
 <li>封装</li>
 <li>继承</li>
@@ -9922,7 +9923,7 @@
 <li>Spring 事件</li>
 <li>Spring 注解</li>
 </ul>
-<h2 id="oop局限性"><a class="markdownIt-Anchor" href="#oop局限性"></a> OOP局限性</h2>
+<h3 id="oop局限性"><a class="markdownIt-Anchor" href="#oop局限性"></a> OOP局限性</h3>
 <p>Java OOP存在哪些局限性？</p>
 <ul>
 <li>静态化语言：类结构一旦定义，不容易被修改</li>
@@ -9956,20 +9957,20 @@
 <li>缓存，如Spring Cache</li>
 <li>超时控制</li>
 </ul>
-<h2 id="aop概念"><a class="markdownIt-Anchor" href="#aop概念"></a> AOP概念</h2>
-<ul>
-<li>切面（Aspect）：一个关注点的模块化，在Spring AOP中。</li>
-<li>连接点（Join Point）：在程序执行过程中某个特定的点，比如方法调用的时候或异常处理的时候。</li>
-<li>通知（Advice）：在切面的某个特定的连接点上执行的动作。</li>
-<li>切入点（Pointcut）：匹配连接点的断言，通知和一个切入点表达式关联，并在满足这个切入点的连接点上运行。</li>
-<li>织入（Weaving）：把切面连接到其他应用程序类型或者对象上，并创建一个被通知的对象。</li>
-</ul>
-<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210718125653.jpeg" style="zoom:50%;" />
 <h2 id="java-aop设计模式"><a class="markdownIt-Anchor" href="#java-aop设计模式"></a> Java AOP设计模式</h2>
+<p>Spring仅支持基于代理模式的AOP实现，除此之外，AOP还可以是：</p>
+<ul>
+<li>
 <p>代理模式：静态和动态代理</p>
+</li>
+<li>
 <p>判断模式：类、方法、注解、参数、异常…</p>
+</li>
+<li>
 <p>拦截模式：前置、后置、返回、异常</p>
-<h2 id="代理模式"><a class="markdownIt-Anchor" href="#代理模式"></a> 代理模式</h2>
+</li>
+</ul>
+<h3 id="代理模式"><a class="markdownIt-Anchor" href="#代理模式"></a> 代理模式</h3>
 <p>Java静态代理的实现方式：</p>
 <ul>
 <li>常用OOP继承和组合相结合</li>
@@ -9990,14 +9991,14 @@
 <figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">StaticProxyDemo</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        ProxyEchoService proxyEchoService = <span class="keyword">new</span> ProxyEchoService(<span class="keyword">new</span> DefaultEchoService());</span><br><span class="line">        proxyEchoService.echo(<span class="string">&quot;hello world&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>动态代理的示例：</p>
 <figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">JdkDynamicProxyDemo</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();</span><br><span class="line">        Object proxy = Proxy.newProxyInstance(classLoader, <span class="keyword">new</span> Class[]&#123;EchoService.class&#125;, <span class="keyword">new</span> InvocationHandler() &#123;</span><br><span class="line"></span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> Object <span class="title">invoke</span><span class="params">(Object proxy, Method method, Object[] args)</span> <span class="keyword">throws</span> Throwable </span>&#123;</span><br><span class="line">                <span class="keyword">if</span> (EchoService.class.isAssignableFrom(method.getDeclaringClass())) &#123;</span><br><span class="line">                    ProxyEchoService echoService = <span class="keyword">new</span> ProxyEchoService(<span class="keyword">new</span> DefaultEchoService());</span><br><span class="line">                    <span class="keyword">return</span> echoService.echo((String) args[<span class="number">0</span>]);</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">        EchoService echoService = (EchoService) proxy;</span><br><span class="line">        echoService.echo(<span class="string">&quot;hello world&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="判断模式"><a class="markdownIt-Anchor" href="#判断模式"></a> 判断模式</h2>
+<h3 id="判断模式"><a class="markdownIt-Anchor" href="#判断模式"></a> 判断模式</h3>
 <p>判断来源：</p>
 <p>类型（Class）、方法（Method）、注解（Annotation）、参数（Parameter）、异常（Exception）</p>
 <p>在EchoService#echo中抛出一个异常：</p>
 <figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">EchoService</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function">String <span class="title">echo</span><span class="params">(String message)</span> <span class="keyword">throws</span> NullPointerException</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
 <p>判断模式的示例：</p>
 <figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TargetFilterDemo</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> ClassNotFoundException </span>&#123;</span><br><span class="line">        String targetClassName = <span class="string">&quot;org.jyc.thinking.in.spring.aop.overview.EchoService&quot;</span>;</span><br><span class="line">        <span class="comment">// 获取当前线程ClassLoader</span></span><br><span class="line">        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();</span><br><span class="line">        <span class="comment">// 获取目标类</span></span><br><span class="line">        Class&lt;?&gt; targetClass = classLoader.loadClass(targetClassName);</span><br><span class="line">        <span class="comment">// 过滤名称</span></span><br><span class="line">        Method method = ReflectionUtils.findMethod(targetClass, <span class="string">&quot;echo&quot;</span>, String.class);</span><br><span class="line">        System.out.println(method);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 查找方法throws类型为 NullPointerException</span></span><br><span class="line">        ReflectionUtils.doWithMethods(targetClass, method1 -&gt; &#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;仅抛出NullPointerException的方法为：&quot;</span> + method1);</span><br><span class="line">        &#125;, method2 -&gt; &#123;</span><br><span class="line">            Class&lt;?&gt;[] parameterTypes = method2.getParameterTypes();</span><br><span class="line">            Class&lt;?&gt;[] exceptionTypes = method2.getExceptionTypes();</span><br><span class="line">            <span class="comment">// 异常列表长度为1并且异常类型为NullPointerException，参数列表为1并且，参数类型为String的方法</span></span><br><span class="line">            <span class="keyword">return</span> exceptionTypes.length == <span class="number">1</span> &amp;&amp; NullPointerException.class.equals(exceptionTypes[<span class="number">0</span>])</span><br><span class="line">                    &amp;&amp; parameterTypes.length == <span class="number">1</span> &amp;&amp; String.class.equals(parameterTypes[<span class="number">0</span>]);</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="拦截模式"><a class="markdownIt-Anchor" href="#拦截模式"></a> 拦截模式</h2>
+<h3 id="拦截模式"><a class="markdownIt-Anchor" href="#拦截模式"></a> 拦截模式</h3>
 <p>拦截类型大致分为三种：</p>
 <ul>
 <li>前置拦截（Before）</li>
@@ -10013,6 +10014,17 @@
 <p>使用以上拦截器的示例：</p>
 <figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">AopInterceptorDemo</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args2)</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 前置模式 + 后置模式</span></span><br><span class="line">        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();</span><br><span class="line">        Object proxy2 = Proxy.newProxyInstance(classLoader, <span class="keyword">new</span> Class[]&#123;EchoService.class&#125;, (proxy, method, args) -&gt; &#123;</span><br><span class="line">            <span class="keyword">if</span> (EchoService.class.isAssignableFrom(method.getDeclaringClass())) &#123;</span><br><span class="line">                <span class="comment">// 前置拦截器</span></span><br><span class="line">                BeforeInterceptor beforeInterceptor = <span class="keyword">new</span> BeforeInterceptor() &#123;</span><br><span class="line">                    <span class="meta">@Override</span></span><br><span class="line">                    <span class="function"><span class="keyword">public</span> Object <span class="title">before</span><span class="params">(Object proxy, Method method, Object[] args)</span> </span>&#123;</span><br><span class="line">                        <span class="keyword">return</span> System.currentTimeMillis();</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;;</span><br><span class="line">                Long startTime = <span class="number">0L</span>;</span><br><span class="line">                Long endTime = <span class="number">0L</span>;</span><br><span class="line">                Object result = <span class="keyword">null</span>;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    <span class="comment">// 前置拦截</span></span><br><span class="line">                    startTime = (Long) beforeInterceptor.before(proxy, method, args);</span><br><span class="line">                    EchoService echoService = <span class="keyword">new</span> DefaultEchoService();</span><br><span class="line">                    result = echoService.echo((String) args[<span class="number">0</span>]);</span><br><span class="line">                    <span class="comment">// 方法执行后置拦截器</span></span><br><span class="line">                    AfterReturnInterceptor afterReturnInterceptor = <span class="keyword">new</span> AfterReturnInterceptor() &#123;</span><br><span class="line">                        <span class="meta">@Override</span></span><br><span class="line">                        <span class="function"><span class="keyword">public</span> Object <span class="title">after</span><span class="params">(Object proxy, Method method, Object[] args, Object returnResult)</span> </span>&#123;</span><br><span class="line">                            <span class="keyword">return</span> System.currentTimeMillis();</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;;</span><br><span class="line">                    endTime = (Long) afterReturnInterceptor.after(proxy, method, args, result);</span><br><span class="line">                &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">                    <span class="comment">// 异常拦截器</span></span><br><span class="line">                    ExceptionInterceptor exceptionInterceptor = <span class="keyword">new</span> ExceptionInterceptor() &#123;</span><br><span class="line">                        <span class="meta">@Override</span></span><br><span class="line">                        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">intercpt</span><span class="params">(Object proxy, Method method, Object[] args, Throwable throwable)</span> </span>&#123;</span><br><span class="line">                            <span class="comment">// ...</span></span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;;</span><br><span class="line">                &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">                    <span class="comment">// finally 后置拦截器</span></span><br><span class="line">                    FinallyInterceptor finallyInterceptor = <span class="keyword">new</span> TimeFinallyInterceptor(startTime, endTime);</span><br><span class="line">                    Long costTime = (Long) finallyInterceptor.finalize(proxy, method, args, result);</span><br><span class="line">                    System.out.println(<span class="string">&quot;echo方法执行时间: &quot;</span> + costTime);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">        &#125;);</span><br><span class="line">        EchoService echoService = (EchoService) proxy2;</span><br><span class="line">        echoService.echo(<span class="string">&quot;hello world&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">TimeFinallyInterceptor</span> <span class="keyword">implements</span> <span class="title">FinallyInterceptor</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Long startTime;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Long endTime;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">TimeFinallyInterceptor</span><span class="params">(Long startTime, Long endTime)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.startTime = startTime;</span><br><span class="line">        <span class="keyword">this</span>.endTime = endTime;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">finalize</span><span class="params">(Object proxy, Method method, Object[] args, Object returnResult)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> endTime - startTime;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h2 id="spring-aop-功能概述"><a class="markdownIt-Anchor" href="#spring-aop-功能概述"></a> Spring AOP 功能概述</h2>
+<h3 id="aop设计核心"><a class="markdownIt-Anchor" href="#aop设计核心"></a> AOP设计核心</h3>
+<p>Spring AOP 的整体设计如下：</p>
+<img src="https://cdn.jsdelivr.net/gh/liu844869663/cdn@master/SpringAOP/Spring%20AOP%20API.png" style="zoom:50%;" />
+<ul>
+<li>切面（Aspect）：一个关注点的模块化，在Spring AOP中。</li>
+<li>连接点（Join Point）：在程序执行过程中某个特定的点，比如方法调用的时候或异常处理的时候。</li>
+<li>通知（Advice）：在切面的某个特定的连接点上执行的动作。</li>
+<li>切入点（Pointcut）：匹配连接点的断言，通知和一个切入点表达式关联，并在满足这个切入点的连接点上运行。</li>
+<li>织入（Weaving）：把切面连接到其他应用程序类型或者对象上，并创建一个被通知的对象。</li>
+</ul>
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210718125653.jpeg" style="zoom:50%;" />
 <p>核心特性：</p>
 <ul>
 <li>纯Java实现、无编译时特殊处理，不修改和控制ClassLoader</li>
@@ -10021,7 +10033,7 @@
 <li>Spring IoC容器整合</li>
 <li>AspectJ注解驱动整合（非竞争关系）</li>
 </ul>
-<h2 id="spring-aop编程模型"><a class="markdownIt-Anchor" href="#spring-aop编程模型"></a> Spring AOP编程模型</h2>
+<h3 id="spring-aop编程模型"><a class="markdownIt-Anchor" href="#spring-aop编程模型"></a> Spring AOP编程模型</h3>
 <p>Spring AOP编程模型也主要分为三种：注解驱动、XML配置驱动和底层API</p>
 <p>注解驱动：</p>
 <ul>
@@ -10067,9 +10079,9 @@
 </ul>
 </li>
 </ul>
-<h2 id="spring-aop-advice类型"><a class="markdownIt-Anchor" href="#spring-aop-advice类型"></a> Spring AOP Advice类型</h2>
+<h3 id="spring-aop-advice类型"><a class="markdownIt-Anchor" href="#spring-aop-advice类型"></a> Spring AOP Advice类型</h3>
 <p>Advice类型：环绕（Around）、前置（Before）、后置（After）、异常（Exception），其中后置又包括了方法执行和finally执行两种。</p>
-<h2 id="spring-aop代理实现"><a class="markdownIt-Anchor" href="#spring-aop代理实现"></a> Spring AOP代理实现</h2>
+<h3 id="spring-aop代理实现"><a class="markdownIt-Anchor" href="#spring-aop代理实现"></a> Spring AOP代理实现</h3>
 <p>Spring AOP的代理实现主要有三种：</p>
 <ul>
 <li>JDK动态代理实现 - 基于接口代理
@@ -10089,21 +10101,21 @@
 </li>
 </ul>
 <p>无论是哪一种实现，都实现了AopProxy接口，并且实现类都是非public的。</p>
-<h2 id="jdk动态代理"><a class="markdownIt-Anchor" href="#jdk动态代理"></a> JDK动态代理</h2>
+<h4 id="jdk动态代理"><a class="markdownIt-Anchor" href="#jdk动态代理"></a> JDK动态代理</h4>
 <p>为什么Proxy.newProxyInstance会生成新的字节码？</p>
 <p><img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210714132854.png" alt="image-20210714132854720" /></p>
 <p>JDK会操作字符数组，生成一个代理类的Class对象。</p>
-<h2 id="cglib动态代理"><a class="markdownIt-Anchor" href="#cglib动态代理"></a> CGLIB动态代理</h2>
+<h4 id="cglib动态代理"><a class="markdownIt-Anchor" href="#cglib动态代理"></a> CGLIB动态代理</h4>
 <p>在Java中，面向对象通常而言指的是面向接口编程，或者也可以认为是面向锲约编程，JDK的动态代理会依赖于接口的定义，在没有定义接口的情况，还要实现AOP的功能，就需要CGLIB动态代理来实现。</p>
 <p>使用CGLIB动态代理的示例：</p>
 <figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CglibDynamicProxyDemo</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Enhancer enhancer = <span class="keyword">new</span> Enhancer();</span><br><span class="line">        <span class="comment">// 指定super Class = DefaultEchoService.class</span></span><br><span class="line">        Class&lt;DefaultEchoService&gt; superClass = DefaultEchoService.class;</span><br><span class="line">        enhancer.setSuperclass(superClass);</span><br><span class="line">        <span class="comment">// 指定拦截接口</span></span><br><span class="line">        enhancer.setInterfaces(<span class="keyword">new</span> Class[]&#123;EchoService.class&#125;);</span><br><span class="line">        enhancer.setCallback(<span class="keyword">new</span> MethodInterceptor() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> Object <span class="title">intercept</span><span class="params">(Object source, Method method, Object[] args, MethodProxy methodProxy)</span> <span class="keyword">throws</span> Throwable </span>&#123;</span><br><span class="line">                <span class="keyword">long</span> startTime = System.currentTimeMillis();</span><br><span class="line">                <span class="comment">// Source -&gt; CGLIB子类</span></span><br><span class="line">                <span class="comment">// 目标类 -&gt; DefaultEchoService</span></span><br><span class="line">                <span class="comment">// 错误使用</span></span><br><span class="line"><span class="comment">//                Object result = method.invoke(source, args);</span></span><br><span class="line">                Object result = methodProxy.invokeSuper(source, args);</span><br><span class="line">                <span class="keyword">long</span> costTime = System.currentTimeMillis() - startTime;</span><br><span class="line">                System.out.println(<span class="string">&quot;[CGLIB字节码提升]echo方法执行时间: &quot;</span> + costTime);</span><br><span class="line">                <span class="keyword">return</span> result;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">        <span class="comment">// 创建代理对象</span></span><br><span class="line">        EchoService echoService = (EchoService)enhancer.create();</span><br><span class="line">        <span class="comment">// 输出结果</span></span><br><span class="line">        System.out.println(echoService.echo(<span class="string">&quot;hello world&quot;</span>));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="aspectj代理"><a class="markdownIt-Anchor" href="#aspectj代理"></a> AspectJ代理</h2>
+<h4 id="aspectj代理"><a class="markdownIt-Anchor" href="#aspectj代理"></a> AspectJ代理</h4>
 <p>借助于AspectJ强大的编译器，AspectJ有一套自己的语法，AspectJ的主要语法有：Aspect、Join Points、Pointcuts、Advice、introduction。</p>
 <p>在注解方面，Spring和AspectJ的注解名称是相同的，不过在具体处理的时候略有差异。</p>
 <h2 id="面试题"><a class="markdownIt-Anchor" href="#面试题"></a> 面试题</h2>
 <h3 id="spring-aop和aspectj-aop存在哪些差别"><a class="markdownIt-Anchor" href="#spring-aop和aspectj-aop存在哪些差别"></a> Spring AOP和AspectJ AOP存在哪些差别？</h3>
 <ul>
-<li>Aspect是AOP完整实现，Spring AOP则是部分实现</li>
+<li>AspectJ是AOP完整实现，Spring AOP则是部分实现</li>
 <li>Spring AOP比AspectJ使用更简单</li>
 <li>Spring AOP整合AspectJ注解与Spring IoC容器</li>
 <li>Spring AOP仅支持基于代理模式的AOP</li>
@@ -10932,16 +10944,17 @@
 <h3 id="spring-configuration-class-cglib提升与aop类代理的关系"><a class="markdownIt-Anchor" href="#spring-configuration-class-cglib提升与aop类代理的关系"></a> Spring Configuration Class CGLIB提升与AOP类代理的关系？</h3>
 <p>@Configuration需要@ComponetScan才可以生效。</p>
 <p>Spring Configuration Class CGLIB提升的原因是，方便Spring AOP的操作，无需显式的注册代理类，注入Advisor也比较容易，相当于天然的装配。</p>
-<h1 id="spring-aop设计模式"><a class="markdownIt-Anchor" href="#spring-aop设计模式"></a> Spring AOP设计模式</h1>
+<h1 id="spring-aop中的设计模式"><a class="markdownIt-Anchor" href="#spring-aop中的设计模式"></a> Spring AOP中的设计模式</h1>
 <p>总的来说，设计模式没有绝对的标准，像雨像雾又像风。</p>
-<h2 id="抽象工厂模式"><a class="markdownIt-Anchor" href="#抽象工厂模式"></a> 抽象工厂模式</h2>
+<h2 id="创建模式"><a class="markdownIt-Anchor" href="#创建模式"></a> 创建模式</h2>
+<h3 id="抽象工厂模式"><a class="markdownIt-Anchor" href="#抽象工厂模式"></a> 抽象工厂模式</h3>
 <p>基本概念：抽象工厂模式（Abstract factory）提供了一组具有同一主题的单独的工厂封装起来。在正常使用中，客户端程序需要创建抽象工厂的具体实现，然后使用抽象工厂作为接口来创建这一主题的具体对象。客户端程序不需要知道（或关心）它从这些内部工厂方法中获得对象的具体类型，因为客户端程序仅使用这些对象的通用接口。抽象工厂模式将一组对象的实现细节与他们的一般使用分离开来。</p>
 <p>Spring AOP举例实现：</p>
 <ul>
 <li>接口 - org.springframework.aop.framework.AopProxyFactory</li>
 <li>实现 - org.springframework.aop.framework.DefaultAopProxyFactory</li>
 </ul>
-<h2 id="构建器模式"><a class="markdownIt-Anchor" href="#构建器模式"></a> 构建器模式</h2>
+<h3 id="构建器模式"><a class="markdownIt-Anchor" href="#构建器模式"></a> 构建器模式</h3>
 <p>基本概念：构建器模式（Builder）又名建造模式，是一种对象构建模式。它可以将复杂对象的建造过程抽象出来（抽象类别），使这个抽象过程的不同实现方法可以构造出不同表现（属性）的对象</p>
 <p>Spring AOP举例实现：</p>
 <ul>
@@ -10950,7 +10963,7 @@
 <blockquote>
 <p>通常而言，构建器模式有两种实现，一种是线程安全的，一种是非线程安全的，不过大多数场景下，使用的都是非线程安全的，例如StringBuilder。</p>
 </blockquote>
-<h2 id="工厂方法模式"><a class="markdownIt-Anchor" href="#工厂方法模式"></a> 工厂方法模式</h2>
+<h3 id="工厂方法模式"><a class="markdownIt-Anchor" href="#工厂方法模式"></a> 工厂方法模式</h3>
 <p>基本概念：工厂方法模式（Factory method）就像其他创建型模式一样，它也是处理在不指定对象具体类型的情况下创建对象的问题。工厂方法模式的实质是“定义一个创建对象的接口，但让实现这个接口的类来决定实例化哪个类。工厂方法让类的实例化推迟到子类中进行。”</p>
 <p>Spring AOP举例实现：</p>
 <ul>
@@ -10959,14 +10972,14 @@
 <blockquote>
 <p>工厂方法也分为两种，静态工厂和动态工厂，也就是说类的工厂方法或者对象的工厂方法。抽象工厂与工厂方法的区别在于，抽象工厂要求必须是抽象的，也就是说它必须是抽象类或者接口，但工厂可以是一个具体的类。</p>
 </blockquote>
-<h2 id="原型模式"><a class="markdownIt-Anchor" href="#原型模式"></a> 原型模式</h2>
+<h3 id="原型模式"><a class="markdownIt-Anchor" href="#原型模式"></a> 原型模式</h3>
 <p>基本概念：原型模式（Prototype）其特点在于通过<code>复制</code>一个已经存在的实例来返回新的实例，而不是新建实例。被复制的实例就是我们所称的<code>原型</code>，这个原型是可定制的。</p>
 <p>原型模式多用于创建复杂的或者耗时的实例，因为这种情况下，复制一个已经存在的实例使程序运行更高效；或者创建值相等，只是命名不一样的同类数据。</p>
 <p>Spring AOP举例实现：</p>
 <ul>
 <li>实现 - org.springframework.aop.target.PrototypeTargetSource</li>
 </ul>
-<h2 id="单例模式"><a class="markdownIt-Anchor" href="#单例模式"></a> 单例模式</h2>
+<h3 id="单例模式"><a class="markdownIt-Anchor" href="#单例模式"></a> 单例模式</h3>
 <p>基本概念：单例模式（Singleton）属于创建型模式的一种。在应用这个模式时，单例对象的类必须保证只有一个实例存在。许多时候整个系统只需要一个的全局对象，这样有利于我们协调系统整体的行为。比如在某个服务器程序中，该服务器的配置信息存放在一个文件中，这些配置数据由一个单例对象统一读取，然后服务器进程中的其他对象再通过这个单例对象或者这些配置信息。这种方式简化了在复杂环境下的配置管理。</p>
 <p>Spring AOP举例实现：</p>
 <ul>
@@ -10975,7 +10988,8 @@
 <blockquote>
 <p>单例模式中需要注意对象存在的范围。</p>
 </blockquote>
-<h2 id="适配器模式"><a class="markdownIt-Anchor" href="#适配器模式"></a> 适配器模式</h2>
+<h2 id="结构模式"><a class="markdownIt-Anchor" href="#结构模式"></a> 结构模式</h2>
+<h3 id="适配器模式"><a class="markdownIt-Anchor" href="#适配器模式"></a> 适配器模式</h3>
 <p>基本概念：适配器模式（Adapter）有时候也称包装模式或者包装（Wrapper）。将一个类转换成另外一个类，通过适配器包装的方式可以使得本来不兼容的接口变得兼容。</p>
 <p>Spring AOP举例实现：</p>
 <ul>
@@ -10983,7 +10997,7 @@
 <li>适配对象 - org.aopalliance.aop.Advice</li>
 <li>目标对象 - org.aopalliance.intercept.MethodInterceptor</li>
 </ul>
-<h2 id="组合模式"><a class="markdownIt-Anchor" href="#组合模式"></a> 组合模式</h2>
+<h3 id="组合模式"><a class="markdownIt-Anchor" href="#组合模式"></a> 组合模式</h3>
 <p>基本概念：组合模式（Composite）是把一组对象当成一个实例来进行处理，这个实例和这组对象时相同类型的。</p>
 <p>Spring AOP举例实现：</p>
 <ul>
@@ -10991,7 +11005,7 @@
 <li>接口 - org.aspectj.lang.annotation.Pointcut</li>
 <li>成员 - org.aspectj.lang.annotation.Pointcut</li>
 </ul>
-<h2 id="装饰器模式"><a class="markdownIt-Anchor" href="#装饰器模式"></a> 装饰器模式</h2>
+<h3 id="装饰器模式"><a class="markdownIt-Anchor" href="#装饰器模式"></a> 装饰器模式</h3>
 <p>基本概念：装饰器模式（Decorator）是一种动态地往一个类中添加新的行为的设计模式。就功能而言，修饰模式相比生成子类更为灵活，这样可以给某个对象而不是整个类添加一些功能。</p>
 <p>Spring AOP举例实现：</p>
 <ul>
@@ -11011,7 +11025,7 @@
 <li>装饰角色</li>
 <li>具体装饰角色</li>
 </ul>
-<h2 id="享元模式"><a class="markdownIt-Anchor" href="#享元模式"></a> 享元模式</h2>
+<h3 id="享元模式"><a class="markdownIt-Anchor" href="#享元模式"></a> 享元模式</h3>
 <p>基本概念：享元，即共享的单元。享元模式（Flyweight）使用对象来尽可能减少内存的使用量，便于分享更多的数据。常见的作法是对象放在数据结构外部，等需要的时候在将它们传递给享元。</p>
 <p>Spring AOP举例实现：</p>
 <ul>
@@ -11020,7 +11034,7 @@
 <blockquote>
 <p>享元模式与单例模式的区别在于，享元模式不一定是单例本身，它可能只是一个代理或者门面。</p>
 </blockquote>
-<h2 id="代理模式-2"><a class="markdownIt-Anchor" href="#代理模式-2"></a> 代理模式</h2>
+<h3 id="代理模式-2"><a class="markdownIt-Anchor" href="#代理模式-2"></a> 代理模式</h3>
 <p>基本概念：代理模式（Proxy）是指一个类型可以作为其他东西的界面。代理者可以作任何东西的介面：网络连接、内存等资源。</p>
 <p>Spring AOP举例实现：</p>
 <ul>
@@ -11034,7 +11048,8 @@
 <blockquote>
 <p>装饰器模式和代理模式的区别在于，通常装饰器模式是静态的一种（比如植入一些辅助性的代码去修饰一些行为），而代理模式既有动态的也有静态的。</p>
 </blockquote>
-<h2 id="模板方法模式"><a class="markdownIt-Anchor" href="#模板方法模式"></a> 模板方法模式</h2>
+<h2 id="行为模式"><a class="markdownIt-Anchor" href="#行为模式"></a> 行为模式</h2>
+<h3 id="模板方法模式"><a class="markdownIt-Anchor" href="#模板方法模式"></a> 模板方法模式</h3>
 <p>基本概念：模板方法（Template Method）是一个定义在父类里面的方法，这个方法可能没有具体的实现，需要在子类中重写父类中这个方法，而父类已经安排好了这些抽象方法的执行顺序以及调用逻辑。</p>
 <p>Spring AOP举例实现：</p>
 <ul>
@@ -11047,7 +11062,7 @@
 </ul>
 </li>
 </ul>
-<h2 id="责任链模式"><a class="markdownIt-Anchor" href="#责任链模式"></a> 责任链模式</h2>
+<h3 id="责任链模式"><a class="markdownIt-Anchor" href="#责任链模式"></a> 责任链模式</h3>
 <p>基本概念：责任链模式（Chain of Responsibility）包含了一些命令对象和一系列的处理对象。每一个处理对象决定它能处理哪些命令对象，它也知道如何将它不能处理的命令对象传递给该链中的下一个对象。该模式还描述了往该处理链的末尾添加新的处理对象的方法。</p>
 <p>Spring AOP举例实现：</p>
 <ul>
@@ -11057,7 +11072,7 @@
 <blockquote>
 <p>责任链模式有时候有称为Pipline。</p>
 </blockquote>
-<h2 id="观察者模式"><a class="markdownIt-Anchor" href="#观察者模式"></a> 观察者模式</h2>
+<h3 id="观察者模式"><a class="markdownIt-Anchor" href="#观察者模式"></a> 观察者模式</h3>
 <p>基本概念：观察者模式（Observer）是指一个目标对象管理所有依赖它的观察者对象，并且在它本身的状态改变时主动发出通知。通常伴随着事件或者消息的方式来进行传递。</p>
 <p>Spring AOP举例实现：</p>
 <ul>
@@ -11065,7 +11080,7 @@
 <li>被观察者 - org.springframework.aop.framework.AdvisedSupportListener</li>
 <li>通知对象 - org.springframework.aop.framework.AdvisedSupport</li>
 </ul>
-<h2 id="策略模式"><a class="markdownIt-Anchor" href="#策略模式"></a> 策略模式</h2>
+<h3 id="策略模式"><a class="markdownIt-Anchor" href="#策略模式"></a> 策略模式</h3>
 <p>基本概念：策略模式（Strategy）是指对象具有某个行为，但是在不同的场景中，该行为有不同的实现算法。</p>
 <p>Spring AOP举例实现：</p>
 <ul>
@@ -11075,7 +11090,7 @@
 <blockquote>
 <p>策略模式通常被认为是面向对象多态的体现。</p>
 </blockquote>
-<h2 id="命令模式"><a class="markdownIt-Anchor" href="#命令模式"></a> 命令模式</h2>
+<h3 id="命令模式"><a class="markdownIt-Anchor" href="#命令模式"></a> 命令模式</h3>
 <p>基本概念：命令模式（Strategy）是以对象为代表实际行动，命令对象可以把方法及其参数封装起来，于是这些方法（动作）可以被：</p>
 <ul>
 <li>重复多次</li>
@@ -11087,7 +11102,7 @@
 <li>org.aopalliance.intercept.MethodInvocation</li>
 <li>org.aspectj.lang.ProceedingJoinPoint</li>
 </ul>
-<h2 id="状态模式"><a class="markdownIt-Anchor" href="#状态模式"></a> 状态模式</h2>
+<h3 id="状态模式"><a class="markdownIt-Anchor" href="#状态模式"></a> 状态模式</h3>
 <p>基本概念：状态模式（State）允许对象在内部状态发生变化时更改其行为。这种模式接近于有限状态机的概念，状态模式可以解释为策略模式，它能够通过调用模式接口中定义的方法来切换策略。</p>
 <p>Spring AOP举例实现：</p>
 <ul>
@@ -11199,7 +11214,7 @@
 <li>Spring异步MethodInterceptor实现 - AnnotationAsyncExecutionInterceptor</li>
 </ul>
 <h2 id="面试题-5"><a class="markdownIt-Anchor" href="#面试题-5"></a> 面试题</h2>
-<h3 id="请举例说明spring-aop在spring-framework特性运用"><a class="markdownIt-Anchor" href="#请举例说明spring-aop在spring-framework特性运用"></a> 请举例说明Spring AOP在Spring Framework特性运用？</h3>
+<h3 id="spring-aop在spring-framework特性运用"><a class="markdownIt-Anchor" href="#spring-aop在spring-framework特性运用"></a> Spring AOP在Spring Framework特性运用？</h3>
 <ul>
 <li>Spring 事件（Events）</li>
 <li>Spring 事务（Transaction）</li>
@@ -11207,9 +11222,9 @@
 <li>Spring 本地调度（Scheduling）</li>
 <li>Spring远程（Remoting）</li>
 </ul>
-<h3 id="请解释spring事务传播的原理"><a class="markdownIt-Anchor" href="#请解释spring事务传播的原理"></a> 请解释Spring事务传播的原理？</h3>
-<p>/这里最主要的是要掌握逻辑事务和物理事务的区别。</p>
-<h3 id="请总结spring-aop与ioc功能整合的设计模式"><a class="markdownIt-Anchor" href="#请总结spring-aop与ioc功能整合的设计模式"></a> 请总结Spring AOP与IoC功能整合的设计模式？</h3>
+<h3 id="spring事务传播的原理"><a class="markdownIt-Anchor" href="#spring事务传播的原理"></a> Spring事务传播的原理？</h3>
+<p>这里最主要的是要掌握逻辑事务和物理事务的区别。</p>
+<h3 id="spring-aop与ioc功能整合的设计模式"><a class="markdownIt-Anchor" href="#spring-aop与ioc功能整合的设计模式"></a> Spring AOP与IoC功能整合的设计模式？</h3>
 <ul>
 <li>实现Advice或MethodInterceptor</li>
 <li>实现PointcutAdvisor</li>
@@ -17888,22 +17903,6 @@ dp[start+1] = max(nums[start],nums[start+1]) &amp; 只有两件房屋，偷窃�
       </tags>
   </entry>
   <entry>
-    <title>SpringCloud</title>
-    <url>/2020/07/16/SpringCloud/</url>
-    <content><![CDATA[<p>系统介绍SpringCloud的各种组件的使用和实现原理。</p>
-<span id="more"></span>
-<h1 id="feign中使用动态服务名"><a class="markdownIt-Anchor" href="#feign中使用动态服务名"></a> Feign中使用动态服务名</h1>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">DynamicFeignClient</span>&lt;<span class="title">T</span>&gt; </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> FeignClientBuilder feignClientBuilder;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">DynamicFeignClient</span><span class="params">(<span class="meta">@Autowired</span> ApplicationContext applicationContext)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.feignClientBuilder = <span class="keyword">new</span> FeignClientBuilder(applicationContext);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> T <span class="title">getFeignClient</span><span class="params">(<span class="keyword">final</span> Class&lt;T&gt; type, String serviceName)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">this</span>.feignClientBuilder.forType(type, serviceName).build();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>使用示例：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 依赖注入</span></span><br><span class="line"><span class="meta">@Autowired</span></span><br><span class="line">DynamicFeignClient&lt;ISysDictClient&gt; client;</span><br><span class="line"><span class="comment">// 获取到Feign客户端</span></span><br><span class="line">client.getFeignClient(ISysDictClient.class, serviceName).method(...);</span><br></pre></td></tr></table></figure>
-<h1 id="feign的实现原理"><a class="markdownIt-Anchor" href="#feign的实现原理"></a> Feign的实现原理</h1>
-<p><a href="https://www.cnblogs.com/binarylei/p/11563023.html">https://www.cnblogs.com/binarylei/p/11563023.html</a></p>
-<script type="text&#x2F;javascript" src="https://unpkg.com/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://unpkg.com/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.css">]]></content>
-      <categories>
-        <category>Spring</category>
-      </categories>
-  </entry>
-  <entry>
     <title>SpringBoot</title>
     <url>/2020/07/16/SpringBoot/</url>
     <content><![CDATA[<p>SpringBoot是基于SpringFramework的企业级应用开发框架，有了SpringFramework的基础，相信理解SpringBoot并不是一件难事。</p>
@@ -18118,6 +18117,22 @@ dp[start+1] = max(nums[start],nums[start+1]) &amp; 只有两件房屋，偷窃�
 </ol>
 <p>附完整的pom文件：</p>
 <figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">build</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">resources</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">resource</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">directory</span>&gt;</span>src/main/resources<span class="tag">&lt;/<span class="name">directory</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">filtering</span>&gt;</span>true<span class="tag">&lt;/<span class="name">filtering</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">includes</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">include</span>&gt;</span>application-$&#123;profiles.active&#125;.yml<span class="tag">&lt;/<span class="name">include</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">include</span>&gt;</span>bootstrap.yml<span class="tag">&lt;/<span class="name">include</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">include</span>&gt;</span>application.yml<span class="tag">&lt;/<span class="name">include</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;/<span class="name">includes</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;/<span class="name">resource</span>&gt;</span></span><br><span class="line">          <span class="comment">&lt;!--这里实我们的dockerfile文件所在的目录--&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">resource</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">directory</span>&gt;</span>src/main/docker<span class="tag">&lt;/<span class="name">directory</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">filtering</span>&gt;</span>true<span class="tag">&lt;/<span class="name">filtering</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">includes</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">include</span>&gt;</span>**/Dockerfile<span class="tag">&lt;/<span class="name">include</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;/<span class="name">includes</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">targetPath</span>&gt;</span>../docker<span class="tag">&lt;/<span class="name">targetPath</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;/<span class="name">resource</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">resource</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">directory</span>&gt;</span>src/main/resources<span class="tag">&lt;/<span class="name">directory</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">filtering</span>&gt;</span>true<span class="tag">&lt;/<span class="name">filtering</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">includes</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">include</span>&gt;</span>static/**<span class="tag">&lt;/<span class="name">include</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">include</span>&gt;</span>**/*.jar<span class="tag">&lt;/<span class="name">include</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">include</span>&gt;</span>bootstrap.yml<span class="tag">&lt;/<span class="name">include</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">include</span>&gt;</span>*.yml<span class="tag">&lt;/<span class="name">include</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">include</span>&gt;</span>*.xml<span class="tag">&lt;/<span class="name">include</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;/<span class="name">includes</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;/<span class="name">resource</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">resource</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">directory</span>&gt;</span>src/main/java<span class="tag">&lt;/<span class="name">directory</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">includes</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">include</span>&gt;</span>**/*.xml<span class="tag">&lt;/<span class="name">include</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">include</span>&gt;</span>**/*.json<span class="tag">&lt;/<span class="name">include</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">include</span>&gt;</span>**/*.ftl<span class="tag">&lt;/<span class="name">include</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;/<span class="name">includes</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;/<span class="name">resource</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;/<span class="name">resources</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">plugins</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">plugin</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-maven-plugin<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">              <span class="comment">&lt;!--引用本地Jar包--&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">includeSystemScope</span>&gt;</span>true<span class="tag">&lt;/<span class="name">includeSystemScope</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">layers</span>&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">enabled</span>&gt;</span></span><br><span class="line">                          true</span><br><span class="line">                      <span class="tag">&lt;/<span class="name">enabled</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;/<span class="name">layers</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;/<span class="name">plugin</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">plugin</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.apache.maven.plugins<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>maven-compiler-plugin<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">source</span>&gt;</span>1.8<span class="tag">&lt;/<span class="name">source</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">target</span>&gt;</span>1.8<span class="tag">&lt;/<span class="name">target</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">encoding</span>&gt;</span>UTF-8<span class="tag">&lt;/<span class="name">encoding</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;/<span class="name">plugin</span>&gt;</span></span><br><span class="line">          <span class="comment">&lt;!-- 打包跳过测试 --&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">plugin</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.apache.maven.plugins<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>maven-surefire-plugin<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">skipTests</span>&gt;</span>true<span class="tag">&lt;/<span class="name">skipTests</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;/<span class="name">plugin</span>&gt;</span></span><br><span class="line">          <span class="comment">&lt;!-- 避免font文件的二进制文件格式压缩破坏 --&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">plugin</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.apache.maven.plugins<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>maven-resources-plugin<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">nonFilteredFileExtensions</span>&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">nonFilteredFileExtension</span>&gt;</span>woff<span class="tag">&lt;/<span class="name">nonFilteredFileExtension</span>&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">nonFilteredFileExtension</span>&gt;</span>woff2<span class="tag">&lt;/<span class="name">nonFilteredFileExtension</span>&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">nonFilteredFileExtension</span>&gt;</span>eot<span class="tag">&lt;/<span class="name">nonFilteredFileExtension</span>&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">nonFilteredFileExtension</span>&gt;</span>ttf<span class="tag">&lt;/<span class="name">nonFilteredFileExtension</span>&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">nonFilteredFileExtension</span>&gt;</span>svg<span class="tag">&lt;/<span class="name">nonFilteredFileExtension</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;/<span class="name">nonFilteredFileExtensions</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">delimiters</span>&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">delimiter</span>&gt;</span>@<span class="tag">&lt;/<span class="name">delimiter</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;/<span class="name">delimiters</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">useDefaultDelimiters</span>&gt;</span>false<span class="tag">&lt;/<span class="name">useDefaultDelimiters</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;/<span class="name">plugin</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">plugin</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.spotify<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>docker-maven-plugin<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">version</span>&gt;</span>1.1.0<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">executions</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">execution</span>&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">id</span>&gt;</span>build-image<span class="tag">&lt;/<span class="name">id</span>&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">phase</span>&gt;</span>package<span class="tag">&lt;/<span class="name">phase</span>&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">goals</span>&gt;</span></span><br><span class="line">                          <span class="tag">&lt;<span class="name">goal</span>&gt;</span>build<span class="tag">&lt;/<span class="name">goal</span>&gt;</span></span><br><span class="line">                      <span class="tag">&lt;/<span class="name">goals</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;/<span class="name">execution</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">execution</span>&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">id</span>&gt;</span>push-image<span class="tag">&lt;/<span class="name">id</span>&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">phase</span>&gt;</span>package<span class="tag">&lt;/<span class="name">phase</span>&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">goals</span>&gt;</span></span><br><span class="line">                          <span class="tag">&lt;<span class="name">goal</span>&gt;</span>push<span class="tag">&lt;/<span class="name">goal</span>&gt;</span></span><br><span class="line">                      <span class="tag">&lt;/<span class="name">goals</span>&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line">                          <span class="tag">&lt;<span class="name">imageName</span>&gt;</span></span><br><span class="line">                              $&#123;docker.repostory&#125;/$&#123;docker.registry.name&#125;/$&#123;project.artifactId&#125;:$&#123;profiles.active&#125;-$&#123;project.version&#125;</span><br><span class="line">                          <span class="tag">&lt;/<span class="name">imageName</span>&gt;</span></span><br><span class="line">                      <span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;/<span class="name">execution</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;/<span class="name">executions</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">serverId</span>&gt;</span>harbor<span class="tag">&lt;/<span class="name">serverId</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">dockerDirectory</span>&gt;</span>$&#123;project.build.directory&#125;/docker<span class="tag">&lt;/<span class="name">dockerDirectory</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">imageName</span>&gt;</span></span><br><span class="line">                      $&#123;docker.repostory&#125;/$&#123;docker.registry.name&#125;/$&#123;project.artifactId&#125;</span><br><span class="line">                  <span class="tag">&lt;/<span class="name">imageName</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">imageTags</span>&gt;</span></span><br><span class="line">                      <span class="comment">&lt;!--docker的tag为项目版本号、latest--&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">imageTag</span>&gt;</span>$&#123;profiles.active&#125;-$&#123;project.version&#125;<span class="tag">&lt;/<span class="name">imageTag</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;/<span class="name">imageTags</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;<span class="name">resources</span>&gt;</span></span><br><span class="line">                      <span class="tag">&lt;<span class="name">rescource</span>&gt;</span><span class="comment">&lt;!-- 将打包文件放入dockerDirectory指定的位置 --&gt;</span></span><br><span class="line">                          <span class="tag">&lt;<span class="name">targetPath</span>&gt;</span>/<span class="tag">&lt;/<span class="name">targetPath</span>&gt;</span></span><br><span class="line">                          <span class="tag">&lt;<span class="name">directory</span>&gt;</span>$&#123;project.build.directory&#125;<span class="tag">&lt;/<span class="name">directory</span>&gt;</span></span><br><span class="line">                          <span class="tag">&lt;<span class="name">include</span>&gt;</span>$&#123;project.artifactId&#125;-$&#123;project.version&#125;.jar<span class="tag">&lt;/<span class="name">include</span>&gt;</span></span><br><span class="line">                      <span class="tag">&lt;/<span class="name">rescource</span>&gt;</span></span><br><span class="line">                  <span class="tag">&lt;/<span class="name">resources</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;/<span class="name">plugin</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;/<span class="name">plugins</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">build</span>&gt;</span></span><br></pre></td></tr></table></figure><script type="text&#x2F;javascript" src="https://unpkg.com/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://unpkg.com/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.css">]]></content>
+      <categories>
+        <category>Spring</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>SpringCloud</title>
+    <url>/2020/07/16/SpringCloud/</url>
+    <content><![CDATA[<p>系统介绍SpringCloud的各种组件的使用和实现原理。</p>
+<span id="more"></span>
+<h1 id="feign中使用动态服务名"><a class="markdownIt-Anchor" href="#feign中使用动态服务名"></a> Feign中使用动态服务名</h1>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">DynamicFeignClient</span>&lt;<span class="title">T</span>&gt; </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> FeignClientBuilder feignClientBuilder;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">DynamicFeignClient</span><span class="params">(<span class="meta">@Autowired</span> ApplicationContext applicationContext)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.feignClientBuilder = <span class="keyword">new</span> FeignClientBuilder(applicationContext);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> T <span class="title">getFeignClient</span><span class="params">(<span class="keyword">final</span> Class&lt;T&gt; type, String serviceName)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">this</span>.feignClientBuilder.forType(type, serviceName).build();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>使用示例：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 依赖注入</span></span><br><span class="line"><span class="meta">@Autowired</span></span><br><span class="line">DynamicFeignClient&lt;ISysDictClient&gt; client;</span><br><span class="line"><span class="comment">// 获取到Feign客户端</span></span><br><span class="line">client.getFeignClient(ISysDictClient.class, serviceName).method(...);</span><br></pre></td></tr></table></figure>
+<h1 id="feign的实现原理"><a class="markdownIt-Anchor" href="#feign的实现原理"></a> Feign的实现原理</h1>
+<p><a href="https://www.cnblogs.com/binarylei/p/11563023.html">https://www.cnblogs.com/binarylei/p/11563023.html</a></p>
+<script type="text&#x2F;javascript" src="https://unpkg.com/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://unpkg.com/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.css">]]></content>
       <categories>
         <category>Spring</category>
       </categories>
