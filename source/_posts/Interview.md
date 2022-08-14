@@ -540,7 +540,7 @@ Java的锁就是在对象的MarkWord中记录一个锁状态、无锁、偏向�
 
   在可重入锁这个场景下，state就用来表示枷锁的次数，0标识加锁的次数，每加一次锁，state就加1，释放锁state就减1。      
 
-<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630102031.png" alt="img" style="zoom:67%;" />
+<img src="https://throwable-blog-1256189093.cos.ap-guangzhou.myqcloud.com/202008/j-a-q-s-ex-9.png" style="zoom:67%;" />
 
 ### SynchronizedMap和ConcurrentHashMap有什么区别？
 
@@ -755,7 +755,7 @@ execute和submit都属于线程池的方法，两者的区别在于：
 
 Executor工具类的不同方法按照我们的需求创建了不同的线程池，来满足业务的需求。
 
-#### 线程池的拒绝策略？
+### 线程池的拒绝策略？
 
 当提交的线程填满核心线程数，并且塞满了队列缓冲区，并且超过了最大线程数时，就会触发拒绝策略，具体有以下几种：
 
@@ -803,7 +803,7 @@ UDP的特点：类似广播，不需要连接，发送方不管接受方有没�
 
   TCP建立连接三次握手，断开连接四次挥手。 如果是两次握手，可能会造成连接资源浪费的情况，server端会建立通道一直等待连接，但是client端会认为连接失败，放弃本次通信。
 
-  <img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630005545.png" alt="img" style="zoom: 67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630005545.png" alt="img" style="zoom: 67%;" />
 
 ### Java有哪几种IO模型？有什么区别？
 
@@ -825,21 +825,21 @@ UDP的特点：类似广播，不需要连接，发送方不管接受方有没�
 
   BIO模式：可靠性差，吞吐量低，适用于连接比较少且比较固定的场景，JDK1.4之前唯一的选择。编程模型最简单。
 
-  <img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630005609.png" alt="img" style="zoom: 67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202206142338449.png" alt="image-20220614233811412" style="zoom: 50%;" />
 
   NIO模型：可靠性比较好，吞吐量比较高，适用于连接多，并且连接比较短（轻操作），例如聊天室，JDK1.4开始支持，变成模型最复杂。
 
-  <img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630005650.png" alt="img" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202206142339799.png" alt="image-20220614233902764" style="zoom: 50%;" />
 
   AIO模型：可靠性是最好的，吞吐量也是最高的，适用于连接比较多，并且连接比较长（重操作），例如相册服务器，JDK7开始支持的，变成模型相对简单，但是需要操作系统支持。
 
-<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630005707.png" alt="img"  />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202206142339216.png" alt="image-20220614233942183" style="zoom:50%;" />
 
 ### Java NIO的几个核心组件是什么？分别有什么作用？
 
-  Java NIO的几个核心组件有：Channel、Buffer、Selector
+  Java NIO的几个核心组件有：Channel、Buffer、Selector，它们之间的关系如下：
 
-![img](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630005725.png)
+<img src="https://segmentfault.com/img/remote/1460000037714808" alt="NIO" style="zoom:67%;" />
 
   Channel类似于流，每个Channel对应一个Buffer缓冲区，Channel会注册到Selector，Selector会根据Channel上发生的读写时间，将请求交由某个空闲的线程处理，Selector对应一个或者多个线程。Buffer和Channel都是可读可写的。
 
@@ -1185,8 +1185,6 @@ JVM参数大致可以分为三类：
 
 ### 什么情况下堆内存会溢出，什么情况方法区会内存溢出？
 
-
-
 栈溢出的典型例子：
 
 ```java
@@ -1196,7 +1194,14 @@ JVM参数大致可以分为三类：
     }
 ```
 
+方法区内存溢出的例子：
 
+```java
+ private static void fun() {
+        //递归，调用自己
+        fun();
+    }
+```
 
 # 数据库面试题
 
@@ -1429,9 +1434,7 @@ https://segmentfault.com/a/1190000039737646
 
   意向锁：是InnoDB自动添加的一种锁，不需要用户干预。
 
-  3）全局锁：Flush tables with read lock，加锁之后整个数据库实例都处于只读状态，所有的数据变更操作都会被挂起，一般用于全库备份的时候。
-
-   
+  3）全局锁：Flush tables with read lock，加锁之后整个数据库实例都处于只读状态，所有的数据变更操作都会被挂起，一般用于全库备份的时候
 
   常见的锁算法：
 
@@ -1526,7 +1529,7 @@ ShardingSphere分库分表的执行流程：
 - 能够很好的同时支持等值查询和范围查询
   - 等值查询：哈希表、跳表不适合范围查询
   - 范围查询：二叉树/红黑树可以很好的满足范围查询，但当树过高时，会带来磁盘IO过高的问题；B树的范围查询，会一直到根节点再到叶子节点查询，B+树解决了范围查询的带来的问题
-- B的查询效率不稳定，在O(1-logN)之前，而B+树可以稳定在O(logN)
+- B树的查询效率不稳定，在O(1-logN)之前，而B+树可以稳定在O(logN)
 
 完整链接：https://juejin.cn/post/7081065180301361183
 
@@ -1639,23 +1642,26 @@ IK分词器。HanLp中文分词器。
 8. DisposableBean，当Bena实现了这个接口，在对象销毁前就会调用destory()方法。
 9. destory-method：自定义Bean销毁的回调方法。
 
+### Spring中Bean的作用域？
+
+|    来源     | 说明                                                   |
+| :---------: | ------------------------------------------------------ |
+|  singleton  | 默认Spring Bean作用域，一个BeanFactory有且仅有一个实例 |
+|  prototype  | 原型作用域，每次依赖查找和依赖注入生成新Bean对象       |
+|   request   | 将Spring Bean存储在ServletRequest上下文中              |
+|   session   | 将Spring Bean存储在HttpSession中                       |
+| application | 将Spring Bean存储在ServletContext中                    |
+
+笼统而言，我们只要记住单例和原型两种即可，其余三种主要是为了服务端模板引擎渲染，包括JSP、Velocity、FreeMarker。
+
 ### Spring框架中的Bean是线程安全的吗？如果线程不安全，如何处理？
 
-Spring容器本身没有提供Bean的线程安全策略，因此，也可以说Spring容器中的Bean不是线程安全的。
+Spring容器本身没有提供Bean的线程安全策略，因此，也可以说Spring容器中的Bean不是线程安全的。要如何处理线程安全问题。就要分情况来分析。对于线程安全问题：
 
-要如何处理线程安全问题。就要分情况来分析。
+1. 对于prototype作用域，每次都生成一个新的对象，所以不存在线程安全问题
+2. 对于sington作用域，默认就是线程不安全的。但是对于开发中大部分的Bean，其实是无状态的，不需要保证线程安全
 
-Spring中的作用域：1、Sington 2、prototype：为每个Bean请求创建给实例。3、request为每一个请求创建一个实例，请求完成后失败 4、session：与request是类似的 5、global-session：全局作用域。
-
-对于线程安全问题：
-
-1、对于prototype作用域，每次都生成一个新的对象，所以不存在线程安全问题。
-
-2、对于sington作用域，默认就是线程不安全的。但是对于开发中大部分的Bean，其实是无状态的，不需要保证线程安全
-
-无状态表示这个实例没有属性对象，不能保存数据，是不变的，比如：controller、service、dao
-
-有状态表示实例有属性对象，可以保存数据，是线程不安全的，比如POJO
+>  无状态表示这个实例没有属性对象，不能保存数据，是不变的，比如：controller、service、dao；有状态表示实例有属性对象，可以保存数据，是线程不安全的，比如POJO。
 
 如果要保证线程安全，可以将Bean的作用改为prototype。也可以采用ThreadLocal来解决线程安全的问题，ThreadLocal为每一个线程保存一个副本变量，每个线程只操作自己的副本变量。
 
@@ -1679,23 +1685,34 @@ Spring当中支持编程式事务管理和声明式事务管理两种方式。
 
 1、编程式事务可以用TransactionTemlate
 
-2、声明式事务：是Spring在AOP基础上提供的事务实现机制，他的最大优点是不需要在业务代码中添加事务管理的代码，只需要在配置文件中做相关的事务规则声明就可以了，但是声明式事务只能针对方法级别，无法控制代码级别的事务管理。Spring中对事务定义了不同的传播级别：Propagation
+2、声明式事务：是Spring在AOP基础上提供的事务实现机制，他的最大优点是不需要在业务代码中添加事务管理的代码，只需要在配置文件中做相关的事务规则声明就可以了，但是声明式事务只能针对方法级别，无法控制代码块级别的事务管理。Spring中对事务定义了不同的传播级别：
 
-- PROPAGATION_REQUIRED：默认传播行为。如果当前没有事务，就创建一个新事务，如果当前存在事务，就加入到事务中。
-- PROPAGATION_SUPPORTS：如果当前存在事务，就加入到该事务，如果当前不存在事务，就以非事务方式运行。
-- PROPAGATION_MANDATORY:如果当前存在事务，就加入到该事务，如果当前不存在事务，就抛出异常。
-- PROPAGATION_REQUIRES_NEW：无论当前存不存在事务，都创建新事务进行执行。
-- PROPAGATION_NOT_SUPPORTS：以非事务方式运行，如果当前存在事务，就将当前事务挂起。
-- PROPAGATION_NEVER：以非事务方式运行，如果当前存在事务，就抛出异常。
-- PROPAGATION_NESTED：如果当前存在事务，则在嵌套事务内执行；如果当前没有事务，则按REQUIRED属性执行。
+- PROPAGATION_REQUIRED：默认传播行为。如果当前没有事务，就创建一个新事务，如果当前存在事务，就加入到事务中
+- PROPAGATION_SUPPORTS：如果当前存在事务，就加入到该事务，如果当前不存在事务，就以非事务方式运行
+- PROPAGATION_MANDATORY:如果当前存在事务，就加入到该事务，如果当前不存在事务，就抛出异常
+- PROPAGATION_REQUIRES_NEW：无论当前存不存在事务，都创建新事务进行执行
+- PROPAGATION_NOT_SUPPORTS：以非事务方式运行，如果当前存在事务，就将当前事务挂起
+- PROPAGATION_NEVER：以非事务方式运行，如果当前存在事务，就抛出异常
+- PROPAGATION_NESTED：如果当前存在事务，则在嵌套事务内执行；如果当前没有事务，则按REQUIRED属性执行
 
 Spring中事务的隔离级别：
 
 - ISOLATIUON_DEFAULT：使用数据库默认的事务隔离级别。
 - ISOLATION_READ_UNCOMMITED：读未提交，允许事务在执行过程中，读取其他事务未提交的数据
 - ISOLATION_READ_COMMITED：读已提交，允许事务在执行过程中，独去其他事务已经提交的数据
-- ISOLATION_REPEATABLE_UNCOMMITED：可重复度，在同一个事务内，任意时刻的查询结果是一致的。
-- ISOLATION_READ_SERIALIZABLE：所有事务依次执行。
+- ISOLATION_REPEATABLE_UNCOMMITED：可重复度，在同一个事务内，任意时刻的查询结果是一致的
+- ISOLATION_READ_SERIALIZABLE：所有事务依次执行
+
+更多内容参考：[深入浅出Spring事务的实现原理](https://juejin.cn/post/7106158883055353870)。
+
+### Spring事务失效的场景有哪些？
+
+- 注解@Transactional配置的方法并非public权限修饰
+- 注解@Transactional所在类非Spring容器管理的Bean
+- 注解@Transactional所在类中，注解修饰的方法被类内部方法调用
+- 业务代码抛出异常类型非RuntimeException，事务失效
+- 业务代码中存在异常时，使用try...catch...语句块捕获，而catch语句块没有throw new RuntimeException异常
+- 注解@Transactional中Propagation属性值设置错误即Propagation.NOT_SUPPORTED
 
 ### Spring MVC中的控制器是不是单例模式？如果是，如何保证线程安全？
 
@@ -1728,15 +1745,6 @@ Spring中保证线程安全的方法
 详细的示意图：
 
 <img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210825111017.png" alt="Spring MVC详细示意图" style="zoom:50%;" />
-
-### Spring事务失效的场景有哪些？
-
-- 注解@Transactional配置的方法并非public权限修饰
-- 注解@Transactional所在类非Spring容器管理的Bean
-- 注解@Transactional所在类中，注解修饰的方法被类内部方法调用
-- 业务代码抛出异常类型非RuntimeException，事务失效
-- 业务代码中存在异常时，使用try...catch...语句块捕获，而catch语句块没有throw new RuntimeException异常
-- 注解@Transactional中Propagation属性值设置错误即Propagation.NOT_SUPPORTED（一般不会设置此种传播机制）
 
 ### Spring中的Service有多个实现类，怎么注入？
 
@@ -2082,17 +2090,15 @@ OAuth2.0协议有四种模式：
 
 ### SpringCloud和SpringCloudAlibaba有哪些组件？都解决了什么问题？
 
-1、SpringCloud：提供了构建微服务系统所需要的一组通用开发模式以及一系列快速实现这些开发模式的工具。
+SpringCloud是提供了构建微服务系统所需要的一组通用开发模式以及一系列快速实现这些开发模式的工具。通常所说的SpringCloud是指SpringCloud NetFlix，它和SpringCloudAlibaba都是SpringCloud这一系列开发模式的具体实现。
 
-通常所说的SpringCloud是指SpringCloud NetFlix，他和SpringCloudAlibaba都是SpringCloud这一系列开发模式的具体实现。
+SpringCloud NetFlix架构图：
 
-SpringCloud NetFlix:
+<img src="https://raw.githubusercontent.com/yidongnan/spring-cloud-netflix-example/master/screenshots/Architecture.png" style="zoom:67%;" />
 
-<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630003155.png" alt="img" style="zoom:67%;" />
+SpringCloudAlibaba架构图：
 
-SpringCloudAlibaba:
-
-<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630003208.png" alt="img" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202206142320702.png" alt="image-20220614232037661" style="zoom: 50%;" />
 
 ### SpringCloud和Dubbo的区别？
 
@@ -2100,19 +2106,12 @@ SpringCloud使用基于HTTP的REST方式，而Dubbo采用RPC通信。这两种�
 
 ### 分布式事务如何处理？怎么保证事务一致性？
 
-强一致性（刚性事务）。误区：分布式事务=Seata
+分布式事务：就是要将不同节点上的事务操作，提供操作的原子性保证，同时成功或者同时失败，分布式事务的第一个要点就是要在原本没有直接关联的事务之间建立联系，分布式事务的实现可以基于：
 
-分布式事务：就是要将不同节点上的事务操作，提供操作的原子性保证，同时成功或者同时失败。
-
-分布式事务的第一个要点就是要在原本没有直接关联的事务之间建立联系。
-
-1）HTTP连接：最大努力通知 --事后补偿
-
-2）MQ：事务消息机制
-
-3）Redis：也可以定制出分布式事务机制。
-
-4）Seata：是通过TC来在多个事务之间建立联系的。
+- HTTP连接：最大努力通知 --事后补偿
+- MQ：事务消息机制
+- Redis：也可以定制出分布式事务机制。
+- Seata：是通过TC来在多个事务之间建立联系的。
 
 两阶段：AT XA 核心在于要锁资源，数据库提供了对于事务和锁良好的支持，因此使用AT模式的前题是要应用能够访问到数据库。
 
@@ -2146,17 +2145,9 @@ DDD只是一种方法论，没有一个稳定的技术框架。DDD要求领域�
 
 ### 什么是中台？中台和微服务有什么关系？
 
-中台这个概念是阿里在2015年提出“小前台、大中台”战略思想。
+中台这个概念是阿里在2015年提出“小前台、大中台”战略思想。所谓中台，就是将各个业务线中可以复用的一些功能抽取出来，剥离个性，提取共性，形成一些可以可复用的组件，例如：盒马鲜生、团购。大体上，中台可以分为三类：业务中台、数据中台和技术中台。数据中台、收银中台、支付风控中台。
 
-所谓中台，就是将各个业务线中可以复用的一些功能抽取出来，剥离个性，提取共性，形成一些可以可复用的组件，例如：盒马鲜生、团购。
-
-大体上，中台可以分为三类：业务中台、数据中台和技术中台。数据中台、收银中台、支付风控中台。
-
-中台跟DDD解合：DDD会通过限界上下文将系统拆分成一个一个领域，而这种限界上下文，天生就成了中台之间的逻辑屏障。
-
-DDD在技术与资源调度方面都能够给中台建设提供不错的指导。上层的战略设计能够很好的指导中台划分，下层的战术设计能够很好的指导微服务搭建。
-
-在目前阶段，DDD还大都处在小范围实验的阶段。
+中台跟DDD结合：DDD会通过限界上下文将系统拆分成一个一个领域，而这种限界上下文，天生就成了中台之间的逻辑屏障。DDD在技术与资源调度方面都能够给中台建设提供不错的指导。上层的战略设计能够很好的指导中台划分，下层的战术设计能够很好的指导微服务搭建。在目前阶段，DDD还大都处在小范围实验的阶段。
 
 ### 你的项目中是怎么保证微服务敏捷开发的？
 
@@ -2325,18 +2316,14 @@ RabbitMQ：使用erlang语言天生就成为了一种屏障
 
 ### 如何设计一个MQ？
 
-两个误区：1、放飞自我，漫无边际 2、纠结技术细节。
-
-好的方式：1、从整理到细节，从业务场景到技术实现。2、以现产品为基础。
-
-具体的设计思路：
+从整体到细节，从业务场景到技术实现，以现产品为基础。具体的设计思路：
 
 - 实现单机的队列的数据结构。高效，可扩展
-- 将单机队列扩展成为分布式队列。分布式集群管理
+- 将单机队列扩展成为分布式队列，分布式集群管理
 - 基于Topic定制消息路由策略
 - 实现高效的网络通信 netty - http
 - 规划日志文件，实现文件告诉读写，零拷贝，顺序写，服务重启后，快速还原运行现场
-- 定制高级功能，死信队列、延迟队列、事务消息等等，注意贴合实际。
+- 定制高级功能，死信队列、延迟队列、事务消息等等，注意贴合实际
 
 ### Kafka如何避免重复消费？
 

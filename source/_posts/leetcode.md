@@ -514,7 +514,11 @@ public void divideConquer(problem, param1, param2,...) {
 
 ### 定义
 
+
+
 ### 代码模板
+
+
 
 ## 字典树
 
@@ -770,7 +774,7 @@ public class TrieTree {
                 return mid;
             }
         }
-        return 0;
+        return -1;
     }
 ```
 
@@ -807,6 +811,8 @@ public class TrieTree {
 总而言之，当布隆过滤器把元素都插入结束之后，对于测试元素（新元素）。当它验证是否存在的时候，如果验证位是1，那么有可能在，如果是0，那么一定不存在。
 
 ### 代码模板
+
+
 
 ## LRU Cache
 
@@ -876,32 +882,223 @@ LRU（最近至少使用）
 
 ## 排序算法
 
-排序算法主要分为两类：
+不同排序算法之间的对比如下：
 
-- 比较类排序（数值类型）：通过比较决定元素间的相对次序，由于其时间复杂度不能突破O(nlogn)，依次也称为非线性时间比较类排序
-- 非比较类排序（对象类型）：不通过比较来决定元素间的相对次序，它可以突破基于比较排序的时间下界，以线性时间运行，因此也称为线性时间非比较类排序
+![img](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202206092324373.png)
+
+相关的原理介绍和代码实现可以参考：[十大经典排序算法](https://www.runoob.com/w3cnote/ten-sorting-algorithm.html)
+
+它们之间的对比如下：
+
+| 排序算法 | 适用场景                                   |
+| :------: | ------------------------------------------ |
+| 冒泡排序 | 元素基本有序                               |
+| 选择排序 |                                            |
+| 插入排序 |                                            |
+| 希尔排序 |                                            |
+|  堆排序  |                                            |
+| 归并排序 | 时间复杂度与数组长度无关，但需要额外的空间 |
+| 快速排序 |                                            |
+
+大多数情况下，快速排序是最佳的选择。
+
+`java.util.Arrays#sort()`对于值类型，使用的是三向切分的快速排序；对于引用类型，使用的是归并排序。
 
 ### 冒泡排序
 
-嵌套循环，每次查看相邻的元素如果逆序，则交换。
+算法步骤：
 
-### 简单选择排序
+1. 比较相邻的元素，如果第一个比第二个大，就交换它们
+2. 对每一对相邻的元素作同样的动作，从开始第一对到最后
 
-每次找最小值，然后放到待排序数组的起始位置。
+针对所有的元素重复以上的步骤，除了最后一个，直到没有任何一对数字需要比较。
 
-### 直接插入排序
+![img](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202206092332882.gif)
 
-从前到后逐步构建有序序列，对于未排序数据，在已排序序列中从后向前扫描，找到相应位置并插入。
+```java
+public class BubbleSortTemplate {
+
+    public static void sort(Comparable[] a) {
+        for (int i = 0; i < a.length; i++) {
+            for (int j = 1; j < a.length - 1; j++) {
+                if (less(a[i], a[j])) {
+                    exch(a, i, j);
+                }
+            }
+        }
+    }
+
+  	// 比较元素大小
+    public static boolean less(Comparable v, Comparable w) {
+        return v.compareTo(w) < 0;
+    }
+
+  	// 交换元素位置
+    public static void exch(Comparable[] a, int i, int j) {
+        Comparable temp = a[i];
+        a[i] = a[j];
+        a[j] = temp;
+    }
+}
+```
+
+### 选择排序
+
+算法步骤：
+
+1. 找到数组中最小的那个元素
+2. 将它和数组的第一个元素交换位置（如果是第一个元素就是和它自己交换位置）
+3. 在剩下的元素中找到最小的元素，将它与数组的第二个元素交换
+4. 如此往复，直到将整个数组排序
+
+![img](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202206122316233.gif)
+
+<div class="note info"><p>之所以叫做选择排序，是因为在不断地选择剩余元素中最小的元素。</p></div>
+
+```java
+public class SelectionTemplate {
+
+    public static void sort(Comparable[] a) {
+        for (int i = 0; i < a.length; i++) {
+            int min = 0; // 注意
+            for (int j = i + 1; j < a.length; j++) { // i + 1 从下一个元素开始朝朝
+                if (less(a[j], a[i])) {
+                    min = j;
+                }
+            };
+            exch(a, i, min);
+        }
+    }
+
+    // 比较元素大小
+    public static boolean less(Comparable v, Comparable w) {
+        return v.compareTo(w) < 0;
+    }
+
+    // 交换元素位置
+    public static void exch(Comparable[] a, int i, int j) {
+        Comparable<?> temp = a[i];
+        a[i] = a[j];
+        a[j] = temp;
+    }
+}
+```
+
+### 插入排序
+
+算法步骤：从到尾依次扫描未排序序列，将扫描到的每个元素插入有序序列的适当位置（如果待插入的元素与有序序列中的每个元素相等，则将待插入元素插入到相等元素的后面）。
+
+![img](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202206092332935.gif)
+
+```java
+public class InsertionTemplate {
+
+    // 解法1
+    public static void sort(Comparable[] a) {
+        for (int i = 1; i < a.length; i++) { // 注意下标为0时只有一个元素，默认有序，所以从1开始
+            Comparable min = a[i];
+            int j = i - 1;
+            // 从已经排序的序列最右边的开始比较，找到比其小的数
+            while (j > 0 && min.compareTo(a[j - 1]) < 0) {
+                a[j] = a[j - 1];
+                j--;
+            }
+
+            // 存在比其小的数，插入
+            if (j != i) {
+                a[j] = min;
+            }
+        }
+    }
+
+    // 解法2
+    public static void sort2(Comparable[] a) {
+        for (int i = 1; i < a.length; i++) {
+            Comparable min = a[i];
+            for (int j = i; j > 0; j--) {
+                if (less(a[j], a[j - 1])) {
+                    exch(a, j - 1, j);
+                } else {
+                    a[j] = min;
+                    break;
+                }
+            }
+        }
+    }
+
+    // 解法3
+    public static void sort3(Comparable[] a) {
+        for (int i = 1; i < a.length; i++) {
+            int j;
+            for (j = i; j > 0 && less(a[j], a[j - 1]); j--) {
+                exch(a, j, j - 1);
+            }
+            a[j] = a[i];
+        }
+    }
+
+    public static boolean less(Comparable v, Comparable w) {
+        return v.compareTo(w) < 0;
+    }
+
+    public static void exch(Comparable[] a, int i, int j) {
+        Comparable temp = a[i];
+        a[i] = a[j];
+        a[i] = temp;
+    }
+}
+```
 
 ### 希尔排序
 
+算法步骤：先将整个待排序的记录序列分割成为若干子序列分别进行插入排序，待整个序列中的记录“基本有序”时，再对全体记录进行依次直接插入排序。
+
+![img](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202206092332247.gif)
+
+```java
+
+```
+
 ### 堆排序
+
+堆排序是指利用堆这种数据结构所设计的一种排序算法。堆排序可以说是一种利用堆的概念来排序的选择排序，分为两种方法：
+
+1. 大顶堆：每个节点的值都大于或等于其子节点的值，在堆排序算法中用于升序排列
+2. 小顶堆：每个节点的值都小于或等于其子节点的值，在堆排序算法中用于降序排列
+
+![img](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202206122347503.gif)
+
+![img](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202206122347461.gif)
+
+```java
+
+```
 
 ### 归并排序
 
+算法步骤：
+
+1. 将数组拆分成两半，分别进行排序
+2. 将结果归并起来
+
+```java
+
+```
+
+![img](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202206122328469.gif)
+
 ### 快速排序
 
-### 总结
+算法步骤：
+
+1. 将一个数组分成两个子数组分别进行排序
+2. 当两个子数组有序时，整个数组即有序
+
+![img](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202206122336978.gif)
+
+```java
+
+```
 
 ## 动态规划
 
