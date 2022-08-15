@@ -22,19 +22,23 @@
     var CONFIG = {"hostname":"jycoder.club","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","width":390,"display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":true},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="古语有闻，“靡不有初，鲜克有终”，才浅不敢懈怠，转眼两载有余。又闻，“纸上得来终觉浅，终止此事要躬行”，故事无大小，皆细察纹理，终有所悟。">
-<meta property="og:type" content="website">
-<meta property="og:title" content="吉永超">
-<meta property="og:url" content="https://jycoder.club/about/index.html">
+  <meta name="description" content="编写操作系统看起来是一件天方夜谭的事情，但古语有云：天下之事有难易乎？为之，则难者亦易矣；不为，则易者亦难矣。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="thinking in os">
+<meta property="og:url" content="https://jycoder.club/2022/08/15/Os/index.html">
 <meta property="og:site_name" content="吉永超">
-<meta property="og:description" content="古语有闻，“靡不有初，鲜克有终”，才浅不敢懈怠，转眼两载有余。又闻，“纸上得来终觉浅，终止此事要躬行”，故事无大小，皆细察纹理，终有所悟。">
+<meta property="og:description" content="编写操作系统看起来是一件天方夜谭的事情，但古语有云：天下之事有难易乎？为之，则难者亦易矣；不为，则易者亦难矣。">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2021-06-24T14:07:22.000Z">
-<meta property="article:modified_time" content="2022-08-15T12:02:33.430Z">
+<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2022/png/672829/1660556739463-717771df-82cb-40b1-9952-c14afeec07ca.png">
+<meta property="article:published_time" content="2022-08-15T00:00:00.000Z">
+<meta property="article:modified_time" content="2022-08-15T12:02:33.350Z">
 <meta property="article:author" content="吉永超">
+<meta property="article:tag" content="C++">
+<meta property="article:tag" content="C">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cdn.nlark.com/yuque/0/2022/png/672829/1660556739463-717771df-82cb-40b1-9952-c14afeec07ca.png">
 
-<link rel="canonical" href="https://jycoder.club/about/">
+<link rel="canonical" href="https://jycoder.club/2022/08/15/Os/">
 
 
 <script id="page-configurations">
@@ -42,13 +46,12 @@
   CONFIG.page = {
     sidebar: "",
     isHome : false,
-    isPost : false,
+    isPost : true,
     lang   : 'zh-CN'
   };
 </script>
 
-  <title> | 吉永超
-</title>
+  <title>thinking in os | 吉永超</title>
   
 
 
@@ -201,44 +204,173 @@
       <div class="main-inner">
         <div class="content-wrap">
           
-  
-  
 
-          <div class="content page posts-expand">
+          <div class="content post posts-expand">
             
 
     
-    
-    
-    <div class="post-block" lang="zh-CN">
-      <header class="post-header">
-
-<h1 class="post-title" itemprop="name headline">
-</h1>
-
-<div class="post-meta">
   
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jycoder.club/2022/08/15/Os/">
 
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="吉永超">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="吉永超">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          thinking in os
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2022-08-15 00:00:00 / 修改时间：12:02:33" itemprop="dateCreated datePublished" datetime="2022-08-15T00:00:00+00:00">2022-08-15</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">操作系统</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>编写操作系统看起来是一件天方夜谭的事情，但古语有云：天下之事有难易乎？为之，则难者亦易矣；不为，则易者亦难矣。</p>
+<span id="more"></span>
+<h1 id="操作系统概览"><a class="markdownIt-Anchor" href="#操作系统概览"></a> 操作系统概览</h1>
+<h2 id="什么是操作系统"><a class="markdownIt-Anchor" href="#什么是操作系统"></a> 什么是操作系统</h2>
+<p>操作系统是一种运行在内核态的软件。</p>
+<p>现代计算机包含处理器、存储器、时钟、磁盘、鼠标、网络接口、打印机以及其他设备。从这个角度看，操作系统的任务是在相互竞争的程序之间有序地空指对处理器、存储器以及其他I/O接口设备的分配。</p>
+<p>操作系统所处的位置：</p>
+<p><img src="https://cdn.nlark.com/yuque/0/2022/png/672829/1660556739463-717771df-82cb-40b1-9952-c14afeec07ca.png" alt="image.png" /></p>
+<p>用户态和内核态：</p>
+<ul>
+<li>内核态：对所有硬件具有完全的访问权，可以执行机器能够运行的任何指令</li>
+<li>用户态：只使用机器指令中的一个子集，那些会影响机器的空指或可进行I/O操作的指令，在用户态中的程序是禁止的</li>
+</ul>
+<h2 id="操作系统分类"><a class="markdownIt-Anchor" href="#操作系统分类"></a> 操作系统分类</h2>
+<p>模拟计算机、神经计算机、量子计算机以及生化计算机。</p>
+<h2 id="操作系统的发展史"><a class="markdownIt-Anchor" href="#操作系统的发展史"></a> 操作系统的发展史</h2>
+<h2 id="计算机组成原理"><a class="markdownIt-Anchor" href="#计算机组成原理"></a> 计算机组成原理</h2>
+<p>操作系统是直接运行在硬件之上的软件，因此，在编写操作系统的过程中，难免的会接触到各种类型的硬件，我们需要对这些硬件有一定的认识，才能更好的完成操作系统。</p>
+<p>处理器和存储器之间不断增大的性能差距迫使设计者不断寻找缓解存储器平均访问时间问题的方法，比如多级Cache（《计算机存储与外设第1章》）和超线程技术。</p>
+<h3 id="cpu"><a class="markdownIt-Anchor" href="#cpu"></a> CPU</h3>
+<p>CPU的寄存器有几个功能。一些寄存器是高速暂存寄存器，用于保存数据或者数据单元的地址（即指针）。另外一些则是特殊功能寄存器，比如对一个循环的次数进行计数的循环计数器，有的则用来记录处理器的状态。CPU最重要的寄存器是程序计数器（PC），它记录了要执行的下一条指令的地址；也就是说，程序计数器保持对程序执行的跟踪，有时PC也叫指令指针。</p>
+<p>CPU寄存器的分类：IR、PC、MAR、MBR。</p>
+<h3 id="地址总线"><a class="markdownIt-Anchor" href="#地址总线"></a> 地址总线</h3>
+<p>组成计算机的各个子系统通过总线连接在一起，数据通过总线从计算机中的一个位置传递到另外一个位置。现有的一些总线，比如PCIe，本身就是一个复杂的子系统。</p>
+<p>现代计算机中有多条总线，包括片内总线、功能单元间（比如CPU和存储器间）的总线以及总线之间的总线。</p>
+<h3 id="dram"><a class="markdownIt-Anchor" href="#dram"></a> DRAM</h3>
+<p>RAM：Random Access Memory，即随机存储器（内存），断电会丢失数据。</p>
+<p><a target="_blank" rel="noopener" href="https://www.zhihu.com/question/30492703">https://www.zhihu.com/question/30492703</a></p>
+<h1 id="编写mbr"><a class="markdownIt-Anchor" href="#编写mbr"></a> 编写MBR</h1>
+<h2 id="计算机的启动过程"><a class="markdownIt-Anchor" href="#计算机的启动过程"></a> 计算机的启动过程</h2>
+<h3 id="bios"><a class="markdownIt-Anchor" href="#bios"></a> BIOS</h3>
+<p>BIOS全称：Base Input &amp; Output System，即基本输入输出系统。BIOS本身是个程序，程序执行的入口是）0xFFFF0。</p>
+<p>BIOS的主要工作是检测、初始化硬件。BIOS直接硬件提供了的些初始化的功能。另外，BIOS提供了中断向量表，通过“int 中断号”来实现相关的硬件调用，当然，BIOS建立的功能就是对硬件的IO操作，也就是输入输出，但由于内存空间大小的限制，BIOS无法将所有硬件的IO操作都实现的面面俱到，而且也没有必要实现那么多，因此，BIOS会挑一些重要的、保证计算机能运行的那些硬件的基本IO操作就行了。这就是BIOS被称为基本IO系统的原因。</p>
+<h2 id="地址-section-vstart"><a class="markdownIt-Anchor" href="#地址-section-vstart"></a> 地址、section、vstart</h2>
+<h2 id="cpu的实模式"><a class="markdownIt-Anchor" href="#cpu的实模式"></a> CPU的实模式</h2>
+<script type="text&#x2F;javascript" src="https://unpkg.com/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://unpkg.com/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.css">
+    </div>
+
+    
+    
+    
+        <div class="reward-container">
+  <div>感谢您的支持！</div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/images/wechatpay.jpg" alt="吉永超 微信支付">
+        <p>微信支付</p>
+      </div>
+
+  </div>
 </div>
 
-</header>
+        
 
-      
-      
-      
-      <div class="post-body">
-          <p>古语有闻，“靡不有初，鲜克有终”，才浅不敢懈怠，转眼两载有余。又闻，“纸上得来终觉浅，终止此事要躬行”，故事无大小，皆细察纹理，终有所悟。</p>
-<script type="text&#x2F;javascript" src="https://unpkg.com/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://unpkg.com/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.css">
-      </div>
-      
-      
-      
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>吉永超
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://jycoder.club/2022/08/15/Os/" title="thinking in os">https://jycoder.club/2022/08/15/Os/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/C/" rel="tag"># C++</a>
+              <a href="/tags/C/" rel="tag"># C</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/10/24/RocketMQ/" rel="prev" title="RocketMQ从实践到原理">
+      <i class="fa fa-chevron-left"></i> RocketMQ从实践到原理
+    </a></div>
+      <div class="post-nav-item"></div>
     </div>
+      </footer>
     
+  </article>
+  
+  
+  
 
-    
-    
-    
 
 
           </div>
@@ -289,6 +421,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E6%A6%82%E8%A7%88"><span class="nav-number">1.</span> <span class="nav-text"> 操作系统概览</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F"><span class="nav-number">1.1.</span> <span class="nav-text"> 什么是操作系统</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%86%E7%B1%BB"><span class="nav-number">1.2.</span> <span class="nav-text"> 操作系统分类</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E7%9A%84%E5%8F%91%E5%B1%95%E5%8F%B2"><span class="nav-number">1.3.</span> <span class="nav-text"> 操作系统的发展史</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BB%84%E6%88%90%E5%8E%9F%E7%90%86"><span class="nav-number">1.4.</span> <span class="nav-text"> 计算机组成原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#cpu"><span class="nav-number">1.4.1.</span> <span class="nav-text"> CPU</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9C%B0%E5%9D%80%E6%80%BB%E7%BA%BF"><span class="nav-number">1.4.2.</span> <span class="nav-text"> 地址总线</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#dram"><span class="nav-number">1.4.3.</span> <span class="nav-text"> DRAM</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BC%96%E5%86%99mbr"><span class="nav-number">2.</span> <span class="nav-text"> 编写MBR</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%9A%84%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B"><span class="nav-number">2.1.</span> <span class="nav-text"> 计算机的启动过程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#bios"><span class="nav-number">2.1.1.</span> <span class="nav-text"> BIOS</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9C%B0%E5%9D%80-section-vstart"><span class="nav-number">2.2.</span> <span class="nav-text"> 地址、section、vstart</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#cpu%E7%9A%84%E5%AE%9E%E6%A8%A1%E5%BC%8F"><span class="nav-number">2.3.</span> <span class="nav-text"> CPU的实模式</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 

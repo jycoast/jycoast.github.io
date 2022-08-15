@@ -22,20 +22,15 @@
     var CONFIG = {"hostname":"jycoder.club","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","width":390,"display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":true},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="经常听到这样一句话：基础很重要，然而什么是真正的基础却很没有一个标准答案，是JVM，亦或是并发编程？还是JDK的源码？每个人可能都有自己的答案，但在很多时候，native方法都成为了阻碍我们继续探索更为原理底层的知识的一座大山，因此，笔者选择C++这一门看起来足够“基础”，也足够具有代表性的编程语言，作为了解编程本质的钥匙。">
-<meta property="og:type" content="article">
-<meta property="og:title" content="STL源码剖析">
-<meta property="og:url" content="https://jycoder.club/2022/01/12/STL/index.html">
+  <meta property="og:type" content="website">
+<meta property="og:title" content="吉永超">
+<meta property="og:url" content="https://jycoder.club/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/index.html">
 <meta property="og:site_name" content="吉永超">
-<meta property="og:description" content="经常听到这样一句话：基础很重要，然而什么是真正的基础却很没有一个标准答案，是JVM，亦或是并发编程？还是JDK的源码？每个人可能都有自己的答案，但在很多时候，native方法都成为了阻碍我们继续探索更为原理底层的知识的一座大山，因此，笔者选择C++这一门看起来足够“基础”，也足够具有代表性的编程语言，作为了解编程本质的钥匙。">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2022-01-12T23:16:05.000Z">
-<meta property="article:modified_time" content="2022-08-14T15:10:28.060Z">
 <meta property="article:author" content="吉永超">
-<meta property="article:tag" content="C++">
 <meta name="twitter:card" content="summary">
 
-<link rel="canonical" href="https://jycoder.club/2022/01/12/STL/">
+<link rel="canonical" href="https://jycoder.club/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/">
 
 
 <script id="page-configurations">
@@ -43,12 +38,12 @@
   CONFIG.page = {
     sidebar: "",
     isHome : false,
-    isPost : true,
+    isPost : false,
     lang   : 'zh-CN'
   };
 </script>
 
-  <title>STL源码剖析 | 吉永超</title>
+  <title>分类: 操作系统 | 吉永超</title>
   
 
 
@@ -202,143 +197,51 @@
         <div class="content-wrap">
           
 
-          <div class="content post posts-expand">
+          <div class="content category">
             
 
-    
   
   
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://jycoder.club/2022/01/12/STL/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="吉永超">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="吉永超">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          STL源码剖析
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-01-12 23:16:05" itemprop="dateCreated datePublished" datetime="2022-01-12T23:16:05+00:00">2022-01-12</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-08-14 15:10:28" itemprop="dateModified" datetime="2022-08-14T15:10:28+00:00">2022-08-14</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/" itemprop="url" rel="index"><span itemprop="name">编程语言</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>171</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-        <p>经常听到这样一句话：基础很重要，然而什么是真正的基础却很没有一个标准答案，是JVM，亦或是并发编程？还是JDK的源码？每个人可能都有自己的答案，但在很多时候，native方法都成为了阻碍我们继续探索更为原理底层的知识的一座大山，因此，笔者选择C++这一门看起来足够“基础”，也足够具有代表性的编程语言，作为了解编程本质的钥匙。</p>
-<span id="more"></span>
-<h1 id="c编程基础"><a class="markdownIt-Anchor" href="#c编程基础"></a> C++编程基础</h1>
-<script type="text&#x2F;javascript" src="https://unpkg.com/kity@2.0.4/dist/kity.min.js"></script><script type="text&#x2F;javascript" src="https://unpkg.com/kityminder-core@1.4.50/dist/kityminder.core.min.js"></script><script defer="true" type="text&#x2F;javascript" src="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.js"></script><link rel="stylesheet" type="text&#x2F;css" href="https://unpkg.com/hexo-simple-mindmap@0.8.0/dist/mindmap.min.css">
-    </div>
-
-    
-    
-    
-        <div class="reward-container">
-  <div>感谢您的支持！</div>
-  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
-    打赏
-  </button>
-  <div id="qr" style="display: none;">
-      
-      <div style="display: inline-block;">
-        <img src="/images/wechatpay.jpg" alt="吉永超 微信支付">
-        <p>微信支付</p>
+  
+  <div class="post-block">
+    <div class="posts-collapse">
+      <div class="collection-title">
+        <h2 class="collection-header">操作系统
+          <small>分类</small>
+        </h2>
       </div>
 
-  </div>
-</div>
-
-        
-
-<div>
-<ul class="post-copyright">
-  <li class="post-copyright-author">
-    <strong>本文作者： </strong>吉永超
-  </li>
-  <li class="post-copyright-link">
-    <strong>本文链接：</strong>
-    <a href="https://jycoder.club/2022/01/12/STL/" title="STL源码剖析">https://jycoder.club/2022/01/12/STL/</a>
-  </li>
-  <li class="post-copyright-license">
-    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
-  </li>
-</ul>
-</div>
-
-
-      <footer class="post-footer">
-          <div class="post-tags">
-              <a href="/tags/C/" rel="tag"># C++</a>
-          </div>
-
-        
-
-
-        
-    <div class="post-nav">
-      <div class="post-nav-item">
-    <a href="/2021/10/24/RocketMQ/" rel="prev" title="RocketMQ从实践到原理">
-      <i class="fa fa-chevron-left"></i> RocketMQ从实践到原理
-    </a></div>
-      <div class="post-nav-item"></div>
+      
+    <div class="collection-year">
+      <span class="collection-header">2022</span>
     </div>
-      </footer>
-    
+
+  <article itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      <div class="post-meta">
+        <time itemprop="dateCreated"
+              datetime="2022-08-15T00:00:00+00:00"
+              content="2022-08-15">
+          08-15
+        </time>
+      </div>
+
+      <div class="post-title">
+          <a class="post-title-link" href="/2022/08/15/Os/" itemprop="url">
+            <span itemprop="name">thinking in os</span>
+          </a>
+      </div>
+
+    </header>
   </article>
+
+    </div>
+  </div>
   
   
+  
+
   
 
 
@@ -391,7 +294,6 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#c%E7%BC%96%E7%A8%8B%E5%9F%BA%E7%A1%80"><span class="nav-number">1.</span> <span class="nav-text"> C++编程基础</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -444,7 +346,7 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">21:33</span>
+    <span title="站点阅读时长">21:34</span>
 </div>
 
         
