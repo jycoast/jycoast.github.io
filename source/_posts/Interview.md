@@ -127,7 +127,7 @@ JRE是Java运行时环境，它是运行已经编译的Java程序所需的内容
 | 如果没有指定任何构造函数，java编译器提供一个默认的构造函数 | 在任何情况下编译器都不会提供默认的方法调用 |
 | 构造函数名称必须与类名称相同                               | 方法名称可以或可以不与类名称相同           |
 
-### String中hashcode的实现？
+### String中hashCode的实现？
 
 ```java
     public int hashCode() {
@@ -143,6 +143,10 @@ JRE是Java运行时环境，它是运行已经编译的Java程序所需的内容
         return h;
     }
 ```
+
+### hashCode和equals的作用？
+
+
 
 ### JDK8有哪些新特性？
 
@@ -424,7 +428,7 @@ public class VolatileDemo {
 }
 ```
 
-DCL(Double Check Lock)单例为什么加volatile？
+### DCL单例为什么加volatile？
 
 volatile防止指令重排，在DCL中，防止高并发情况，指令重排造成的线程安全问题，相关示例代码：
 
@@ -433,18 +437,15 @@ public class SingleDemo {
 
     private volatile SingleDemo singleDemo;
 
-    private SingleDemo() {
-
-    }
+    private SingleDemo() {}
 
     public SingleDemo getInstance() {
-        //
-//        if (null == this.singleDemo) {
-//            synchronized (SingleDemo.class) {
-//                if (null == this.singleDemo) {
-//                    singleDemo = new SingleDemo();
-//                }
-//            }
+        if (null == this.singleDemo) {
+           synchronized (SingleDemo.class) {
+              if (null == this.singleDemo) {
+                    singleDemo = new SingleDemo();
+                }
+            }
         singleDemo = new SingleDemo();
         return singleDemo;
     }
@@ -526,7 +527,7 @@ Java的锁就是在对象的MarkWord中记录一个锁状态、无锁、偏向�
 
 ### 什么是可重入锁？有哪些实现？
 
- 线程可以直接进入已经获取锁的同步代码块，而无需重复获取锁。代表实现：synchronized、ReentrantLock。
+ 相同的线程可以直接进入已经获取锁的同步代码块，而无需重复获取锁。代表实现：synchronized、ReentrantLock。
 
 ### 什么是悲观锁？什么是乐观锁？
 
@@ -536,9 +537,7 @@ Java的锁就是在对象的MarkWord中记录一个锁状态、无锁、偏向�
 
 ### 谈谈你对AQS的理解，AQS如何实现可重入锁？
 
-  AQS是一个Java线程同步的框架，是JDK中很多锁工具的核心实现框架，在AQS中，维护了一个信号量state和一个线程组成的双向链表队列。其中，这个线程队列，  其中这个线程队列，就是用来给线程排队的，而state就像是一个红绿灯，用来控制线程排队或者放行的，在不同的场景下，有不用的意义。
-
-  在可重入锁这个场景下，state就用来表示枷锁的次数，0标识加锁的次数，每加一次锁，state就加1，释放锁state就减1。      
+队列同步器AQS，是Lock实现的模板类。它使用一个int类型的成员变量表示同步状态，通过内置的双向链表来完成资源获取的线程的排队工作。AQS使用模板方法的设计模式，使用者需要继承AQS并重写指定的方法（通常是获取锁和释放锁的方法）。随后AQS会调用重写的模板方法，完成对数据的加锁/解锁操作。
 
 <img src="https://throwable-blog-1256189093.cos.ap-guangzhou.myqcloud.com/202008/j-a-q-s-ex-9.png" style="zoom:67%;" />
 
@@ -552,7 +551,7 @@ SynchronizedMap依次锁住整张表来保证线程安全，所以每次只能�
 
 ### CopyOnWriteArrayList可以用于什么应用场景？
 
-读多写少，并且写入慢也没有关系的场景。
+读多写少，并且写入慢也没有关系的场景。本质上是使用ReentrantLock完成并发操作。
 
 ### 有A、B、C三个线程，如何保证三个线程同时执行？如何在并发情况下保证三个线程依次执行？如何保证三个线程有序交错进行？
 
@@ -741,7 +740,7 @@ ThreadLocal可以为每一个线程拷贝变量的副本，让变量“私有化
 
 - 降低资源消耗：通过重复利用已创建的线程降低线程创建和销毁造成的消耗
 - 提高响应速度：当任务到达时，可以不需要等待线程创建就能立即执行
-- 提高线程的可管理性：线程是稀缺资源，如果无限制的创建，不仅会消耗系统资源，还会降低系统的稳定性，使用线程池可以进行同一的分配，监控和调优。
+- 提高线程的可管理性：线程是稀缺资源，如果无限制的创建，不仅会消耗系统资源，还会降低系统的稳定性，使用线程池可以进行同一的分配，监控和调优
 
 ### 线程池中submit()和execute()方法有什么区别？
 
@@ -778,9 +777,18 @@ Executor工具类的不同方法按照我们的需求创建了不同的线程池
   可以使用Fork/Join框架来完成，相关代码示例：
 
 ```java
-public class {
-      
-}
+class Fibonacci extends RecursiveTask<Integer> {
+   final int n;
+   Fibonacci(int n) { this.n = n; }
+   Integer compute() {
+     if (n <= 1)
+       return n;
+     Fibonacci f1 = new Fibonacci(n - 1);
+     f1.fork();
+     Fibonacci f2 = new Fibonacci(n - 2);
+     return f2.compute() + f1.join();
+   }
+ }
 ```
 
 ### 线程池的参数如何设置？
@@ -1045,7 +1053,7 @@ Java堆分为新生代和老年代，针对收集对象处于哪一代，一共�
 有两种定位垃圾的方式：
 
 1. 引用计数法：这种方式是给堆内存当中的每个对象记录一个引用个数，引用个数为0的就认为是垃圾。这是早期JDK采用的方式，引用计数无法解决循环引用的问题
-2. 根可达算法：这种方式是在内存中，从引用根对象向下一直找引用，找不到的对象就是垃圾。
+2. 根可达算法：这种方式是在内存中，从引用根对象向下一直找引用，找不到的对象就是垃圾
 
 ### 什么是GC Root？
 
@@ -1209,9 +1217,7 @@ JVM参数大致可以分为三类：
 
 ### 为什么使用缓存？
 
-1、高性能
-
-2、高可用
+保证服务的高性能和高可用。Redis的一般流程如下：
 
 ![img](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630004746.png)
 
@@ -1315,7 +1321,7 @@ RDB快照是一次全量备份，当进行快照持久化的时候会开启一�
 
 ### Redis的哨兵模式？
 
-
+哨兵模式是Redis一种特殊的模式，Redis提供了哨兵的命令，哨兵是一个独立的进程，作为进程，它会独立运行。其原理是哨兵通过发送命令，等待Redis服务器响应，从而监控运行的多个Redis实例。
 
 ### Redis使用单线程为什么速度这么快？
 
@@ -2155,15 +2161,25 @@ DDD只是一种方法论，没有一个稳定的技术框架。DDD要求领域�
 
 敏捷开发：目的就是为了提高团队的交付效率，快速迭代，快速试错。
 
-每个月固定发布新版本，以分支的形式保存到代码仓库中，快速入职。任务面板、站立会议。团队人员灵活流动，同时形成各个专家代表。测试环境 -> 开发测试环境 -> 集成测试环境 -> 压测环境 -> 预投产环境 -> 生产环境。文档优先。晨会、周会、需求拆分会。
+每个月固定发布新版本，以分支的形式保存到代码仓库中，快速入职。任务面板、站立会议。团队人员灵活流动，同时形成各个专家代表。
+
+测试环境 -> 开发测试环境 -> 集成测试环境 -> 压测环境 -> 预投产环境 -> 生产环境。
+
+文档优先。晨会、周会、需求拆分会。
 
 ### 微服务的链路追踪、持续集成、AB发布要怎么做？
 
-链路追踪：1、基于日志，形成全局事务ID，落地到日志文件。filebeat -logstash- Elaticsearch形成大型报表。 2、基于MQ，往往需要架构支持，经过流式计算形成一些可视化的结果。
+链路追踪：
 
-持续集成：SpringBoot maven pom -> build -> shell；jenkins。
+- 基于日志，形成全局事务ID，落地到日志文件。filebeat -logstash- Elaticsearch形成大型报表
+- 基于MQ，往往需要架构支持，经过流式计算形成一些可视化的结果
 
-AB发布：1、蓝绿发布、红黑发布。老版本和新版本是同时存在的。2、灰度发布。金丝雀发布。
+持续集成：通过jenkins自动化构建任务
+
+AB发布：
+
+- AB发布又称蓝绿发布：红黑发布。老版本和新版本是同时存在的
+- 灰度发布：金丝雀发布
 
 ### Nacos和Eureka的区别？
 
@@ -2265,7 +2281,7 @@ https://zhuanlan.zhihu.com/p/61363959
 
 ### MQ如何保证消息顺序?
 
-  全局有序和局部有序，MQ只需要保证局部有序，不需要保证全局有序。
+  消息的顺序分为全局有序和局部有序，通常来说，MQ只需要保证局部有序，不需要保证全局有序。
 
   ![img](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210630003411.png)
 
