@@ -1355,6 +1355,18 @@ Redis每秒可以承受10w+的QPS，它如此优秀的性能主要取决于以�
 
 https://segmentfault.com/a/1190000039737646
 
+### Redis在内存不足时，淘汰机制是怎样的？
+
+
+
+### Redis如何实现消息队列？
+
+
+
+### Reddison 实现分布式锁的原理？
+
+
+
 ## MySQL
 
 ### MySQL有哪几种数据存储引擎?
@@ -2063,6 +2075,10 @@ OAuth2.0协议有四种模式：
   SSO：Single Sign ON：一处登录，多处同时登录。
 
   SSO的实现关键是将Seesion信息几种存储，通常使用Spring Security实现
+
+### 如何实现单点登录系统？
+
+[单点登录系统是怎么做的？](https://ke.boxuegu.com/barrier.html#/browse?courseId=3870&barrierId=5043&chapterId=1016)
 
 ### 如何设计一个开放授权平台？
 
