@@ -6,7 +6,7 @@ tags:
 author: 吉永超
 ---
 
-算法是编程世界的核心内容，本文主要记录使用Java 语言实现leetcode题目的过程。相应的源代码可以参考：[ 算法刷题示例 ](https://github.com/jiyongchao-qf/learn-leetcode)。
+算法是编程世界的核心内容，本文主要记录使用Java 语言实现leetcode题目的过程。
 <!-- more -->
 
 # 前言
@@ -820,11 +820,9 @@ public class TrieTree {
 
 LRU Cache缓存
 
-1、记忆
-
-2、钱包 - 储物柜
-
-3、代码模块
+- 记忆
+- 钱包 - 储物柜
+- 代码模块
 
 两个要素：大小、替换策略
 
@@ -838,7 +836,29 @@ LRU（最近至少使用）
 
 ### 代码模板
 
+```java
+class LRUCache extends LinkedHashMap<Integer, Integer>{
+    private int capacity;
+    
+    public LRUCache(int capacity) {
+        super(capacity, 0.75F, true);
+        this.capacity = capacity;
+    }
 
+    public int get(int key) {
+        return super.getOrDefault(key, -1);
+    }
+
+    public void put(int key, int value) {
+        super.put(key, value);
+    }
+
+    @Override
+    protected boolean removeEldestEntry(Map.Entry<Integer, Integer> eldest) {
+        return size() > capacity; 
+    }
+}
+```
 
 ## 位运算
 
@@ -2430,6 +2450,8 @@ public
 ```
 
 ## [62. 不同路径](https://leetcode-cn.com/problems/unique-paths/)
+
+export PATH="$PATH:Users/jiyongchao/application/flutter/bin/flutter/bin"
 
 递推公式：
 $$

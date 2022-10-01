@@ -125,6 +125,7 @@ menu:
   commonweal: /404/ || fa fa-heartbeat
   infoQ: https://www.infoq.cn/profile/3479D9A8F57FEF/publish/ || fa fa-sitemap
   路线: /route/ || fa fa-home
+  项目: https://github.com/jycoast/
   about: /about/ || fa fa-user
 
 # Enable / Disable menu icons / item badges.
