@@ -22,12 +22,12 @@
     var CONFIG = {"hostname":"jycoder.club","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","width":390,"display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":true},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="算法是编程世界的核心内容，本文主要记录使用Java 语言实现leetcode题目的过程。相应的源代码可以参考： 算法刷题示例 。">
+  <meta name="description" content="算法是编程世界的核心内容，本文主要记录使用Java 语言实现leetcode题目的过程。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="leetcode in Java">
 <meta property="og:url" content="https://jycoder.club/2021/06/24/leetcode/index.html">
 <meta property="og:site_name" content="吉永超">
-<meta property="og:description" content="算法是编程世界的核心内容，本文主要记录使用Java 语言实现leetcode题目的过程。相应的源代码可以参考： 算法刷题示例 。">
+<meta property="og:description" content="算法是编程世界的核心内容，本文主要记录使用Java 语言实现leetcode题目的过程。">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210708155818.png">
 <meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210829231754.png">
@@ -70,7 +70,7 @@
 <meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210820105009.png">
 <meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210713190144.png">
 <meta property="article:published_time" content="2021-06-24T15:33:37.000Z">
-<meta property="article:modified_time" content="2022-09-29T09:21:02.548Z">
+<meta property="article:modified_time" content="2022-10-01T02:38:44.120Z">
 <meta property="article:author" content="吉永超">
 <meta property="article:tag" content="算法">
 <meta name="twitter:card" content="summary">
@@ -188,6 +188,11 @@
     <a href="/route/" rel="section">路线</a>
 
   </li>
+        <li class="menu-item menu-item-项目">
+
+    <a href="https://github.com/jycoast/" rel="noopener" target="_blank">项目</a>
+
+  </li>
         <li class="menu-item menu-item-about">
 
     <a href="/about/" rel="section">关于</a>
@@ -280,7 +285,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-09-29 09:21:02" itemprop="dateModified" datetime="2022-09-29T09:21:02+00:00">2022-09-29</time>
+                <time title="修改时间：2022-10-01 02:38:44" itemprop="dateModified" datetime="2022-10-01T02:38:44+00:00">2022-10-01</time>
               </span>
 
           <br>
@@ -289,14 +294,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>60k</span>
+              <span>61k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>54 分钟</span>
+              <span>55 分钟</span>
             </span>
 
         </div>
@@ -308,7 +313,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>算法是编程世界的核心内容，本文主要记录使用Java 语言实现leetcode题目的过程。相应的源代码可以参考：<a target="_blank" rel="noopener" href="https://github.com/jiyongchao-qf/learn-leetcode"> 算法刷题示例 </a>。</p>
+        <p>算法是编程世界的核心内容，本文主要记录使用Java 语言实现leetcode题目的过程。</p>
 <span id="more"></span>
 <h1 id="前言"><a class="markdownIt-Anchor" href="#前言"></a> 前言</h1>
 <p>如何精通一个领域？</p>
@@ -653,15 +658,18 @@
 <h2 id="lru-cache"><a class="markdownIt-Anchor" href="#lru-cache"></a> LRU Cache</h2>
 <h3 id="定义-10"><a class="markdownIt-Anchor" href="#定义-10"></a> 定义</h3>
 <p>LRU Cache缓存</p>
-<p>1、记忆</p>
-<p>2、钱包 - 储物柜</p>
-<p>3、代码模块</p>
+<ul>
+<li>记忆</li>
+<li>钱包 - 储物柜</li>
+<li>代码模块</li>
+</ul>
 <p>两个要素：大小、替换策略</p>
 <p>Hash Table + Double LinkedList</p>
 <p>O(1)查询</p>
 <p>O(1)修改、更新</p>
 <p>LRU（最近至少使用）</p>
 <h3 id="代码模板-10"><a class="markdownIt-Anchor" href="#代码模板-10"></a> 代码模板</h3>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">LRUCache</span> <span class="keyword">extends</span> <span class="title">LinkedHashMap</span>&lt;<span class="title">Integer</span>, <span class="title">Integer</span>&gt;</span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> capacity;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">LRUCache</span><span class="params">(<span class="keyword">int</span> capacity)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">super</span>(capacity, <span class="number">0.75F</span>, <span class="keyword">true</span>);</span><br><span class="line">        <span class="keyword">this</span>.capacity = capacity;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">get</span><span class="params">(<span class="keyword">int</span> key)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">super</span>.getOrDefault(key, -<span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">put</span><span class="params">(<span class="keyword">int</span> key, <span class="keyword">int</span> value)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">super</span>.put(key, value);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">boolean</span> <span class="title">removeEldestEntry</span><span class="params">(Map.Entry&lt;Integer, Integer&gt; eldest)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> size() &gt; capacity; </span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h2 id="位运算"><a class="markdownIt-Anchor" href="#位运算"></a> 位运算</h2>
 <h3 id="定义-11"><a class="markdownIt-Anchor" href="#定义-11"></a> 定义</h3>
 <table>
@@ -1044,6 +1052,7 @@ p(i,i+1)=(S_i==S_{i+1}), &amp; 其它情况
 <p>将矩阵每一行拼接在上一行的末尾，则会得到一个升序数组，我们可以在该数组上二分找到目标元素，可以二分升序数组的下标，将其映射到原矩阵的行和列上：</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">searchMatrix</span><span class="params">(<span class="keyword">int</span>[][] matrix, <span class="keyword">int</span> target)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> r = matrix.length;</span><br><span class="line">    <span class="keyword">int</span> c = matrix[<span class="number">0</span>].length;</span><br><span class="line">    <span class="keyword">int</span> left = <span class="number">0</span>;</span><br><span class="line">    <span class="comment">// 总共有这么多个元素</span></span><br><span class="line">    <span class="keyword">int</span> right = r * c - <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">while</span> (left &lt; right) &#123;</span><br><span class="line">        <span class="keyword">int</span> mid = left + (right - left) / <span class="number">2</span>;</span><br><span class="line">        <span class="comment">// 最主要的就是元素映射到原矩阵的行和列上</span></span><br><span class="line">        <span class="comment">// mid/c刚好是行数,mid%c刚好是列数,注意矩阵的下标从0开始算起</span></span><br><span class="line">        <span class="keyword">int</span> element = matrix[mid / c][mid % c];</span><br><span class="line">        <span class="keyword">if</span> (element == target) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (element &lt; target) &#123;</span><br><span class="line">            left = mid + <span class="number">1</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (element &gt; target) &#123;</span><br><span class="line">            right = mid - <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h2 id="62-不同路径"><a class="markdownIt-Anchor" href="#62-不同路径"></a> <a target="_blank" rel="noopener" href="https://leetcode-cn.com/problems/unique-paths/">62. 不同路径</a></h2>
+<p>export PATH=&quot;$PATH:Users/jiyongchao/application/flutter/bin/flutter/bin&quot;</p>
 <p>递推公式：</p>
 <p class='katex-block'><span class="katex-display"><span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>m</mi><mo separator="true">,</mo><mi>n</mi><mo stretchy="false">)</mo><mo>=</mo><mi>f</mi><mo stretchy="false">(</mo><mi>m</mi><mo>−</mo><mn>1</mn><mo separator="true">,</mo><mi>n</mi><mo stretchy="false">)</mo><mo>+</mo><mi>f</mi><mo stretchy="false">(</mo><mi>m</mi><mo separator="true">,</mo><mi>n</mi><mo>−</mo><mn>1</mn><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">f(m,n) = f(m - 1, n) + f(m, n - 1)
 </annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathdefault" style="margin-right:0.10764em;">f</span><span class="mopen">(</span><span class="mord mathdefault">m</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord mathdefault">n</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathdefault" style="margin-right:0.10764em;">f</span><span class="mopen">(</span><span class="mord mathdefault">m</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">1</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord mathdefault">n</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathdefault" style="margin-right:0.10764em;">f</span><span class="mopen">(</span><span class="mord mathdefault">m</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord mathdefault">n</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">1</span><span class="mclose">)</span></span></span></span></span></p>
@@ -1279,7 +1288,7 @@ dp[start+1] = max(nums[start],nums[start+1]) &amp; 只有两件房屋，偷窃�
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">21:36</span>
+    <span title="站点阅读时长">21:37</span>
 </div>
 
         

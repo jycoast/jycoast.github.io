@@ -36,7 +36,7 @@
 <meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210723140848.png">
 <meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210723140929.png">
 <meta property="article:published_time" content="2021-06-29T00:00:00.000Z">
-<meta property="article:modified_time" content="2022-09-29T09:21:02.484Z">
+<meta property="article:modified_time" content="2022-10-01T02:38:44.040Z">
 <meta property="article:author" content="吉永超">
 <meta property="article:tag" content="Spring">
 <meta name="twitter:card" content="summary">
@@ -154,6 +154,11 @@
     <a href="/route/" rel="section">路线</a>
 
   </li>
+        <li class="menu-item menu-item-项目">
+
+    <a href="https://github.com/jycoast/" rel="noopener" target="_blank">项目</a>
+
+  </li>
         <li class="menu-item menu-item-about">
 
     <a href="/about/" rel="section">关于</a>
@@ -246,7 +251,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-09-29 09:21:02" itemprop="dateModified" datetime="2022-09-29T09:21:02+00:00">2022-09-29</time>
+                <time title="修改时间：2022-10-01 02:38:44" itemprop="dateModified" datetime="2022-10-01T02:38:44+00:00">2022-10-01</time>
               </span>
 
           <br>
@@ -1359,7 +1364,18 @@
 <p>Spring Configuration Class CGLIB提升的原因是，方便Spring AOP的操作，无需显式的注册代理类，注入Advisor也比较容易，相当于天然的装配。</p>
 <h1 id="spring-aop中的设计模式"><a class="markdownIt-Anchor" href="#spring-aop中的设计模式"></a> Spring AOP中的设计模式</h1>
 <p>总的来说，设计模式没有绝对的标准，像雨像雾又像风。</p>
+<p>设计模式的背后是一些设计原则：</p>
+<ul>
+<li>单一职责原则：设计目的单一的类</li>
+<li>开放-封闭原则：对扩展开放，对修改封闭</li>
+<li>李氏替换原则：子类可以替换父类（不盲目重载父类的方法）</li>
+<li>依赖倒置原则：要依赖于抽象，而不是具体实现；针对接口编程，不要针对实现编程</li>
+<li>接口隔离原则：使用多个专门的接口比使用单一的总接口要好</li>
+<li>组合重用原则：要尽量使用组合，而不是继承关系达到重用目的</li>
+<li>迪米特原则（最少知道法则）：一个对象应当对其他对象有尽可能少的了解</li>
+</ul>
 <h2 id="创建型模式"><a class="markdownIt-Anchor" href="#创建型模式"></a> 创建型模式</h2>
+<p>用于创建对象的模式，为实例化新对象提供指南。</p>
 <h3 id="抽象工厂模式"><a class="markdownIt-Anchor" href="#抽象工厂模式"></a> 抽象工厂模式</h3>
 <p>基本概念：抽象工厂模式（Abstract factory）提供了一组具有同一主题的单独的工厂封装起来。在正常使用中，客户端程序需要创建抽象工厂的具体实现，然后使用抽象工厂作为接口来创建这一主题的具体对象。客户端程序不需要知道（或关心）它从这些内部工厂方法中获得对象的具体类型，因为客户端程序仅使用这些对象的通用接口。抽象工厂模式将一组对象的实现细节与他们的一般使用分离开来。</p>
 <p>Spring AOP举例实现：</p>
@@ -1463,6 +1479,7 @@
 <p>装饰器模式和代理模式的区别在于，通常装饰器模式是静态的一种（比如植入一些辅助性的代码去修饰一些行为），而代理模式既有动态的也有静态的。</p>
 </blockquote>
 <h2 id="行为型模式"><a class="markdownIt-Anchor" href="#行为型模式"></a> 行为型模式</h2>
+<p>描述对象交互的情况以及职责分配的问题。</p>
 <h3 id="模板方法模式"><a class="markdownIt-Anchor" href="#模板方法模式"></a> 模板方法模式</h3>
 <p>基本概念：模板方法（Template Method）是一个定义在父类里面的方法，这个方法可能没有具体的实现，需要在子类中重写父类中这个方法，而父类已经安排好了这些抽象方法的执行顺序以及调用逻辑。</p>
 <p>Spring AOP举例实现：</p>
@@ -1814,7 +1831,7 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">21:36</span>
+    <span title="站点阅读时长">21:37</span>
 </div>
 
         
