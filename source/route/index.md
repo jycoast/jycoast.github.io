@@ -2,7 +2,7 @@
 title: 
 ---
 
-{% markmap 1000px %}
+{% markmap 1200px %}
 
 - 编程之旅
 
@@ -41,27 +41,27 @@ title:
       - [Redis开发与运维](https://www.52doc.com/detail/617)
       - [RabbitMQ](https://www.bilibili.com/video/BV1dX4y1V73G?spm_id_from=333.337.search-card.all.click)
       - [RocketMq](https://github.com/apache/rocketmq/tree/master/docs/cn)
-
   - C/C++
-
+  
     - 语言基础
       - [C++面向对象编程](https://www.youtube.com/watch?v=2S-tJaPKFdQ&list=PL-X74YXt4LVZ137kKM5dNfCIC4tsScerb)
       - [C++ 11 新特性](https://www.youtube.com/watch?v=xqKFjwn45gw&list=PL-X74YXt4LVYo_bk-jHMV5T3LHRYRbZoH)
     - 核心原理
       - [C++内存管理](https://www.youtube.com/watch?v=N27j6snKcxI&list=PLTcwR9j5y6W2eH37R2_4oEO4Y0tksot56)
       - [STL源码剖析](https://www.youtube.com/watch?v=Edcwv38c7d4&list=PLTcwR9j5y6W2Bf4S-qi0HBQlHXQVFoJrP)
-
+  - 跨平台
+    - flutter
+      - [flutter实战](https://book.flutterchina.club/preface.html)
   - 部署运维
-
+  
     - linux
       - [鸟哥的私房菜](https://www.52doc.com/detail/31341)
       - [deepin](https://www.deepin.org/en/)
-
+  
     - docker
       - [第一本docker书](https://www.52doc.com/detail/3180)
       - [Spring Cloud与Docker微服务架构实战](https://www.52doc.com/detail/47969)
       - [docker compose与docker swarm](https://www.bilibili.com/video/BV1kv411q7Qc?spm_id_from=333.999.0.0)
-
   - 必备技能
 
     - 计算机基础
@@ -69,11 +69,9 @@ title:
       - [计算机组成原理](https://www.bilibili.com/video/BV1WW411Q7PF?p=1)
       - [操作系统](https://www.bilibili.com/video/BV1uW411f72n?from=search&seid=9286535166671006927&spm_id_from=333.337.0.0)
       - [编译原理](https://www.youtube.com/watch?v=7oHgs64KK7I&list=PLQEJNz6Rc2zfI7AP37dHTnI7W7g368nL8&index=1)
-
     - 常用工具
-
+    
       - [深入理解git](https://www.bilibili.com/video/BV1G4411a7Jk?spm_id_from=333.788.top_right_bar_window_custom_collection.content.click)
-
     - 设计模式
       - [高鹏-设计模式](https://www.bilibili.com/video/BV1Qx411o7tN?spm_id_from=333.788.top_right_bar_window_custom_collection.content.click)
       - [大话设计模式](https://www.52doc.com/detail/816)
@@ -82,5 +80,7 @@ title:
       - [算法训练营](https://www.youtube.com/watch?v=ozSyNPc5m2k&list=PLoZQ0sz6CBHH_DngliTZAhHxamus0gofC)
       - [leetCode](https://leetcode-cn.com/problemset/all/)
       - [牛客网](https://www.nowcoder.com/)
+    - 相关证书
+      - [软件设计师](https://open.163.com/newview/movie/free?pid=ZEUPRB16K&mid=JEUPRB17S)
 
 {%endmarkmap%}
