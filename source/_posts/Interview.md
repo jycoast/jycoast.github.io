@@ -1,8 +1,9 @@
 ---
-title: 面试题精选
+title: Java面试题精选
 date: 2020-10-07
 categories:
  - Java
+ - 面试题
 author: 吉永超
 ---
 
@@ -180,6 +181,8 @@ cons.newInstance(null);
 ```
 
 ### 创建对象有哪些方式？
+
+共有五种方式：
 
 - new关键字
 - 反射API
@@ -909,7 +912,7 @@ TCP的连接的拆除需要发送四个包，因此称为四次握手，也叫�
 
 <img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210824103028.png" alt="四次挥手示意图" style="zoom:50%;" />
 
-## JVM
+## Java虚拟机
 
 ### 运行时数据区中包含哪些区域？哪些线程共享？哪些线程独享？
 

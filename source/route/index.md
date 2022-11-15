@@ -57,15 +57,16 @@ title:
     - linux
       - [鸟哥的私房菜](https://www.52doc.com/detail/31341)
       - [deepin](https://www.deepin.org/en/)
-  
+      - [Linux内核之旅](http://kerneltravel.net)
+      
     - docker
       - [第一本docker书](https://www.52doc.com/detail/3180)
       - [Spring Cloud与Docker微服务架构实战](https://www.52doc.com/detail/47969)
       - [docker compose与docker swarm](https://www.bilibili.com/video/BV1kv411q7Qc?spm_id_from=333.999.0.0)
   - 必备技能
-
+  
     - 计算机基础
-
+  
       - [计算机组成原理](https://www.bilibili.com/video/BV1WW411Q7PF?p=1)
       - [操作系统](https://www.bilibili.com/video/BV1uW411f72n?from=search&seid=9286535166671006927&spm_id_from=333.337.0.0)
       - [编译原理](https://www.youtube.com/watch?v=7oHgs64KK7I&list=PLQEJNz6Rc2zfI7AP37dHTnI7W7g368nL8&index=1)
