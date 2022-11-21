@@ -2486,3 +2486,5 @@ public class EventPublicationInterceptorDemo {
 - 实现Spring AOP代理配置类
 - （可选）实现注解和注解元信息的解析以及处理
 - （可选）实现XML与其元信息的解析以及处理
+
+Spring AOP与Ioc功能整合。 
