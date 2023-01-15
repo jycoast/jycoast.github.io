@@ -295,7 +295,7 @@ OrderComparator是Spring所提供的一种比较器，可以根据@Order注解�
 
 ```java
 @Component
-public class ZhouyuFactoryBean implements FactoryBean {
+public class JycFactoryBean implements FactoryBean {
 
 	@Override
 	public Object getObject() throws Exception {
@@ -378,6 +378,18 @@ public class Test {
 生命周期的整体流程：
 
 <img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202211212323410.png" alt="image-20221121232326365" style="zoom: 50%;" />
+
+过程描述如下：
+
+1. InstantiationAwareBeanPostProcessor#postProcessBeforeInstantiation
+2. 实例化
+3. MergedBeanDefinitionPostProcessor#postProcessMergedBeanDefinition
+4. InstantiationAwareBeanPostProcessor#postProcessAfterInstantiation
+5. 属性赋值（Spring自带的依赖注入）
+6. InstantiationAwareBeanPostProcessor#postProcessProperties
+7. 初始化前
+8. 初始化
+9. 初始化后
 
 ```java
 	public AnnotationConfigApplicationContext() {
@@ -1026,6 +1038,7 @@ doGetBean方法是创建Bean的核心方法：
 
         // Register bean as disposable.
         try {
+          	// Bean销毁的逻辑，当Spring容器关闭的时候，会调用销毁方法
             registerDisposableBeanIfNecessary(beanName, bean, mbd);
         } catch (BeanDefinitionValidationException ex) {
             throw new BeanCreationException(
@@ -1114,29 +1127,847 @@ doGetBean方法是创建Bean的核心方法：
     }
 ```
 
-
+销毁方法只是针对于单例的Bean而言，原型Bean的销毁方法并不会被Spring所调用。
 
 ### 依赖注入源码解析
 
+@Autowired注解的实现类：org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor：
+
+```java
+public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationAwareBeanPostProcessor,
+        MergedBeanDefinitionPostProcessor, PriorityOrdered, BeanFactoryAware {
+    @Override
+    public void postProcessMergedBeanDefinition(RootBeanDefinition beanDefinition, Class<?> beanType, String beanName) {
+        // 查找注入点：
+        InjectionMetadata metadata = findAutowiringMetadata(beanName, beanType, null);
+        metadata.checkConfigMembers(beanDefinition);
+    }
+
+    @Override
+    public PropertyValues postProcessProperties(PropertyValues pvs, Object bean, String beanName) {
+      	// 给字段赋值
+        InjectionMetadata metadata = findAutowiringMetadata(beanName, bean.getClass(), pvs);
+        try {
+          	// 处理@Value注解的方法
+            metadata.inject(bean, beanName, pvs);
+        } catch (BeanCreationException ex) {
+            throw ex;
+        } catch (Throwable ex) {
+            throw new BeanCreationException(beanName, "Injection of autowired dependencies failed", ex);
+        }
+        return pvs;
+    }
+
+}
+```
+
+静态属性和静态方法会跳过，无法依赖注入。
+
+```java
+    private InjectionMetadata buildAutowiringMetadata(Class<?> clazz) {
+        // 当前类是否
+        if (!AnnotationUtils.isCandidateClass(clazz, this.autowiredAnnotationTypes)) {
+            return InjectionMetadata.EMPTY;
+        }
+
+        List<InjectionMetadata.InjectedElement> elements = new ArrayList<>();
+        Class<?> targetClass = clazz;
+
+        do {
+            final List<InjectionMetadata.InjectedElement> currElements = new ArrayList<>();
+
+            ReflectionUtils.doWithLocalFields(targetClass, field -> {
+                MergedAnnotation<?> ann = findAutowiredAnnotation(field);
+                if (ann != null) {
+                    // 静态属性跳过
+                    if (Modifier.isStatic(field.getModifiers())) {
+                        if (logger.isInfoEnabled()) {
+                            logger.info("Autowired annotation is not supported on static fields: " + field);
+                        }
+                        return;
+                    }
+                    boolean required = determineRequiredStatus(ann);
+                    currElements.add(new AutowiredFieldElement(field, required));
+                }
+            });
+
+            ReflectionUtils.doWithLocalMethods(targetClass, method -> {
+                // 处理桥接方法，找到被桥接的方法，然后处理
+                Method bridgedMethod = BridgeMethodResolver.findBridgedMethod(method);
+                if (!BridgeMethodResolver.isVisibilityBridgeMethodPair(method, bridgedMethod)) {
+                    return;
+                }
+                MergedAnnotation<?> ann = findAutowiredAnnotation(bridgedMethod);
+                if (ann != null && method.equals(ClassUtils.getMostSpecificMethod(method, clazz))) {
+                    // 静态方法跳过
+                    if (Modifier.isStatic(method.getModifiers())) {
+                        if (logger.isInfoEnabled()) {
+                            logger.info("Autowired annotation is not supported on static methods: " + method);
+                        }
+                        return;
+                    }
+                    if (method.getParameterCount() == 0) {
+                        if (logger.isInfoEnabled()) {
+                            logger.info("Autowired annotation should only be used on methods with parameters: " +
+                                    method);
+                        }
+                    }
+                    boolean required = determineRequiredStatus(ann);
+                    PropertyDescriptor pd = BeanUtils.findPropertyForMethod(bridgedMethod, clazz);
+                    currElements.add(new AutowiredMethodElement(method, required, pd));
+                }
+            });
+
+            elements.addAll(0, currElements);
+            targetClass = targetClass.getSuperclass();
+        }
+        while (targetClass != null && targetClass != Object.class);
+
+        return InjectionMetadata.forElements(elements, clazz);
+    }
+```
+
+注入字段：
+
+```java
+    @Nullable
+   private Object resolveFieldValue(Field field, Object bean, @Nullable String beanName) {
+      DependencyDescriptor desc = new DependencyDescriptor(field, this.required);
+      desc.setContainingClass(bean.getClass());
+      Set<String> autowiredBeanNames = new LinkedHashSet<>(1);
+      Assert.state(beanFactory != null, "No BeanFactory available");
+      TypeConverter typeConverter = beanFactory.getTypeConverter();
+      Object value;
+      try {
+         // 找到需要注入的字段的值
+         value = beanFactory.resolveDependency(desc, beanName, autowiredBeanNames, typeConverter);
+      }
+      catch (BeansException ex) {
+         throw new UnsatisfiedDependencyException(null, beanName, new InjectionPoint(field), ex);
+      }
+      synchronized (this) {
+         if (!this.cached) {
+            Object cachedFieldValue = null;
+            if (value != null || this.required) {
+               cachedFieldValue = desc;
+               registerDependentBeans(beanName, autowiredBeanNames);
+               if (autowiredBeanNames.size() == 1) {
+                  String autowiredBeanName = autowiredBeanNames.iterator().next();
+                  if (beanFactory.containsBean(autowiredBeanName) &&
+                        beanFactory.isTypeMatch(autowiredBeanName, field.getType())) {
+                     cachedFieldValue = new ShortcutDependencyDescriptor(
+                           desc, autowiredBeanName, field.getType());
+                  }
+               }
+            }
+            this.cachedFieldValue = cachedFieldValue;
+            this.cached = true;
+         }
+      }
+      return value;
+   }
+}
+```
+
+类似的，也有注入方法的方法：org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor.AutowiredMethodElement。
+
+其中核心方法就是beanFactory的resolveDependency方法：
+
+```java
+	public Object resolveDependency(DependencyDescriptor descriptor, @Nullable String requestingBeanName,
+			@Nullable Set<String> autowiredBeanNames, @Nullable TypeConverter typeConverter) throws BeansException {
+		// 用来获取方法入参名称
+		descriptor.initParameterNameDiscovery(getParameterNameDiscoverer());
+    // 所需要的类型是Optional类型的
+		if (Optional.class == descriptor.getDependencyType()) {
+			return createOptionalDependency(descriptor, requestingBeanName);
+		}
+    // 所需要的类型是ObectFactory或ObjectProvider的
+		else if (ObjectFactory.class == descriptor.getDependencyType() ||
+				ObjectProvider.class == descriptor.getDependencyType()) {
+			return new DependencyObjectProvider(descriptor, requestingBeanName);
+		}
+		else if (javaxInjectProviderClass == descriptor.getDependencyType()) {
+			return new Jsr330Factory().createDependencyProvider(descriptor, requestingBeanName);
+		}
+		else {
+      // 在属性或set方法上使用了@Lazy注解，那么则构造一个代理对象并返回，真正使用该代理对象时才进行类型筛选Bean
+			Object result = getAutowireCandidateResolver().getLazyResolutionProxyIfNecessary(
+					descriptor, requestingBeanName);
+			if (result == null) {
+				result = doResolveDependency(descriptor, requestingBeanName, autowiredBeanNames, typeConverter);
+			}
+			return result;
+		}
+	}
+```
+
+方法形参名称获取：
+
+```java
+public class DefaultParameterNameDiscoverer extends PrioritizedParameterNameDiscoverer {
+    public DefaultParameterNameDiscoverer() {
+        // JDK1.8以后可以获取方法的形参名称，1.8之前可以通过字节码的本地变量表来获取
+        addDiscoverer(new StandardReflectionParameterNameDiscoverer());
+        addDiscoverer(new LocalVariableTableParameterNameDiscoverer());
+    }
+}
+```
+
+核心方法doResolveDependency的源代码：
+
+```java
+    @Nullable
+    public Object doResolveDependency(DependencyDescriptor descriptor, @Nullable String beanName,
+                                      @Nullable Set<String> autowiredBeanNames, @Nullable TypeConverter typeConverter) throws BeansException {
+
+        InjectionPoint previousInjectionPoint = ConstructorResolver.setCurrentInjectionPoint(descriptor);
+        try {
+            Object shortcut = descriptor.resolveShortcut(this);
+            if (shortcut != null) {
+                return shortcut;
+            }
+
+            Class<?> type = descriptor.getDependencyType();
+            // 处理@Value注解
+            Object value = getAutowireCandidateResolver().getSuggestedValue(descriptor);
+            if (value != null) {
+                if (value instanceof String) {
+                    // 占位符的填充（${}）
+                    String strVal = resolveEmbeddedValue((String) value);
+                    BeanDefinition bd = (beanName != null && containsBean(beanName) ?
+                            getMergedBeanDefinition(beanName) : null);
+                    // 解析Spring表达式（#{}，也可以用来以来注入）
+                    value = evaluateBeanDefinitionString(strVal, bd);
+                }
+              	// 将value转化为descriptor所对应的类型
+                TypeConverter converter = (typeConverter != null ? typeConverter : getTypeConverter());
+                try {
+                    return converter.convertIfNecessary(value, type, descriptor.getTypeDescriptor());
+                } catch (UnsupportedOperationException ex) {
+                    return (descriptor.getField() != null ?
+                            converter.convertIfNecessary(value, type, descriptor.getField()) :
+                            converter.convertIfNecessary(value, type, descriptor.getMethodParameter()));
+                }
+            }
+          	// 如果descriptor所对应的类型是数组、Map、List等类型，就将descriptor对应的类型所匹配的所有Bean方法，不用进一步做筛选了
+            Object multipleBeans = resolveMultipleBeans(descriptor, beanName, autowiredBeanNames, typeConverter);
+            if (multipleBeans != null) {
+                return multipleBeans;
+            }
+          	// 找到所有Bean，key是beanName，value有可能是bean对象，有可能是beanClass
+            Map<String, Object> matchingBeans = findAutowireCandidates(beanName, type, descriptor);
+            if (matchingBeans.isEmpty()) {
+              	// 如果没有找到Bean，但是required属性为true，则直接抛出异常
+                if (isRequired(descriptor)) {
+                    raiseNoMatchingBeanFound(type, descriptor.getResolvableType(), descriptor);
+                }
+                return null;
+            }
+
+            String autowiredBeanName;
+            Object instanceCandidate;
+
+          	// 找到的是多个，再根据名称进行过滤
+            if (matchingBeans.size() > 1) {
+              	// 这里会处理@Primary注解，如果有一个bean有@Primary注解，则返回，也会处理@Priority注解，优先级
+                autowiredBeanName = determineAutowireCandidate(matchingBeans, descriptor);
+                if (autowiredBeanName == null) {
+                    if (isRequired(descriptor) || !indicatesMultipleBeans(type)) {
+                        return descriptor.resolveNotUnique(descriptor.getResolvableType(), matchingBeans);
+                    } else {
+                        return null;
+                    }
+                }
+                instanceCandidate = matchingBeans.get(autowiredBeanName);
+            } else {
+                // We have exactly one match.
+                Map.Entry<String, Object> entry = matchingBeans.entrySet().iterator().next();
+                autowiredBeanName = entry.getKey();
+                instanceCandidate = entry.getValue();
+            }
+
+            if (autowiredBeanNames != null) {
+                autowiredBeanNames.add(autowiredBeanName);
+            }
+          	// 有可能筛选出来的是某个bean的类型，此处就进行实例化，调用getBean
+            if (instanceCandidate instanceof Class) {
+                instanceCandidate = descriptor.resolveCandidate(autowiredBeanName, type, this);
+            }
+            Object result = instanceCandidate;
+            if (result instanceof NullBean) {
+                if (isRequired(descriptor)) {
+                    raiseNoMatchingBeanFound(type, descriptor.getResolvableType(), descriptor);
+                }
+                result = null;
+            }
+            if (!ClassUtils.isAssignableValue(type, result)) {
+                throw new BeanNotOfRequiredTypeException(autowiredBeanName, type, instanceCandidate.getClass());
+            }
+            return result;
+        } finally {
+            ConstructorResolver.setCurrentInjectionPoint(previousInjectionPoint);
+        }
+    }
+```
+
+当找到多个对象的时候，并不是所有的都需要实例化，如果不需要创建，findAutowireCandidates方法会返回Class对象。
+
+```java
+    protected Map<String, Object> findAutowireCandidates(
+            @Nullable String beanName, Class<?> requiredType, DependencyDescriptor descriptor) {
+				// 在所有的beanDefinition找到符合这个类型的所有bean的名称
+        String[] candidateNames = BeanFactoryUtils.beanNamesForTypeIncludingAncestors(
+                this, requiredType, true, descriptor.isEager());
+        Map<String, Object> result = CollectionUtils.newLinkedHashMap(candidateNames.length);
+        for (Map.Entry<Class<?>, Object> classObjectEntry : this.resolvableDependencies.entrySet()) {
+            Class<?> autowiringType = classObjectEntry.getKey();
+            if (autowiringType.isAssignableFrom(requiredType)) {
+                Object autowiringValue = classObjectEntry.getValue();
+                autowiringValue = AutowireUtils.resolveAutowiringValue(autowiringValue, requiredType);
+                if (requiredType.isInstance(autowiringValue)) {
+                    result.put(ObjectUtils.identityToString(autowiringValue), autowiringValue);
+                    break;
+                }
+            }
+        }
+      	// candidateNames存的就是找到的和所给类型匹配的所有的bean
+        for (String candidate : candidateNames) {
+          	// 如果有多个，优先考虑注入不是自己的那个bean
+            if (!isSelfReference(beanName, candidate) && isAutowireCandidate(candidate, descriptor)) {
+                addCandidateEntry(result, candidate, descriptor, requiredType);
+            }
+        }
+        if (result.isEmpty()) {
+            boolean multiple = indicatesMultipleBeans(requiredType);
+            // Consider fallback matches if the first pass failed to find anything...
+            DependencyDescriptor fallbackDescriptor = descriptor.forFallbackMatch();
+            for (String candidate : candidateNames) {
+                if (!isSelfReference(beanName, candidate) && isAutowireCandidate(candidate, fallbackDescriptor) &&
+                        (!multiple || getAutowireCandidateResolver().hasQualifier(descriptor))) {
+                    addCandidateEntry(result, candidate, descriptor, requiredType);
+                }
+            }
+            if (result.isEmpty() && !multiple) {
+                // Consider self references as a final pass...
+                // but in the case of a dependency collection, not the very same bean itself.
+                for (String candidate : candidateNames) {
+                    if (isSelfReference(beanName, candidate) &&
+                            (!(descriptor instanceof MultiElementDescriptor) || !beanName.equals(candidate)) &&
+                            isAutowireCandidate(candidate, fallbackDescriptor)) {
+                        addCandidateEntry(result, candidate, descriptor, requiredType);
+                    }
+                }
+            }
+        }
+        return result;
+    }
+```
+
+isAutowireCandidate方法的作用是用来判断给定的bean是否可以用来依赖注入：
+
+```java
+    protected boolean isAutowireCandidate(
+            String beanName, DependencyDescriptor descriptor, AutowireCandidateResolver resolver)
+            throws NoSuchBeanDefinitionException {
+
+        String bdName = BeanFactoryUtils.transformedBeanName(beanName);
+        // 根据BeanDefinition的autowireCandidate属性来判断是否可以用来依赖注入
+        if (containsBeanDefinition(bdName)) {
+            return isAutowireCandidate(beanName, getMergedLocalBeanDefinition(bdName), descriptor, resolver);
+        } else if (containsSingleton(beanName)) {
+            return isAutowireCandidate(beanName, new RootBeanDefinition(getType(beanName)), descriptor, resolver);
+        }
+
+        BeanFactory parent = getParentBeanFactory();
+        if (parent instanceof DefaultListableBeanFactory) {
+            // No bean definition found in this factory -> delegate to parent.
+            return ((DefaultListableBeanFactory) parent).isAutowireCandidate(beanName, descriptor, resolver);
+        } else if (parent instanceof ConfigurableListableBeanFactory) {
+            // If no DefaultListableBeanFactory, can't pass the resolver along.
+            return ((ConfigurableListableBeanFactory) parent).isAutowireCandidate(beanName, descriptor);
+        } else {
+            return true;
+        }
+    }
+```
+
+依赖注入的判断条件：
+
+1. BeanDefinition的autowireCandidate属性
+2. 泛型条件判断
+3. @Qualifier
+4. @Primary
+5. @Priority
+6. bean的名称
+
+Spring会在找到注入点之后，将其beanName缓存起来。对于单例bean，并不会触发这个缓存，对于原型bean，在第二次调用getBean方法的时候就会触发。之所以只缓存beanName，是因为依赖注入的可能也是原型bean，这种情况下，每次依赖注入获取bean都应该是一个新的bean。
+
+@Resource和@Autowired注解的区别在于，@Resource是Java规范支持的注解，主要是通过CommonAnnotationBeanPostProcessor来实现，而@Autowired是Spring的注解。之所以会支持@Resource注解是因为，Spring考虑到如果开发者要迁移到其他支持依赖注入的框架，使用Java标准的@Resource注解可以在不修改源码的情况下完成迁移。
+
 ### 循环依赖解析
+
+解决循环依赖，主要思路是利用三级缓存：
+
+1. singletonObjects（经历过完整生命周期的Bean对象）
+2. earlySingletonObjects（用于缓存AOP对象，里面存的是部分属性为空的对象，）
+3. singletonFactories（key是beanName，value是一段lamda表达式，用来获取原始对象）
+
+额外辅助：singletonCurrentlyIncreation，可以通过这个集合查找到正在创建的bean。
+
+之所以需要第三个Map才能解决循环依赖的根本原因是存在代理。原本Spring会在初始化后进行AOP操作，但因为循环依赖的存在，不得不提前缓存AOP的对象。
+
+详细解析：https://blog.csdn.net/hao134838/article/details/121239018
+
+第三个Map，singletonFactories的主要逻辑：
+
+```java
+        boolean earlySingletonExposure = (mbd.isSingleton() && this.allowCircularReferences &&
+                isSingletonCurrentlyInCreation(beanName));
+        if (earlySingletonExposure) {
+            // 判断是否需要进行AOP，如果需要进行AOP，则返回代理对象，如果不需要，则返回原始对象，执行完这个lambda表达式，会将返回的对象放置到earlySingletonObjects中。
+            // 之后进行AOP的操作的时候，会根据earlyProxyReferences这个Map来判断是否需要AOP操作。
+            addSingletonFactory(beanName, () -> getEarlyBeanReference(beanName, mbd, bean));
+        }
+```
+
+打破循环最关键的点是singletonFactories。
+
+@Lazy注解的作用，是在属性填充的时候会直接生成一个代理对象，在使用这个代理对象的方法的时候才会去创建属性的实例对象。
+
+@Transactional注解并不会影响循环依赖，因为@Transactional注解并不会注入一个新的BeanPostProcessor，而是向Spring容器中添加了一个advisor。
 
 ### 推断构造源码解析
 
-### 启动过程
+Spring使用构造方法的原则如下：
 
-### AOP底层源码解析
+- 默认情况下，使用无参构造方法，或者只要一个构造方法的情况下，就使用唯一的构造方法
+- 如果制定了构造方法的入参值，通过getBean()或者BeanDefinition.getConstructorArgumentValues()指定，那么就会使用所匹配的构造方法
+- 如果想让Spring自动选择构造方法以及构造方法的入参值，可以通过设置`autowire="constructor"`来实现
+- 如果使用@Autowired注解制定了某个构造方法，但是希望Spring自动找该构造方法的入参值
 
-### 事务底层源码解析
+推断构造方法的核心源码如下：
 
-### 整合Mybatis底层源码解析
+```java
+    protected BeanWrapper createBeanInstance(String beanName, RootBeanDefinition mbd, @Nullable Object[] args) {
+        // Make sure bean class is actually resolved at this point.
+        Class<?> beanClass = resolveBeanClass(mbd, beanName);
+
+        if (beanClass != null && !Modifier.isPublic(beanClass.getModifiers()) && !mbd.isNonPublicAccessAllowed()) {
+            throw new BeanCreationException(mbd.getResourceDescription(), beanName,
+                    "Bean class isn't public, and non-public access not allowed: " + beanClass.getName());
+        }
+
+        Supplier<?> instanceSupplier = mbd.getInstanceSupplier();
+        if (instanceSupplier != null) {
+            return obtainFromSupplier(instanceSupplier, beanName);
+        }
+      	// 处理@Bean对应的BeanDefinition
+        if (mbd.getFactoryMethodName() != null) {
+            return instantiateUsingFactoryMethod(beanName, mbd, args);
+        }
+
+        // Shortcut when re-creating the same bean...
+        boolean resolved = false;
+        boolean autowireNecessary = false;
+        if (args == null) {
+            synchronized (mbd.constructorArgumentLock) {
+              	// 缓存BeanDefition的属性，缓存好的构造方法和参数值
+                if (mbd.resolvedConstructorOrFactoryMethod != null) {
+                    resolved = true;
+                    autowireNecessary = mbd.constructorArgumentsResolved;
+                }
+            }
+        }
+        if (resolved) {
+          	// 如果确定了当前BeanDefinition的构造方法，那么看是否需要进行对构造方法进行参数的依赖注入（构造方法注入）
+            if (autowireNecessary) {
+              	// 这里会拿到缓存好的构造方法入参，实例化bean对象
+                return autowireConstructor(beanName, mbd, null, null);
+            } else {
+              	// 构造方法已经找到了，但是没有参数，直接进行实例化
+                return instantiateBean(beanName, mbd);
+            }
+        }
+
+        // 这里主要是通过AutowiredAnnotationBeanPostProcessor查找构造方法，当有多个构造方法和只有一个无参的构造方法都会返回null，这个时候，Spring会优先使用无参的构造方法。
+        Constructor<?>[] ctors = determineConstructorsFromBeanPostProcessors(beanClass, beanName);
+        if (ctors != null || mbd.getResolvedAutowireMode() == AUTOWIRE_CONSTRUCTOR ||
+                mbd.hasConstructorArgumentValues() || !ObjectUtils.isEmpty(args)) {
+            return autowireConstructor(beanName, mbd, ctors, args);
+        }
+
+        // Preferred constructors for default construction?
+        ctors = mbd.getPreferredConstructors();
+        if (ctors != null) {
+            return autowireConstructor(beanName, mbd, ctors, null);
+        }
+
+        // No special handling: simply use no-arg constructor.
+        return instantiateBean(beanName, mbd);
+    }
+```
+
+有@Lookup注解的时候，在推断构造方法之后，会生成cglib的代理对象。
+
+### Spring启动过程
+
+Spring启动的过程其实就是需要做一些准备工作，好方便后续的相关操作。
+
+1. 创建BeanFactory实例对象，DefaultListableBeanFactory
+2. 解析配置类
+3. 扫描得到BeanDefinition，存入beanDefitionMap
+4. beanBostprocess
+5. 单例池
+
+创建BeanFactory的实例对象：
+
+```java
+public GenericApplicationContext() {
+   this.beanFactory = new DefaultListableBeanFactory();
+}
+```
+
+于此同时，DefaultListableBeanFactory的父类AbstractAutowireCapableBeanFactory的构造方法：
+
+```java
+	public AbstractAutowireCapableBeanFactory() {
+		super();
+		ignoreDependencyInterface(BeanNameAware.class);
+		ignoreDependencyInterface(BeanFactoryAware.class);
+		ignoreDependencyInterface(BeanClassLoaderAware.class);
+		if (NativeDetector.inNativeImage()) {
+			this.instantiationStrategy = new SimpleInstantiationStrategy();
+		}
+		else {
+      // 初始化cglib策略
+			this.instantiationStrategy = new CglibSubclassingInstantiationStrategy();
+		}
+	}
+```
+
+```java
+public AnnotationConfigApplicationContext() {
+   StartupStep createAnnotatedBeanDefReader = this.getApplicationStartup().start("spring.context.annotated-bean-reader.create");
+   // 创建读取器，同时也会创建StandardEnvironment对象
+   this.reader = new AnnotatedBeanDefinitionReader(this);
+   createAnnotatedBeanDefReader.end();
+   this.scanner = new ClassPathBeanDefinitionScanner(this);
+}
+```
+
+可以重复调用refresh方法的ApplicationContext的执行逻辑是，先执行bean的销毁方法，然后将beanFactory关闭，最后创建一个新的beanFactory。
+
+```java
+protected final void refreshBeanFactory() throws BeansException {
+   if (hasBeanFactory()) {
+      destroyBeans();
+      closeBeanFactory();
+   }
+   try {
+      DefaultListableBeanFactory beanFactory = createBeanFactory();
+      beanFactory.setSerializationId(getId());
+      customizeBeanFactory(beanFactory);
+      loadBeanDefinitions(beanFactory);
+      this.beanFactory = beanFactory;
+   }
+   catch (IOException ex) {
+      throw new ApplicationContextException("I/O error parsing bean definition source for " + getDisplayName(), ex);
+   }
+}
+```
+
+启动过程的完整代码：
+
+```java
+    @Override
+    public void refresh() throws BeansException, IllegalStateException {
+        synchronized (this.startupShutdownMonitor) {
+            StartupStep contextRefresh = this.applicationStartup.start("spring.context.refresh");
+
+            // 准备一些资源，设置一些基础属性，主要是加载Properties资源
+            prepareRefresh();
+
+            // 是否可以重复刷新的应用上下文
+            ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
+
+            // 往BeanFactory工厂中添加如下对象：
+            // 1.设置BeanFactory的类加载器，Spring EL表达式解析器，类型转化注册器
+            // 2.添三个BeanPostProcessor，注意是具体的BeanPostProcessor实例对象
+            // 3.记录ignoreDependencyInterface
+            // 4.记录ResolvableDependency
+            // 5. 添加三个单例Bean
+            prepareBeanFactory(beanFactory);
+
+            try {
+                // 模版方法，供子类调用
+                postProcessBeanFactory(beanFactory);
+
+                StartupStep beanPostProcess = this.applicationStartup.start("spring.context.beans.post-process");
+                // 扫描得到BeanDefinition，放到Bean工厂当中
+                invokeBeanFactoryPostProcessors(beanFactory);
+
+                // 将扫描到的BeanPostProcessors实例化并排序，并添加到BeanFactory的BeanPostProcessors属性中去
+                registerBeanPostProcessors(beanFactory);
+                beanPostProcess.end();
+
+                // 初始化国际化相关的内容
+                initMessageSource();
+
+                // 初始化事件广播器
+                initApplicationEventMulticaster();
+
+                // 模版方法，给子类扩展
+                onRefresh();
+
+                // 注册时间监听器
+                registerListeners();
+
+                // 实例化懒加载的Bean
+                finishBeanFactoryInitialization(beanFactory);
+
+                // Spring容器生命周期处理
+                finishRefresh();
+            } catch (BeansException ex) {
+                if (logger.isWarnEnabled()) {
+                    logger.warn("Exception encountered during context initialization - " +
+                            "cancelling refresh attempt: " + ex);
+                }
+
+                // Destroy already created singletons to avoid dangling resources.
+                destroyBeans();
+
+                // Reset 'active' flag.
+                cancelRefresh(ex);
+
+                // Propagate exception to caller.
+                throw ex;
+            } finally {
+                // Reset common introspection caches in Spring's core, since we
+                // might not ever need metadata for singleton beans anymore...
+                resetCommonCaches();
+                contextRefresh.end();
+            }
+        }
+    }
+```
+
+处理Spring容器的生命周期：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202301092343140.png" alt="image-20230109234308080" style="zoom:50%;" />
 
 ### 配置类解析与扫描过程源码解析
 
+![image-20230110233458445](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202301102334496.png)
+
+BeanDefinitionRegistryPostProcessor与BeanFactoryPostProcessor的区别在于，BeanDefinitionRegistryPostProcessor可以向BeanFactory中注册BeanDefinition，BeanFactoryPostProcessor只可以拿到BeanDifinition。通常会先先执行postProcessBeanDefinitionRegistry方法，然后再执行postProcessBeanFactory方法。
+
+扫描的整个过程说白了，其实就是向BeanFatory中添加各种各样的BeanDifinition。
+
+配置类加载的主要的类：org.springframework.context.annotation.ConfigurationClassPostProcessor
+
+实现了MergedBeanDefinitionPostProcessor接口的BeanPostProcessor的postProcessMergedBeanDefinition会被放到最后再执行。
+
+完整的解析配置类流程图：https://www.processon.com/view/link/5f9512d5e401fd06fda0b2dd
+
+只要给定的Bean对象，有以下四个注解之一，就可以认为是配置类。
+
+```java
+static {
+   candidateIndicators.add(Component.class.getName());
+   candidateIndicators.add(ComponentScan.class.getName());
+   candidateIndicators.add(Import.class.getName());
+   candidateIndicators.add(ImportResource.class.getName());
+}
+```
+
+除了上述的情况外，在类（也可以是接口的实现类或者内部类）的任意一个方法上面添加了@Bean的也是配置类。
+
+扫描处理的核心类：
+
+- org.springframework.context.annotation.ConfigurationClassParser
+
+@Import注解的处理过程如下：
+
+![image-20230114230527924](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202301142305971.png)
+
+整个完整的解析过程如下：
+
+![image-20230114230600922](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202301142306969.png)
+
+在解析的时候，是一批一批进行解析的，实现DeferredImportSelector接口的类，会在每一批的最后执行selectImports方法。
+
+默认情况下，@Bean的会覆盖掉@Component的BeanDefinition。
+
+`@Configuration(proxyBeanMethods = true)`表示要增强这个配置类，会生成代理类，主要是为了解决@Bean注解方法返回的单例对象的问题。
+
+### 整合Mybatis底层源码解析
+
+Spring整合其他的框架本质上就是让其他的框架所产生的对象成为Spring IOC容器中的Bean。
+
+1. 通过@MapperScan导入了MapperScannerRegistrar类
+2. MapperScannerRegistrar类实现了ImportBeanDefinitionRegistrar接口，所以Spring在启动时会调用MapperScannerRegistrar类中的registerBeanDefinitions方法
+3. 在registerBeanDefinitions方法中定义了一个ClassPathMapperScanner对象，用来扫描mapper
+4. 设置ClassPathMapperScanner对象可以扫描到接口，因为在Spring中是不会扫描接口的
+5. 同时因为ClassPathMapperScanner中重写了isCandidateComponent方法，导致isCandidateComponent只会认为接口是备选者Component
+6. 通过利用Spring的扫描后，会把接口扫描出来并且得到对应的BeanDefinition
+7. 接下来把扫描得到的BeanDefinition进行修改，把BeanClass修改为MapperFactoryBean，把AutowireMode修改为byType
+8. 扫描完成后，Spring就会基于BeanDefinition去创建Bean了，相当于每个Mapper对应一个FactoryBean
+9. 在MapperFactoryBean中的getObject方法中，调用了getSqlSession()去得到一个sqlSession对象，然后根据对应的Mapper接口生成一个Mapper接口代理对象，这个代理对象就成为Spring容器中的Bean
+10. sqlSession对象是Mybatis中的，一个sqlSession对象需要SqlSessionFactory来产生
+11. MapperFactoryBean的AutowireMode为byType，所以Spring会自动调用set方法，有两个set方法，一个setSqlSessionFactory，一个setSqlSessionTemplate，而这两个方法执行的前提是根据方法参数类型能找到对应的bean，所以Spring容器中要存在SqlSessionFactory类型的bean或者SqlSessionTemplate类型的bean。
+12. 如果你定义的是一个SqlSessionFactory类型的bean，那么最终也会被包装为一个SqlSessionTemplate对象，并且赋值给sqlSession属性
+13. 而在SqlSessionTemplate类中就存在一个getMapper方法，这个方法中就产生一个Mapper接口代理对象
+14. 到时候，当执行该代理对象的某个方法时，就会进入到Mybatis框架的底层执行流程，详细的请看下图
+
+Spring整合Mybatis之后SQL执行流程：https://www.processon.com/view/link/6152cc385653bb6791db436c
+
+<div class="note info">如果Spring整合Mybatis之后，开启了事务，则一级缓存生效，如果没有开启事务，一级缓存就会失效。</div>
+
+### Spring AOP源码解析
+
+CGLIB和JDK的动态代理示例：
+
+```java
+public class ProxyTest {
+
+    public static void main(String[] args) {
+
+        /***********************
+         * CGLIB动态代理
+         ***********************/
+
+        UserService target = new UserService();
+
+        // 通过cglib技术
+        Enhancer enhancer = new Enhancer();
+        enhancer.setSuperclass(UserService.class);
+
+        // 定义额外逻辑，也就是代理逻辑
+        enhancer.setCallbacks(new Callback[]{new MethodInterceptor() {
+            // o表示的就是代理对象，target是被代理的对象爱过你
+            @Override
+            public Object intercept(Object o, Method method, Object[] objects, MethodProxy methodProxy) throws Throwable {
+                System.out.println("before...");
+                // 被代理的方法，目标对象
+                Object result = methodProxy.invoke(target, objects);
+                // 执行原始对象的方法
+//                Object result = methodProxy.invokeSuper(target, objects);
+                System.out.println("after...");
+                return result;
+            }
+        }, NoOp.INSTANCE});
+
+        // 设置哪些方法不被代理
+        enhancer.setCallbackFilter(new CallbackFilter() {
+            @Override
+            public int accept(Method method) {
+                if (method.getName().equals("test")) {
+                    return 0;
+                } else {
+                    return 1;
+                }
+            }
+        });
+
+        // 动态代理所创建出来的UserService对象
+        UserService userService = (UserService) enhancer.create();
+
+        // 执行这个userService的test方法时，就会额外会执行一些其他逻辑
+        userService.test();
+
+        /***********************
+         * JDK动态代理
+         ***********************/
+
+        UserService target2 = new UserService();
+
+        // UserInterface接口的代理对象
+        Object proxy = Proxy.newProxyInstance(UserService.class.getClassLoader(), new Class[]{UserInterface.class}, new InvocationHandler() {
+            @Override
+            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                System.out.println("before...");
+                Object result = method.invoke(target2, args);
+                System.out.println("after...");
+                return result;
+            }
+        });
+
+        // 这里只能是UserInterface类型的，产生的代理对象一定是传入的接口的类型
+        UserInterface userService2 = (UserInterface) proxy;
+        userService2.test();
+    }
+}
+```
+
+在Spring中，对这两项技术做了一定程度的封装，使用ProxyFactory获取代理对象。
+
+```java
+public class SpringProxyTest {
+
+    public static void main(String[] args) {
+
+        UserService target = new UserService();
+        ProxyFactory proxyFactory = new ProxyFactory();
+        proxyFactory.setTarget(target);
+        // 指定接口的时候，就会返回JDK动态代理的对象
+//        proxyFactory.setInterfaces(UserInterface.class);
+        // 会被封装成MethodInterceptor，有多个Advice会按照顺序进行执行
+        proxyFactory.addAdvice(new MethodBeforeAdvice() {
+            @Override
+            public void before(Method method, Object[] args, Object target) throws Throwable {
+
+            }
+        });
+
+        UserService proxy = (UserService) proxyFactory.getProxy();
+        proxy.test();
+    }
+}
+```
+
+除了直接使用API的方式来生成代理对象，也可以使用@Bean的方式代理对象：
+
+```java
+    @Bean
+    public DefaultPointcutAdvisor defaultPointcutAdvisor(){
+        NameMatchMethodPointcut pointcut = new NameMatchMethodPointcut();
+        pointcut.addMethodName("test");
+
+        DefaultPointcutAdvisor defaultPointcutAdvisor = new DefaultPointcutAdvisor();
+        defaultPointcutAdvisor.setPointcut(pointcut);
+        defaultPointcutAdvisor.setAdvice(new AfterReturningAdvice() {
+            @Override
+            public void afterReturning(Object returnValue, Method method, Object[] args, Object target) throws Throwable {
+                
+            }
+        });
+
+        return defaultPointcutAdvisor;
+    }
+
+    @Bean
+    public DefaultAdvisorAutoProxyCreator defaultAdvisorAutoProxyCreator() {
+
+        DefaultAdvisorAutoProxyCreator defaultAdvisorAutoProxyCreator = new DefaultAdvisorAutoProxyCreator();
+
+        return defaultAdvisorAutoProxyCreator;
+    }
+```
+
+DefaultAdvisorAutoProxyCreator实际上是一个BeanPostProcessor，会查找Advisor类型的Bean，就确定了哪些对象是需要生成代理对象的。
+
+<div class="note info">AOP还有一种AspectJ的实现，Spring AOP参照了AspectJ的实现，复制了AspectJ中的几个核心注解，AspectJ是在编译期间就增强了对应的方法，Spring 则是在启动的过程中，通过CGLIB或者JDK的动态代理来实现AOP。Spring 会通过AnnotationAwareAspectJAutoProxyCreator将@Aspect注解扫描到Spring容器中。</div>
+
+被代理的对象通常称为target，被代理的方法通常被称为Join point（连接点）。
+
+### Spring事务源码解析
+
+
+
 ## Spring MVC源码
 
-### 执行流程源码剖析
-
-### 启动原理与父子容器源码剖析
+### 执行流程源码剖析源码剖析
 
 ## Mybatis源码分析
 
@@ -1146,9 +1977,35 @@ doGetBean方法是创建Bean的核心方法：
 
 # 并发编程专题
 
+## 并发基本原理
+
+### JMM
+
+
+
+### List、Set、HashMap
+
+
+
 # 性能优化专题
 
+## MySQL
+
+
+
+## JVM
+
+
+
+## Tomcat
+
+
+
 # 分布式框架专题
+
+## Redis
+
+
 
 # 微服务专题
 
