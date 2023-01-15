@@ -83,5 +83,7 @@ title:
       - [牛客网](https://www.nowcoder.com/)
     - 相关证书
       - [软件设计师](https://open.163.com/newview/movie/free?pid=ZEUPRB16K&mid=JEUPRB17S)
+      - [系统分析师](https://www.aliyundrive.com/s/MdzHX5W2G8r)
+      - [系统架构设计师](https://www.aliyundrive.com/s/UVCNVEg2Pgd)
 
 {%endmarkmap%}
