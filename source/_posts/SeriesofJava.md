@@ -1957,23 +1957,577 @@ public class SpringProxyTest {
 
 DefaultAdvisorAutoProxyCreator实际上是一个BeanPostProcessor，会查找Advisor类型的Bean，就确定了哪些对象是需要生成代理对象的。
 
-<div class="note info">AOP还有一种AspectJ的实现，Spring AOP参照了AspectJ的实现，复制了AspectJ中的几个核心注解，AspectJ是在编译期间就增强了对应的方法，Spring 则是在启动的过程中，通过CGLIB或者JDK的动态代理来实现AOP。Spring 会通过AnnotationAwareAspectJAutoProxyCreator将@Aspect注解扫描到Spring容器中。</div>
+<div class="note info">AOP还有一种AspectJ的实现，Spring AOP参照了AspectJ的实现，复用了AspectJ中的几个核心注解，AspectJ是在编译期间就增强了对应的方法，Spring 则是在启动的过程中，通过CGLIB或者JDK的动态代理来实现AOP。Spring 会通过AnnotationAwareAspectJAutoProxyCreator将@Aspect注解扫描到Spring容器中。</div>
 
 被代理的对象通常称为target，被代理的方法通常被称为Join point（连接点）。
 
+<div class="note info">除了增强某个类中的某个方法，还可以通过@DeclareParents动态的为被代理对象增加接口和接口中定义的方法。但是这么做的缺点是，代码的可读性较差。</div>
+
+创建代理对象的核心方法：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202301161022572.png" alt="image-20230116102220524" style="zoom:67%;" />
+
+可以通过设置`exposeProxy=true`，将代理对象暴露在ThreadLocal中，通过`AopContext.currentProxy()`就可以获取到被代理的对象。
+
+在ProxyFactory筛选代理对象的被代理的方法：
+
+```java
+	List<Object> chain = this.advised.getInterceptorsAndDynamicInterceptionAdvice(method, targetClass);
+```
+
+<div class="note info">Advice的底层是通过MethodInterceptor来实现的。</div>
+
+```java
+@Override
+public List<Object> getInterceptorsAndDynamicInterceptionAdvice(
+        Advised config, Method method, @Nullable Class<?> targetClass) {
+
+    AdvisorAdapterRegistry registry = GlobalAdvisorAdapterRegistry.getInstance();
+    // config 其实就是ProxyFactory
+    Advisor[] advisors = config.getAdvisors();
+    List<Object> interceptorList = new ArrayList<>(advisors.length);
+    Class<?> actualClass = (targetClass != null ? targetClass : method.getDeclaringClass());
+    Boolean hasIntroductions = null;
+
+    for (Advisor advisor : advisors) {
+        if (advisor instanceof PointcutAdvisor) {
+            // 取出Pointcut，根据ClassFilter和MethodMatcher来进行过滤
+            PointcutAdvisor pointcutAdvisor = (PointcutAdvisor) advisor;
+            if (config.isPreFiltered() || pointcutAdvisor.getPointcut().getClassFilter().matches(actualClass)) {
+                MethodMatcher mm = pointcutAdvisor.getPointcut().getMethodMatcher();
+                boolean match;
+                if (mm instanceof IntroductionAwareMethodMatcher) {
+                    if (hasIntroductions == null) {
+                        hasIntroductions = hasMatchingIntroductions(advisors, actualClass);
+                    }
+                    match = ((IntroductionAwareMethodMatcher) mm).matches(method, actualClass, hasIntroductions);
+                }
+                else {
+                    match = mm.matches(method, actualClass);
+                }
+                if (match) {
+                    // 适配成MethodInterceptor，通常情况都是一对一的，interceptors只会有一个元素
+                    MethodInterceptor[] interceptors = registry.getInterceptors(advisor);
+                    // 运行时会封装成为InterceptorAndDynamicMethodMatcher
+                    // 真正执行的时候，会再检查MethodMatcher里带参数matches的方法是否返回true
+                    if (mm.isRuntime()) {
+                        for (MethodInterceptor interceptor : interceptors) {
+                            interceptorList.add(new InterceptorAndDynamicMethodMatcher(interceptor, mm));
+                        }
+                    }
+                    else {
+                        interceptorList.addAll(Arrays.asList(interceptors));
+                    }
+                }
+            }
+        }
+        else if (advisor instanceof IntroductionAdvisor) {
+            IntroductionAdvisor ia = (IntroductionAdvisor) advisor;
+            if (config.isPreFiltered() || ia.getClassFilter().matches(actualClass)) {
+                Interceptor[] interceptors = registry.getInterceptors(advisor);
+                interceptorList.addAll(Arrays.asList(interceptors));
+            }
+        }
+        else {
+            Interceptor[] interceptors = registry.getInterceptors(advisor);
+            interceptorList.addAll(Arrays.asList(interceptors));
+        }
+    }
+
+    return interceptorList;
+}
+```
+
+一个切面中 ，有@Before，@After（只有AspectJ才有），@Around等注解的方法，他们的执行顺序是由一个比较器来决定的：
+
+```java
+static {
+   Comparator<Method> adviceKindComparator = new ConvertingComparator<>(
+         new InstanceComparator<>(
+               Around.class, Before.class, After.class, AfterReturning.class, AfterThrowing.class),
+         (Converter<Method, Annotation>) method -> {
+            AspectJAnnotation<?> ann = AbstractAspectJAdvisorFactory.findAspectJAnnotationOnMethod(method);
+            return (ann != null ? ann.getAnnotation() : null);
+         });
+   Comparator<Method> methodNameComparator = new ConvertingComparator<>(Method::getName);
+   adviceMethodComparator = adviceKindComparator.thenComparing(methodNameComparator);
+}
+```
+
+即按照Around、Before、After、AfterReturning、AfterThrowing的顺序进行执行。出现重复的注解修饰的方法，会按照自然排序进行执行。
+
 ### Spring事务源码解析
 
+开启Spring事务本质上就是增加了一个Advisor，但我们使用@EnableTransactionManagement注解来开启Spring事务是，该注解代理的功能就是向Spring容器中添加了两个Bean：
 
+- AutoProxyRegistrar
+- ProxyTransactionManagementConfiguration
 
-## Spring MVC源码
+AutoProxyRegistrar主要的作用是向Spring容器中注册了一个InfrastructureAdvisorAutoProxyCreator的Bean。
 
-### 执行流程源码剖析源码剖析
+而InfrastructureAdvisorAutoProxyCreator继承了AbstractAdvisorAutoProxyCreator，所以这个类的主要作用就是**开启自动代理**的作用，也就是一个BeanPostProcessor，会在初始化后步骤中去寻找Advisor类型的Bean，并判断当前某个Bean是否有匹配的Advisor，是否需要利用动态代理产生一个代理对象。
+
+ProxyTransactionManagementConfiguration是一个配置类，它又定义了另外三个bean：
+
+1. BeanFactoryTransactionAttributeSourceAdvisor：一个Advisor
+2. AnnotationTransactionAttributeSource：相当于BeanFactoryTransactionAttributeSourceAdvisor中的Pointcut
+3. TransactionInterceptor：相当于BeanFactoryTransactionAttributeSourceAdvisor中的Advice
+
+AnnotationTransactionAttributeSource就是用来判断某个类上是否存在@Transactional注解，或者判断某个方法上是否存在@Transactional注解的。
+
+TransactionInterceptor就是代理逻辑，当某个类中存在@Transactional注解时，到时就产生一个代理对象作为Bean，代理对象在执行某个方法时，最终就会进入到TransactionInterceptor的invoke()方法。
+
+核心API：org.springframework.transaction.annotation.ProxyTransactionManagementConfiguration#transactionInterceptor
+
+事务的执行过程：
+
+1. Spring事务管理器，创建数据库连接conn
+2. `conn.autocommit=flase`
+3. 将数据库连接conn放入ThreadLocal（key是DataSource，value是conn连接，这就要求Spring事务管理器中的DataSource和JDBC Tmeplate中的DataSource是同一个，否则，事务可能就会失效）
+4. 执行业务方法
+5. 如果执行成功，则提交事务
+6. 如果抛出了异常，则回滚
+
+隔离级别会依赖于数据库，传播行为是Spring事务管理中的难点。
+
+<div class="note info">同一个数据连接（或事务），要么一起提交，要么一起回滚。</div>
+
+执行的核心逻辑：
+
+```java
+    @Nullable
+    protected Object invokeWithinTransaction(Method method, @Nullable Class<?> targetClass,
+                                             final TransactionAspectSupport.InvocationCallback invocation) throws Throwable {
+
+        // If the transaction attribute is null, the method is non-transactional.
+        TransactionAttributeSource tas = getTransactionAttributeSource();
+        // 获取@Transactional注解的属性值
+        final TransactionAttribute txAttr = (tas != null ? tas.getTransactionAttribute(method, targetClass) : null);
+
+        // 获取Spring 容器中的事务管理器
+        final TransactionManager tm = determineTransactionManager(txAttr);
+
+        // ReactiveTransactionManager用的比较少，通常都走else的逻辑
+        if (this.reactiveAdapterRegistry != null && tm instanceof ReactiveTransactionManager) {
+            boolean isSuspendingFunction = KotlinDetector.isSuspendingFunction(method);
+            boolean hasSuspendingFlowReturnType = isSuspendingFunction &&
+                    COROUTINES_FLOW_CLASS_NAME.equals(new MethodParameter(method, -1).getParameterType().getName());
+            if (isSuspendingFunction && !(invocation instanceof TransactionAspectSupport.CoroutinesInvocationCallback)) {
+                throw new IllegalStateException("Coroutines invocation not supported: " + method);
+            }
+            TransactionAspectSupport.CoroutinesInvocationCallback corInv = (isSuspendingFunction ? (TransactionAspectSupport.CoroutinesInvocationCallback) invocation : null);
+
+            TransactionAspectSupport.ReactiveTransactionSupport txSupport = this.transactionSupportCache.computeIfAbsent(method, key -> {
+                Class<?> reactiveType =
+                        (isSuspendingFunction ? (hasSuspendingFlowReturnType ? Flux.class : Mono.class) : method.getReturnType());
+                ReactiveAdapter adapter = this.reactiveAdapterRegistry.getAdapter(reactiveType);
+                if (adapter == null) {
+                    throw new IllegalStateException("Cannot apply reactive transaction to non-reactive return type: " +
+                            method.getReturnType());
+                }
+                return new TransactionAspectSupport.ReactiveTransactionSupport(adapter);
+            });
+
+            TransactionAspectSupport.InvocationCallback callback = invocation;
+            if (corInv != null) {
+                callback = () -> CoroutinesUtils.invokeSuspendingFunction(method, corInv.getTarget(), corInv.getArguments());
+            }
+            Object result = txSupport.invokeWithinTransaction(method, targetClass, callback, txAttr, (ReactiveTransactionManager) tm);
+            if (corInv != null) {
+                Publisher<?> pr = (Publisher<?>) result;
+                return (hasSuspendingFlowReturnType ? TransactionAspectSupport.KotlinDelegate.asFlow(pr) :
+                        TransactionAspectSupport.KotlinDelegate.awaitSingleOrNull(pr, corInv.getContinuation()));
+            }
+            return result;
+        }
+
+        PlatformTransactionManager ptm = asPlatformTransactionManager(tm);
+
+        // 会将执行的方法名称设置为事务的名称
+        final String joinpointIdentification = methodIdentification(method, targetClass, txAttr);
+
+        if (txAttr == null || !(ptm instanceof CallbackPreferringPlatformTransactionManager)) {
+            // 开启一个事务
+            TransactionAspectSupport.TransactionInfo txInfo = createTransactionIfNecessary(ptm, txAttr, joinpointIdentification);
+
+            Object retVal;
+            try {
+
+                // 执行被代理对象中的方法
+                retVal = invocation.proceedWithInvocation();
+            } catch (Throwable ex) {
+                // 抛出异常，则回滚
+                completeTransactionAfterThrowing(txInfo, ex);
+                throw ex;
+            } finally {
+                cleanupTransactionInfo(txInfo);
+            }
+
+            if (retVal != null && vavrPresent && TransactionAspectSupport.VavrDelegate.isVavrTry(retVal)) {
+                // Set rollback-only in case of Vavr failure matching our rollback rules...
+                TransactionStatus status = txInfo.getTransactionStatus();
+                if (status != null && txAttr != null) {
+                    retVal = TransactionAspectSupport.VavrDelegate.evaluateTryFailure(retVal, txAttr, status);
+                }
+            }
+            // 提交事务
+            commitTransactionAfterReturning(txInfo);
+            return retVal;
+        } else {
+            Object result;
+            final TransactionAspectSupport.ThrowableHolder throwableHolder = new TransactionAspectSupport.ThrowableHolder();
+
+            // It's a CallbackPreferringPlatformTransactionManager: pass a TransactionCallback in.
+            try {
+                result = ((CallbackPreferringPlatformTransactionManager) ptm).execute(txAttr, status -> {
+                    TransactionAspectSupport.TransactionInfo txInfo = prepareTransactionInfo(ptm, txAttr, joinpointIdentification, status);
+                    try {
+                        Object retVal = invocation.proceedWithInvocation();
+                        if (retVal != null && vavrPresent && TransactionAspectSupport.VavrDelegate.isVavrTry(retVal)) {
+                            // Set rollback-only in case of Vavr failure matching our rollback rules...
+                            retVal = TransactionAspectSupport.VavrDelegate.evaluateTryFailure(retVal, txAttr, status);
+                        }
+                        return retVal;
+                    } catch (Throwable ex) {
+                        if (txAttr.rollbackOn(ex)) {
+                            // A RuntimeException: will lead to a rollback.
+                            if (ex instanceof RuntimeException) {
+                                throw (RuntimeException) ex;
+                            } else {
+                                throw new TransactionAspectSupport.ThrowableHolderException(ex);
+                            }
+                        } else {
+                            // A normal return value: will lead to a commit.
+                            throwableHolder.throwable = ex;
+                            return null;
+                        }
+                    } finally {
+                        cleanupTransactionInfo(txInfo);
+                    }
+                });
+            } catch (TransactionAspectSupport.ThrowableHolderException ex) {
+                throw ex.getCause();
+            } catch (TransactionSystemException ex2) {
+                if (throwableHolder.throwable != null) {
+                    logger.error("Application exception overridden by commit exception", throwableHolder.throwable);
+                    ex2.initApplicationException(throwableHolder.throwable);
+                }
+                throw ex2;
+            } catch (Throwable ex2) {
+                if (throwableHolder.throwable != null) {
+                    logger.error("Application exception overridden by commit exception", throwableHolder.throwable);
+                }
+                throw ex2;
+            }
+
+            // Check result state: It might indicate a Throwable to rethrow.
+            if (throwableHolder.throwable != null) {
+                throw throwableHolder.throwable;
+            }
+            return result;
+        }
+    }
+```
+
+## Spring MVC源码分析
+
+Spring MVC本质上是基于Servlet API构建的原始Web框架。
+
+### Spring MVC执行流程
+
+最典型的MVC就是JSP+Servlet+javabean的模式。
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202301171017775.png" alt="image-20230117101715723" style="zoom:67%;" />
+
+所有的请求都会经过DispatcherServlet。
+
+Spring MVC的请求执行过程：
+
+![img](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202301171042925.jpeg)
+
+HandlerMapping的典型实现：
+
+- org.springframework.web.servlet.handler.BeanNameUrlHandlerMapping
+- org.springframework.web.servlet.handler.SimpleUrlHandlerMapping
+
+HandlerAdapter的典型实现：
+
+- org.springframework.web.servlet.mvc.HttpRequestHandlerAdapter
+
+ViewResoler的典型实现：
+
+- org.springframework.web.servlet.view.BeanNameViewResolver
+
+处理请求的方法：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202301171134195.png" alt="image-20230117113413140" style="zoom: 67%;" />
+
+可以发现，一旦有一个Handler成功匹配，就会直接返回，不会再往下匹配了。
+
+@RequestMapping的完成流程：https://www.processon.com/view/link/615ea79e1efad4070b2d6707
+
+参数解析转换核心API：
+
+- org.springframework.http.converter.HttpMessageConverter
+
+扩展点：前、后拦截器：
+
+```java
+public class JycInterceptor implements HandlerInterceptor {
+
+    /**
+     * 在 HandlerMapping 确定合适的处理程序对象之后，但在 HandlerAdapter 调用处理程序之前调用
+     */
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        return HandlerInterceptor.super.preHandle(request, response, handler);
+    }
+
+    /**
+     * 拦截处理程序的执行。在 HandlerAdapter 实际上调用处理程序之后调用，但在 DispatcherServlet 呈现视图之前调用
+     */
+    @Override
+    public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
+        HandlerInterceptor.super.postHandle(request, response, handler, modelAndView);
+    }
+
+    /**
+     * 请求处理完成后的回调，即渲染视图后。将在处理程序执行的任何结果上调用，从而允许进行适当的资源清理。
+     */
+    @Override
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
+        HandlerInterceptor.super.afterCompletion(request, response, handler, ex);
+    }
+}
+
+```
+
+### Spring MVC启动过程
+
+容器之间的关系：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202301172114686.png" alt="image-20230117211434636" style="zoom:25%;" />
+
+<div class="note info">SPI机制：服务提供者接口，Tomcat提供了WebApplicationInitializer的接口，实现者必须按照Servlet规范实现接口，然后在MTEA-INF/services目录下放置一个名称为javax.servlet接口名，里面的内容是实现者实现的类的完整的类限定名。</div>
+
+<div class="note info">Tomcat除了会帮我们实例化我们所实现的WebApplicationInitializer的类以外，还提供了@HandlerTypes，他会将@HandlerTypes执行的接口的实现类，传递到onStartup方法的第一个参数上面（webAppInitializerClasses）去。</div>
+
+```java
+    protected void registerDispatcherServlet(ServletContext servletContext) {
+        String servletName = getServletName();
+        Assert.hasLength(servletName, "getServletName() must not return null or empty");
+        // 创建Servlet容器
+        WebApplicationContext servletAppContext = createServletApplicationContext();
+        Assert.notNull(servletAppContext, "createServletApplicationContext() must not return null");
+        // 创建DispatcherServlet
+        FrameworkServlet dispatcherServlet = createDispatcherServlet(servletAppContext);
+        Assert.notNull(dispatcherServlet, "createDispatcherServlet(WebApplicationContext) must not return null");
+        dispatcherServlet.setContextInitializers(getServletApplicationContextInitializers());
+
+        ServletRegistration.Dynamic registration = servletContext.addServlet(servletName, dispatcherServlet);
+        if (registration == null) {
+            throw new IllegalStateException("Failed to register servlet with name '" + servletName + "'. " +
+                    "Check if there is another servlet registered under the same name.");
+        }
+
+        // 启动时加载
+        registration.setLoadOnStartup(1);
+        // 映射
+        registration.addMapping(getServletMappings());
+        // 是否支持异步
+        registration.setAsyncSupported(isAsyncSupported());
+        // 设置DispatcherServlet的过滤器
+        Filter[] filters = getServletFilters();
+        if (!ObjectUtils.isEmpty(filters)) {
+            for (Filter filter : filters) {
+                registerServletFilter(servletContext, filter);
+            }
+        }
+
+        // 模版方法
+        customizeRegistration(registration);
+    }
+```
+
+启动核心API：
+
+- org.springframework.web.context.ContextLoader
+
+添加配置类：
+
+- org.springframework.web.servlet.config.annotation.WebMvcConfigurer
+
+#### Spring和Spring MVC为什么需要父子容器？不要不行吗？
+
+就实现层面来说，不用父子容器也可以完成所需功能。之所以设置了父子容器：
+
+- 为了与Spring划分边界，将Controller交由Spring mvc的容器管理，其他则交由Spring管理
+- 规范整体框架，使得父容器（Spring容器）无法访问子容器（Spring MVC容器）
+- 为了方便子容器的切换，可以很方便的将Spring MVC替换为struts
+- 为了节省重复创建Bean的开销
+
+#### 是否可以把所有Bean都通过Spring容器来管理？
+
+不可以，因为HandleMethod需要在Spring MVC容器中查找Controller，如果交由Spring管理，会找不到对应的Controller。
+
+#### 是否可以把所有Bean都交由Spring MVC容器进行管理？
+
+可以，因为doGetBean方法的逻辑是，子容器中找不到，会在父容器查找Bean，都放到子容器中，可以直接查找到。
 
 ## Mybatis源码分析
 
 ### Mybatis源码体系
 
+JDBC的缺点：
+
+- sql语句耦合在代码中，维护性差
+- JDBC频繁的创建和关闭数据库连接，连接消耗大
+- 不好设置缓存
+- 参数设置非常不方便
+- 处理查询结果集，类型转换非常麻烦
+
+Mybatis的体系结构如下：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202301181117366.png" alt="image-20230118111723305" style="zoom:50%;" />
+
+Mybatis的功能架构可以分为三层：
+
+- API接口层：提供给外部使用的接口API，开发人员通过这些本地API来操作数据库，接口层一接收到请求就会调用数据处理层来玩完成具体的数据处理
+- 数据处理层：负责具体的SQL查找、SQL解析、SQL执行和执行结果映射处理等，它的主要目的是根据调用的请求完成一次数据库操作
+- 基础支撑层：负责最基础的功能支撑，包括连接管理、事务管理、配置加载和缓存处理，这些都是共用的东西，将他们抽取出来作为最基础的组件，为上层的数据层提供最基础的支撑
+
+解析过程：https://www.processon.com/view/link/5efc2381f346fb1ae58925c1
+
+解析到的所有对象的数据会存储到：org.apache.ibatis.session.Configuration。
+
+Mybatis提供的默认的别名注册器：
+
+```java
+  public TypeAliasRegistry() {
+    registerAlias("string", String.class);
+
+    registerAlias("byte", Byte.class);
+    registerAlias("long", Long.class);
+    registerAlias("short", Short.class);
+    registerAlias("int", Integer.class);
+    registerAlias("integer", Integer.class);
+    registerAlias("double", Double.class);
+    registerAlias("float", Float.class);
+    registerAlias("boolean", Boolean.class);
+
+    registerAlias("byte[]", Byte[].class);
+    registerAlias("long[]", Long[].class);
+    registerAlias("short[]", Short[].class);
+    registerAlias("int[]", Integer[].class);
+    registerAlias("integer[]", Integer[].class);
+    registerAlias("double[]", Double[].class);
+    registerAlias("float[]", Float[].class);
+    registerAlias("boolean[]", Boolean[].class);
+
+    registerAlias("_byte", byte.class);
+    registerAlias("_long", long.class);
+    registerAlias("_short", short.class);
+    registerAlias("_int", int.class);
+    registerAlias("_integer", int.class);
+    registerAlias("_double", double.class);
+    registerAlias("_float", float.class);
+    registerAlias("_boolean", boolean.class);
+
+    registerAlias("_byte[]", byte[].class);
+    registerAlias("_long[]", long[].class);
+    registerAlias("_short[]", short[].class);
+    registerAlias("_int[]", int[].class);
+    registerAlias("_integer[]", int[].class);
+    registerAlias("_double[]", double[].class);
+    registerAlias("_float[]", float[].class);
+    registerAlias("_boolean[]", boolean[].class);
+
+    registerAlias("date", Date.class);
+    registerAlias("decimal", BigDecimal.class);
+    registerAlias("bigdecimal", BigDecimal.class);
+    registerAlias("biginteger", BigInteger.class);
+    registerAlias("object", Object.class);
+
+    registerAlias("date[]", Date[].class);
+    registerAlias("decimal[]", BigDecimal[].class);
+    registerAlias("bigdecimal[]", BigDecimal[].class);
+    registerAlias("biginteger[]", BigInteger[].class);
+    registerAlias("object[]", Object[].class);
+
+    registerAlias("map", Map.class);
+    registerAlias("hashmap", HashMap.class);
+    registerAlias("list", List.class);
+    registerAlias("arraylist", ArrayList.class);
+    registerAlias("collection", Collection.class);
+    registerAlias("iterator", Iterator.class);
+
+    registerAlias("ResultSet", ResultSet.class);
+  }
+```
+
+二级缓存的实现采用了装饰器设计模式：org.apache.ibatis.cache.impl.PerpetualCache。过期策略可以设置：LRU、FIFO、SOFT、WEAK等，默认是LRU。
+
+![image-20230118161014727](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202301181610788.png)
+
+每一个CRUD操作最终都会解析为一个：org.apache.ibatis.mapping.MappedStatement。
+
+sql对应的对象：
+
+- Dynamic sqlSource（需要拼接参数的）
+- Raw sqlSource（不需要拼接参数的）
+
+动态标签会被解析为：
+
+![Mybatis源码解析-SqlNode解析- 掘金](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202301182126894.awebp)
+
+解析SQL NODE：org.apache.ibatis.scripting.xmltags.XMLScriptBuilder
+
+```java
+  protected MixedSqlNode parseDynamicTags(XNode node) {
+    List<SqlNode> contents = new ArrayList<>();
+    NodeList children = node.getNode().getChildNodes();
+    for (int i = 0; i < children.getLength(); i++) {
+      XNode child = node.newXNode(children.item(i));
+      if (child.getNode().getNodeType() == Node.CDATA_SECTION_NODE || child.getNode().getNodeType() == Node.TEXT_NODE) {
+        String data = child.getStringBody("");
+        TextSqlNode textSqlNode = new TextSqlNode(data);
+        if (textSqlNode.isDynamic()) {
+          contents.add(textSqlNode);
+          isDynamic = true;
+        } else {
+          contents.add(new StaticTextSqlNode(data));
+        }
+      } else if (child.getNode().getNodeType() == Node.ELEMENT_NODE) { // issue #628
+        String nodeName = child.getNode().getNodeName();
+        NodeHandler handler = nodeHandlerMap.get(nodeName);
+        if (handler == null) {
+          throw new BuilderException("Unknown element <" + nodeName + "> in SQL statement.");
+        }
+        handler.handleNode(child, contents);
+        isDynamic = true;
+      }
+    }
+    return new MixedSqlNode(contents);
+  }
+```
+
 ### 数据操作过程源码剖析
+
+SqlSession是一种门面设计模式。
+
+Executor的实现类：
+
+- SIMPLE（默认）
+- REUSE：执行器会重用PrepareStatement
+- BATCH：执行器不仅重用语句还会执行批量更新
+
+拦截器的作用：
+
+- 分页
+- 读写分离
+- 修改SQL，拿到SQL语句
+
+动态标签解析：ongl表达式。
 
 # 并发编程专题
 
