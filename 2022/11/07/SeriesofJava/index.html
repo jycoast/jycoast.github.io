@@ -43,8 +43,14 @@
 <meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202301181117366.png">
 <meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202301181610788.png">
 <meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202301182126894.awebp">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202301192143288.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202301192151147.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202301192202949.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202301192236622.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202301192241561.png">
+<meta property="og:image" content="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202301192325517.png">
 <meta property="article:published_time" content="2022-11-07T00:00:00.000Z">
-<meta property="article:modified_time" content="2023-01-19T03:29:07.710Z">
+<meta property="article:modified_time" content="2023-01-19T15:47:09.503Z">
 <meta property="article:author" content="吉永超">
 <meta property="article:tag" content="Java">
 <meta property="article:tag" content="面试">
@@ -260,7 +266,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-01-19 03:29:07" itemprop="dateModified" datetime="2023-01-19T03:29:07+00:00">2023-01-19</time>
+                <time title="修改时间：2023-01-19 15:47:09" itemprop="dateModified" datetime="2023-01-19T15:47:09+00:00">2023-01-19</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -278,14 +284,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>99k</span>
+              <span>101k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1:30</span>
+              <span>1:32</span>
             </span>
 
         </div>
@@ -754,7 +760,74 @@
 <h1 id="并发编程专题"><a class="markdownIt-Anchor" href="#并发编程专题"></a> 并发编程专题</h1>
 <h2 id="并发基本原理"><a class="markdownIt-Anchor" href="#并发基本原理"></a> 并发基本原理</h2>
 <h3 id="jmm"><a class="markdownIt-Anchor" href="#jmm"></a> JMM</h3>
+<p>JMM即Java多线程通信模型-共享内存模型，包含三个方面：</p>
+<ul>
+<li>Java层面</li>
+<li>Jvm层面</li>
+<li>硬件层面</li>
+</ul>
+<p>并发与并行：</p>
+<ul>
+<li>并行：指同一时刻，有多条指令在多个处理器上同时执行。无论从微观还是宏观来看，二者都是一起执行的</li>
+<li>并发：指同一时刻，只能有一条执行执行，但多个进程指令会被快速的轮换执行，使得在宏观上具有多个进程同时执行的效果，但在微观上并不是同时执行的，只是把时间分成若干段，使得多个进程快速交替的执行</li>
+</ul>
+<p>并发三大特性：可见性、有序性、原子性；并发要解决的三大问题：同步问题、互斥问题、分工问题。</p>
+<h4 id="可见性"><a class="markdownIt-Anchor" href="#可见性"></a> 可见性</h4>
+<p>当一个线程修改了共享变量的值，其他线程能够看到修改的值。Java内存模型是通过在变量修改后将新值同步回主内存，在变量读取前从主内存刷新变量值这种依赖主内存作为传递没接的方法来实现可见性的。</p>
+<p>保证可见性的方法：</p>
+<ul>
+<li>通过volatile关键字保证可见性</li>
+<li>通过内存屏障保障可见性</li>
+<li>通过sychronized关键字保证可见性</li>
+<li>通过Lock保证可见性</li>
+<li>通过final关键字保证可见性</li>
+</ul>
+<h4 id="原子性"><a class="markdownIt-Anchor" href="#原子性"></a> 原子性</h4>
+<h4 id="有序性"><a class="markdownIt-Anchor" href="#有序性"></a> 有序性</h4>
+<p>Java虚拟机规范中定义了Java内存模型，用于屏蔽掉各种硬件和操作系统内存访问差异，以实现让Java程序在各种平台下都能达到一致的并发效果，JMM规范了Java虚拟机与计算机内存是如何协同工作的，即一个线程如何和何时可以看到由其他线程修改过后的共享变量的值，以及在必须时如何同步的访问共享变量。JMM描述的是一种抽象的概念，一组规则，通过这组规则控制程序中各个变量在共享数据区域和私有数据区域的访问方式，JMM是围绕原子性、有序性、可见性展开的。</p>
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202301192143288.png" alt="image-20230119214301158" style="zoom: 67%;" />
+<p>Java内存模型与硬件内存架构之间存在差异。硬件内存架构没有区分线程栈和堆。对于硬件，所有的线程栈和堆都分布在主内存中。部分线程栈和堆可能有时候会出现在CPU缓存中和CPU内部的寄存器中。如下图所示，Java内存模型和计算机硬件内存架构是一个交叉关系：</p>
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202301192151147.png" alt="image-20230119215101088" style="zoom:67%;" />
+<p>关于主内存和工作内存之间的具体交互协议，即一个变量如何才主内存拷贝到工作内存、如何从工作内存到主内存之间的实现细节，Java内存模型定义了以下八种操作来完成；</p>
+<ul>
+<li>lock（锁定）：作用于主内存的变量，把一个变量标识为一条线程独占状态</li>
+<li>unlock（解锁）作用于主内存变量，把一个处于锁定状态的变量释放出来，释放后的变量才可以被其他线程锁定</li>
+<li>read（读取）：作用于主内存变量，把一个变量值从主内存传输到线程的工作内存中，以便随后的load动作使用</li>
+<li>load（载入）：作用于工作内存的变量，它把read操作从主内存中得到的变量值放入工作内存的变量副本中</li>
+<li>use（使用）：作用于工作内存的变量，把工作内存中一个变量值传递给执行引擎，每当虚拟机遇到一个需要使用变量的值的字节码指令时将会执行这个操作</li>
+<li>assign（赋值）：作用于工作内存的变量，它把一个从执行引擎接收到的值赋值给工作内存的变量，每当虚拟机遇到一个给变量赋值的字节码指令时执行这个操作</li>
+<li>store（存储）；作用于工作内存的变量，把工作内存中的一个变量的值传送到主内存中，以便随后的write的操作</li>
+<li>write（写入）：作用于主内存的变量，它把store操作从工作内存中一个变量的值传送到主内存的变量中</li>
+</ul>
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202301192202949.png" alt="image-20230119220218821" style="zoom:67%;" />
+<p>volatile关键字的C++实现源码：</p>
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202301192236622.png" alt="image-20230119223620590" style="zoom: 33%;" />
+<p>可以发现当变量被volitle关键字修饰后，在变量被修改后，会添加一个内存屏障。</p>
+<p>内存屏障在Linux系统x86中的实现：</p>
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202301192241561.png" alt="image-20230119224144530" style="zoom: 50%;" />
+<p>汇编层面volatile的实现：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lock;addl $<span class="number">0</span>,<span class="number">0</span>(%%rsp)</span><br></pre></td></tr></table></figure>
+<p>模板解释器(templateInterpreter)，其对每个指令都写了一段对应的汇编代码，启动时将每个指令与对应汇编代码入口绑定，可以说是效率做到了极致。</p>
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202301192325517.png" alt="image-20230119232513483" style="zoom:67%;" />
+<p>lock前缀指令的作用：</p>
+<ol>
+<li>确保后续指令执行的原子性。在Pentium及之前的处理器中，带有lock前缀的指令在执行期间会锁住总线，使得其它处理器暂时无法通过总线访问内存，很显然，这个开销很大。在新的处理器中，Intel使用缓存锁定来保证指令执行的原子性，缓存锁定将大大降低lock前缀指令的执行开销</li>
+<li>lock前缀指令具有类似内存屏障的功能，禁止该指令与前面和后面的读写指令重排序</li>
+<li>lock前缀指令会等待它之前所有的指令完成、并且所有缓冲的写操作写回内存（也就是将store buffer中的内容写入内存）之后才开始执行，并且根据缓存一执行协议，刷新store buffer的操作会导致其他cache中的副本失效。</li>
+</ol>
+<div class="note info">Java中，保证可见性的方式有两种，一种是内存屏障（JVM利用storeLoad，硬件层面利用lock或mfence），另一种是利用上下文切换。</div>
 <h3 id="list-set-hashmap"><a class="markdownIt-Anchor" href="#list-set-hashmap"></a> List、Set、HashMap</h3>
+<h3 id="线程池底底层原理"><a class="markdownIt-Anchor" href="#线程池底底层原理"></a> 线程池底底层原理</h3>
+<h3 id="cas与atomic"><a class="markdownIt-Anchor" href="#cas与atomic"></a> CAS与Atomic</h3>
+<h3 id="synchronized"><a class="markdownIt-Anchor" href="#synchronized"></a> synchronized</h3>
+<h3 id="reentrantlock"><a class="markdownIt-Anchor" href="#reentrantlock"></a> ReentrantLock</h3>
+<h3 id="semaphorer与countdownlatch"><a class="markdownIt-Anchor" href="#semaphorer与countdownlatch"></a> Semaphorer与CountDownLatch</h3>
+<h3 id="cylicbarrier"><a class="markdownIt-Anchor" href="#cylicbarrier"></a> CylicBarrier</h3>
+<h3 id="reentrantreadwritelock"><a class="markdownIt-Anchor" href="#reentrantreadwritelock"></a> ReentrantReadWriteLock</h3>
+<h3 id="blockingqueue"><a class="markdownIt-Anchor" href="#blockingqueue"></a> BlockingQueue</h3>
+<h3 id="forkjoin"><a class="markdownIt-Anchor" href="#forkjoin"></a> ForkJoin</h3>
+<h3 id="completablefuture"><a class="markdownIt-Anchor" href="#completablefuture"></a> CompletableFuture</h3>
+<h3 id="并发设计模式"><a class="markdownIt-Anchor" href="#并发设计模式"></a> 并发设计模式</h3>
 <h1 id="性能优化专题"><a class="markdownIt-Anchor" href="#性能优化专题"></a> 性能优化专题</h1>
 <h2 id="mysql"><a class="markdownIt-Anchor" href="#mysql"></a> MySQL</h2>
 <h2 id="jvm"><a class="markdownIt-Anchor" href="#jvm"></a> JVM</h2>
@@ -879,7 +952,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A1%86%E6%9E%B6%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90"><span class="nav-number">1.</span> <span class="nav-text"> 框架源码分析</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#spring%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90"><span class="nav-number">1.1.</span> <span class="nav-text"> Spring源码分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#spring%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E6%A6%82%E8%A7%88"><span class="nav-number">1.1.1.</span> <span class="nav-text"> Spring核心原理概览</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#spring%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5"><span class="nav-number">1.1.2.</span> <span class="nav-text"> Spring核心概念</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#bean%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F"><span class="nav-number">1.1.3.</span> <span class="nav-text"> Bean的生命周期</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90"><span class="nav-number">1.1.4.</span> <span class="nav-text"> 依赖注入源码解析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BE%AA%E7%8E%AF%E4%BE%9D%E8%B5%96%E8%A7%A3%E6%9E%90"><span class="nav-number">1.1.5.</span> <span class="nav-text"> 循环依赖解析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8E%A8%E6%96%AD%E6%9E%84%E9%80%A0%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90"><span class="nav-number">1.1.6.</span> <span class="nav-text"> 推断构造源码解析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#spring%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B"><span class="nav-number">1.1.7.</span> <span class="nav-text"> Spring启动过程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E7%B1%BB%E8%A7%A3%E6%9E%90%E4%B8%8E%E6%89%AB%E6%8F%8F%E8%BF%87%E7%A8%8B%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90"><span class="nav-number">1.1.8.</span> <span class="nav-text"> 配置类解析与扫描过程源码解析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B4%E5%90%88mybatis%E5%BA%95%E5%B1%82%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90"><span class="nav-number">1.1.9.</span> <span class="nav-text"> 整合Mybatis底层源码解析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#spring-aop%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90"><span class="nav-number">1.1.10.</span> <span class="nav-text"> Spring AOP源码解析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#spring%E4%BA%8B%E5%8A%A1%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90"><span class="nav-number">1.1.11.</span> <span class="nav-text"> Spring事务源码解析</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#spring-mvc%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90"><span class="nav-number">1.2.</span> <span class="nav-text"> Spring MVC源码分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#spring-mvc%E6%89%A7%E8%A1%8C%E6%B5%81%E7%A8%8B"><span class="nav-number">1.2.1.</span> <span class="nav-text"> Spring MVC执行流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#spring-mvc%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B"><span class="nav-number">1.2.2.</span> <span class="nav-text"> Spring MVC启动过程</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mybatis%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90"><span class="nav-number">1.3.</span> <span class="nav-text"> Mybatis源码分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#mybatis%E6%BA%90%E7%A0%81%E4%BD%93%E7%B3%BB"><span class="nav-number">1.3.1.</span> <span class="nav-text"> Mybatis源码体系</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E6%93%8D%E4%BD%9C%E8%BF%87%E7%A8%8B%E6%BA%90%E7%A0%81%E5%89%96%E6%9E%90"><span class="nav-number">1.3.2.</span> <span class="nav-text"> 数据操作过程源码剖析</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B8%93%E9%A2%98"><span class="nav-number">2.</span> <span class="nav-text"> 并发编程专题</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B9%B6%E5%8F%91%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86"><span class="nav-number">2.1.</span> <span class="nav-text"> 并发基本原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#jmm"><span class="nav-number">2.1.1.</span> <span class="nav-text"> JMM</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#list-set-hashmap"><span class="nav-number">2.1.2.</span> <span class="nav-text"> List、Set、HashMap</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E4%B8%93%E9%A2%98"><span class="nav-number">3.</span> <span class="nav-text"> 性能优化专题</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#mysql"><span class="nav-number">3.1.</span> <span class="nav-text"> MySQL</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#jvm"><span class="nav-number">3.2.</span> <span class="nav-text"> JVM</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#tomcat"><span class="nav-number">3.3.</span> <span class="nav-text"> Tomcat</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%88%86%E5%B8%83%E5%BC%8F%E6%A1%86%E6%9E%B6%E4%B8%93%E9%A2%98"><span class="nav-number">4.</span> <span class="nav-text"> 分布式框架专题</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#redis"><span class="nav-number">4.1.</span> <span class="nav-text"> Redis</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BE%AE%E6%9C%8D%E5%8A%A1%E4%B8%93%E9%A2%98"><span class="nav-number">5.</span> <span class="nav-text"> 微服务专题</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">6.</span> <span class="nav-text"> 参考</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A1%86%E6%9E%B6%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90"><span class="nav-number">1.</span> <span class="nav-text"> 框架源码分析</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#spring%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90"><span class="nav-number">1.1.</span> <span class="nav-text"> Spring源码分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#spring%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E6%A6%82%E8%A7%88"><span class="nav-number">1.1.1.</span> <span class="nav-text"> Spring核心原理概览</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#spring%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5"><span class="nav-number">1.1.2.</span> <span class="nav-text"> Spring核心概念</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#bean%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F"><span class="nav-number">1.1.3.</span> <span class="nav-text"> Bean的生命周期</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90"><span class="nav-number">1.1.4.</span> <span class="nav-text"> 依赖注入源码解析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BE%AA%E7%8E%AF%E4%BE%9D%E8%B5%96%E8%A7%A3%E6%9E%90"><span class="nav-number">1.1.5.</span> <span class="nav-text"> 循环依赖解析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8E%A8%E6%96%AD%E6%9E%84%E9%80%A0%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90"><span class="nav-number">1.1.6.</span> <span class="nav-text"> 推断构造源码解析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#spring%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B"><span class="nav-number">1.1.7.</span> <span class="nav-text"> Spring启动过程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E7%B1%BB%E8%A7%A3%E6%9E%90%E4%B8%8E%E6%89%AB%E6%8F%8F%E8%BF%87%E7%A8%8B%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90"><span class="nav-number">1.1.8.</span> <span class="nav-text"> 配置类解析与扫描过程源码解析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B4%E5%90%88mybatis%E5%BA%95%E5%B1%82%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90"><span class="nav-number">1.1.9.</span> <span class="nav-text"> 整合Mybatis底层源码解析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#spring-aop%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90"><span class="nav-number">1.1.10.</span> <span class="nav-text"> Spring AOP源码解析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#spring%E4%BA%8B%E5%8A%A1%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90"><span class="nav-number">1.1.11.</span> <span class="nav-text"> Spring事务源码解析</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#spring-mvc%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90"><span class="nav-number">1.2.</span> <span class="nav-text"> Spring MVC源码分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#spring-mvc%E6%89%A7%E8%A1%8C%E6%B5%81%E7%A8%8B"><span class="nav-number">1.2.1.</span> <span class="nav-text"> Spring MVC执行流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#spring-mvc%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B"><span class="nav-number">1.2.2.</span> <span class="nav-text"> Spring MVC启动过程</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mybatis%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90"><span class="nav-number">1.3.</span> <span class="nav-text"> Mybatis源码分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#mybatis%E6%BA%90%E7%A0%81%E4%BD%93%E7%B3%BB"><span class="nav-number">1.3.1.</span> <span class="nav-text"> Mybatis源码体系</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E6%93%8D%E4%BD%9C%E8%BF%87%E7%A8%8B%E6%BA%90%E7%A0%81%E5%89%96%E6%9E%90"><span class="nav-number">1.3.2.</span> <span class="nav-text"> 数据操作过程源码剖析</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B8%93%E9%A2%98"><span class="nav-number">2.</span> <span class="nav-text"> 并发编程专题</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B9%B6%E5%8F%91%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86"><span class="nav-number">2.1.</span> <span class="nav-text"> 并发基本原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#jmm"><span class="nav-number">2.1.1.</span> <span class="nav-text"> JMM</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#list-set-hashmap"><span class="nav-number">2.1.2.</span> <span class="nav-text"> List、Set、HashMap</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E6%B1%A0%E5%BA%95%E5%BA%95%E5%B1%82%E5%8E%9F%E7%90%86"><span class="nav-number">2.1.3.</span> <span class="nav-text"> 线程池底底层原理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#cas%E4%B8%8Eatomic"><span class="nav-number">2.1.4.</span> <span class="nav-text"> CAS与Atomic</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#synchronized"><span class="nav-number">2.1.5.</span> <span class="nav-text"> synchronized</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#reentrantlock"><span class="nav-number">2.1.6.</span> <span class="nav-text"> ReentrantLock</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#semaphorer%E4%B8%8Ecountdownlatch"><span class="nav-number">2.1.7.</span> <span class="nav-text"> Semaphorer与CountDownLatch</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#cylicbarrier"><span class="nav-number">2.1.8.</span> <span class="nav-text"> CylicBarrier</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#reentrantreadwritelock"><span class="nav-number">2.1.9.</span> <span class="nav-text"> ReentrantReadWriteLock</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#blockingqueue"><span class="nav-number">2.1.10.</span> <span class="nav-text"> BlockingQueue</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#forkjoin"><span class="nav-number">2.1.11.</span> <span class="nav-text"> ForkJoin</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#completablefuture"><span class="nav-number">2.1.12.</span> <span class="nav-text"> CompletableFuture</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B9%B6%E5%8F%91%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F"><span class="nav-number">2.1.13.</span> <span class="nav-text"> 并发设计模式</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E4%B8%93%E9%A2%98"><span class="nav-number">3.</span> <span class="nav-text"> 性能优化专题</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#mysql"><span class="nav-number">3.1.</span> <span class="nav-text"> MySQL</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#jvm"><span class="nav-number">3.2.</span> <span class="nav-text"> JVM</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#tomcat"><span class="nav-number">3.3.</span> <span class="nav-text"> Tomcat</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%88%86%E5%B8%83%E5%BC%8F%E6%A1%86%E6%9E%B6%E4%B8%93%E9%A2%98"><span class="nav-number">4.</span> <span class="nav-text"> 分布式框架专题</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#redis"><span class="nav-number">4.1.</span> <span class="nav-text"> Redis</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BE%AE%E6%9C%8D%E5%8A%A1%E4%B8%93%E9%A2%98"><span class="nav-number">5.</span> <span class="nav-text"> 微服务专题</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">6.</span> <span class="nav-text"> 参考</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -932,7 +1005,7 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">23:07</span>
+    <span title="站点阅读时长">23:09</span>
 </div>
 
         
