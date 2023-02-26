@@ -27,6 +27,9 @@
 10. 分布式
 11. shiro 或 Spring Sercurity
 
+## 杂谈
+1. 写给转行学IT朋友的话
+
 # 产品
 
 ## pureMusic

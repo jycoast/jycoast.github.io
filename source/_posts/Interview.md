@@ -2,8 +2,7 @@
 title: Java面试题精选
 date: 2020-10-07
 categories:
- - Java
- - 面试题
+- 面试题
 author: 吉永超
 ---
 
