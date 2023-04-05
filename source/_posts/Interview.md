@@ -837,7 +837,7 @@ UDP的特点：类似广播，不需要连接，发送方不管接受方有没�
 
 <img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202206142338449.png" alt="image-20220614233811412" style="zoom: 50%;" />
 
-  NIO模型：可靠性比较好，吞吐量比较高，适用于连接多，并且连接比较短（轻操作），例如聊天室，JDK1.4开始支持，变成模型最复杂。
+  NIO模型：可靠性比较好，吞吐量比较高，适用于连接多，并且连接比较短（轻操作），例如聊天室，JDK1.4开始支持，编程模型最复杂。
 
 <img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202206142339799.png" alt="image-20220614233902764" style="zoom: 50%;" />
 

@@ -4680,38 +4680,1570 @@ public class Test {
 - Hash表
 - B-Tree
 
+索引的图示：
 
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202302262254017.png" alt="image-20230226225419956" style="zoom:67%;" />
+
+#### B-Tree
+
+- 叶子结点具有相同的深度，叶子结点的指针为空
+- 所有索引元素不重复
+- 结点中的数据索引从左到右递增排列
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202302262313981.png" alt="image-20230226231317920" style="zoom:67%;" />
+
+#### B+Tree
+
+- 非叶子结点不存储data，只存储索引（冗余），可以放更多的索引
+- 叶子结点包含所有索引字段
+- 叶子结点用指针连接，提高区间访问的性能
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202302262314196.png" alt="image-20230226231446146" style="zoom:67%;" />
+
+查询MySQL页大小：
+
+```sql
+show global status like 'innodb_page_size';
+```
+
+默认页大小是16KB，每个非叶子结点可以放16KB/（8+6）B大约1170个元素，每个页可以放1170*1170再乘以16KB约2000多万的数据。
+
+#### Hash
+
+对索引的key进行一次hash计算就可以定位出数据存储的位置。
+
+- 很多时候Hash索引要比B+树索引更高效
+- 仅能满足“=”，“IN”，不支持范围查询
+- hash冲突问题
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202302262316121.png" alt="image-20230226231630067" style="zoom:67%;" />
+
+#### 索引实现
+
+InnoDB索引实现（聚集）
+
+- 表数据文件本身就是按B+Tree组织的一个索引结构文件
+
+- 聚集索引-叶子结点包含了完整的数据记录
+
+- 为什么建议InnoDB表必须建主键，并且推荐使用整型的自增主键？
+
+  如果没有主键，InnoDB引擎会自动选择所有数据都不相等的列，如果没有所有数据都不相等的列，则会使用rowId来构建B+树。使用整型的主键可以方便的比较大小，另外整型的存储空间也比较小。不是自增的主键在插入的时候，B+树可能会出现分裂和平衡的现象，从而影响性能。
+
+- 为什么非主键索引结构的叶子结点存储的是主键值？
+
+  主要是基于一致性和节省存储空间的考虑。
+
+![image-20230226232108067](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202302262321123.png)
+
+MyISAM索引文件和数据文件是分离的（非聚集）：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202302262322679.png" alt="image-20230226232224625" style="zoom:67%;" />
+
+多列索引的结构：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202302262323991.png" alt="image-20230226232307940" style="zoom:67%;" />
+
+会按照索引列的顺序来维护B+树，在上面这个例子中，InnoDB会先排好name，再比较age，再比较position，如果有一个字段可以排序，就不会再看后面的字段。
 
 ### EXPLAIN详解
 
+```sql
+DROP TABLE IF EXISTS `actor`;
+CREATE TABLE `actor` (
+	`id` INT ( 11 ) NOT NULL,
+	`name` VARCHAR ( 45 ) DEFAULT NULL,
+	`update_time` datetime DEFAULT NULL,
+	PRIMARY KEY (`id`) 
+) ENGINE = INNODB DEFAULT CHARSET = utf8;
+
+INSERT INTO `actor` ( `d`, `name`, `update_time` )
+VALUES (1, 'a', '2017‐12‐22 15:27:18' ),(2,  'b', '2017‐12‐22 5:27:18' ), (3, 'c', '2017‐12‐22 5:27:18' );
+
+DROP TABLE IF EXISTS `film`;
+CREATE TABLE `film` (
+	`id` INT ( 11 ) NOT NULL AUTO_INCREMENT,
+	`name` VARCHAR ( 10 ) DEFAULT NULL,
+	PRIMARY KEY ( `id` ),
+	KEY `idx_name` ( `name` )
+) ENGINE = INNODB DEFAULT CHARSET = utf8;
+
+INSERT INTO `film` ( `id`, `name` ) VALUES ( 3, '=film0' ),(1,'=film1' ),( 2, 'film2' );
+
+DROP TABLE IF EXISTS `film_actor`;
+CREATE TABLE `film_actor` (
+	`id` INT ( 11 ) NOT NULL,
+	`film_id` INT ( 11 ) NOT NULL,
+	`actor_id` INT ( 11 ) NOT NULL,
+	`remark` VARCHAR ( 255 ) DEFAULT NULL,
+	PRIMARY KEY ( `id` ),
+	KEY `idx_film_actor_id` ( `film_id`, `actor_id` )
+) ENGINE = INNODB DEFAULT CHARSET = utf8;
+
+INSERT INTO `film_actor` ( `id`, `film_id`, `actor_id` ) VALUES( 1, 1, 1 ),(2, 1, 2 ),(3,2,1 );
+```
+
+Filtered/100可以估算出将要和explain中前一个表进行连接的行数（前一个表指explain中id值比当前表id值小的表）。
+
+explainpartitions：相比explain多了个partitions字段，如果查询是基于分区表的话，会显示查询将访问的分区。
+
+#### EXPLAIN中的列
+
+##### id列
+
+select后面的是子查询，from后面的是派生表查询。
+
+#### type列
+
+system>const
+
+```sql
+EXPLAIN SELECT min( id ) FROM film;
+```
+
+
+
+```sql
+EXPLAIN EXTENDED SELECT * FROM( SELECT * FROM film WHERE id = 1 ) tmp;
+```
+
+```sql
+show warnings;
+```
+
+eq_ref
+
+```sql
+EXPLAIN SELECT * FROM film_actor LEFT JOIN film ON film_actor.film_id = film.id;
+```
+
+range
+
+```sql
+EXPLAIN SELECT * FROM actor WHERE id > 1;
+```
+
+index
+
+```sql
+EXPLAIN SELECT * FROM film;
+```
+
+
+
+#### 最佳实践
+
+```sql
+CREATE TABLE `employees`
+(`id` int(11) NOT NULL AUTO_INCREMENT,
+`name` varchar(24) NOT NULL DEFAULT '' COMMENT '姓名',
+`age` int(11) NOT NULL DEFAULT '0' COMMENT '年龄',
+`position` varchar(20) NOT NULL DEFAULT '' COMMENT '职位',
+`hire_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '入职时间',
+PRIMARY KEY(`id`), KEY`idx_name_age_position` (`name`,`age`,`position`) USING BTREE)
+ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8 COMMENT='员工记录表';
+
+INSERT INTO employees(name,age,position,hire_time) VALUES('LiLei',22,'manager',NOW());
+
+INSERT INTO employees(name,age,position,hire_time) VALUES('HanMeimei', 23,'dev',NOW());
+
+INSERT INTO employees(name,age,position,hire_time) VALUES('Lucy',23,'dev',NOW());
+```
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202302282328389.png" alt="image-20230228232848332" style="zoom:67%;" />
+
 ### SQL执行底层原理
 
-### 索引优化
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202303042341926.png" alt="image-20230304234154866" style="zoom:50%;" />
+
+#### 连接器
+
+
+
+#### 词法分析器
+
+SQL语句的分析分为词法分析与语法分析，mysql的词法分析由MySQLLex（MySQL自己实现的）完成，语法分析由Bison生成。除了Bison外，Java当中也有开源的词法结构分析工具，例如Antlr4，ANTLR从语法生成一个解析器，可以构建和遍历解析树。
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202303042342436.png" alt="image-20230304234237366" style="zoom: 50%;" />
+
+
+
+#### 优化器
+
+经过了分析器，MySQL就知道你要做什么了。在开始执行之前，还要经过优化器的处理。优化器是在表里面有多个索引的时候，决定使用哪个索引；或者在一个语句有多表关联（join）的时候，决定使用哪个索引；或者在一个语句有多表关联（join）的时候，决定各个表的连接顺序。比如你执行下面的语句，这个语句是执行两个表的join：
+
+```sql
+select * from test1 join test2 using(ID) where test1.name=jyc and test2.name=jyc;
+```
+
+既可以从表test1里面取出name=jyc记录的ID值，再根据ID值关联到表test2，再判断test2里面的name的值是否等于jyc；也可以从表test2里面取出name=jyc的记录的ID值，再根据ID值关联到test1，再判断test1里面name的值是否等于jyc。
+
+这两种执行方法的逻辑是一样的，但是执行的效率会有所不同，而优化器的作用就是决定选择使用哪一个方案，优化器阶段完成后，这个语句的执行方法就确定下来了，然后进入执行器阶段。如果你还有一些疑问，比如优化器是怎么选择索引的，有没有可能选择错等等。
+
+#### 执行器
+
+
+
+#### bin-log归档
+
+
+
+### 索引优化实践
+
+参考：
+
+- https://note.youdao.com/ynoteshare/index.html?id=d2e8a0ae8c9dc2a45c799b771a5899f6&type=note&time=1678024153495
+- https://note.youdao.com/share/?id=df15aba3aa76c225090d04d0dc776dd9&type=note
+
+#### 索引下推
+
+数据准备如下。
+
+```sql
+CREATE TABLE `employees` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(24) NOT NULL DEFAULT '' COMMENT '姓名',
+  `age` int(11) NOT NULL DEFAULT '0' COMMENT '年龄',
+  `position` varchar(20) NOT NULL DEFAULT '' COMMENT '职位',
+  `hire_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '入职时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_name_age_position` (`name`,`age`,`position`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COMMENT='员工记录表';
+
+INSERT INTO employees(name,age,position,hire_time) VALUES('LiLei',22,'manager',NOW());
+INSERT INTO employees(name,age,position,hire_time) VALUES('HanMeimei', 23,'dev',NOW());
+INSERT INTO employees(name,age,position,hire_time) VALUES('Lucy',23,'dev',NOW());
+
+drop procedure if exists insert_emp; 
+delimiter ;;
+create procedure insert_emp()        
+begin
+  declare i int;                    
+  set i=1;                          
+  while(i<=100000)do                 
+    insert into employees(name,age,position) values(CONCAT('zhuge',i),i,'dev');  
+    set i=i+1;                       
+  end while;
+end;;
+delimiter ;
+call insert_emp();
+```
+
+对于辅助的联合索引（name，age、position），正常情况按照最左前缀原则，`select * from employess where name like 'LiLei%' and age = 22 and position = 'manager'` ，这种情况只会走name字段索引，因为根据name字段过滤完，得到的索引行里的age和position是无序的，无法很好的利用索引。
+
+在MySQL5.6之前的版本，这个查询只能在联合索引里匹配到名字是'LiLei%'开头的索引，然后用这些索引对应的主键逐个回表，到主键索引上找出相应的记录，再对比age和position这两个字段的值是否符合。
+
+MySQL5.6引入了索引下推优化，可以在索引遍历过程中，对索引包含的所有字段先做判断，过滤掉不符合条件的记录之后再回表，可以有效的减少索引下推优化后，上面那个查询在联合索引里匹配到名字是'LiLei%'开头的索引之后，同时还会在索引里过滤age和position这两个字段，然后用过滤完剩下的索引对应的主键id再回表查整行数据。
+
+索引下推会减少回表次数，对于InnoDB引擎的表索引下推只能用于二级索引，InnoDB的主键索引（聚簇索引）树叶子结点上保存的是全行数据，所以这个时候索引下推并不会减少查询全行数据的效果。
+
+#### 如何选择合适的索引
+
+```sql
+set session optimizer_trace="enabled=on",end_markers_in_json=on;  --开启trace
+select * from employees where name > 'a' order by position;
+SELECT * FROM information_schema.OPTIMIZER_TRACE;
+```
+
+查看trace字段：
+
+```sql
+{
+  "steps": [
+    {
+      "join_preparation": {    --第一阶段：SQL准备阶段，格式化sql
+        "select#": 1,
+        "steps": [
+          {
+            "expanded_query": "/* select#1 */ select `employees`.`id` AS `id`,`employees`.`name` AS `name`,`employees`.`age` AS `age`,`employees`.`position` AS `position`,`employees`.`hire_time` AS `hire_time` from `employees` where (`employees`.`name` > 'a') order by `employees`.`position`"
+          }
+        ] /* steps */
+      } /* join_preparation */
+    },
+    {
+      "join_optimization": {    --第二阶段：SQL优化阶段
+        "select#": 1,
+        "steps": [
+          {
+            "condition_processing": {    --条件处理
+              "condition": "WHERE",
+              "original_condition": "(`employees`.`name` > 'a')",
+              "steps": [
+                {
+                  "transformation": "equality_propagation",
+                  "resulting_condition": "(`employees`.`name` > 'a')"
+                },
+                {
+                  "transformation": "constant_propagation",
+                  "resulting_condition": "(`employees`.`name` > 'a')"
+                },
+                {
+                  "transformation": "trivial_condition_removal",
+                  "resulting_condition": "(`employees`.`name` > 'a')"
+                }
+              ] /* steps */
+            } /* condition_processing */
+          },
+          {
+            "substitute_generated_columns": {
+            } /* substitute_generated_columns */
+          },
+          {
+            "table_dependencies": [    --表依赖详情
+              {
+                "table": "`employees`",
+                "row_may_be_null": false,
+                "map_bit": 0,
+                "depends_on_map_bits": [
+                ] /* depends_on_map_bits */
+              }
+            ] /* table_dependencies */
+          },
+          {
+            "ref_optimizer_key_uses": [
+            ] /* ref_optimizer_key_uses */
+          },
+          {
+            "rows_estimation": [    --预估表的访问成本
+              {
+                "table": "`employees`",
+                "range_analysis": {
+                  "table_scan": {     --全表扫描情况
+                    "rows": 10123,    --扫描行数
+                    "cost": 2054.7    --查询成本
+                  } /* table_scan */,
+                  "potential_range_indexes": [    --查询可能使用的索引
+                    {
+                      "index": "PRIMARY",    --主键索引
+                      "usable": false,
+                      "cause": "not_applicable"
+                    },
+                    {
+                      "index": "idx_name_age_position",    --辅助索引
+                      "usable": true,
+                      "key_parts": [
+                        "name",
+                        "age",
+                        "position",
+                        "id"
+                      ] /* key_parts */
+                    }
+                  ] /* potential_range_indexes */,
+                  "setup_range_conditions": [
+                  ] /* setup_range_conditions */,
+                  "group_index_range": {
+                    "chosen": false,
+                    "cause": "not_group_by_or_distinct"
+                  } /* group_index_range */,
+                  "analyzing_range_alternatives": {    --分析各个索引使用成本
+                    "range_scan_alternatives": [
+                      {
+                        "index": "idx_name_age_position",
+                        "ranges": [
+                          "a < name"      --索引使用范围
+                        ] /* ranges */,
+                        "index_dives_for_eq_ranges": true,
+                        "rowid_ordered": false,    --使用该索引获取的记录是否按照主键排序
+                        "using_mrr": false,
+                        "index_only": false,       --是否使用覆盖索引
+                        "rows": 5061,              --索引扫描行数
+                        "cost": 6074.2,            --索引使用成本
+                        "chosen": false,           --是否选择该索引
+                        "cause": "cost"
+                      }
+                    ] /* range_scan_alternatives */,
+                    "analyzing_roworder_intersect": {
+                      "usable": false,
+                      "cause": "too_few_roworder_scans"
+                    } /* analyzing_roworder_intersect */
+                  } /* analyzing_range_alternatives */
+                } /* range_analysis */
+              }
+            ] /* rows_estimation */
+          },
+          {
+            "considered_execution_plans": [
+              {
+                "plan_prefix": [
+                ] /* plan_prefix */,
+                "table": "`employees`",
+                "best_access_path": {    --最优访问路径
+                  "considered_access_paths": [   --最终选择的访问路径
+                    {
+                      "rows_to_scan": 10123,
+                      "access_type": "scan",     --访问类型：为scan，全表扫描
+                      "resulting_rows": 10123,
+                      "cost": 2052.6,
+                      "chosen": true,            --确定选择
+                      "use_tmp_table": true
+                    }
+                  ] /* considered_access_paths */
+                } /* best_access_path */,
+                "condition_filtering_pct": 100,
+                "rows_for_plan": 10123,
+                "cost_for_plan": 2052.6,
+                "sort_cost": 10123,
+                "new_cost_for_plan": 12176,
+                "chosen": true
+              }
+            ] /* considered_execution_plans */
+          },
+          {
+            "attaching_conditions_to_tables": {
+              "original_condition": "(`employees`.`name` > 'a')",
+              "attached_conditions_computation": [
+              ] /* attached_conditions_computation */,
+              "attached_conditions_summary": [
+                {
+                  "table": "`employees`",
+                  "attached": "(`employees`.`name` > 'a')"
+                }
+              ] /* attached_conditions_summary */
+            } /* attaching_conditions_to_tables */
+          },
+          {
+            "clause_processing": {
+              "clause": "ORDER BY",
+              "original_clause": "`employees`.`position`",
+              "items": [
+                {
+                  "item": "`employees`.`position`"
+                }
+              ] /* items */,
+              "resulting_clause_is_simple": true,
+              "resulting_clause": "`employees`.`position`"
+            } /* clause_processing */
+          },
+          {
+            "reconsidering_access_paths_for_index_ordering": {
+              "clause": "ORDER BY",
+              "steps": [
+              ] /* steps */,
+              "index_order_summary": {
+                "table": "`employees`",
+                "index_provides_order": false,
+                "order_direction": "undefined",
+                "index": "unknown",
+                "plan_changed": false
+              } /* index_order_summary */
+            } /* reconsidering_access_paths_for_index_ordering */
+          },
+          {
+            "refine_plan": [
+              {
+                "table": "`employees`"
+              }
+            ] /* refine_plan */
+          }
+        ] /* steps */
+      } /* join_optimization */
+    },
+    {
+      "join_execution": {    --第三阶段：SQL执行阶段
+        "select#": 1,
+        "steps": [
+        ] /* steps */
+      } /* join_execution */
+    }
+  ] /* steps */
+}
+```
+
+结论：全表扫描的成本低于索引扫描，所以mysql最终选择全表扫描
+
+```sql
+select * from employees where name > 'zzz' order by position;
+SELECT * FROM information_schema.OPTIMIZER_TRACE;
+```
+
+查看trace字段可知索引扫描的成本低于全表扫描，所以mysql最终选择索引扫描。
+
+```sql
+set session optimizer_trace="enabled=off";    --关闭trace
+```
+
+#### 常见SQL优化
+
+优化总结：
+
+filesort文件排序方式：
+
+- 单路排序
+
+  是一次性去除满足条件行的所有字段，然后在sort buffer中进行排序；
+
+- 双路排序
+
+  首先根据相应的条件取出相应的排序字段和可以直接定位行数据的行ID，然后在sort buffer中进行排序，排序完后需要再次取回其它需要的字段
+
+MySQL通过比较系统变量`max_length_for_sort_data`（默认1024字节）的大小和需要查询的字段的总大小来判断使用哪种排序模式。
+
+- 如果字段的总长度小于`max_length_for_sort_data`，那么就会使用单路排序模式
+- 如果字段的总长度大于`max_length_for_sort_data`，那么就会使用双路排序模式
+
+以下面的查询为例：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202303142324426.png" alt="https://note.youdao.com/yws/public/resource/d2e8a0ae8c9dc2a45c799b771a5899f6/xmlnote/132BCE97C2C946A2B0BA3633E08D1531/76138" style="zoom:67%;" />
+
+```sql
+set session optimizer_trace="enabled=on",end_markers_in_json=on;  --开启trace
+select * from employees where name = 'zhuge' order by position;
+select * from information_schema.OPTIMIZER_TRACE;
+```
+
+trace排序部分结果：
+
+```sql
+"join_execution": {    --Sql执行阶段
+        "select#": 1,
+        "steps": [
+          {
+            "filesort_information": [
+              {
+                "direction": "asc",
+                "table": "`employees`",
+                "field": "position"
+              }
+            ] /* filesort_information */,
+            "filesort_priority_queue_optimization": {
+              "usable": false,
+              "cause": "not applicable (no LIMIT)"
+            } /* filesort_priority_queue_optimization */,
+            "filesort_execution": [
+            ] /* filesort_execution */,
+            "filesort_summary": {                      --文件排序信息
+              "rows": 10000,                           --预计扫描行数
+              "examined_rows": 10000,                  --参与排序的行
+              "number_of_tmp_files": 3,                --使用临时文件的个数，这个值如果为0代表全部使用的sort_buffer内存排序，否则使用的磁盘文件排序
+              "sort_buffer_size": 262056,              --排序缓存的大小，单位Byte
+              "sort_mode": "<sort_key, packed_additional_fields>"       --排序方式，这里用的单路排序
+            } /* filesort_summary */
+          }
+        ] /* steps */
+      } /* join_execution */
+      
+```
+
+```sql
+set max_length_for_sort_data = 10;    --employees表所有字段长度总和肯定大于10字节
+select * from employees where name = 'zhuge' order by position;
+select * from information_schema.OPTIMIZER_TRACE;
+```
+
+trace排序部分结果：
+
+```sql
+
+"join_execution": {
+        "select#": 1,
+        "steps": [
+          {
+            "filesort_information": [
+              {
+                "direction": "asc",
+                "table": "`employees`",
+                "field": "position"
+              }
+            ] /* filesort_information */,
+            "filesort_priority_queue_optimization": {
+              "usable": false,
+              "cause": "not applicable (no LIMIT)"
+            } /* filesort_priority_queue_optimization */,
+            "filesort_execution": [
+            ] /* filesort_execution */,
+            "filesort_summary": {
+              "rows": 10000,
+              "examined_rows": 10000,
+              "number_of_tmp_files": 2,
+              "sort_buffer_size": 262136,   
+              "sort_mode": "<sort_key, rowid>"         --排序方式，这里用的双路排序
+            } /* filesort_summary */
+          }
+        ] /* steps */
+      } /* join_execution */
+```
+
+```sql
+ set session optimizer_trace="enabled=off";    --关闭trace
+```
+
+单路排序的详细过程：
+
+1. 从索引name找到第一个满足`name='zhuge'`条件的主键id
+2. 根据主键id取出整行，取出所有字段的值，存入sort buffer中
+3. 从索引name找到下一个满足`name='zhuge'`条件的主键id
+4. 重复步骤2，步骤3直到不满足`name='zhuge'`
+5. 对sort_buffer中的数据按照字段position排序
+6. 返回结果给客户端
+
+双路排序的详细过程：
+
+1. 从索引name找到第一个满足`name='zhuge'`的主键id
+2. 根据主键id取出整行，把排序字段position和主键id这两个字段放到sort buffer中
+3. 从索引name取出下一个满足`name='zhuge'`记录的主键id
+4. 重复3、4直到不满足`name='zhuge'`
+5. 对sort_buffer中的字段position和主键id按照字段position进行排序
+6. 遍历排序号的id和字段position，按照id的值回到原表中取出所有字段的值返回给客户端
+
+对于单路排序和双路排序两种模式，单路排序会把需要查询的字段都放到sort buffer中，而双路排序只会把主键和需要排序的字段放到sort buffer中进行排序，然后通过主键回到原表查询需要的字段。
+
+如果MySQL排序内存sort buffer配置的比较小并且没有条件继续增加了，可以适当将`max_length_for_sort_data`配置小点，让优化器选择使用双路排序算法，可以在sort buffer中一次排序更多的行，只是需要再根据主键回到原表取数据。如果MySQL排序内存有条件可以配置的比较大，可以适当增大`max_length_for_sort_data`的值，让优化器选择全字段排序（单路排序），把需要的字段放到sort buffer中，这样排序后就会直接从内存里返回查询结果了。总而言之，MySQL通过`max_length_for_sort_data`这个参数来控制排序，在不同场景使用不同的排序模式，从而提升排序效率。
+
+##### 索引设计原则
+
+- 代码线上，索引后上
+- 联合索引尽量覆盖条件
+- 不要在小基数字段上建立索引
+- 长字符串我们可以采用前缀索引
+- where与order by冲突时优先where
+- 基于慢sql查询做优化
+
+##### 分页查询优化
+
+对于自增且连续的主键排序的分页查询：
+
+```sql
+select * from employees ORDER BY name limit 90000,5;
+```
+
+可以优化为：
+
+```sql
+select * from employees where id > 90000 limit 5;
+```
+
+需要注意的是，这样的优化策略并不实用，因为当表中某些记录被删后，主键空缺，会导致结果不一致。另外如果原SQL是order by非主键的字段，上面的方法也会导致两条SQL的结果不一致，所以这种改写得满足以下两个条件：
+
+- 主键自增且连续
+- 结果是按照主键排序的
+
+根据非主键字段排序的分页查询，查询的SQL如下：
+
+```sql
+select * from employees ORDER BY name limit 90000,5;
+```
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202303062319410.png" alt="img202303062319410"  />
+
+```sql
+EXPLAIN select * from employees ORDER BY name limit 90000,5;
+```
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202303062320449.png" alt="100107" style="zoom:67%;" />
+
+发现并没有使用name字段的索引（key字段对应的值为null），原因在于扫描整个索引并没有查找到没索引的行（可能要遍历多个索引树）的成本比扫描全表的成本更高，所以优化器放弃使用索引。优化的关键是让排序时返回的字段经可能少，所以可以让排序和分页操作先查出主键，然后根据主键查到对应的记录，将SQL改写如下：
+
+```sql
+select * from employees e inner join (select id from employees order by name limit 90000,5) ed on e.id = ed.id;
+```
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202303062320671.png" alt="100106" style="zoom:67%;" />
+
+需要的结果与原 SQL 一致，执行时间减少了一半以上，我们再对比优化前后sql的执行计划：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202303062324542.png" alt="img202303062324542" style="zoom:67%;" />
+
+##### Join关联查询优化
+
+```sql
+-- 示例表：
+CREATE TABLE `t1` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `a` int(11) DEFAULT NULL,
+  `b` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_a` (`a`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+create table t2 like t1;
+
+-- 插入一些示例数据
+-- 往t1表插入1万行记录
+drop procedure if exists insert_t1; 
+delimiter ;;
+create procedure insert_t1()        
+begin
+  declare i int;                    
+  set i=1;                          
+  while(i<=10000)do                 
+    insert into t1(a,b) values(i,i);  
+    set i=i+1;                       
+  end while;
+end;;
+delimiter ;
+call insert_t1();
+
+-- 往t2表插入100行记录
+drop procedure if exists insert_t2; 
+delimiter ;;
+create procedure insert_t2()        
+begin
+  declare i int;                    
+  set i=1;                          
+  while(i<=100)do                 
+    insert into t2(a,b) values(i,i);  
+    set i=i+1;                       
+  end while;
+end;;
+delimiter ;
+call insert_t2();
+```
+
+MySQL的表关联常见的有两种算法：
+
+- Nested-Loop Join（嵌套循环连接）算法
+- Block Nested-Loop Join（基于块的嵌套循环连接）算法
+
+###### 嵌套循环连接算法
+
+一次一行循环地从第一张表（成为驱动表）中读取行，在这行数据中取到关联字段，根据关联字段在另一张表（被驱动表）里取出满足条件的行，然后取出两张表的结果合集。
+
+```sql
+EXPLAIN select * from t1 inner join t2 on t1.a= t2.a;
+```
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202303142349707.png" alt="img202303142349707" style="zoom: 67%;" />
+
+一般在join语句中，如果执行计划Extra中未出现Using join buffer则表示使用的join算法是NLJ。
+
+整个过程会读取t2表的所有数据（扫描100行），然后遍历每行数据中字段a的值，根据t2表中的值索引扫描t1表中的对应行（扫描100次t1表的索引，1次扫描可以认为最终只扫描t1表一行完整数据，也就是总共t1表也扫描了100行）。因此整个过程扫描了200行。
+
+如果被驱动表的关联字段没有索引，mysql会Block Nested-Loop Join算法。
+
+###### 基于块的嵌套循环查询
+
+把驱动表的数据读入到join_buffer中，然后扫描被驱动表，把被驱动表的每一行取出来跟join_buffer中的数据做对比。
+
+```sql
+EXPLAIN select * from t1 inner join t2 on t1.b= t2.b;
+```
+
+整个过程对表t1和t2都做了一次全表扫描，因此扫描的总行数为10000（表t1的数据总量）+100（表t2的数据总量）=10100。并且join_buffer里的数据是无序的，因此对表t1中的每一行，都要做100次判断，所以内存中的判断次数是100*10000=100万次。
+
+join_buffer的大小是由参数join_buffer_size来设定的，默认值是256k。如果放不下表t2的所有数据的话，会分段放。比如t2表有1000行记录，join_buffer一次只能放800行数据，那么执行过程是先往join_buffer里放800行记录，然后从t1表里取数据跟join_buffer中的数据对比得到部分结果，然后情况buffer，再放入t2表剩余200行记录，再次从t1表里取数据跟join_buffer中数据对比，所以就多扫描了一次t1表。
+
+被驱动表的关联字段没有索引为什么会选择BNL算法而不是用NLJ呢？
+
+如果上面第二条SQL使用NLJ，那么扫描行树为100*10000=100万次，这个是磁盘扫描。
+
+很显然，用BNL磁盘扫描次数少很多，相比于磁盘扫描，BNL的内存计算也会快得多，因此MySQL对于被驱动表的关联字段没有索引的关联查询，一般都会使用BNL算法，如果有索引一般选择NLJ算法，有索引的情况下，NLJ算法比BNL算法性能更高。
+
+可以总结一下，对于关联sql的优化策略：
+
+- 关联字段加索引
+- 小表驱动大表·和exsits优化
+
+```sql
+select * from A where id in (select id from B)  
+```
+
+优化为：
+
+```sql
+select * from A where exists (select 1 from B where B.id = A.id)
+```
+
+优化原则：小表驱动大表，即小的数据集驱动大的数据集。
+
+##### count(\*)查询优化
+
+```sql
+-- 临时关闭mysql查询缓存，为了查看sql多次执行的真实时间
+set global query_cache_size=0;
+set global query_cache_type=0;
+
+EXPLAIN select count(1) from employees;
+EXPLAIN select count(id) from employees;
+EXPLAIN select count(name) from employees;
+EXPLAIN select count(*) from employees;
+```
+
+![img202303062354867](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202303062354867.png)
+
+这四种查询的效率比较：
+
+- 字段有索引
+- 字段无索引
+
+count(1)和count(字段)执行过程类似，
+
+count(*)的优化常见优化方法有四种。
+
+查询MySQL自己维护的总行数，对于myisam存储引擎的表不做不带where条件的count查询性能是很高的，因为myisam存储的引擎的表的总行数会被mysql存储在磁盘上，查询不需要计算：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202303062357692.png" alt="img202303062357692" style="zoom:67%;" />
+
+对于innodb存储引擎的表mysql不会存储表的总记录行数（因为有MVCC机制），查询count需要实时计算。
+
+也可以使用`show table status`来优化查询，如果值需要知道表的总行数的估计值可以用如下sql查询，性能很高：
+
+![img202303062359136](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202303062359136.png)
+
+也可以将总数维护到Redis里，插入或删除数据行的时候同时维护Redis里面的表总行数key的计数值（用incr或decr命令），但是这种方式可能不准，很难保证操作和Redis操作的事务的一致性。
+
+最后一种方式是，插入或删除表数据行的时候同时维护计数表，让他们在同一个事务里面操作。
+
+### MySQL数据类型的选择
+
+在MySQL中，选择正确的数据类型，对于性能至关重要。一般应该遵循下面两步：
+
+1. 确定合适的大类型：数字、字符串、时间、二进制；
+2. 确定具体的类型：有无符号、取值范围、变长定长等。
+
+在MySQL数据类型设置方面，尽量用更小的数据类型，因为它们通常有更好的性能，花费更少的硬件资源。并且，尽量把字段定义为NOT NULL，避免使用NULL。
+
+#### 数值类型
+
+| 类型         | 大小                                     | 范围（有符号）                                               | 范围（无符号）                                               | 用途           |
+| ------------ | ---------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ | -------------- |
+| TINYINT      | 1 字节                                   | (-128, 127)                                                  | (0, 255)                                                     | 小整数值       |
+| SMALLINT     | 2 字节                                   | (-32 768, 32 767)                                            | (0, 65 535)                                                  | 大整数值       |
+| MEDIUMINT    | 3 字节                                   | (-8 388 608, 8 388 607)                                      | (0, 16 777 215)                                              | 大整数值       |
+| INT或INTEGER | 4 字节                                   | (-2 147 483 648, 2 147 483 647)                              | (0, 4 294 967 295)                                           | 大整数值       |
+| BIGINT       | 8 字节                                   | (-9 233 372 036 854 775 808, 9 223 372 036 854 775 807)      | (0, 18 446 744 073 709 551 615)                              | 极大整数值     |
+| FLOAT        | 4 字节                                   | (-3.402 823 466 E+38, 1.175 494 351 E-38)，0，(1.175 494 351 E-38，3.402 823 466 351 E+38) | 0, (1.175 494 351 E-38, 3.402 823 466 E+38)                  | 单精度浮点数值 |
+| DOUBLE       | 8 字节                                   | (1.797 693 134 862 315 7 E+308, 2.225 073 858 507 201 4 E-308), 0, (2.225 073 858 507 201 4 E-308, 1.797 693 134 862 315 7 E+308) | 0, (2.225 073 858 507 201 4 E-308, 1.797 693 134 862 315 7 E+308) | 双精度浮点数值 |
+| DECIMAL      | 对DECIMAL(M,D) ，如果M>D，为M+2否则为D+2 | 依赖于M和D的值                                               | 依赖于M和D的值                                               | 小数值         |
+
+建议：
+
+1. 如果整形数据没有负数，如ID号，建议指定为UNSIGNED无符号类型，容量可以扩大一倍。
+2. 建议使用TINYINT代替ENUM、BITENUM、SET。
+3. 避免使用整数的显示宽度(参看文档最后)，也就是说，不要用INT(10)类似的方法指定字段显示宽度，直接用INT。
+4. DECIMAL最适合保存准确度要求高，而且用于计算的数据，比如价格。但是在使用DECIMAL类型的时候，注意长度设置。
+5. 建议使用整形类型来运算和存储实数，方法是，实数乘以相应的倍数后再操作。
+6. 整数通常是最佳的数据类型，因为它速度快，并且能使用AUTO_INCREMENT。
+
+#### 日期和时间
+
+| 类型      | 大小(字节) | 范围                                       | 格式                | 用途                     |
+| --------- | ---------- | ------------------------------------------ | ------------------- | ------------------------ |
+| DATE      | 3          | 1000-01-01 到 9999-12-31                   | YYYY-MM-DD          | 日期值                   |
+| TIME      | 3          | '-838:59:59' 到 '838:59:59'                | HH:MM:SS            | 时间值或持续时间         |
+| YEAR      | 1          | 1901 到 2155                               | YYYY                | 年份值                   |
+| DATETIME  | 8          | 1000-01-01 00:00:00 到 9999-12-31 23:59:59 | YYYY-MM-DD HH:MM:SS | 混合日期和时间值         |
+| TIMESTAMP | 4          | 1970-01-01 00:00:00 到 2038-01-19 03:14:07 | YYYYMMDDhhmmss      | 混合日期和时间值，时间戳 |
+
+建议：
+
+1. MySQL能存储的最小时间粒度为秒。
+2. 建议用DATE数据类型来保存日期。MySQL中默认的日期格式是yyyy-mm-dd。
+3. 用MySQL的内建类型DATE、TIME、DATETIME来存储时间，而不是使用字符串。
+4. 当数据格式为TIMESTAMP和DATETIME时，可以用CURRENT_TIMESTAMP作为默认（MySQL5.6以后），MySQL会自动返回记录插入的确切时间。
+5. TIMESTAMP是UTC时间戳，与时区相关。
+6. DATETIME的存储格式是一个YYYYMMDD HH:MM:SS的整数，与时区无关，你存了什么，读出来就是什么。
+7. 除非有特殊需求，一般的公司建议使用TIMESTAMP，它比DATETIME更节约空间，但是像阿里这样的公司一般会用DATETIME，因为不用考虑TIMESTAMP将来的时间上限问题。
+8. 有时人们把Unix的时间戳保存为整数值，但是这通常没有任何好处，这种格式处理起来不太方便，我们并不推荐它。
+
+#### 字符串
+
+| 类型       | 大小                | 用途                                                         |
+| ---------- | ------------------- | ------------------------------------------------------------ |
+| CHAR       | 0-255字节           | 定长字符串，char(n)当插入的字符数不足n时(n代表字符数)，插入空格进行补充保存。在进行检索时，尾部的空格会被去掉。 |
+| VARCHAR    | 0-65535 字节        | 变长字符串，varchar(n)中的n代表最大字符数，插入的字符数不足n时不会补充空格 |
+| TINYBLOB   | 0-255字节           | 不超过 255 个字符的二进制字符串                              |
+| TINYTEXT   | 0-255字节           | 短文本字符串                                                 |
+| BLOB       | 0-65 535字节        | 二进制形式的长文本数据                                       |
+| TEXT       | 0-65 535字节        | 长文本数据                                                   |
+| MEDIUMBLOB | 0-16 777 215字节    | 二进制形式的中等长度文本数据                                 |
+| MEDIUMTEXT | 0-16 777 215字节    | 中等长度文本数据                                             |
+| LONGBLOB   | 0-4 294 967 295字节 | 二进制形式的极大文本数据                                     |
+| LONGTEXT   | 0-4 294 967 295字节 | 极大文本数据                                                 |
+
+建议：
+
+1. 字符串的长度相差较大用VARCHAR；字符串短，且所有值都接近一个长度用CHAR。
+2. CHAR和VARCHAR适用于包括人名、邮政编码、电话号码和不超过255个字符长度的任意字母数字组合。那些要用来计算的数字不要用VARCHAR类型保存，因为可能会导致一些与计算相关的问题。换句话说，可能影响到计算的准确性和完整性。
+3. 尽量少用BLOB和TEXT，如果实在要用可以考虑将BLOB和TEXT字段单独存一张表，用id关联。
+4. BLOB系列存储二进制字符串，与字符集无关。TEXT系列存储非二进制字符串，与字符集相关。
+5. BLOB和TEXT都不能有默认值。
 
 ### MySQL事务与锁
 
+参考：http://note.youdao.com/noteshare?id=354ae85f3519bac0581919a458278a59&sub=9A8237E2B9B248B9A2F5FC5AED6CBCF1
+
+#### 事务及其属性
+
+并发事务处理带来的问题：
+
+- 更新丢失或脏写
+
+  当两个或多个事务选择同一行，然后基于最初选定的值更新该行时，由于每个事务都不知道其他事务的存在，就会发生丢失更新问题，最后的更新覆盖了由其他事务所做的更新。
+
+- 脏读
+
+  事务A读取到了事务B已经修改但尚未提交的数据，还在这个数据基础上做了操作。此时，如果B事务回滚，A读取的数据无效，不符合一致性要求。
+
+- 不可重复读
+
+  事务A内部相同查询语句在不同时刻读出的结果不一致，不符合隔离性。
+
+- 幻读
+
+  事务A读取到了事务B提交的新增数据，不符合隔离性。
+
+事务的隔离级别：
+
+| 隔离级别                   | 脏读(Dirty Read) | 不可重复读(NonRepeatable Read) | 幻读(Phantom Read) |
+| -------------------------- | ---------------- | ------------------------------ | ------------------ |
+| 读未提交(Read uncommitted) | 可能             | 可能                           | 可能               |
+| 读已提交(Read committed)   | 不可能           | 可能                           | 可能               |
+| 可重复读(Repeatableread)   | 不可能           | 不可能                         | 可能               |
+| 可串行化(Serializable)     | 不可能           | 不可能                         | 不可能             |
+
+数据库的事务隔离级别越严格，并发的副作用就越小，但付出的代价也就越大，因为事务隔离实质上就是使事务在一定程度上“串行化”进行，这显然与“并发”是矛盾的。同时，不同的应用对读一致性和事务隔离程度的要求也是不同的，比如许多应用对“不可重复读”和“幻读”并不敏感，可能更关心数据并发访问的能力。
+
+查看当前数据库的事务隔离级别：
+
+```sql
+show variables like 'tx_isolation';
+```
+
+设置事务隔离级别：
+
+```sql
+set tx_isolation='REPEATABLE-READ';
+```
+
+MySQL默认的事务隔离级别是可重复读，用Spring开发程序时，如果不设置隔离级别默认用MySQL设置的隔离级别，如果Spring设置了就用已经设置的隔离级别。
+
+#### MySQL中的锁的分类
+
+锁是计算机协调多个进程或线程并发访问某一资源的机制。
+
+在数据库中，除了传统的计算资源（如CPU、RAM、I/O等）的争用以外，数据也是一种供需要用户共享的资源。如何保证数据并发访问的一致性、有效性是所有数据库必须解决的一个问题，锁冲突也是影响数据库并发访问性能的一个重要因素。
+
+- 从性能上分为乐观锁（用版本对比来实现）和悲观锁；
+
+- 从对数据操作的粒度分，分为表锁和行锁；
+
+- 从对数据库操作的类型分，分为读锁和写锁（都属于悲观锁），还有意向锁；
+
+  - 读锁：
+
+  - 写锁：
+
+  - 意向锁：
+
+    意向锁主要分为：
+
+    - 意向共享锁，IS锁，对整个表加共享锁之前，需要先获取到意向共享锁
+    - 意向拍他锁，IX锁，对整个表加拍他锁之前，需要先获取到意向排他锁
+
+#### 表锁
+
+每次操作锁住整张表。开销小，加锁快；不会出现死锁；锁定粒度大，发生锁冲突的概率最高，并发度最低；一般用在整表数据迁移的场景。
+
+```sql
+--建表SQL
+CREATE TABLE `mylock` (
+	`id` INT (11) NOT NULL AUTO_INCREMENT,
+	`NAME` VARCHAR (20) DEFAULT NULL,
+	PRIMARY KEY (`id`)
+) ENGINE = MyISAM DEFAULT CHARSET = utf8;
+
+--插入数据
+INSERT INTO`test`.`mylock` (`id`, `NAME`) VALUES ('1', 'a');
+INSERT INTO`test`.`mylock` (`id`, `NAME`) VALUES ('2', 'b');
+INSERT INTO`test`.`mylock` (`id`, `NAME`) VALUES ('3', 'c');
+INSERT INTO`test`.`mylock` (`id`, `NAME`) VALUES ('4', 'd');
+```
+
+手动增加表锁：
+
+```sql
+lock table 表名称 read(write),表名称2 read(write);
+```
+
+查看表上加过的锁：
+
+```sql
+show open tables;
+```
+
+删除表锁：
+
+```sql
+unlock tables;
+```
+
+#### 行锁
+
+每次操作锁住一行数据，开销大，加锁慢，会出现死锁，锁定粒度最小，发生锁冲突的概率最低，并发度最高。
+
+MyISAM在执行查询语句SELECT前会给涉及的所有表加读锁，在执行update、insert、delete操作会自动给涉及的表加写锁。
+
+InnoDB在执行查询语句SELECT时（非串行隔离级别），不会加锁，但是update、insert、delete操作会加行锁。简而言之，就是读锁会阻塞写，但是不会阻塞读。而写锁组会把读和写都阻塞。
+
+可以基于以下实例来分析行锁。
+
+```sql
+CREATE TABLE `account` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) DEFAULT NULL,
+  `balance` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+INSERT INTO `test`.`account` (`name`, `balance`) VALUES ('lilei', '450');
+INSERT INTO `test`.`account` (`name`, `balance`) VALUES ('hanmei', '16000');
+INSERT INTO `test`.`account` (`name`, `balance`) VALUES ('lucy', '2400');
+```
+
+MySQL的乐观锁：
+
+```sql
+update account set balance = balance - 50 where id = 1
+```
+
+这主要是由于MySQL在可重复读的隔离级别下使用了MVCC机制，select操作不会更新版本号，是快照读（历史版本）；insert、update和delete会更新版本号，是当前读（当前版本）。
+
+#### 间隙锁
+
+间隙锁，锁住的是两个值之间的空隙，间隙锁在某些情况下可以解决幻读的问题。假设account表里的数据如下：
+
+![img202303132335506](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202303132335506.png)
+
+如果执行下面的SQL：
+
+```sql
+update account set name = 'zhuge' where id > 8 and id < 18;
+```
+
+那么产生的间隙就有id为(3,10)，(10,20)，(20,正无穷)这三个区间。此时其他Session没法在这个范围锁包含的所有行记录（包含间隙行记录）以及行记录所在的间隙里插入或修改任何数据，即id在(3,20]区间都无法修改数据，注意20也包含在内。
+
+间隙锁只有在可重复读的隔离级别下才会生效的。
+
+#### 临键锁
+
+临键锁是行锁与间隙锁的组合，上面的例子中(3,20]的整个区间就可以叫做临键锁。
+
+在可重复读的隔离级别下，锁主要是加在索引上，如果对非索引字段更新，行锁可能会变表锁，即无索引行锁会升级为表锁。
+
+锁定某一行还可以用lock in share（共享锁）和for update（排他锁），例如：
+
+```sql
+select * from test_innodb_lock where a = 2 for update;
+```
+
+这样其他session只能读这行数据，修改则会被阻塞，直到锁定行的session提交。
+
+#### 行锁分析
+
+可以通过下面的SQL语句查询数据的行锁的情况：
+
+```sql
+show status like 'innodb_row_lock%';
+```
+
+各个变量的含义：
+
+- Innodb_row_lock_current_waits: 当前正在等待锁定的数量
+- Innodb_row_lock_time: 从系统启动到现在锁定总时间长度
+- Innodb_row_lock_time_avg: 每次等待所花平均时间
+- Innodb_row_lock_time_max：从系统启动到现在等待最长的一次所花时间
+- Innodb_row_lock_waits: 系统启动后到现在总共等待的次数
+
+其中比较重要的有Innodb_row_lock_time_avg（等待平均时长）、Innodb_row_lock_waits（等待总次数）、Innodb_row_lock_time（等待总时长）。尤其是当等待次数很高，而且每次等待时长也不小的时候，我们就需要分析系统中为什么会有如此多的等待，然后根据分析结果着手制定优化计划。
+
+查看INFORMATION_SCHEMA系统库锁相关数据表：
+
+```sql
+-- 查看事务
+select * from INFORMATION_SCHEMA.INNODB_TRX;
+-- 查看锁
+select * from INFORMATION_SCHEMA.INNODB_LOCKS;
+-- 查看锁等待
+select * from INFORMATION_SCHEMA.INNODB_LOCK_WAITS;
+
+-- 释放锁，trx_mysql_thread_id可以从INNODB_TRX表里查看到
+kill trx_mysql_thread_id
+
+-- 查看锁等待详细信息
+show engine innodb status\G; 
+```
+
+#### 锁优化建议
+
+- 尽可能让所有数据检索都通过索引来完成，避免无索引行锁升级为表锁
+- 合理设计索引，尽量缩小锁的范围
+- 尽可能减少检索条件范围，避免间隙锁
+- 尽可能控制事务大小，减少锁定资源量和实践长度，涉及事务加锁的sql尽量放在事务的最后执行
+- 尽可能低级别事务隔离
+
 ### MVCC与BufferPool缓冲机制
+
+参考：http://note.youdao.com/noteshare?id=b36b975188fadf7bfbfd75c0d2d6b834&sub=5A7459FE4B464EC896F9DD9A4EB64942
+
+MySQL在读已提交和可重复读的隔离级别下的隔离性都依靠MVCC（Multi-Version Concurrency Control）机制来实现，对一行数据的读和写两个操作默认是不会通过加锁互斥来保证隔离性，避免了频繁加锁互斥。只有在串行化的隔离级别下，为了保证比较高的隔离性，是通过将所有操作加锁互斥来实现的。
+
+#### undo日志版本链与read view机制详解
+
+undo日志版本链是指一行数据被多个事务依次修改过后，在每个事务修改完后，MySQL会保留修改前的数据undo回滚日志，并且用两个隐藏字段trx_id（事务ID）和roll_pointer（上一条数据的历史版本指针）把这些undo日志串联起来形成一个历史记录版本链，具体如下图。
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202303132312446.png" alt="img202303132312446" style="zoom:60%;" />
+
+在可重复读的隔离级别下，当事务开启后，执行任何查询sql时会生成当前事务的一致性视图read-view，该视图在事务结束之前都不会变化（如果是读已提交的隔离级别会在每次执行查询sql时都会重新生成），这个视图由执行查询时所有未提交事务id数组（数组里最小的id为min_id）和已创建的最大事务id（max_id）组成，事务里的任何sql查询结果需要从对应版本链里的最新数据开始逐条跟read-view做比对从而得到最终的快照结果。
+
+版本链的比对规则如下：
+
+- 如果row的trx_id落在绿色部分（trx），表示在这个版本是由已提交的事务生成的，这个事务是可见的
+- 如果row的trx_id落在红色部分，表示这个版本是由将来启动的事务生成的，是不可见的（若row的trx_id就是当前自己的事务是可见的）
+- 如果row的trx_id落在黄色部分，此时包含两种情况：
+  - 如果row的trx_id在视图数组中，表示这个版本是由还未提交的事务生成的，不可见（若row的trx_id就是当前自己的事务则是可见的）
+  - 如果row的trx_id不在视图数组中，表示这个版本已经提交了的事务生成的，事务是可见的
+
+对于删除的情况可以认为是update的特殊情况，会将版本链上最新的数据复制一份，然后将trx_id修改成删除操作的trx_id，同时在该条记录的头信息（record header）里的（deleted_flag）标记位写上true，来表示当前记录已经被删除，在查询时按照上面的规则查到对应的记录如果delete_flag 标记位为true，意味着记录已被删除，则不返回数据。
+
+<div class="note warning">begin/start transaction 命令并不是一个事务的起点，在执行到它们之后的第一个修改InnoDB操作的语句，事务才真正启动，才会向mysql申请事务id，mysql内部是严格按照事务的启动顺序来分配事务id的。</div>
+
+总而言之，MVCC机制的实现就是通过read-view机制与undo版本链对比机制，使得不同的事务会根据数据版本链对比规则读取同一条数据在版本链上的不同版本数据。
+
+#### BufferPool缓存机制
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202303132313860.png" alt="img202303132313860" style="zoom: 67%;" />
+
+为什么MySQL不直接更新磁盘上的数据而是设计了这么复杂的一套机制来执行SQL？
+
+主要是因为来一个请求就直接对磁盘文件进行随机读写，由于磁盘随机读写的相比顺序读写的性能是非常差的，所以直接更新磁盘文件里的数据性能会很差。MySQL的这套机制看起来虽然复杂，但是它可以保证每个更新请求都是更新内存中的BufferPool，然后顺序写日志文件，同时还能保证各种异常情况下的数据一致性。更新内存的数据的性能是很高的，顺序写磁盘上的日志文件的性能也是很高的，正是这两点，才能让MySQL拥有较高的并发能力。
+
+### MySQL成本分析
+
+
 
 ### 表结构设计
 
-### redo日志
 
 
+### MySQL redo日志
 
-## JVM
+参考：https://blog.csdn.net/sermonlizhi/article/details/124556301
+
+事务的实现方式：
+
+- WAL(预写式日志)
+- Commit Logging(提交日志)
+- Shadow Paging(影子分页)
 
 
 
 ## Tomcat
 
+### Tomcat整体架构
+
+Tomcat是Java Web应用服务器，实现Java EE（Java Platform Enterprise Edition）的部分技术规范，比如Java Servlet、JavaServer Pages、Java Expression Language、Java WebSocket等。
+
+Tomcat的核心：Http服务器+Serverlet容器
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202303300003726.png" alt="0A23C5C479484C1CAECD2EB6D7805AC2" style="zoom: 67%;" />
+
+我们可以通过Tomcat的server.xml配置文件来加深对Tomcat架构的理解。Tomcat采用了组件化的设计，它的构成组件都是可配置的，其中最外层的是Server，其他组件按照一定的格式要求配置在这个顶层容器中。
+
+```xml
+<Server>    //顶层组件，可以包括多个Service
+	<Service>  //顶层组件，可包含一个Engine，多个连接器
+	    <Connector/>//连接器组件，代表通信接口		   
+	    <Engine>//容器组件，一个Engine组件处理Service中的所有请求，包含多个Host
+		<Host>  //容器组件，处理特定的Host下客户请求，可包含多个Context
+               <Context/>  //容器组件，为特定的Web应用处理所有的客户请求
+		</Host>
+        </Engine>
+	</Service>	
+</Server>	
+```
+
+Tomcat启动期间会通过解析server.xml，利用反射创建相应的组件，所以xml的标签和源码一一对应。
+
+Tomcat的架构图如下：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202303300007629.png" alt="AC1E5961456D484C9A8C280D14066AF9" style="zoom:67%;" />
+
+简化之后的图：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202303300007270.png" alt="934BE96C497D48778A03C89A13465D67" style="zoom:67%;" />
+
+Tomcat要实现2个核心功能：
+
+- 处理Socket连接，负责网络字节流与Request和Response对象的转化
+- 加载和管理Servlet，以及具体处理Request请求
+
+因此Tomcat设计了两个核心组件连接器（Connector）和容器（Container）来分别做这两件事情。连接器负责对外交流，容器负责内部处理。
+
+### Tomcat核心组件
+
+#### Server组件
+
+Server组件指的就是整个Tomcat服务器，包含多组服务（Service），负责管理和启动各个Service，同时监听8005端口发过来的shutdown命令，用于关闭整个容器。
+
+#### Service组件
+
+每个Service组件都包含了若干接收客户端消息的Connector组件和处理请求的Engine组件。Service组件还包含了若干Executor组件，每个Executor都是一个线程池，它可以为Service内所有组件提供线程池执行任务。
+
+#### 连接器Connector组件
+
+Tomcat与外部世界的连接器，监听固定端口接收外部请求，传递给Container，并将Container处理的结果返回给外部。连接器对Servlet容器屏蔽了不同的应用层协议及I/O模型，无论是HTTP还是AJP，在容器中获取到的都是一个标准的ServletRequest对象。连接器需要实现的功能：
+
+- 监听网络端口
+- 接收网络连接请求
+- 获取请求网络字节流
+- 根据具体应用协议（HTTP/AJP）解析字节流，生成统一的Tomcat Request对象
+- 将Tomcat Request对象转成标准的Servlet Request
+- 调用Servlet容器，得到ServletResponse
+- 将Tomcat Response转成网络字节流
+- 将响应字节流写会给浏览器
+
+分析连接器的功能列表，会发现连接器需要完成3个高内聚的功能：
+
+- 网络通信
+- 应用层协议解析
+- Tomcat Request/Response 与ServletRequest/ServletResponse的转化
+
+因此，Tomcat的设计者分别设计了3个组件来实现这3个功能，分别是EndPoint、Processor和Adapter：
+
+- EndPoint负责提供字节流给Processor
+- Processor负责提供Tomcat Request对象给Adapter
+- Adapter负责提供ServletRequest对象给容器
+
+由于I/O模型和应用层协议可以自由组合，比如NIO+HTTP或者NIO2+AJP。Tomcat的设计者将网络通信和应用层协议解析放在一起考虑，设计了一个ProtocolHandler的接口来封装这两种变化点。各种协议和通信模型的组合有相应的具体实现类。比如Http11NioProtocol和AjpNioProtocol。
+
+除了这些变化点，系统也存在一些相对稳定的部分，因此Tomcat设计了一系列抽象基类来封装这些稳定的部分，抽象基类AbstractProtocol实现了ProtocolHandler接口。每一种应用层协议都有自己的抽象基类，比如AbstractAjpProtocol和AbstractHttp11Protocol，具体协议的实现类扩展了协议层抽象基类。
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202304032351641.png" alt="img202304032351641" style="zoom: 67%;" />
+
+#### ProtocolHandler组件
+
+连接器用ProtocolHandler来处理网络连接和应用层协议，包含两个重要部件：EndPoint和Processor。
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202304040001620.png" alt="https://note.youdao.com/yws/public/resource/aa1ac6def2af8c24275e8655aaa1deb9/xmlnote/AE69B6B27BA1452A96B69D108E2ECB7C/36219" style="zoom:67%;" />
+
+连接器用ProtocolHandler接口来封装通信协议个I/O模型的差异，ProtocolHandler内部又分为EndPoint和Processor模块，EndPoint负责底层Sokcet通信，Processor负责应用层协议解析。连接器通过适配器Adapter调用容器。
+
+### Tomcat线程模型
+
+MMU内存管理模型。
+
+Tomcat对JDK线程池的扩展TaskQueue#offer：
+
+```java
+@Override
+public boolean offer(Runnable o) {
+  //we can't do any checks
+    if (parent==null) {
+        return super.offer(o);
+    }
+    //we are maxed out on threads, simply queue the object
+    if (parent.getPoolSize() == parent.getMaximumPoolSize()) {
+        return super.offer(o);
+    }
+    //we have idle threads, just add it to the queue
+    if (parent.getSubmittedCount()<=(parent.getPoolSize())) {
+        return super.offer(o);
+    }
+    //if we have less threads than maximum force creation of a new thread
+    if (parent.getPoolSize()<parent.getMaximumPoolSize()) {
+        return false;
+    }
+    //if we reached here, we need to add it to the queue
+    return super.offer(o);
+}
+```
+
+这样在未达到最大线程数的时候，会首先创建线程，只有在达到了线程池最大线程数的时候才会将任务放入到阻塞队列。
+
+### Tomcat类加载机制
+
+#### JVM类加载器
+
+- BootStrapClassLoader（启动类加载器），
+- ExtClassLoader（扩展类加载器），
+- AppClassLoader（系统类加载器）
+- 自定义类加载器，用来加载自定义路径下的类
+
+#### 双亲委托机制
+
+加载某个类会先委托父加载器寻找目标类，找不到再委托上层父加载器加载，如果所有父加载器在自己的加载路径下都找不到目标类，则在自己的类加载路径中查找并载入目标类。这就是双亲委托机制。
+
+类加载过程
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202303261718691.png" alt="img202303261718691" style="zoom: 67%;" />
+
+
+
+为什么要设计双亲委托机制？
+
+- 沙箱安全机制
+- 避免类的重复加载
+
+#### Tomcat的类加载机制
+
+Tomcat作为Servlet容器，它负责加载Servlet类，此外它还负责加载Servlet所依赖的Jar包。并且Tomcat本身也是一个Java程序，因此它需要加载自己的类和依赖的jar包。
+
+Tomcat中自定义了一个类加载器WebAppClassLoader，并且给每个Web应用创建一个类加载器实例，每个Context容器负责创建和维护一个WebAppClassLoader加载器实例。其实现的原理就是不同的类加载器实例加载的类被认为是不同的类，即使它们的类名相同（不同类加载器实例加载的类是互相隔离的）。
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202303261733242.png" alt="img202303261733242" style="zoom:60%;" />
+
+Tomcat拥有不同的自定义类加载器，以实现对各种资源库的控制。Tomcat主要用类加载器解决以下4个问题：
+
+- 同一个Web服务器里，各个Web项目各自使用的Java类库要相互隔离
+- 同一个Web服务器里，各个Web项目之间可以提供共享的Java类库
+- 为了使服务器不受Web项目的影响，应该使服务器的类库与应用程序的类库相互独立
+- 对于支持JSP的Web服务器，应该支持热插拔（HotSwap）功能
+
+Tomcat提供了四组目录供用户存放第三方类库：
+
+- 放置在/common目录中：类库可被Tomcat和所有的Web应用程序共同使用
+
+##### 线程上下文类加载器
+
+
+
+#### Tomcat热加载和热部署
+
+
+
+## JVM
+
+### JVM类加载机制
+
+参考链接：http://note.youdao.com/noteshare?id=35faf7c95e69943cdbff4642fcfd5318&sub=F6E1EB8E778044EC9BB87BA05DCE5E4B
+
+通过Java命令执行代码的大体流程如下：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202303272310513.png" alt="img202303272310513" style="zoom:67%;" />
+
+其中类加载过程有加载、验证、准备、解析、初始化、使用、卸载：
+
+- 加载：在硬盘上查找并通过IO读入字节码文件，使用到类时才会加载，例如调用类的main()方法，new对象等等，在加载阶段会在内存中生成一个代表这个类的`java.lang.Class`对象，作为方法区这个类的各种数据的访问入口
+- 验证：校验字节码文件的正确性
+- 准备：给类的静态变量分配内存，并赋予默认值
+- 解析：将符号引用替换为直接引用，该阶段会把一些静态方法（符号引用，比如main()方法）替换为指向数据所存内存的指针或句柄等（直接引用），这就是所谓的静态链接过程（类加载期间完成），动态链接是在程序运行期间完成的将符号引用替换为直接引用
+- 初始化：对类的静态变量初始化为指定的值，执行静态代码块
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202303272320511.png" alt="img202303272320511" style="zoom:67%;" />
+
+类被加载到方法区中后主要包含运行时常量池、类型信息、字段信息、方法信息、类加载的引用、对应Class实例的引用等信息。
+
+类加载器的引用：这个类到类加载器实例的引用。
+
+对应Class实例的引用：类加载器在加载类信息放到方法区中后，会创建一个对应的Class类型的对象实例放到堆中，作为开发人员访问方法区中类定义的入口和切入点。
+
+Java中有以下几种类加载器：
+
+- 引导类加载器：负载加载支撑JVM运行的位于JRE的lib目录下的核心类库，比如rt.jar、chatset.jar等
+- 扩展类加载器：负责加载支撑JVM运行的位于JRE的lib目录下的ext目录下的类库，比如JAR类包
+- 应用类加载器：负责加载ClassPath路径下的类包，主要就是加载自己写的那些类
+- 自定义类加载器：负载加载用户自定义路径下的类包
+
+Java类加载器是有亲子层级结构的，具体如下图。
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202303282309618.png" alt="img202303282309618" style="zoom:67%;" />
+
+为什么要设计双亲委托机制？
+
+- 沙箱安全机制：自己写的`java.lang.String.class`类不会被加载，这样便可以防止核心API库被随意篡改
+- 避免类的重复加载：当父亲已经加载了该类时，就没有必要子类加载器再加载一次，保证加载类的唯一性
+
+双亲委派机制简单来说就是，先找父亲加载，不行再由儿子自己加载。
+
+```java
+//ClassLoader的loadClass方法，里面实现了双亲委派机制
+protected Class<?> loadClass(String name, boolean resolve)
+    throws ClassNotFoundException
+{
+    synchronized (getClassLoadingLock(name)) {
+        // 检查当前类加载器是否已经加载了该类
+        Class<?> c = findLoadedClass(name);
+        if (c == null) {
+            long t0 = System.nanoTime();
+            try {
+                if (parent != null) {  //如果当前加载器父加载器不为空则委托父加载器加载该类
+                    c = parent.loadClass(name, false);
+                } else {  //如果当前加载器父加载器为空则委托引导类加载器加载该类
+                    c = findBootstrapClassOrNull(name);
+                }
+            } catch (ClassNotFoundException e) {
+                // ClassNotFoundException thrown if class not found
+                // from the non-null parent class loader
+            }
+
+            if (c == null) {
+                // If still not found, then invoke findClass in order
+                // to find the class.
+                long t1 = System.nanoTime();
+                //都会调用URLClassLoader的findClass方法在加载器的类路径里查找并加载该类
+                c = findClass(name);
+
+                // this is the defining class loader; record the stats
+                sun.misc.PerfCounter.getParentDelegationTime().addTime(t1 - t0);
+                sun.misc.PerfCounter.getFindClassTime().addElapsedTimeFrom(t1);
+                sun.misc.PerfCounter.getFindClasses().increment();
+            }
+        }
+        if (resolve) {  //不会执行
+            resolveClass(c);
+        }
+        return c;
+    }
+}
+```
+
+全盘负责委托机制：全盘负责是指当一个ClassLoader装在一个类时，除非显示的使用另外一个ClassLoader，该类所依赖及引用的类也由这个ClassLoader载入。
+
+Tomcat自定义类加载器：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202303292339099.png" alt="img202303292339099" style="zoom:67%;" />
+
+
+
+### JVM内存模型
+
+JDK的体系结构：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202304051515051.png" alt="image-20230405151557988" style="zoom:67%;" />
+
+JVM整体架构及内存模型：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202304051006094.png" alt="image-20230405100657028" style="zoom:67%;" />
+
+栈（线程）的作用：保存局部变量的地方。
+
+栈帧：一个方法对应一块独立的栈帧内存区域。
+
+- 局部变量表：在类似数组的数据结构里存放局部变量
+- 操作数栈：程序运行过程中，进行加法（或其他）运算的一块临时内存，是一种栈结构
+- 动态链接：如果被调用的方法在编译期无法被确定下来，也就是说，只能够在程序运行期间调用方法的符号引用转换为直接引用，由于这种引用转换过程具备动态性，因此也就被称之为动态链接
+- 方法出口： 用来记录回到调用的地方继续执行程序的地方
+
+ <div class="note info">方法区使用的直接内存。</div>
+
+JVM参数设置：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202304051452979.png" alt="image-20230405145229910" style="zoom:67%;" />
+
+SpringBoot程序的JVM参数设置格式：
+
+```bash
+java -Xms2048M -Xmx2048M -Xmn1024M -Xss512K -XX:MetaspaceSize=256M -XX:MaxMetaspaceSize=256M -jar microservice-eureka-server.jar
+```
+
+各个参数对应的含义：
+
+- -Xss：每个线程的栈大小
+- -Xms：设置堆的初始可用大小，默认是物理内存的1/64
+- -Xmx：设置堆的最大可用大小，默认物理内存的1/4
+- -Xmn：新生代大小
+- -XX：NewRatio：默认值2代表新生代占老年代的1/2，占整个堆内存的1/3
+- -XX：SurvivorRatio：默认8表示一个Survivor区占用1/8的Eden内存，即1/10的新生代内存
+
+关于元空间的JVM参数。有两个：`-XX：MetaspaceSize=N`和`-XX：MAXMetaspaceSize=N`。
+
+`-XX：MAXMetaspaceSize`：设置元空间最大值，默认是-1，即不限制，或者说只受限于本地内存的大小。
+
+`-XX：MetaspaceSize`：指定元空间触发Full GC初始阈值（元空间无固定初始大小），以字节为单位，默认是21M左右，达到该值就会触发full gc进行类型卸载，同时收集器会对该值进行调整：如果释放了大量的空间，就适当降低该值；如果释放了很多空间，那么在不超过`-XX：MAXMetaspaceSize`（如果设置了的话）的情况下，适当提高该值。这个跟早期JDK版本的`-XX:PermSize`参数意思不一样，`-XX:PermSize`代表永久带的初始容量。
+
+由于调整元空间的大小需要Full GC，这是非常昂贵的操作，如果应用在启动的时候发生大量Full GC，通常都是由于永久代或元空间发生了大小调整，基于这种情况，一般建议在JVM参数中将MetaspaceSize和MAXMetaspaceSize设置成一样的值，并设置得比初始值要大，对于8G物理内存的机器来说，一般会将这两个值设置成256M。
+
+### JVM对象创建与内存分配机制深度剖析
+
+### Class文件结构
+
+
+
+### 垃圾收集器
+
+
+
+### JVM调优工具
+
+
+
+### JVM常量池
+
+
+
+### ZGC详解
+
+
+
+### 云原生时代的Java虚拟机
+
+
+
+### 用Java实现一个JVM框架
+
+
+
+### JVM如何调用Java方法
+
+
+
+### 实现STW
+
 
 
 # 分布式框架专题
 
+## ElaticSearch
+
+### ElaticSearch快速入门
+
+### ElaticSearch高级查询语法Query DSL
+
+### ElaticSearch搜索技术与聚合查询
+
+### ElaticSearch高阶功能
+
+### Logstash与FileBeat详解以及EFK整合
+
+
+
+## Dubbo
+
+### Dubbo底层实现原理
+
+### Dubbo3.0新特性
+
+### Dubbo服务注册与引入底层原理
+
+### Dubbo服务调用底层原理
+
+
+
+## Zookeeper
+
+### Zookeeper特性与节点数据类型
+
+### Zookeeper经典应用场景
+
+### Zookeeper集群Leader选举
+
+### Zookeeper集群与Watcher监听机制
+
+
+
 ## Redis
 
+### Redis核心数据结构
+
+### Redis持久化与哨兵模式
+
+### Redis集群
+
+### Redis高并发分布式锁
+
+## MQ
+
+## Netty
 
 
-# 参考
+
+## SpringCloud
+
+
+
+## MongoDB
+
+
+
+# 参考文献
 
 - https://www.yuque.com/renyong-jmovm/spring/vfg3g6
