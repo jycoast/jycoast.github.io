@@ -3007,7 +3007,7 @@ public class AtomicStampedReferenceTest {
 }
 ```
 
-### Automic源码解析
+### Atomic源码解析
 
 在java.util.concurrent.atomic包里提供了一组原子操作类：
 
@@ -6144,6 +6144,39 @@ java -Xms2048M -Xmx2048M -Xmn1024M -Xss512K -XX:MetaspaceSize=256M -XX:MaxMetasp
 
 ### JVM对象创建与内存分配机制深度剖析
 
+对象创建的过程：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202304062323081.png" alt="image-20230406232331004" style="zoom:67%;" />
+
+#### 类加载检查
+
+虚拟机遇到一条new指令时，首先将去检查这个指令的参数是否能在常量池中定位到一个类的符号引用，并且检查这个符号引用代表的类是否已经被加载、解析和初始化过。如果没有，那必须先执行相应的类加载过程。
+
+new指令对应到语言层面上讲是，new关键词、对象克隆、对象序列化等。
+
+#### 分配内存
+
+在类加载检查通过后，接下来
+
+##### 划分内存的方法
+
+解决并发问题的方法：
+
+- CAS：虚拟机采用CAS分配上失败重试的方式保证更新操作的原子性来对分配内存空间的动作进行同步处理。
+- 本地线程分配缓冲（Thread Local Allocation Buffer，TLAB）：
+
+#### 设置对象头
+
+
+
+![img202304062332092](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202304062332092.png)
+
+大对象：`-XX:PretenureSizeThreshold=1000000`（单位是字节）。需要配合具体的垃圾收集器一起使用：`-XX:+UseSerialGC`。
+
+
+
+这样做的目的是为了避免大对象分配内存时的复制操作而降低效率。
+
 ### Class文件结构
 
 
@@ -6184,13 +6217,29 @@ java -Xms2048M -Xmx2048M -Xmn1024M -Xss512K -XX:MetaspaceSize=256M -XX:MaxMetasp
 
 ## ElaticSearch
 
+
+
 ### ElaticSearch快速入门
+
+
 
 ### ElaticSearch高级查询语法Query DSL
 
+参考链接：https://note.youdao.com/ynoteshare/index.html?id=924a9d435d78784455143b1dda4a874a&type=note&_time=1684249060388
+
 ### ElaticSearch搜索技术与聚合查询
 
+
+
 ### ElaticSearch高阶功能
+
+### ElaticSearch集群架构实战及其原理
+
+链接：https://note.youdao.com/ynoteshare/index.html?id=16ca3fcfcdda46a976cfd978e20df4be&type=note&_time=1684856471454
+
+为什么说ElaticSearch是一个近实时的搜索引擎？
+
+
 
 ### Logstash与FileBeat详解以及EFK整合
 
@@ -6200,13 +6249,47 @@ java -Xms2048M -Xmx2048M -Xmn1024M -Xss512K -XX:MetaspaceSize=256M -XX:MaxMetasp
 
 ### Dubbo底层实现原理
 
+链接：https://note.youdao.com/ynoteshare/index.html?id=ca746f44f16b862e3189e5f24b3a8e64&type=note&_time=1685805324275
+
+
+
 ### Dubbo3.0新特性
+
+#### dubbo协议
+
+dubbo协议由于请求中没有多余的无用的字节，都是必要的字节，因此性能会更好，并且每个Dubbo请求和响应中都有一个请求ID，这样可以基于一个Socket连接同时发送多个Dubbo请求，不用担心请求和响应对不上，所以dubbo协议成为了Dubbo框架中的默认协议。
+
+但是dubbo协议一旦涉及到跨RPC框架，比如一个Dubbo服务要调用gRPC服务，就比较麻烦了。因为发一个dubbo协议的请求给一个gRPC服务，gRPC服务只会按照gRPC的格式来解析字节流，最终肯定会解析不成功的。
+
+dubbo协议虽好，但是不够通用，所以这就出现了Triple协议，Triple协议是基于HTTP2，没有性能问题，另外HTTP协议非常通用，兼容起来也比较简单，而且还有很多额外的功能，比如流式调用。
+
+#### Triple协议
+
+
 
 ### Dubbo服务注册与引入底层原理
 
+参考链接：https://note.youdao.com/ynoteshare/index.html?id=bbeb46c842c84cfcdbf1d1f040fe40c7&type=note&_time=1685977459844
+
+服务导出与服务引入的流程图：https://www.processon.com/view/link/62c441e80791293dccaebded
+
+#### 服务导出
+
+
+
+#### 服务引入
+
+
+
 ### Dubbo服务调用底层原理
 
+#### Http2原理解析
 
+Http2可以支持同时发在一个socket上送多个请求。
+
+- 帧长度
+- 帧类型
+- 
 
 ## Zookeeper
 
@@ -6229,6 +6312,14 @@ java -Xms2048M -Xmx2048M -Xmn1024M -Xss512K -XX:MetaspaceSize=256M -XX:MaxMetasp
 ### Redis集群
 
 ### Redis高并发分布式锁
+
+### Redis核心设计原理
+
+Redis中字符串实现原理的特点：
+
+- 二进制安全的数据结构
+- 提供了内存预分配机制，避免了频繁的内存分配
+- 兼容C语言的函数库
 
 ## MQ
 
