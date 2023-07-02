@@ -1,34 +1,28 @@
 {
-  "name": "hexo-site",
-  "version": "0.0.0",
-  "private": true,
+  "name": "note-book",
+  "version": "0.0.1",
+  "description": "使用 vuepress 生成的 markdown 文档站点",
+  "author": "jiyongchao <jycoder@qq.com>",
+  "private": false,
   "scripts": {
-    "build": "hexo generate",
-    "clean": "hexo clean",
-    "deploy": "hexo deploy",
-    "server": "hexo server"
-  },
-  "hexo": {
-    "version": "5.4.1"
+    "docs:devx": "vuepress dev docs --open",
+    "docs:dev": "node --max_old_space_size=4096 ./node_modules/vuepress/cli.js dev docs --open",
+    "docs:buildx": "vuepress build docs",
+    "description": "在 build 时不要添加 --debug 之类的选项，否则会导致生成之后的搜索和侧边栏点击无效的问题",
+    "docs:build": "node --max_old_space_size=4096 ./node_modules/vuepress/cli.js build docs"
   },
   "dependencies": {
-    "hexo": "^5.0.0",
-    "hexo-deployer-git": "^3.0.0",
-    "hexo-generator-archive": "^1.0.0",
-    "hexo-generator-calendar": "^0.1.0",
-    "hexo-generator-category": "^1.0.0",
-    "hexo-generator-index-pin-top": "^0.2.2",
-    "hexo-generator-searchdb": "^1.3.4",
-    "hexo-generator-tag": "^1.0.0",
-    "hexo-markmap": "^1.1.1",
-    "hexo-renderer-ejs": "^1.0.0",
-    "hexo-renderer-markdown-it-plus": "^1.0.4",
-    "hexo-renderer-stylus": "^2.0.0",
-    "hexo-server": "^2.0.0",
-    "hexo-simple-mindmap": "^0.8.0",
-    "hexo-symbols-count-time": "^0.6.2",
-    "hexo-theme-landscape": "^0.0.3",
-    "markdown-it": "^12.3.2",
-    "markdown-it-katex": "^2.0.3"
+    "moment": "^2.24.0",
+    "vue-router": "3.4.5",
+    "vuepress-plugin-baidu-tongji-analytics": "^1.0.1",
+    "vuepress-plugin-code-copy": "^1.0.4",
+    "vuepress-plugin-tags": "1.0.2"
+  },
+  "devDependencies": {
+    "@vuepress/plugin-back-to-top": "1.8.0",
+    "@vuepress/plugin-medium-zoom": "1.8.0",
+    "@vuepress/plugin-pwa": "1.8.0",
+    "vuepress": "1.8.0",
+    "vuepress-plugin-baidu-autopush": "^1.0.1"
   }
 }

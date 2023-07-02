@@ -1,29 +1,49 @@
-<div class="note info">小站链接：https://jycoder.club</div>
+<p align="center">
+  <a href="https://github.com/zq99299/repository-summary" target="_blank">
+     <img width="200" src="./docs/.vuepress/public/mlogo.svg" alt="logo">
+  </a>
+  <br/>
+  <br/>
+  <a href="https://github.com/zq99299/repository-summary" target="_blank"> 
+    所有笔记 → 系列导航
+  </a>
+</p>
 
-# Java基础
+# note-book
+用来记录工作和学习过程中的笔记，汇总成册方便查阅，类容涵盖各类技术
 
-- [函数式编程](https://jycoder.club/2020/07/13/Functionalprogramming/)
-- [Java核心技术原理](https://jycoder.club/2021/08/18/Topic/)
-- [深入理解JVM](https://jycoder.club/2020/12/06/jvm/)
-- [Java并发编程](https://jycoder.club/2020/10/05/Concurrency/)
+如：java、git、elasticsearch、mycat、设计模式、gradle、vue
 
-# 常用框架
+主要定位：暂没有那么多的同类型知识点，一个大杂烩仓库，一般都是系统学习某一个知识点的笔记仓库。
 
-- [SpringFramework](https://jycoder.club/2020/07/16/SpringFramework/)
-- [Spring AOP](https://jycoder.club/2021/06/29/Spring-AOP/)
-- [SpringCloud](https://jycoder.club/2020/07/16/SpringCloud/)
-- [SpringBoot](https://jycoder.club/2020/07/16/SpringBoot/)
+在线阅读：
 
-# 数据结构与算法
+- [note-book](https://zq99299.github.io/note-book/) ： 主仓（本笔记）
+- [note-book2](https://zq99299.github.io/note-book2/) ： 第 2 分仓
 
-- [算法](https://jycoder.club/2021/06/24/leetcode/)
+  note-book 笔记太多，vuepress 构建吃力，分开写了
 
-# 中间件
+## 运行方式
 
-- [MySQL原理分析](https://jycoder.club/2021/08/30/MySQL/)
-- [深入浅出Redis](https://jycoder.club/2021/04/07/Redis/)
-- [RocketMQ从实践到原理](https://jycoder.club/2021/10/24/RocketMQ/)
+- 写作预览：
 
-# 特别篇
+  yarn docs:dev
+- 打包发布：
 
-- [面试题精选](https://jycoder.club/2020/10/07/Interview/)
+  yarn docs:build
+
+---
+
+<p align="center">
+  <a href="https://jb.gg/OpenSourceSupport" target="_blank">
+     <img src="./docs/.vuepress/public/jb_beam.svg" alt="logo">
+  </a>
+  <br/>
+  <br/>
+  <a href="https://jb.gg/OpenSourceSupport" target="_blank"> 
+    感谢 JetBrains 对本项目提供的开源许可证支持
+  </a>
+</p>
+
+
+基于：https://github.com/zq99299/note-book
