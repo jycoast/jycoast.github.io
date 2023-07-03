@@ -2,7 +2,7 @@
 home: true
 heroImage: mlogo.svg
 actionText: 快速开始 →
-actionLink: /introduce/
+actionLink: /interview/
 features:
 - title: 持续学习
   details: 每天至少一小时学习，才是真的靠谱

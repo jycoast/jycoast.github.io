@@ -42,7 +42,7 @@ module.exports = {
       updatePopup: true // Boolean | Object, 默认值是 undefined.
     },
     nav: [
-      { text: 'Java 面试', link: '/' },
+      { text: 'Java 面试', link: '/interview/' },
       {
         text: 'Java 基础', items: [
           { text: '函数式编程', link: '/' },
