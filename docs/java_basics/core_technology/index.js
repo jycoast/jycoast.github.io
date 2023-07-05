@@ -1,11 +1,10 @@
 module.exports = () => {
     return [
         {
-            title: "项目介绍",
+            title: "Java核心基础",
             collapsable: true,
             children: [
-                '',
-                'Interview.md'
+                ''
             ]
         }
     ]
