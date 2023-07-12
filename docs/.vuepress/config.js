@@ -3,8 +3,8 @@ const leetcode = require('../leetcode')
 const javaBasics = require('../java_basics')
 
 module.exports = {
-  title: '吉永超',
-  description: '用来记录工作和学习过程中的笔记，汇总成册方便查阅',
+  title: '开卷有益',
+  description: '蓝领码农',
   base: '/', // gh-page 中是增加了项目名
   dest: 'build/.vuepress/dist',  // 目录配置在外,纯粹是有代码洁癖和强迫症，并不能规避开发模式下同时构建不报错的问题
   host: 'localhost', // dev 的域名
