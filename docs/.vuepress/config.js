@@ -1,6 +1,6 @@
 const interview = require('../interview')
 const leetcode = require('../leetcode')
-const javaBasics = require('../java_basics')
+// const javaBasics = require('../java_basics')
 
 module.exports = {
   title: '吉永超',
@@ -48,7 +48,7 @@ module.exports = {
         text: 'Java 基础', items: [
           { text: '函数式编程', link: '/java_basics/functional_programming/' },
           { text: 'Java核心技术原理', link: '/java_basics/core_technology/' },
-          { text: 'Java知识体系合辑', link: '/java_basics/knowledge_system/' }
+          // { text: 'Java知识体系合辑', link: '/java_basics/knowledge_system/' }
         ]
       },
       {
@@ -113,7 +113,7 @@ module.exports = {
     sidebar: {
       '/interview/': interview(),
       '/leetcode/': leetcode(),
-      '/java_basics/': javaBasics()
+      // '/java_basics/': javaBasics()
     },
   },
   plugins: [

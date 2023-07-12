@@ -6,7 +6,7 @@ module.exports = () => {
             children: [
                 'core_technology/Topic.md',
                 'functional_programming/Functionalprogramming.md',
-                'knowledge_system/SeriesofJava.md'
+                // 'knowledge_system/SeriesofJava.md'
             ]
         }
     ]
