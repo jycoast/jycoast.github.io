@@ -3,7 +3,7 @@ name: CI
 # 控制如何触发事件，这里针对 master 分支
 on:
   push:
-    branches: [ gp-pages ]
+    branches: [ gh-pages ]
   pull_request:
     branches: [ master ]
 
