@@ -1012,7 +1012,7 @@ Bean别名（Alias）的价值：
 BeanDefinition注册的不同方式：
 
 1. XML配置元信息
-	- <bean name ="..." ... />
+	- `<bean name ="..." ... />`
 2. Java注解配置元信息
 	- @Bean
 	- @Component

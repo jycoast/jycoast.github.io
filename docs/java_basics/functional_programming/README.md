@@ -1621,11 +1621,7 @@ public class StudentTest {
     }
 ```
 
-编译器就会提示我们不能解析构造方法：
-
-![1597851410941](D:\笔记\jiyongchao-qf.github.io\docs\views\images\Functionalprogramming.md)
-
-这也验证了我们之前的说法。
+编译器就会提示我们不能解析构造方法,这也验证了我们之前的说法。
 
 以上就是几个最基础也是最重要的几个函数式接口，在此基础上，JDK还为我们提供了一些其他的函数式接口，例如BinaryOperator，他们可以看成是前面几个函数式接口的扩展。
 
@@ -4260,7 +4256,7 @@ Map<String, String> map = set.stream().sequential().collect(new MySetCollector2<
     }
 ```
 
-这里的(Supplier<List<T>>) ArrayList::new也可以写成`ArrayList<T>::new`，这里的第四个参数是：
+这里的`(Supplier<List<T>>) ArrayList::new`也可以写成`ArrayList<T>::new`，这里的第四个参数是：
 
 ```java
     static final Set<Collector.Characteristics> CH_ID

@@ -1,28 +1,22 @@
 {
   "name": "jiyongchao",
-  "version": "0.0.1",
-  "description": "使用 vuepress 生成的 markdown 文档站点",
-  "author": "jiyongchao <jycoder@qq.com>",
-  "private": false,
+  "version": "1.0.0",
+  "description": "blog",
+  "main": "8080",
   "scripts": {
-    "docs:devx": "vuepress dev docs --open",
-    "docs:dev": "node --max_old_space_size=4096 ./node_modules/vuepress/cli.js dev docs --open",
-    "docs:buildx": "vuepress build docs",
-    "description": "在 build 时不要添加 --debug 之类的选项，否则会导致生成之后的搜索和侧边栏点击无效的问题",
-    "docs:build": "node --max_old_space_size=4096 ./node_modules/vuepress/cli.js build docs"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "docs:dev": "vuepress dev docs",
+    "docs:build": "vuepress build docs"
   },
-  "dependencies": {
-    "moment": "^2.24.0",
-    "vue-router": "3.4.5",
-    "vuepress-plugin-baidu-tongji-analytics": "^1.0.1",
-    "vuepress-plugin-code-copy": "^1.0.4",
-    "vuepress-plugin-tags": "1.0.2"
-  },
+  "author": "jiyongchao",
+  "license": "ISC",
   "devDependencies": {
-    "@vuepress/plugin-back-to-top": "1.8.0",
-    "@vuepress/plugin-medium-zoom": "1.8.0",
-    "@vuepress/plugin-pwa": "1.8.0",
-    "vuepress": "1.8.0",
-    "vuepress-plugin-baidu-autopush": "^1.0.1"
+    "@vuepress/client": "^2.0.0-beta.66",
+    "@vuepress/plugin-back-to-top": "^2.0.0-beta.66",
+    "@vuepress/plugin-medium-zoom": "^2.0.0-beta.66",
+    "@vuepress/plugin-pwa": "^2.0.0-beta.66",
+    "@vuepress/plugin-search": "^2.0.0-beta.66",
+    "vue": "^3.3.4",
+    "vuepress": "^2.0.0-beta.66"
   }
 }

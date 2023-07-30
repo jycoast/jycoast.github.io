@@ -8,21 +8,21 @@ Mybatis在XML文件中寻找对应的SQL语句的时候，会根据StrictMap<Str
 
 ## Mybatis的XML映射文件中，不同的XML映射文件，id是否可以重复？
 
-同一个namespace下的id不能重复，原因是 namespace + id 会作为Map<String，MapperStatement>的key使用，如果id重复会导致数据互相覆盖。
+同一个namespace下的id不能重复，原因是 namespace + id 会作为`Map<String，MapperStatement>`的key使用，如果id重复会导致数据互相覆盖。
 
 ## #{}和${}的区别是什么？
 
-\#{} 是预编译处理，${}是字符串替换。
+`#{}` 是预编译处理，`${}`是字符串替换。
 
-- Mybatis在处理#{}时，会将sql中的#{}替换为“？”号，调用PreparedStatement的set方法来赋值
-- Mybatis在处理${}时，就是把\${}替换程变量的值
+- Mybatis在处理`#{}`时，会将sql中的`#{}`替换为“？”号，调用PreparedStatement的set方法来赋值
+- Mybatis在处理`${}`时，就是把`\${}`替换程变量的值
 
-使用#{}可以有效的放置SQL注入，提高系统的安全性。
+使用`#{}`可以有效的放置SQL注入，提高系统的安全性。
 
 ## 当实体类中的属性名和表中的字段名不一样怎么办？
 
 - 通过在查询的sql语句中定义字段名的别名，让字段名的别名和实体类的属性名一致
-- 通过<resultMap>来映射字段名和实体类属性名的一一对应的关系。
+- 通过`<resultMap>`来映射字段名和实体类属性名的一一对应的关系。
 
 ## 模糊查询like语句该怎么写？
 
