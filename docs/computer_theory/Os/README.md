@@ -23,7 +23,7 @@ tags:
 
 操作系统所处的位置：
 
-![image.png](https://cdn.nlark.com/yuque/0/2022/png/672829/1660556739463-717771df-82cb-40b1-9952-c14afeec07ca.png)
+![image.png](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202307301612508.png)
 
 用户态和内核态：
 

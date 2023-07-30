@@ -698,10 +698,6 @@ Mixed GC由一些参数控制，另外也控制着哪些老年代Region会被选
 
 ##### 收集过程
 
-G1垃圾收集活动时序图如下：
-
-<img src="C:/Users/jyc/AppData/Roaming/Typora/typora-user-images/image-20210804174604210.png" alt="image-20210804174604210" style="zoom:50%;" />
-
 从图中不难看出，G1的收大致可以分为四个阶段：
 
 - Young GC（不同于CMS）

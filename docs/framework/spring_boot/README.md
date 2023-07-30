@@ -101,7 +101,7 @@ public @interface EnableAutoConfiguration {
 
 借助AutoConfigurationImportSelector，SpringBoot可以将所有符合条件的@Configuration配置都加载到当前SpringBoot创建并使用的IoC容器，借助Spring框架的一个工具类SpringFactoriesLoader，@EnableAutoConfiguration可以智能的完成自动配置的功能。
 
-![图片](https://mmbiz.qpic.cn/mmbiz_jpg/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQzmAj46icFN8ATeAbRhibHNmvNLt8zniczDnVPEIvBHEDSv8WZ38hoSkXg/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1)
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202307301617175" alt="图片" style="zoom:67%;" />
 
 在这其中，SpringFactoriesLoader扮演者十分重要的角色：
 
@@ -247,7 +247,7 @@ public ConfigurableApplicationContext run(String... args) {
 
 2. 加载SpringBoot配置环境（ConfigurableEnvironment），如果是通过Web容器发布，会加载StandardEnvironment，其最终也是集成了ConfigurableEnvironment，类图如下
 
-   ![图片](https://mmbiz.qpic.cn/mmbiz_png/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQurfYCoiaPsiaBBeBrCWOHMTHwl7mQ6iaYqKYMoRbT2bz6270LohsDndIg/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1)
+   ![图片](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202307301617103)
 
 3. 配置环境（Environment）加入到监听器对象中（SpringApplicationRunListeners）
 
@@ -359,11 +359,11 @@ public ConfigurableApplicationContext run(String... args) {
 
 在整个SpringBoot启动过程中，多出都调用了SpringBoot的自动装配模块
 
-![图片](https://mmbiz.qpic.cn/mmbiz_png/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQn8nK36PPIsEBpXXjQmX8ibniaohz5ahOYM5WnyicjgdYFa0Libxaztg6CQ/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1)
+![图片](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202307301618471)
 
 该配置模块主要使用到了SpringFactoriesLoader，即Spring工厂加载器，该对象提供了loadFactoryNames方法，入参为factoryClass和classLoader，即需要传入上图中的工厂类名称对应的类加载器，方法会根据指定的classLoader，加载该类加载器搜索路径下的指定文件，即spring.factories文件，传入的工厂类为接口，而文件中对应的类则是接口的实现类，或最终作为实现类，所以文件中一般为下入这种一对多的类型集合，或者到这些实现类的类名后，loadFactoryNames方法返回类名集合，方法调用方得到这些集合后，再通过反射获取这些类的类对象、构造方法，最终生成实例。
 
-![图片](https://mmbiz.qpic.cn/mmbiz_png/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQu9QicvqeO7RicwHibtCVtibnQHLmGxuKm0jw1ttR5mjBrqCIolBibRRo3icw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1)
+![图片](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202307301618319)
 
 自动配置流程如下：
 
@@ -373,27 +373,27 @@ public ConfigurableApplicationContext run(String... args) {
 
 之前我们提到了`EnableAutoConfiguration`注解，其类图如下：
 
-![图片](https://mmbiz.qpic.cn/mmbiz_png/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQr8IZpibDYUkTRzFA4j2WWw7YFiciaZevFuxH1oSxMd0Jr7drDmILq3YMw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1)
+![图片](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202307301618885)
 
 可以发现其最终实现了`ImportSelector`(选择器)和`BeanClassLoaderAware`(bean类加载器中间件)，重点关注一下`AutoConfigurationImportSelector`的`selectImports`方法。
 
-![图片](https://mmbiz.qpic.cn/mmbiz_jpg/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQticdcJNNcF5hWVAA4a5xib1D3qhoRf1lW9xQibDxiavYj2Ieicvzq7od95w/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1)
+![图片](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202307301618108)
 
 该方法在springboot启动流程——bean实例化前被执行，返回要实例化的类信息列表。我们知道，如果获取到类信息，spring自然可以通过类加载器将类加载到jvm中，现在我们已经通过spring-boot的starter依赖方式依赖了我们需要的组件，那么这些组建的类信息在select方法中也是可以被获取到的，不要急我们继续向下分析。
 
-![图片](https://mmbiz.qpic.cn/mmbiz_jpg/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQ7W4R5zDIcXoGv7Z12BlbAoqGQPGoR19rSFahPsiaqWfTLRqh7pZUQyA/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1)
+![图片](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202307301618789)
 
 该方法中的`getCandidateConfigurations`方法，通过方法注释了解到，其返回一个自动配置类的类名列表，方法调用了`loadFactoryNames`方法，查看该方法
 
-![图片](https://mmbiz.qpic.cn/mmbiz_jpg/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQGplWq8vdg5cDrXzLPyKPUZxgG5f1mN7eDYFaqrPfygKGib9QCWsmFTQ/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1)
+![图片](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202307301618885)
 
 在上面的代码可以看到自动配置器会根据传入的`factoryClass.getName()`到项目系统路径下所有的`spring.factories`文件中找到相应的key，从而加载里面的类。我们就选取这个`mybatis-spring-boot-autoconfigure`下的`spring.factories`文件
 
-![图片](https://mmbiz.qpic.cn/mmbiz_jpg/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQBR85MD5HgVeib7Juia527ia5DedXvMDoZwibXtUvwIcIib3UsA1Z6eFKWgQ/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1)
+![图片](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202307301618236)
 
 进入`org.mybatis.spring.boot.autoconfigure.MybatisAutoConfiguration`中，主要看一下类头：
 
-![图片](https://mmbiz.qpic.cn/mmbiz_jpg/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQvDDF5STJSTOC9e5Nvou7NoyvgkdZHiam1ic8Hnz1cknuRM8lMLmVWicxw/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1)
+![图片](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202307301618516)
 
 发现Spring的`@Configuration`，俨然是一个通过注解标注的springBean，继续向下看
 
@@ -407,11 +407,11 @@ public ConfigurableApplicationContext run(String... args) {
 
 所以Spring-boot为我们提供了统一的starter可以直接配置好相关的类，触发自动配置所需的依赖(mybatis)如下：
 
-![图片](https://mmbiz.qpic.cn/mmbiz_png/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQKZibKhZCCVt3rXV9LD20lGHnKkLVfVjicblW5KJUQJnjHicxDicjB1WGYQ/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1)
+![图片](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202307301618771)
 
 这里是截取的`mybatis-spring-boot-starter`的源码中pom.xml文件中所有依赖：
 
-![图片](https://mmbiz.qpic.cn/mmbiz_png/6mychickmupWyfMiax0ryO6Hs4SYOv1IzQTkmkxUoCMn3p5VBepEyVVA9YMKEiaJibrLsSDSeb1tibd20HiciauZx0S2w/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1)
+![图片](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202307301618683)
 
 因为maven依赖的传递性，我们只要依赖starter就可以依赖到所有需要自动配置的类，实现开箱即用的功能。也体现出Springboot简化了Spring框架带来的大量XML配置以及复杂的依赖管理，让开发人员可以更加关注业务逻辑的开发。
 
@@ -446,7 +446,7 @@ ENTRYPOINT ["java","-Djava.security.egd=file:/dev/./urandom","-Dspring.profiles.
 
 这样打包的Docker镜像就可以通过`docker run`添加额外的`--env ACTIVE=test` 来动态的改变环境。单纯的编写**Dockerfile**不方便我们DevOps。
 
-![图片](https://mmbiz.qpic.cn/sz_mmbiz_png/zuF5sJGRDCvwCLZQv6fq6zEjyuBXHd9C5licH3DdoibYfYXGaQOZMiaibyQdeoyHGibNRfiab5Z2Z9Es2jX8DickH4hJw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1)
+![图片](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202307301618941)
 
 我们需要能够自动地构建、推送到仓库、拉取镜像、运行一系列流水线操作。好在市面上有很多工具来帮助我们实现这一过程。
 

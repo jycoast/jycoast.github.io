@@ -5810,7 +5810,6 @@ undo日志版本链是指一行数据被多个事务依次修改过后，在每�
 - Shadow Paging(影子分页)
 
 
-
 ## Tomcat
 
 ### Tomcat整体架构

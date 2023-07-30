@@ -3,6 +3,7 @@ import { backToTopPlugin } from '@vuepress/plugin-back-to-top'
 import { searchPlugin } from '@vuepress/plugin-search'
 import { mediumZoomPlugin } from '@vuepress/plugin-medium-zoom'
 import { pwaPlugin } from '@vuepress/plugin-pwa'
+import codeCopyPlugin from '@snippetors/vuepress-plugin-code-copy'
 
 export default defineUserConfig({
     lang: 'zh-CN',
@@ -15,7 +16,7 @@ export default defineUserConfig({
     theme: defaultTheme({
         // 默认主题配置
         lang: 'zh-CN',
-        // logo: 'mlogo.svg',
+        logo: 'mlogo.svg',
         repo: 'https://github.com/jycoast',
         navbar: [
             { text: 'Java 面试', link: '/interview/' },
@@ -31,7 +32,7 @@ export default defineUserConfig({
             {
               text: '数据结构与算法', children: [
                 { text: '数据结构', link: '/leetcode/data_structure.md' },
-                { text: '算法', link: '/leetcode/algorithm.md' }
+                { text: '算法实战', link: '/leetcode/algorithm.md' }
               ]
             },
             {
@@ -41,7 +42,7 @@ export default defineUserConfig({
                 {
                   text: '关系型数据库',
                   children: [
-                    { text: 'MySQL', link: '/database/mysql/' },
+                    { text: '深入浅出MySQL', link: '/database/mysql/' },
                   ]
                 },
                 {
@@ -67,7 +68,7 @@ export default defineUserConfig({
                 {
                   text: '网络通信', 
                   children:[
-                    { text: 'Netty', link: '/framework/netty/' }
+                    { text: '深入理解Netty', link: '/framework/netty/' }
                 ]
                }
              ]
@@ -75,9 +76,9 @@ export default defineUserConfig({
             {
               text: '中间件', 
               children:[
-                {text:'jvm', link: '/middleware/jvm/'},
-                {text:'mq', link: '/middleware/mq/'},
-                {text:'tomcat', link: '/middleware/tomcat/'},
+                {text:'深入理解JVM', link: '/middleware/jvm/'},
+                {text:'RocketMQ从实践到原理', link: '/middleware/mq/'},
+                {text:'Tomcat核心原理', link: '/middleware/tomcat/'},
             ]
           },
             {
@@ -99,6 +100,7 @@ export default defineUserConfig({
           }),
         pwaPlugin({
             
-        })
+        }),
+        codeCopyPlugin()
       ],
 });

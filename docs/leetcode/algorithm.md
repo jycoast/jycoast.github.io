@@ -1262,10 +1262,6 @@ public int maxDepthByBFS(TreeNode root) {
     }
 ```
 
-如果只记录每次记忆化搜索的结果就变成了动态规划：
-
-<img src="C:/Users/jyc/AppData/Roaming/Typora/typora-user-images/image-20210727102754402.png" alt="image-20210727102754402" style="zoom:67%;" />
-
 所谓的状态转移方程或者说递推公式为：`dp[i] = dp[i - 1] + dp[i - 2]`。
 
 ```java
@@ -2351,7 +2347,6 @@ class{
 ```
 
 ## [212. 单词搜索 II](https://leetcode-cn.com/problems/word-search-ii/)
-
 
 
 
