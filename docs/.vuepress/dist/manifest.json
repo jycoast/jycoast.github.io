@@ -1,0 +1,25 @@
+{
+  "name": "jiyongchao",
+  "short_name": "jiyongchao",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#fff",
+  "description": "开卷有益",
+  "icons": [
+    {
+      "src": "mlogo.svg",
+      "sizes": "48x48",
+      "type": "image/png"
+    },
+    {
+      "src": "mlogo.svg",
+      "sizes": "100x100",
+      "type": "image/png"
+    },
+    {
+      "src": "mlogo.svg",
+      "sizes": "200x200",
+      "type": "image/png"
+    }
+  ]
+}
