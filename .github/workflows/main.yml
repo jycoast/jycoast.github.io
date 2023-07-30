@@ -1,6 +1,6 @@
 name: CI
 
-# 控制如何触发事件，这里针对 master 分支
+# 控制如何触发事件，这里针对 gh-pages 分支
 on:
   push:
     branches: [ gh-pages ]
@@ -42,4 +42,5 @@ jobs:
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.DEPLOY_KEY }}
-          publish_dir: ./build/.vuepress/dist
+          publish_dir: ./build/.vuepress/dist'
+          publish_branch: master
