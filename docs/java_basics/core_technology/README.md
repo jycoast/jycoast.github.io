@@ -740,10 +740,6 @@ HashTable底层基于数组与链表实现，通过synchronized关键字保证�
 
 HashTable的默认构造函数，容量为11，加载因子为0.75，扩容大小2倍+1。
 
-
-
-
-
 ## Set
 
 ### HashSet源码分析
@@ -795,6 +791,803 @@ Java反射机制的主要用于实现以下功能：
 - java.lang.reflect.Constructor：代表类的构造方法
 - java.lang.reflect.Array：提供了动态创建数组及访问数组元素的静态方法。该类中的所有方法都是静态的
 
-# 泛型
+# IO模型
 
-## 由来
+## IO基础
+
+参考：[Linux IO模式及select poll epoll详解](https://segmentfault.com/a/1190000003063859?utm_source=Weibo&utm_medium=shareLink&utm_campaign=socialShare&from=timeline&isappinstalled=0)。
+
+文件描述符：是计算机科学中的一个术语，用于表述指向文件的引用的抽象化概念。文件描述符在形式上是一个非负整数。实际上，它是一个索引值，指向内核为每一个进程所维护的该进程打开文件的记录表。当程序打开一个现有文件或者创建一个新文件时，内核向进程返回一个文件描述符。在程序设计中，一些涉及底层的程序编写往往会围绕着文件描述符展开。但是文件描述符这一概念往往只适用于UNIX、Linux这样的操作系统。
+
+关于句柄的解释；牧童的手为指针，杏花村的牌子为句柄，杏花村酒店为对象的实例。句柄是资源在创建过程中由Windows赋予的，它就是代表这个资源的。而指针实质上是某个变量或者对象所在内存位置的首地址，是指向对象的。一个是指向，一个是代表，二者是不同的。一个是直接找到对象（指针），一个是间接找到对象（句柄）。例如，杏花村可以搬家（实际上程序运行过程中，资源在内存中的地址是变化的），那么牧童的手的指向也就不同（指针）了，然而即使搬了家，“杏花村”这块牌匾是不变的，通过打听“杏花村”这个名称，还是可以间接找到它的（地址）。HANDLE的本意是把柄，把手的意思，是你与操作系统打交道的东西。
+
+对于一次IO访问（以read为例），数据会先被拷贝到操作系统内核的缓冲区中，然后才会从操作系统内核的缓冲区拷贝到应用程序的地址空间。所以说，当一个read操作发生时，它会经历两个阶段：
+
+1. 等待数据准备
+2. 将数据从内核拷贝至进程中
+
+基于这两个阶段，Linux操作系统有以下四种IO模型的方案：
+
+- 阻塞IO
+- 非阻塞IO
+- IO多路复用
+- 异步IO
+
+## Linux网络编程IO模型
+
+### 阻塞IO模型
+
+这是最传统的IO模型，即在读写数据的过程中会阻塞，一个典型的读操作流程大致如下：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202307312257014.png" alt="image-20230731225726985" style="zoom:50%;" />
+
+当用户进程调用了recvfrom这个系统调用，kernel就开始IO的第一个阶段：准备数据（对于网络IO来说，很多时候一开始还没有到达。比如，还没有收到一个完整的UDP包。这个时候kernel就要等待足够的数据到来）。这个过程需要等待，也就是说数据被拷贝到操作系统内核的缓冲区是需要一个过程的。而在用户进程这边，整个进程会被阻塞。当kernel一直等到数据准备好了，它就会将数据从kernel中拷贝到用户内存，然后kernel返回结果，用户进程才解除block的状态，重新运行起来。
+
+也就是说，阻塞IO的特点就是在IO执行的两个阶段都被block了。
+
+### 非阻塞IO
+
+linux下，可以通过设置socket使其变为non-blocking。当对于一个non-blocking socket 执行读操作时，流程大致如下：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202307312321338.png" alt="image-20230731232121310" style="zoom:50%;" />
+
+当用户进程发出read操作时，如果kernel中的数据还没有准备好，那么它并不会block用户进程，而是立刻返回一个error。从用户进程角度讲，它发起一个read操作后，并不需要等待，而是马上就得到了一个结果。用户进程判断结果是一个error时，它就知道数据还没有准备好，于是它可以再次发送read操作。一旦kernel中的数据准备好了，并且又再次收到了用户进程的system call，那么它马上就将数据拷贝到了用户内存，然后返回。
+
+也就是说，非阻塞IO的特点是用户进行需要不断的主动询问kernel数据好了没有。
+
+### IO多路复用
+
+IO多路复用就是我们通常说的select、poll、epoll，有些地方也称这种IO方式为event driven IO。
+
+select/epoll的好处在于单个process就可以同时处理多个网络连接的IO。它的基本原来就是select、poll、epoll这个function会不断的轮询所负责的所有socket，当某个socket有数据到达了，就通知用户进程。
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202307312337212.png" alt="image-20230731233746184" style="zoom:50%;" />
+
+当用户进程调用了select，那么整个进程会被block，而同时，kernel会“监视”所有select负责的socket，当任何一个socket中的数据准备好了，select就会返回。这时候用户进程再调用read操作，将数据从kernel拷贝到用户进程。
+
+总结来看，IO多路复用的特点是通过一种机制一个进程能同时等待多个文件描述符，而这些文件描述符（套接字描述符）其中的任意一个进入读就绪状态，`select()`函数就可以返回。
+
+IO多路复用模型与阻塞IO其实并没有太大的区别，事实上，还更差一些。因为这里需要使用两个system call(select 和 recvfrom分别调用一次)，而阻塞IO值调用了一次system call(recvfrom)。但是，用select的优势在于它可以同时处理多个connection。
+
+所以，如果处理的连接数不是很高的话，使用select/epoll的web server不一定比使用mutli-threading+blocking的web server性能更好，可能延迟还更大。select/epoll的优势并不是对于单个连接能处理得更快，而是在于能处理更多的连接。
+
+在IO多路复用模型中，一般会将socket都设置为非阻塞，但是用户进程会被select函数阻塞。
+
+### 异步IO
+
+Linux下的异步IO其实用的很少，整体流程大致如下：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202307312332520.png" alt="image-20230731233249489" style="zoom:50%;" />
+
+用户进程发起read操作之后，立刻就可以开始去做其它的事，而另一方面，从kernel的角度，当它收到一个asynchronous read之后，首先它会立刻返回，所以不会对用户进程产生任何block。然后，kernel会等待数据准备完成，然后将数据拷贝到用户内存，当这一切都完成之后，kernel会给用户进程发送一个signal，告诉它read操作完成了。
+
+### 阻塞、非阻塞和同步、异步
+
+阻塞、非阻塞说的是调用者。同步、异步说的是被调用者。
+
+同步IO和异步IO的区别：
+
+- 同步IO：真实IO 操作的时候会将process阻塞
+- 异步IO：真实IO 操作的时候不会将process阻塞
+
+按照如上定义，阻塞IO、非阻塞IO、IO多路复用均属于同步IO。
+
+五种线程模型对比：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202308012334178.png" alt="image-20230801233431124" style="zoom: 43%;" />
+
+## IO多路复用之select、poll、epoll
+
+select、poll和epoll都是IO多路复用的机制。IO多路复用就是通过一种机制，一个进程可以监视多个描述符，一旦某个描述符就绪（一般是读就绪或者写就绪），能够通知程序进行相应的读写操作。但select、poll、epoll本质上都是同步IO，因为它们都需要在读写事件就绪后自己负责进行读写，也就是说这个读写过程是阻塞的，而异步IO则无需自己负责进行读写，异步IO的实现会负责把数据从内核拷贝到用户空间。
+
+### select
+
+```c
+int select (int n, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout);
+```
+
+select函数监视的文件描述符分为3类，分别是readfds、writefds和exceptfds。调用select函数会阻塞，直到有描述符就绪（有数据可读、可写、或者有except），或者超时（timeout指定等待时间，如果立即返回设为null即可），函数返回。当select函数返回后，可以通过遍历fdset，来找到就绪的描述符。
+
+select目前几乎在所有的平台上支持，其良好跨平台支持也是它的一个优点。select的一个缺点在于单个进程能够监视的文件描述符的数量存在最大限制，在Linux上一般为1024，可以通过修改宏定义甚至重新编译内核的方式提升这一限制，但是这样也会造成效率的降低。
+
+### poll
+
+```c
+int poll (struct pollfd *fds, unsigned int nfds, int timeout);
+```
+
+不同于select使用三个位图来表示三个fdset的方式，poll使用一个pollfd的指针实现。
+
+```c
+struct pollfd {
+    int fd; /* file descriptor */
+    short events; /* requested events to watch */
+    short revents; /* returned events witnessed */
+};
+```
+
+pollfd结构包含了要监视的event和发生的event，不再使用select“参数-值”传递的方式。同时pollfd并没有最大数量限制（但是数量过大后性能也会下降）。和select函数一样，poll返回后，需要轮询pollfd来获取就绪的描述符。
+
+select和poll都需要在返回后，通过遍历文件描述符来获取已经就绪的socket。实际上，同时连接的大量客户端在同一时刻可能只有很少的处于就绪状态，因此随着监视的描述符数量的增长，其效率也会线程下降。
+
+### epoll
+
+epoll是在Linux内核2.6版本中提出的，是之前的select和poll的增强版本。相对于select和poll来说，epoll更加灵活，没有描述符限制。epoll使用一个文件描述符管理多个描述符，将用户关系的文件描述符的时间存放到内核的一个事件表中，这样在用户空间和内核空间的copy只需要一次。
+
+## Java中的IO模型
+
+在JDK1.4之前，基于Java的所有socket通信都使用了同步阻塞模式（bloking IO），这种一请求一应答的通信模型简化了上层开发，但性能可能性存在巨大瓶颈，对高并发和低时延支持不好。
+
+在JDK1.4之后，提供了新的NIO类库，Java开始支持非阻塞IO。在JDK1.7以后，将原来的NIO类库进行了升级，提供了AIO功能，支持基于文件的异步IO操作和针对套接字的异步IO操作等功能。
+
+JDK1.7之后，将原来的NIO类库进行了升级，提供了AIO功能，支持基于文件的异步IO操作和针对套接字的异步IO操作等功能。
+
+### BIO
+
+使用BIO通信模型的服务端，通常通过一个独立的Acceptor线程负责监听客户端的连接，监听到客户端连接请求后为每一个客户端创建一个新的线程链路进行处理，处理完成通过输出流回应客户端，线程消耗，这就是典型一对一答模型，下面我们通过代码对BIO模型进行具体分析，我们实现客户端发送消息服务端将消息回传我们的功能。
+
+服务端：
+
+```java
+    int port = 3000;
+    try(ServerSocket serverSocket = new ServerSocket(port)) {
+        Socket socket = null;
+        while (true) {
+            //主程序阻塞在accept操作上
+            socket = serverSocket.accept();
+            new Thread(new BioExampleServerHandle(socket)).start();
+        }
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+
+```
+
+```java
+    private Socket socket;
+    public BioExampleServerHandle(Socket socket) {
+        this.socket = socket;
+    }
+    @Override
+    public void run() {
+        try(BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            PrintWriter writer = new PrintWriter(socket.getOutputStream(), true)) {
+            String message = reader.readLine();
+            System.out.println("收到客户端消息：" + message);
+            writer.println("answer: " + message);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+```
+
+客户端：
+
+```java
+    String host = "127.0.0.1";
+    int port = 3000;
+    try(Socket socket = new Socket(host, port);
+        BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        PrintWriter writer = new PrintWriter(socket.getOutputStream(), true)) {
+        Scanner input = new Scanner(System.in);
+        System.out.println("输入你想说的话：");
+        String message = input.nextLine();
+        writer.println(message);
+        String answer = reader.readLine();
+        System.out.println(answer);
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+
+```
+
+通过代码我们可以发现BIO的主要问题在于，每当一个连接接入时我们都需要new一个线程进行处理，这显然是不合适的，因为一个线程功能只能处理一个连接，这显然是不合适的，因为一个线程只能处理一个连接，如果在高并发的情况下，我们的程序肯定无法满足性能需求，同时我们对线程创建也缺乏管理。为了改进这种模型我们可以通过消息队列和线程池技术对它加以优化，我们称它为伪异步IO，代码如下：
+
+```java
+    int port = 3000;
+    ThreadPoolExecutor socketPool = null;
+    try(ServerSocket serverSocket = new ServerSocket(port)) {
+        Socket socket = null;
+        int cpuNum = Runtime.getRuntime().availableProcessors();
+        socketPool = new ThreadPoolExecutor(cpuNum, cpuNum * 2, 1000,
+                TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1000));
+        while (true) {
+            socket = serverSocket.accept();
+            socketPool.submit(new BioExampleServerHandle(socket));
+        }
+    } catch (Exception e) {
+        e.printStackTrace();
+    } finally {
+        socketPool.shutdown();
+    }
+
+```
+
+可以看到每当有新的连接接入，我们都将他投递给线程池处理，由于我们设置了线程池大小和阻塞队列大小，因此在并发情况下都不会导致服务崩溃，但是如果并发数大于阻塞队列大小，或服务端处理连接缓慢时，阻塞队列无法继续处理，会导致客户端连接超时，影响用户体验。
+
+### NIO
+
+NIO弥补了同步阻塞IO的不足，它提供了高速、面向块的IO，NIO中的一些概念：
+
+- Buffer：Buffer用于和NIO通道进行交互。数据从通道读入缓冲区，从缓冲区写入到通道中，它的主要作用就是和channel进行交互
+- Channel：Channel是一个通道，可以通过它读取和写入数据，通道是双向的，通道可以用户读、写或者同时读写
+- Selector：Selector会不断的轮询注册在它上面的Channel，如果Channel上面有新的连接读写事件的时候就会被轮询出来，一个Selector可以注册多个Channel，只需要一个线程负责Selector轮询，就可以支持成千上万的连接，可以说为高并发服务器的开发提供了很好的支撑
+
+服务端：
+
+```java
+    int port = 3000;
+    ServerSocketChannel socketChannel = null;
+    Selector selector = null;
+    try {
+        selector = Selector.open();
+        socketChannel = ServerSocketChannel.open();
+        //设置连接模式为非阻塞模式
+        socketChannel.configureBlocking(false);
+        socketChannel.socket().bind(new InetSocketAddress(port));
+        //在selector上注册通道，监听连接事件
+        socketChannel.register(selector, SelectionKey.OP_ACCEPT);
+        while (true) {
+            //设置selector 每隔一秒扫描所有channel
+            selector.select(1000);
+            Set<SelectionKey> selectionKeys = selector.selectedKeys();
+            Iterator<SelectionKey> iterable = selectionKeys.iterator();
+            SelectionKey key = null;
+            while (iterable.hasNext()) {
+                key = iterable.next();
+                //对key进行处理
+                try {
+                    handlerKey(key, selector);
+                } catch (Exception e) {
+                    if (null != key) {
+                        key.cancel();
+                        if (null != key.channel()) {
+                            key.channel().close();
+                        }
+                    }
+                }
+            }
+        }
+    } catch (Exception e) {
+        e.printStackTrace();
+    } finally {
+        try {
+            if (null != selector) {
+                selector.close();
+            }
+            if (null != socketChannel) {
+                socketChannel.close();
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+```
+
+handlerKey代码如下：
+
+```java
+   private void handlerKey(SelectionKey key, Selector selector) throws IOException {
+       if (key.isValid()) {
+           //判断是否是连接请求，对所有连接请求进行处理
+           if (key.isAcceptable()) {
+               ServerSocketChannel serverSocketChannel = (ServerSocketChannel) key.channel();
+               SocketChannel channel = serverSocketChannel.accept();
+               channel.configureBlocking(false);
+               //在selector上注册通道，监听读事件
+               channel.register(selector, SelectionKey.OP_READ);
+           } else if (key.isReadable()) {
+               SocketChannel channel = (SocketChannel) key.channel();
+               //分配一个1024字节的缓冲区
+               ByteBuffer byteBuffer = ByteBuffer.allocate(1024);
+               int readBytes = channel.read(byteBuffer);
+               if (readBytes > 0) {
+                   //从写模式切换到读模式
+                   byteBuffer.flip();
+                   byte[] bytes = new byte[byteBuffer.remaining()];
+                   byteBuffer.get(bytes);
+                   String message  = new String(bytes, "UTF-8");
+                   System.out.println("收到客户端消息: " + message);
+                   //回复客户端
+                   message = "answer: " + message;
+                   byte[] responseByte = message.getBytes();
+                   ByteBuffer writeBuffer = ByteBuffer.allocate(responseByte.length);
+                   writeBuffer.put(responseByte);
+                   writeBuffer.flip();
+                   channel.write(writeBuffer);
+               }
+           }
+       }
+   }
+
+```
+
+客户端代码：
+
+```java
+   int port = 3000;
+   String host = "127.0.0.1";
+   SocketChannel channel = null;
+   Selector selector = null;
+   try {
+       selector = Selector.open();
+       channel = SocketChannel.open();
+       channel.configureBlocking(false);
+       if (channel.connect(new InetSocketAddress(host, port))) {
+           channel.register(selector, SelectionKey.OP_READ);
+           write(channel);
+       } else {
+           channel.register(selector, SelectionKey.OP_CONNECT);
+       }
+       while (true) {
+           selector.select(1000);
+           Set<SelectionKey> selectionKeys = selector.selectedKeys();
+           Iterator<SelectionKey> iterator = selectionKeys.iterator();
+           SelectionKey key = null;
+           while (iterator.hasNext()) {
+               try {
+                   key = iterator.next();
+                   handle(key, selector);
+               } catch (Exception e) {
+                   e.printStackTrace();
+                   if (null != key.channel()) {
+                       key.channel().close();
+                   }
+                   if (null != key) {
+                       key.cancel();
+                   }
+               }
+           }
+       }
+   } catch (Exception e) {
+       e.printStackTrace();
+   } finally {
+       try {
+           if (null != channel) {
+               channel.close();
+           }
+           if (null != selector) {
+               selector.close();
+           }
+       } catch (Exception e) {
+           throw new RuntimeException(e);
+       }
+   }
+
+```
+
+write 方法：
+
+```java
+   private void write(SocketChannel channel) throws IOException {
+       Scanner in = new Scanner(System.in);
+       System.out.println("输入你想说的话：");
+       String message = in.next();
+       byte[] bytes = message.getBytes();
+       ByteBuffer byteBuffer = ByteBuffer.allocate(bytes.length);
+       byteBuffer.put(bytes);
+       byteBuffer.flip();
+       channel.write(byteBuffer);
+   }
+
+```
+
+handle 方法：
+
+```java
+   private void handle(SelectionKey key, Selector selector) throws IOException {
+       if (key.isValid()) {
+           SocketChannel channel = (SocketChannel) key.channel();
+           if (key.isConnectable()) {
+               if (channel.finishConnect()) {
+                   channel.register(selector, SelectionKey.OP_READ);
+                   write(channel);
+               }
+           } else if (key.isReadable()) {
+               ByteBuffer byteBuffer = ByteBuffer.allocate(1024);
+               int readBytes = channel.read(byteBuffer);
+               if (readBytes > 0) {
+                   byteBuffer.flip();
+                   byte[] bytes = new byte[byteBuffer.remaining()];
+                   byteBuffer.get(bytes);
+                   String message = new String(bytes, "UTF-8");
+                   System.out.println(message);
+               } else if (readBytes < 0) {
+                   key.cancel();
+                   channel.close();
+               }
+           }
+       }
+   }
+
+```
+
+通过代码我们会发现，NIO比BIO复杂很多。NIO虽然编码复杂，但优势同样明显，比起BIO客户端连接操作时异步的，我们可以注册OP_CONNET事件等待结果而不用像BIO那样被同步阻塞，Channel的读写操作都是异步的，没有等待数据它不会等待，而是直接返回。比起BIO我们不需要频繁的创建线程来处理客户端连接，而是通过一个Selector处理多个客户端连接，而且性能也可以得到保证，适合做高性能服务器开发。
+
+### AIO
+
+通过对比，AIO要比BIO简单，这是因为我们不需要创建一个独立的IO线程来处理读写操作，AsynchronousSocketchannel、AsynchronousServerSocketChannel由JDK底层线程池负责回调驱动读写操作。
+
+服务端：
+
+```java
+    int port = 3000;
+    AsynchronousServerSocketChannel socketChannel = null;
+    try {
+        socketChannel = AsynchronousServerSocketChannel.open();
+        socketChannel.bind(new InetSocketAddress(port));
+        //接收客户端连接，传入AcceptCompletionHandler作为回调来接收连接消息
+        socketChannel.accept(socketChannel, new AcceptCompletionHandler());
+        Thread.currentThread().join();
+    } catch (Exception e) {
+        e.printStackTrace();
+    } finally {
+        try {
+            if (null != socketChannel) {
+                socketChannel.close();
+            }
+        } catch (Exception e1) {
+            throw new RuntimeException(e1);
+        }
+    }
+
+```
+
+AcceptCompletionHandler 类：
+
+```java
+public class AcceptCompletionHandler implements CompletionHandler<AsynchronousSocketChannel, AsynchronousServerSocketChannel> {
+    @Override
+    public void completed(AsynchronousSocketChannel result, AsynchronousServerSocketChannel attachment) {
+        //继续接受其他客户端的连接请求，形成一个循环
+        attachment.accept(attachment, this);
+        ByteBuffer byteBuffer = ByteBuffer.allocate(1024);
+        //调用read操作进行异步读取操作，传入ReadCompletionHandler作为回调
+        result.read(byteBuffer, byteBuffer, new ReadCompletionHandler(result));
+    }
+    @Override
+    public void failed(Throwable exc, AsynchronousServerSocketChannel attachment) {
+        //异常失败处理在这里
+    }
+}
+
+```
+
+ReadCompletionHandler 类
+
+```java
+public class ReadCompletionHandler implements CompletionHandler<Integer, ByteBuffer> {
+    private AsynchronousSocketChannel channel;
+    public ReadCompletionHandler(AsynchronousSocketChannel channel) {
+        this.channel = channel;
+    }
+    @Override
+    public void completed(Integer result, ByteBuffer byteBuffer) {
+        try {
+            byteBuffer.flip();
+            byte[] bytes = new byte[byteBuffer.remaining()];
+            byteBuffer.get(bytes);
+            String message = new String(bytes, "UTF-8");
+            System.out.println("收到客户端消息：: " + message);
+            write(message);
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+    }
+    @Override
+    public void failed(Throwable exc, ByteBuffer attachment) {
+        try {
+            channel.close();
+        } catch (Exception e) {
+            throw  new RuntimeException(e);
+        }
+    }
+    private void write(String message) {
+        message = "answer: " + message;
+        byte[] bytes = message.getBytes();
+        ByteBuffer byteBuffer = ByteBuffer.allocate(bytes.length);
+        byteBuffer.put(bytes);
+        byteBuffer.flip();
+        channel.write(byteBuffer, byteBuffer, new WriteCompletionHandler(channel));
+    }
+}
+
+```
+
+客户端：
+
+```java
+    int port = 3000;
+    String host = "127.0.0.1";
+    AsynchronousSocketChannel channel = null;
+    try {
+        channel = AsynchronousSocketChannel.open();
+        channel.connect(new InetSocketAddress(host, port), channel, new AioClientHandler());
+        Thread.currentThread().join();
+    } catch (Exception e) {
+        e.printStackTrace();
+    } finally {
+        try {
+            if (null != channel) {
+                channel.close();
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+```
+
+AioClientHandler 类(由于客户端比较简单我这里使用了嵌套类部类)：
+
+```java
+public class AioClientHandler implements CompletionHandler<Void, AsynchronousSocketChannel> {
+    @Override
+    public void completed(Void result, AsynchronousSocketChannel channel) {
+        Scanner in = new Scanner(System.in);
+        System.out.println("输入你想说的话：");
+        String message = in.next();
+        byte[] bytes = message.getBytes();
+        ByteBuffer byteBuffer = ByteBuffer.allocate(bytes.length);
+        byteBuffer.put(bytes);
+        byteBuffer.flip();
+        channel.write(byteBuffer, byteBuffer, new CompletionHandler<Integer, ByteBuffer>() {
+            @Override
+            public void completed(Integer result, ByteBuffer buffer) {
+                //判断是否写完如果没有继续写
+                if (buffer.hasRemaining()) {
+                    channel.write(buffer, buffer, this);
+                } else {
+                    ByteBuffer readBuffer = ByteBuffer.allocate(1024);
+                    channel.read(readBuffer, readBuffer, new CompletionHandler<Integer, ByteBuffer>() {
+                        @Override
+                        public void completed(Integer result, ByteBuffer attachment) {
+                            try {
+                                attachment.flip();
+                                byte[] bytes1 = new byte[attachment.remaining()];
+                                attachment.get(bytes1);
+                                String message = new String(bytes1, "UTF-8");
+                                System.out.println(message);
+                                System.exit(1);
+                            } catch (UnsupportedEncodingException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        @Override
+                        public void failed(Throwable exc, ByteBuffer attachment) {
+                            try {
+                                channel.close();
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+                    });
+                }
+            }
+            @Override
+            public void failed(Throwable exc, ByteBuffer attachment) {
+                try {
+                    channel.close();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+    }
+    @Override
+    public void failed(Throwable exc, AsynchronousSocketChannel attachment) {
+    }
+```
+
+### IO模型对比
+
+|                | 同步阻塞I/O(BIO) | 伪异步I/O | 非阻塞I/O(NIO) | 异步I/O(AIO) |
+| -------------- | ---------------- | --------- | -------------- | ------------ |
+| 是否阻塞       | 是               | 是        | 否             | 否           |
+| 是否同步       | 是               | 是        | 是             | 否(异步)     |
+| 程序员友好程度 | 简单             | 简单      | 非常难         | 比较难       |
+| 可靠性         | 非常差           | 差        | 高             | 高           |
+| 吞吐量         | 低               | 中        | 高             | 高           |
+
+# 零拷贝
+
+零拷贝从字面上来看包含两个意思：
+
+- 拷贝：就是指数据从一个存储区域转移到另一个存储区域
+- 零：它表示拷贝数据的次数为0
+
+合起来理解，零拷贝就是不需要将数据从一个存储区域复制到另一个存储区域。实际上，最早零拷贝的定义，来源于Linux系统的sendfile方法逻辑。
+
+在Linux 2.4内核中，sendfile系统调用方法，可以将磁盘数据通过DMA拷贝到内核态Buffer后，再通过DMA拷贝到NIC Buffer（socket buffer），无需CPU拷贝，这个过程被称之为零拷贝。也就是说，站在操作系统的角度，零拷贝并不是不需要拷贝数据，而是省掉了CPU拷贝环节，减少了不必要的拷贝次数，提升数据拷贝效率。要想深入了解这其中的原理，就得从IO拷贝机制说起。
+
+## 基本概念
+
+### DMA
+
+DMA，即直接内存访问。DMA本质上是主板上一块独立的芯片，允许外设设备和内存存储器之间直接进行IO数据传输，其过程不需要CPU的参与。
+
+### 内核空间和用户空间
+
+操作系统的核心是内核，与普通的应用程序不同，它可以访问受保护的内核空间，也有访问底层硬件设备的权限。
+
+为了避免用户进程直接操作内核，保证内核安全，操作系统将虚拟内存划分为两个部分，一部分是内核空间，一部分是用户空间。在Linux系统中，内核模块运行在内核空间，对应的进程处于内核态；而用户程序运行在用户空间，对应的进程处于用户态。
+
+内核空间总是驻留在内存中，它是为操作系统的内核保留的。应用程序是不允许直接在该区域进行读写或者直接调用内核代码定义的函数。
+
+当启动某个应用程序时，操作系统会给应用程序分配一个单独的用户空间，其实就是一个用户独享的虚拟内存，每个普通的用户进程之间的用户空间是完全隔离的、不共享的，当用户进程结束的时候，用户空间的虚拟内存也会随之释放。
+
+同时处于用户态的进程不能访问内核空间中的数据，也不能直接调用内核函数的，如果要调用系统资源，就要将进程切换到内核态，由内核程序来进行操作。
+
+## IO拷贝机制
+
+以客户端从服务器下载文件为例，服务端需要做两件事：
+
+1. 从磁盘读取文件内容
+2. 将文件内容通过网络传输给客户端
+
+实际上，这个看似简单的操作，里面的流程却没有那么简单，应用程序从磁盘中读取文件内容的操作，大体会经过以下几个流程：
+
+1. 用户应用程序调用read方法，向操作系统发起IO请求，CPU上下文从用户态转为内核态，完成第一次CPU切换
+2. 操作系统通过DMA控制器从磁盘中读取数据，并把数据存储到内核缓冲区
+3. CPU把内核缓冲区的数据，拷贝到用户缓冲区，同时上下文从内核态转为用户态，完成第二次CPU切换
+
+整个读取的数据的过程，完成了1次DMA拷贝，1次CPU拷贝，2次CPU切换，反之写入的过程，也是一样的。整个拷贝的过程，可以用如下流程图来描述：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202308062347183.png" alt="image-20230806234754131" style="zoom:50%;" />
+
+从上图，我们可以得出如下结论，4次拷贝次数，4次上下文切换次数。
+
+- 数据拷贝次数：2次DMA拷贝，2次CPU拷贝
+- CPU切换次数：4次用户态和内核态切换
+
+而实际IO读写，有时候需要进行IO中断，同时也需要CPU响应中断，拷贝次数和切换次数比预期的还要多，以至于当客户端进行资源文件下载的时候，传输速度总是不尽人意。
+
+### mmap内存映射拷贝流程
+
+mmap内存映射的拷贝，指的是将用户应用程序的缓冲区和操作系统的内核缓冲区进行映射处理，数据在内核缓冲区和用户缓冲区之间的CPU拷贝将其省略，进而加快资源拷贝效率。
+
+mmap内存映射拷贝流程：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202308062349937.png" alt="image-20230806234922889" style="zoom:50%;" />
+
+- 数据拷贝次数：2次DMA拷贝，1次CPU拷贝
+- CPU切换次数：4次用户态和内核态的切换
+
+整个过程省掉了数据在内核缓冲区和用户缓冲区之间的CPU拷贝环节，在实际的应用中，对资源的拷贝速度性能提升不少。
+
+### Linux系统sendfile拷贝流程
+
+在Linux 2.1 内核版本中，引入了一个系统调用方法：sendfile。
+
+当调用`sendfile()`时，DMA将磁盘数据复制到内核缓冲区kernel buffer；然后将内核中kernel buffer直接拷贝到socket buffer，最后利用DMA将socket buffer通过网卡传输给客户端。整个拷贝过程，可以用如下流程图来描述：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202308062350677.png" alt="image-20230806235041559" style="zoom:50%;" />
+
+Linux 系统 sendfile 拷贝流程：
+
+- 数据拷贝次数：2 次 DMA 拷贝，1 次 CPU 拷贝
+- CPU 切换次数：2 次用户态和内核态的切换
+
+相比mmap内存映射方式，sendfile拷贝流程省掉了2次用户态和内核态的切换，同时内核缓冲区和用户缓冲区也无需建立内存映射，对资源的拷贝性能提升不少。
+
+### sendfile With DMA scatter/gather 拷贝流程
+
+在 Linux 2.4 内核版本中，对 sendfile 系统方法做了优化升级，引入 SG-DMA 技术，需要 DMA 控制器支持。
+
+其实就是对 DMA 拷贝加入了 scatter/gather 操作，它可以直接从内核空间缓冲区中将数据读取到网卡。使用这个特点来实现数据拷贝，可以多省去一次 CPU 拷贝。
+
+整个拷贝过程，可以用如下流程图来描述：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202308062352868.png" alt="image-20230806235258743" style="zoom:50%;" />
+
+Linux 系统 sendfile With DMA scatter/gather 拷贝流程，从上图可以得出如下结论：
+
+- 数据拷贝次数：2 次 DMA 拷贝，0 次 CPU 拷贝
+- CPU 切换次数：2 次用户态和内核态的切换
+
+可以发现，sendfile With DMA scatter/gather 实现的拷贝，其中 2 次数据拷贝都是 DMA 拷贝，全程都没有通过 CPU 来拷贝数据，所有的数据都是通过 DMA 来进行传输的，这就是操作系统真正意义上的**零拷贝**（Zero-copy) 技术，相比其他拷贝方式，传输效率最佳。
+
+### Linux 系统 splice 零拷贝流程
+
+在 Linux 2.6.17 内核版本中，引入了 splice 系统调用方法，和 sendfile 方法不同的是，splice 不需要硬件支持。
+
+它将数据从磁盘读取到 OS 内核缓冲区后，内核缓冲区和 socket 缓冲区之间建立管道来传输数据，避免了两者之间的 CPU 拷贝操作。
+
+整个拷贝过程，可以用如下流程图来描述：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202308062354088.png" alt="image-20230806235419967" style="zoom:50%;" />
+
+Linux 系统 splice 拷贝流程，从上图可以得出如下结论：
+
+- 数据拷贝次数：2 次 DMA 拷贝，0 次 CPU 拷贝
+- CPU 切换次数：2 次用户态和内核态的切换
+
+Linux 系统 splice 方法逻辑拷贝，也是操作系统真正意义上的**零拷贝**。
+
+### IO拷贝机制对比
+
+从上面的IO拷贝机制中可以看出，无论是传统的IO方式，还是引入零拷贝之后，2次DMA copy都是少不了的，唯一的区别就是省掉CPU参与环节的方式不同。
+
+以Linux系统为例，拷贝机制对比的结果如下：
+
+| 拷贝机制                         | 系统调用   | CPU拷贝次数 | CPU拷贝次数 | 上下文切换次数 | 特点                                                         |
+| -------------------------------- | ---------- | ----------- | ----------- | -------------- | ------------------------------------------------------------ |
+| 传统拷贝方式                     | read/write | 2           | 2           | 4              | 消耗资源比较多，拷贝数据效率慢                               |
+| mmap                             | mmap/write | 1           | 2           | 4              | 相比传统方法，少了用户缓冲区与内核缓冲区的数据拷贝，效率更高 |
+| sendfile                         | sendfile   | 1           | 2           | 2              | 相比mmap方式，少了内存文件映射步骤，效率更高                 |
+| sendfile With DMA scatter/gather | sendfile   | 0           | 2           | 2              | 需要DMA控制器支持，没有CPU拷贝数据环节，真正的零拷贝         |
+| splice                           | splice     | 0           | 2           | 2              | 没有CPU拷贝数据环节，真正的零拷贝，编程逻辑复杂              |
+
+需要主要的是，零拷贝所有的方式，都需要操作系统的支持，具体采用哪种方式，是由操作系统来决定的。
+
+## Java中的零拷贝
+
+Linux提供的零拷贝技术，Java并不是全部支持，目前只支持一下两种；
+
+- mmap（内存映射）
+- sendfile
+
+### Java NIO 对mmap的支持
+
+Java NIO有一个MappedByteBuffer的类，可以用来实现内存映射，它的底层时调用了Linux内核的mmap的API。
+
+实现代码如下：
+
+```java
+public static void main(String[] args) {
+    try {
+        FileChannel readChannel = FileChannel.open(Paths.get("a.txt"), StandardOpenOption.READ);
+        // 建立内存文件映射
+        MappedByteBuffer data = readChannel.map(FileChannel.MapMode.READ_ONLY, 0, 1024 * 1024 * 40);
+        FileChannel writeChannel = FileChannel.open(Paths.get("b.txt"), StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+        // 拷贝数据
+        writeChannel.write(data);
+
+        // 关闭通道
+        readChannel.close();
+        writeChannel.close();
+    }catch (Exception e){
+        System.out.println(e.getMessage());
+    }
+}
+```
+
+其中MappedByteBuffer的作用，就是将内核缓冲区的内存和用户缓冲区的内存做了一个地址映射，读取小文件，效率并不高，但是读取大文件，效率很高。
+
+### Java NIO 对sendfile的支持
+
+Java NIO 中的FileChannel.transferTo方法，底层调用的就是Linux内核的sendfile系统调用方法。实例代码如下：
+
+```java
+public static void main(String[] args) {
+    try {
+        // 原始文件
+        FileChannel srcChannel = FileChannel.open(Paths.get("a.txt"), StandardOpenOption.READ);
+        // 目标文件
+        FileChannel destChannel = FileChannel.open(Paths.get("b.txt"), StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+        // 拷贝数据
+        srcChannel.transferTo(0, srcChannel.size(), destChannel);
+
+        // 关闭通道
+        srcChannel.close();
+        destChannel.close();
+    } catch (Exception e) {
+        System.out.println(e.getMessage());
+    }
+}
+```
+
+Java NIO 提供的FileChannel.transferTo并不保证一定能使用零拷贝。只有操作系统提供sendfile这样的零拷贝系统调用方法，才可以用的上零拷贝的技术。
+
+
+
+
+
+
+
+
+
+
+

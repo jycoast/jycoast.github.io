@@ -841,7 +841,7 @@ UDP的特点：类似广播，不需要连接，发送方不管接受方有没�
 
 <img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202206142339799.png" alt="image-20220614233902764" style="zoom: 50%;" />
 
-  AIO模型：可靠性是最好的，吞吐量也是最高的，适用于连接比较多，并且连接比较长（重操作），例如相册服务器，JDK7开始支持的，变成模型相对简单，但是需要操作系统支持。
+  AIO模型：可靠性是最好的，吞吐量也是最高的，适用于连接比较多，并且连接比较长（重操作），例如相册服务器，JDK7开始支持的，编程模型相对简单，但是需要操作系统支持。
 
 <img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202206142339216.png" alt="image-20220614233942183" style="zoom:50%;" />
 
@@ -849,7 +849,7 @@ UDP的特点：类似广播，不需要连接，发送方不管接受方有没�
 
   Java NIO的几个核心组件有：Channel、Buffer、Selector，它们之间的关系如下：
 
-<img src="https://segmentfault.com/img/remote/1460000037714808" alt="NIO" style="zoom:67%;" />
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202308022304974.jpeg" alt="NIO" style="zoom: 33%;" />
 
   Channel类似于流，每个Channel对应一个Buffer缓冲区，Channel会注册到Selector，Selector会根据Channel上发生的读写时间，将请求交由某个空闲的线程处理，Selector对应一个或者多个线程。Buffer和Channel都是可读可写的。
 
