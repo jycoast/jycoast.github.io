@@ -4,6 +4,7 @@ import { searchPlugin } from '@vuepress/plugin-search'
 import { mediumZoomPlugin } from '@vuepress/plugin-medium-zoom'
 import { pwaPlugin } from '@vuepress/plugin-pwa'
 import codeCopyPlugin from '@snippetors/vuepress-plugin-code-copy'
+import MarkdownItKatex from "markdown-it-katex";
 
 export default defineUserConfig({
     lang: 'zh-CN',
@@ -90,6 +91,9 @@ export default defineUserConfig({
             {text: '深度好文', link: '/favorite_article/'},
           ],
     }),
+    extendsMarkdown: (md) => {
+      md.use(MarkdownItKatex);
+    },
     plugins: [
         backToTopPlugin(),
         searchPlugin({

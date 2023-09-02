@@ -4331,7 +4331,7 @@ public class DisruptorDemo {
 
 ### 终止线程模式
 
-##### 两阶段终止模式
+#### 两阶段终止模式
 
 两阶段终止模式，将终止过程分成两个阶段，其中第一个阶段主要是线程T1向线程T2发送终止指令，而第二阶段则是线程T2响应终止指令。
 
@@ -5761,6 +5761,13 @@ show engine innodb status\G;
 
 MySQL在读已提交和可重复读的隔离级别下的隔离性都依靠MVCC（Multi-Version Concurrency Control）机制来实现，对一行数据的读和写两个操作默认是不会通过加锁互斥来保证隔离性，避免了频繁加锁互斥。只有在串行化的隔离级别下，为了保证比较高的隔离性，是通过将所有操作加锁互斥来实现的。
 
+#### MVCC机制
+
+在了解MVCC多版本并发控制之前，我们必须首先了解一下，什么是MySQL InnoDB下的当前读和快照读。
+
+- 当前读：读取记录最新的版本，读取时还要保证其他并发事务不能修改当前记录，会对读取的记录进行枷锁，`select lock in share mode(共享锁),select for update,update,insert,delete（排他锁）`，这些都是当前读。
+- 快照读：不加锁的非阻塞读。
+
 #### undo日志版本链与read view机制详解
 
 undo日志版本链是指一行数据被多个事务依次修改过后，在每个事务修改完后，MySQL会保留修改前的数据undo回滚日志，并且用两个隐藏字段trx_id（事务ID）和roll_pointer（上一条数据的历史版本指针）把这些undo日志串联起来形成一个历史记录版本链，具体如下图。
@@ -5793,7 +5800,769 @@ undo日志版本链是指一行数据被多个事务依次修改过后，在每�
 
 ### MySQL成本分析
 
+在MySQL5.6之前的版本来说，只能通过EXPLAIN语句查看到最后优化器决定使用的执行计划，却无法知道它为什么做这个决策。在MySQL5.6之后的版本中，MySQL提出了optimizer trace的功能，这个功能可以让我们方便的查看优化器执行计划的整个过程。
 
+```sql
+SET optimizer_trace = "enabled=on";
+
+SELECT *
+FROM order_exp
+WHERE order_no IN ('DD00_6S', 'DD00_9S', 'DD00_10S')
+	AND expire_time > '2021-03-22 18:28:28'
+	AND expire_time <= '2021-03-22 18:35:09'
+	AND insert_time > expire_time
+	AND order_note LIKE '%7排1%'
+	AND order_status = 0;
+
+SELECT *
+FROM information_schema.OPTIMIZER_TRACE;
+```
+
+可以看见全表扫描的成本：2169.9：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202308082333977.png" alt="image-20230808233353895" style="zoom:50%;" />
+
+使用索引idx_order_no的成本为72.61:
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202308082334762.png" alt="image-20230808233437701" style="zoom:50%;" />
+
+使用索引idx_expire_time的成本为47.81：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202308082334695.png" alt="image-20230808233459633" style="zoom:50%;" />
+
+最终MySQL使用了idx_expire_time作为这个SQL查询过程中索引：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202308082335777.png" alt="image-20230808233521712" style="zoom:50%;" />
+
+#### MySQL查询成本
+
+参考链接：[Mysql内核查询成本计算实战](https://note.youdao.com/ynoteshare/index.html?id=6c03ef8fa44c1d2d15e319e2f2ed5a6a&type=note&_time=1693667650557)。
+
+一条查询语句的执行成本是由下面这两个方面组成的：
+
+- IO成本：MyISAM、InnoDB存储引擎都是将数据和索引都存储到磁盘上的，当我们想查询表中的记录时，需要先把数据或者索引加载到内存中然后再操作。从磁盘到内存这个加载的过程损耗的时间称之为IO成本
+- CPU成本：读取以及检测记录是否满足对应的搜索条件、对结果集进行排序等这些操作损耗的时间称之为CPU成本。对于InnoDB存储引擎来说，页是磁盘和内存之间交互的基本单位，MySQL规定读取一个页面花费的成本默认是1.0，读取以及检测一条记录是否符合搜索条件的成本默认是0.2。1.0、0.2这些数字称之为成本常数，这两个成本常数是我们最常用到的，也有一些其他的成本常数。
+
+注意，不管读取记录时需不需要检测是否满足搜索条件，其成本都算是0.2。
+
+#### 单表查询的成本
+
+在一条单表查询语句真正执行之前，MySQL的查询优化器会找出执行该语句所有可能使用的方案，对比之后找出成本最低的方案，这个成本最低的方案就是所谓的执行计划，之后才会调用存储引擎提供的接口真正的执行查询，这个过程总结一下就是这样：
+
+1. 根据搜索条件，找出所有可能使用的索引
+2. 计算全表扫描的代价
+3. 计算使用不同索引执行查询的代价
+4. 对比各种执行方案的代价，找出成本最低的那一个
+
+##### 根据搜索条件，找出所有可能使用的索引
+
+我们仍然使用如下查询语句来分析：
+
+```sql
+SELECT *
+FROM order_exp
+WHERE order_no IN ('DD00_6S', 'DD00_9S', 'DD00_10S')
+	AND expire_time > '2021-03-22 18:28:28'
+	AND expire_time <= '2021-03-22 18:35:09'
+	AND insert_time > expire_time
+	AND order_note LIKE '%7排1%'
+	AND order_status = 0;
+```
+
+上述查询中涉及到几个搜索条件：
+
+- `order_no IN ('DD00_6S', 'DD00_9S', 'DD00_10S')` ，这个搜索条件可以使用二级索引idx_order_no
+- `expire_time> '2021-03-22 18:28:28' AND expire_time<= '2021-03-22 18:35:09'`，这个搜索条件可以使用二级索引idx_expire_time
+- `insert_time> expire_time`，这个搜索条件的索引列由于没有和常数比较，所以并不能使用索引
+- `order_note LIKE '%hello%'`，order_note即使有索引，但是通过LIKE操作符和以通配符开头的字符串做比较，不可以使用索引
+- `order_status = 0`，由于该列上只有联合索引，而且不符合最左前缀原则，所以不会用到索引
+
+综上所述，上边的查询语句可能用到的索引，也就是possible keys只有idx_order_no，idx_expire_time。
+
+##### 计算全表扫描的代价
+
+对于InnoDB存储引擎来说，全表扫描的意思就是把聚簇索引中的记录都一次和给定的搜索条件做一下比较，把符合搜索条件的记录加入到结果集，所以需要将聚簇索引对应的页面加载到内存中，然后再检测记录是否符合搜索条件。由于查询成本=I/O成本+CPU成本，所以计算全表扫描的代价需要两个信息：聚簇索引占用的页面数、该表中的记录数。
+
+MySQL为每个表维护了一系列的统计信息，并且可以通过如下语句查询：
+
+```sql
+SHOW TABLE STATUS LIKE 'order_exp';
+```
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202308092320891.png" alt="image-20230809232056826" style="zoom:50%;" />
+
+我们需要的两个统计项：
+
+- Rows：这个选项表示表中的记录条数。对于使用MyISAM存储引擎的表来说，该值是准确的，对于使用InnoDB存储引擎的表来说，该值是一个估计值。所以order_exp表实际由10567条记录，但是Rows显示有10354条记录
+- Data_length：这个选项表示表占用的存储空间字节数。使用MyISAM存储引擎的表来说，该值就是数据文件的大小，对于使用InnoDB存储引擎的表来说，该值就相当于聚簇索引占用的存储空间大小，也就是说可以这样计算该值的大小：Data_length = 聚簇索引的页面数量✖️每个页面的大小，order_exp使用默认16KB的页面大小，通过Data_length可以聚簇索引的页面数量 = 1589248 ➗ 16 ➗ 1024  = 97，也就是说，该表的聚簇索引的记录数为97
+
+现在就可以根据聚簇索引占用的页面数量以及该表记录数的估计值，来计算全表扫描成本：
+
+- IO成本 = 97 ✖️ 1.0 + 1.1 = 98.1（1.1指是加载一个页面的IO成本常数，后面的1.0是一个微调值）
+- CPU成本 = 10354 ✖️ 0.2 + 1.0 = 2071.8（10354值的统计数据中表的记录数，对于InnoDB存储引擎来说是一个估计值，0.2指的是访问一条记录所需的CPU成本常数，后面的1.0是一个微调值）
+
+MySQL在真实计算成本时会进行一些微调，这些微调的值是直接硬编码到代码里的，没有注释而且这些微调的值十分的小，并不影响我们大方向上的分析。
+
+所以全表扫描的总成本 = 98.1 + 2071.8= 2169.9。
+
+虽然表中的记录其实都存储在聚簇索引对应B+树的叶子结点中，所以只要我们通过根节点获得了最左边的叶子节点。就可以沿着叶子节点组成的双向链表把所有记录都查看一遍。也就是说全表扫描这个过程其实有的B+树非叶子结点是不需要访问的。但是MySQL在计算全表扫描成本时直接使用聚簇索引占用的页面数作为计算IO成本的依据，是不区分非叶子结点和叶子结点的。
+
+##### 计算使用不同索引执行查询的代价
+
+从上一步分析我们可以得出，上述查询可能使用到idx_order_no，idx_expire_time这两个索引，我们需要分别分析单独使用这些索引执行查询的成本，最后还要分析是否可能会使用到索引合并。MySQL查询优化器先分析使用唯一二级索引的成本，再分析使用普通索引的成本，我们这里有两个索引，先算哪个都可以。我们先分析idx_expire_time的成本，然后再看使用idx_order_no的成本。
+
+idx_expire_time对应的搜索条件是：`AND expire_time > '2021-03-22 18:28:28' AND expire_time <= '2021-03-22 18:35:09'`，也就是说对应的范围区间是`('2021-03-22 18:28:28' , '2021-03-22 18:35:09' )`。使用idx_expire_time搜索会使用二级索引+回表方式的查询，MySQL计算这种查询的成本以来两个方面的数据：
+
+- 范围区间数量
+- 需要回表的记录数
+
+接下来我们分别计算这两个数据。
+
+不论某个范围区间的二级索引到底占用了多少页面，查询优化器认为读取索引的一个范围区间的IO成本和读取一个页面是相同的。本例中使用idx_expire_time的范围区间只有一个，所以相当于访问这个范围区间的二级索引付出的IO成本就是：1✖️ 1.0 = 1.0。
+
+优化器需要计算二级索引的某个范围区间到底包含多少条记录，对于本例来说就是要计算`('2021-03-22 18:28:28' , '2021-03-22 18:35:09' )`这个范围区间内包含多少二级索引记录，计算过程如下：
+
+1. 先根据`expire_time > '2021-03-22 18:28:28'`这个条件访问id_expire_time对应的B+树索引，找到满足`expire_time > '2021-03-22 18:28:28'`这个条件的第一条记录，我们把这条记录称之为区间最左记录。我们前面说过在B+树中定位到一条记录的过程是很快的，是常数级别的，所以这个过程的性能消耗是可以忽略不计的
+2. 然后再根据`expire_time <= '2021-03-22 18:35:09`这个条件继续从id_expire_time对应的B+树索引中找出最后一条满足这个条件的记录，我们把这条记录称之为区间最右记录，这个过程的性能消耗也可以忽略不计的
+3. 如果区间最左记录和区间最右记录相隔不太远（在MySQL 5.7这个版本里，只要相隔不大于10个页面即可），那就可以精确统计出`AND expire_time > '2021-03-22 18:28:28' AND expire_time <= '2021-03-22 18:35:09'`条件的二级索引记录条数。否则只沿着区间最左记录向右读10个页面，计算平均每个页面中包含多少记录，然后用这个平均值乘以区间最左记录和区间最右记录之间的页面数量就可以了
+
+估计区间最左记录和区间最右记录之间有多少个页面，是根据B+树索引的结构来的。我们假设区间最左记录在页b中，区间最右记录在页c中，那么我们要计算区间最左记录和最右记录之间的页面数量就相当于计算页b和页c之间有多少页面，而它们父节点中记录的每一条目录项记录都对应一个数据页，所以计算页b和页c之间有多少页面就相当于计算它们父节点（也就是页a）中对应的目录项记录之间隔着几条记录。在一个页面中统计两条记录之间有几条记录的成本就很小了。
+
+不过还有一个问题，如果页b和页c之间的页面实在太多，以至于页b和页c对应的目录项记录都不在一个父页面中怎么办？既然是树，那就继续递归，B+树的层级并不会很高，所以这个统计过程页不是很耗费性能。
+
+MySQL根据上述算法得到索引项id_expire_time在区间`expire_time <= '2021-03-22 18:35:09`之间大约有39条记录。
+
+```sql
+explain SELECT * FROM order_exp WHERE expire_time> '2021-03-22 18:28:28' AND expire_time<= '2021-03-22 18:35:09';
+```
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202308131103330.png" alt="image-20230813110329255" style="zoom: 67%;" />
+
+所以读取这39条二级索引记录需要付出的CPU成本就是：39✖️0.2 + 0.01 = 7.81。其中39是需要读取的二级索引记录条数，0.2是读取一条记录成本常数，0.01是微调。
+
+在通过二级索引获取到记录之后，还需要做两件事儿：
+
+- 根据这些记录中的主键值到聚簇索引中做回表操作。MySQL评估回表操作的IO成本依旧很简单粗暴，它认为每次回表操作都相当于访问一个页面，也就是说二级索引范围区间有多少记录，就需要进行多少次回表操作，也就是需要进行多少次页面IO。id_expire_time二级索引执行查询时，预计有39条二级索引记录需要进行回表操作，所以回表操作带来的IO成本就是：39✖️1.0=39.0，其中39是预计的二级索引记录数，1.0时一个页面的IO成本常数
+- 回表操作得到的完成用户记录，然后再检测其他搜索条件是否成立。由于我们通过范围区间获取到二级索引记录共39条，也就是对应着聚簇索引中39条完整的用户记录，读取并检测这些完整的用户记录是否符合其余的搜索条件的CPU成本如下：39✖️0.2=7.8。其中39是待检测记录的条数，0.2是检测一条记录是否符合给定的搜索条件的成本常数
+
+所以本例中使用id_expire_time执行查询的成本如下所示：
+
+- IO成本：1.0 + 39 ✖️1.0 = 40.0 （范围区间的数量 + 预估的二级索引记录条数）
+- CPU成本：39 ✖️ 0.2 + 0.01 + 39 ✖️ 0.2 = 15.61（读取二级索引记录的成本 + 读取并检测回表后聚簇索引的成本）
+
+综上所属，使用id_expire_time执行查询的总成本就是：40.0 + 15.6 = 55.61。
+
+按照上述思路我们计算idx_order_no执行查询的成本。
+
+idx_order_no对应的搜索条件是：`order_no IN('DD00_6S', 'DD00_9S', 'DD00_10S')`，也就是说相当于3个单点区间。与计算idx_expire_time的情况类似，我们也需要计算使用idx_order_no时需要访问的范围区间数量以及需要回表的记录数，计算过程与上面类似。
+
+范围区间数量：使用idx_order_no执行查询时有3个单点区间，所以访问这3个范围区间的二级索引付出的IO成本就是：3✖️1.0=3.0。
+
+需要回表的记录数：由于使用idx_expire_time时有3个单点区间，所以每个单点区间都需要查找一遍对应的二级索引记录数，三个单点区间总共需要回表的记录数是58。
+
+```sql
+explain SELECT * FROM order_exp WHERE order_no IN ('DD00_6S', 'DD00_9S', 'DD00_10S');
+```
+
+读取这些二级索引记录的CPU成本就是：58✖️0.2 + 0.01 = 11.61。得到总共需要回表的记录数之后，就要考虑：根据这些记录里的主键值到聚簇索引中做回表操作，所需的IO成本就是：58✖️1.0  = 58.0。回表操作得到的完整用户记录，然后再比较其他搜索条件是否成立，此步骤对应的CPU成本就是：58✖️0.2 = 11.6。
+
+所以本例中使用idx_order_no执行查询的成本就如下所示：
+
+- IO成本：3.0 + 58✖️1.0  = 61.0（范围区间内的数量 + 预估的二级索引记录数）
+- CPU成本：58✖️0.2 + 58✖️0.2 + 0.01 = 23.21（读取二级索引记录的成本 + 读取并检测回表后聚簇索引记录的成本）
+
+综上所属，使用idx_order_no执行查询的总成本就是：61.0 + 23.1 = 84.21。
+
+##### 是否有可能使用索引合并
+
+本例中SQL语句不满足索引合并的条件，所以并不会使用索引合并。而且MySQL查询优化器计算索引合并成本的算法也比较麻烦，我们不去了解。
+
+##### 对比各种方案，找出成本最低的那一个
+
+下面比较各种可执行方案以及它们对应的成本：
+
+- 全表扫描的成本：2169.9
+- 使用idx_expire_time的成本：55.61
+- 使用idx_order_no的成本：84.21
+
+显然，使用idx_expire_time的成本最低，所以选择idx_expire_time来执行查询。
+
+全表扫描Tracer的输出：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202308142329251.png" alt="image-20230814232924184" style="zoom:50%;" />
+
+使用idx_order_no的Tracer的输出：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202308142329202.png" alt="image-20230814232944152" style="zoom:50%;" />
+
+使用idx_expire_time的Tracer的输出：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202308142329414.png" alt="image-20230814232956363" style="zoom:50%;" />
+
+这里之所以和我们计算有点不同的原因是，在MySQL的实际计算中，在和全文扫描比较成本时，使用索引的成本会除去读取并检测回表后聚簇索引记录的成本，也就是说，我们通过MySQL看到使用idx_expire_time成本将会是：55.61 - 7.8 = 47.81，idx_order_no的成本就是：84.21 - 11.6 = 72.61。但是MySQL比较完成成本后，会再计算一次使用索引的成本，此时就会加上前面去除的成本，也就是我们计算出来的值。
+
+#### 基于索引统计数据的成本
+
+##### index dive
+
+有时候使用索引执行查询时会有许多单点区间，比如使用IN语句就很容易产生非常多的单点区间，比如下面这个查询：
+
+```sql
+SELECT * FROM order_exp WHERE order_no IN ('aa1', 'aa2', 'aa3', ... , 'zzz');
+```
+
+显然，这个查询用到的索引就是idx_order_no，由于这个索引并不是唯一二级索引，所以并不能确定一个单点区间对应的二级索引记录的条数有多少，需要我们去计算。就是先把获取索引对应的B+树的区间最左记录和区间最右记录，然后再计算这两条记录之间有多少记录（记录条数少的时候可以做到精确计算，多的时候只能估算）。MySQL把这种通过直接访问索引对应的B+树来计算某个范围区间对应的索引记录条数的方式称之为index dive。
+
+有零星几个单点区间的话，使用index dive的方式去计算这些单点区间对应的记录数也不是什么问题，如果IN语句里的参数过多，比如有2000个参数怎么办？
+
+这就意味着MySQL的查询优化器为了计算这些单点区间的索引记录条数，要进行2000次的index dive操作，这样做性能损耗很大，搞不好计算这些单点区间对应的索引记录条数的成本比直接全表扫描的成本都大了。MySQL考虑到这种情况，所以提供了一个系统变量`eq_range_index_dive_limit`，MySQL 5.7.21中这个系统变量的默认值：
+
+```sql
+show variables like '%dive%';
+```
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202308162323557.png" alt="image-20230816232318508" style="zoom:50%;" />
+
+也就是说IN语句中的参数个数小于200的话，将使用index dive的方式计算各个单点区间对应的记录数，如果大于或等于200个的话，可就不能使用index dive了，要使用所谓的索引统计数据来进行估算。类似上述的，MySQL 会为每个表维护一份统计数据，查看某个表索引的统计数据可以使用`SHOW INDEX FROM`表名的语法，比如我们要查看order_exp的各个索引的统计数据可以这么写：
+
+```sql
+show index from order_exp;
+```
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202308162327948.png" alt="image-20230816232733895" style="zoom:67%;" />
+
+详细含义：
+
+| 属性          | 描述                                                         |
+| ------------- | ------------------------------------------------------------ |
+| Table         | 索引所属表的名称。                                           |
+| Non_unique    | 索引列的值是否是唯一的，聚簇索引和唯一二级索引的该列值为0，普通二级索引该列值为1。 |
+| Key_name      | 索引的名称。                                                 |
+| Seq_in_index  | 索引列在索引中的位置，从1开始计数。比如对于联合索引u_idx_day_status，来说，`insert_time`, `order_status`, `expire_time`对应的位置分别是1、2、3。 |
+| Column_name   | 索引列的名称。                                               |
+| Collation     | 索引列中的值是按照何种排序方式存放的，值为A时代表升序存放，为NULL时代表降序存放。 |
+| Cardinality   | 索引列中不重复值的数量。后边我们会重点看这个属性的。         |
+| Sub_part      | 对于存储字符串或者字节串的列来说，有时候我们只想对这些串的前n个字符或字节建立索引，这个属性表示的就是那个n值。如果对完整的列建立索引的话，该属性的值就是NULL。 |
+| Packed        | 索引列如何被压缩，NULL值表示未被压缩。这个属性我们暂时不了解，可以先忽略掉。 |
+| Null          | 该索引列是否允许存储NULL值。                                 |
+| Index_type    | 使用索引的类型，我们最常见的就是BTREE，其实也就是B+树索引。  |
+| Comment       | 索引列注释信息。                                             |
+| Index_comment | 索引注释信息。                                               |
+
+Cardinality属性，Cardinality直译过来就是基数的意思，表示索引列中不重复值的个数，比如对于一个一万行记录的表来说，某个索引列的Cardinality属性是10000，那意味着该列中没有重复的值，如果Cardinality属性是1的话，就意味该列的值全部是重复的。不过需要注意的是，对于InnoDB存储引擎来说，使用`SHOW INDEX`语句展示出来的某个索引列的Cardinality属性是一个估计值，并不是精确的。
+
+前面说过，当IN语句中的参数个数大于或等于系统变量eq_range_index_limit的值的话，就不会使用index dive的方式计算各个单点区间的索引记录条数，而是使用索引统计数据，这里所指索引统计数据指的是这两个值：
+
+- 使用`SHOW TABLE STATUS`展示出的Rows的值，也就是一个表中有多少条记录
+- 使用`SHOW INDEX`语句展示出的Cardinality属性
+
+结合Rows统计数据，我们可以针对索引列，计算出平均一个值重复多少次。一个值的重复次数  ≈ Rows ÷ Cardinality。
+
+以order_exp表的idx_order_no索引为例，它的Rows值是10354，它对应的Cardinality值是10225，我们可以计算order_no列平均每个值的重复次数就是10354 ÷ 10225 ≈ 1.0126（条）。此时再看上述查询语句：`SELECT * FROM order_exp WHERE order_no IN ('aa1', 'aa2', 'aa3', ... , 'zzz');`，假设IN语句20000个参数的话，就直接使用统计数据来估算这些参数需要单点区间对应的记录条数了，每个参数大约对应1.012条记录，所以总共需要回表的记录数就是：20000 ✖️ 1.0126 = 20252。
+
+使用统计数据来计算单点区间对应的索引记录条数比index dive的方式简单，但是它的致命缺点就是：不精确。使用统计数据算出来的查询成本与所需的成本可能相差非常大。
+
+MySQL 5.7.3以及之前的版本中，eq_range_index_dive_limit的默认值为10，之后的版本默认值为200。所以如果5.7.3以及之前的版本的话，很容易采用索引统计数据而不是index dive的方式来计算查询成本。当查询中使用到了IN查询，但是却实际没有用到索引，就可以考虑是不是由于eq_range_index_dive_limit的值太小导致的。
+
+我们可以通过如下的语句，查询成本：
+
+```sql
+EXPLAIN format = json 
+SELECT *
+FROM order_exp
+WHERE order_no IN ('DD00_6S', 'DD00_9S', 'DD00_10S')
+	AND expire_time > '2021-03-22 18:28:28'
+	AND expire_time <= '2021-03-22 18:35:09'
+	AND insert_time > expire_time
+	AND order_note LIKE '%7排1%'
+	AND order_status = 0
+```
+
+这样我们就可以得到一个json格式的执行计划，里面包含计划花费的成本：
+
+```json
+ {
+  "query_block": {
+    "select_id": 1,  # 整个查询语句只有1个SELECT关键字，该关键字对应的id号为1
+    "cost_info": {
+      "query_cost": "55.61" # 整个查询的执行成本预计为55.61
+    },
+    "table": {
+      "table_name": "order_exp",
+      "access_type": "range",
+      "possible_keys": [
+        "idx_order_no",
+        "idx_expire_time"
+      ],
+      "key": "idx_expire_time",
+      "used_key_parts": [
+        "expire_time"
+      ],
+      "key_length": "5",
+      "rows_examined_per_scan": 39,
+      "rows_produced_per_join": 0,
+      "filtered": "0.13",
+      "index_condition": "((`mysqladv`.`order_exp`.`expire_time` > '2021-03-22 18:28:28') and (`mysqladv`.`order_exp`.`expire_time` <= '2021-03-22 18:35:09'))",
+      "cost_info": {
+        "read_cost": "55.60",
+        "eval_cost": "0.01",
+        "prefix_cost": "55.61",   #单独查询表的成本，也就是：read_cost + eval_cost
+        "data_read_per_join": "24"  #和连接查询相关的数据量，单位字节，这里无用
+      },
+      "used_columns": [
+        "id",
+        "order_no",
+        "order_note",
+        "insert_time",
+        "expire_duration",
+        "expire_time",
+        "order_status"
+      ],
+      "attached_condition": "((`mysqladv`.`order_exp`.`order_status` = 0) and (`mysqladv`.`order_exp`.`order_no` in ('DD00_6S','DD00_9S','DD00_10S')) and (`mysqladv`.`order_exp`.`insert_time` > `mysqladv`.`order_exp`.`expire_time`) and (`mysqladv`.`order_exp`.`order_note` like '%7排1%'))"
+    }
+  }
+}
+```
+
+#### 连接查询的成本
+
+MySQL中连接查询采用的是嵌套循环连接算法，驱动表会被访问一次，被驱动表可能会被访问多次，所以对于两表连接查询来说，它的查询成本由下面两个部分构成：
+
+- 单次查询驱动表的成本
+- 多次查询被驱动表的成本（具体查询多少次取决于对被驱动表查询的结果集中有多少条记录）
+
+对驱动表进行查询后得到的记录条数称之为驱动表的扇出（fanout）。很显然驱动表的扇出值越小，对于被驱动表的查询次数也就越少，连接查询的总成本也就越低。当查询优化器想计算整个连接查询所使用的成本时，就需要计算出驱动表的扇出值，有的时候计算扇出值是很容易的，比如下面几个查询。
+
+查询一：
+
+```sql
+SELECT * FROM order_exp AS s1 INNER JOIN order_exp2 AS s2;
+```
+
+假设使用s1表作为驱动表，很显然对驱动表的单表查询只能使用全表扫描的方式执行，驱动表的扇出值也很明确，那就是驱动表中有多少记录，扇出值就是多少。统计数据中s1表的记录行数是10573，也即是说优化器就直接会把10573当作s1表的扇出值。
+
+查询二：
+
+```sql
+SELECT * FROM order_exp AS s1 INNER JOIN order_exp2 AS s2 
+WHERE s1.expire_time> '2021-03-22 18:28:28' AND s1.expire_time<= '2021-03-22 18:35:09';
+```
+
+仍然假设s1表是驱动表的话，很显然对驱动表的单表查询可以使用idx_expire_time索引执行查询。此时范围区间`('2021-03-22 18:28:28', '2021-03-22 18:35:09')`中有多少条记录，那么扇出值就是多少。但是有的时候扇出值的计算就变得很棘手，比如下面几个查询：
+
+```sql
+SELECT * FROM order_exp AS s1 INNER JOIN order_exp2 AS s2 WHERE s1.order_note > 'xyz';
+```
+
+本查询和查询一类似，只不过对于驱动表s1多了一个`order_note > 'xyz'`的搜索条件。查询优化器又不会真正的去执行查询，所以它只能猜这10573记录里有多少条记录满足`order_note > 'xyz'`条件。
+
+查询四：
+
+```sql
+SELECT * FROM order_exp AS s1 INNER JOIN order_exp2 AS s2 WHERE s1.expire_time> '2021-03-22 18:28:28' AND s1.expire_time<= '2021-03-22 18:35:09' AND s1.order_note > 'xyz';
+```
+
+本查询和查询二类似，只不过对于驱动表s1也多了一个`order_note > 'xyz'`的搜索条件。不过因为本查询可以使用idx_expire_time索引，所以只需从符合二级索引范围区间的记录中猜有多少条记录符合`order_note > 'xyz'`条件，也就是只需要猜39条记录中有多少符合`order_note > 'xyz'`条件。
+
+查询五：
+
+```sql
+SELECT * FROM order_exp AS s1 INNER JOIN order_exp2 AS s2  WHERE s1.expire_time> '2021-03-22 18:28:28' AND s1.expire_time<= '2021-03-22 18:35:09' AND s1.order_no IN ('DD00_6S', 'DD00_9S', 'DD00_10S') AND   s1.order_note > 'xyz';
+```
+
+本查询和查询四类似，不过在驱动表s1选取idx_expire_time索引执行查询后，优化器需要从符合二级索引范围内区间的记录中猜有多少条记录符合条件`order_no IN ('DD00_6S', 'DD00_9S', 'DD00_10S') `和`order_note > 'xyz'`。也就是说优化器需要猜在39条记录中有多少符合上述两个条件。
+
+总结一下，MySQL有两种情况需要猜出扇出的值：
+
+- 如果使用的是全表扫描的方式执行的单表查询，那么计算驱动表扇出时需要猜满足搜索条件的记录到底有多少条
+- 如果使用的是索引执行的单表扫描，那么计算驱动表扇出的时候需要猜满足除使用到对应索引的搜索条件外的其他搜索条件的记录有多少条
+
+在MySQL 5.7之前的版本中，查询优化器在计算驱动表扇出时，如果是使用全表扫描的话，就直接使用表中记录的数量作为扇出值，如果使用索引的话，就直接使用满足范围条件的索引记录条数作为扇出值。
+
+在MySQL 5.7中，MySQL引入了启发式规则，将上述中猜的过程称之为condition filtering。这个过程可能会使用到索引，也可能使用到统计数据。condition filtering可以让成本估算更精确，但其过程比较复杂，这里暂时不做探讨。
+
+##### 两表连接的成本分析
+
+连接查询的成本计算公式：连接查询总成本 = 单次访问驱动表的成本 + 驱动表扇出数 x 单次访问被驱动表的成本。
+
+对于左（外）连接右（外）连接查询来说，它们的驱动表是固定的，所以想要得到最优的查询方案只需要分别为驱动表和被驱动表选择成本最低的访问方法。
+
+但是对于内连接来说，驱动表和被驱动表的位置是可以互换的，不同的表作为驱动表最终的查询成本可能是不同的，也就是需要考虑最优的表连接顺序，然后分别为驱动表和被驱动表选择成本最低的访问方法。
+
+显然，计算内连接查询成本的方式更麻烦一些，下面我们以内连接为例来看看如何计算出最优的连接查询方案，比如对如下查询：
+
+```sql
+SELECT *
+FROM order_exp s1
+	INNER JOIN order_exp2 s2 ON s1.order_no = s2.order_note
+WHERE s1.expire_time > '2021-03-22 18:28:28'
+	AND s1.expire_time <= '2021-03-22 18:35:09'
+	AND s2.expire_time > '2021-03-22 18:35:09'
+	AND s2.expire_time <= '2021-03-22 18:35:59';
+```
+
+可以选择的连接顺序有两种：
+
+- s1连接s2，也就是s1作为驱动表，s2作为被驱动表
+- s2连接s1，也就是s2作为驱动表，s1作为被驱动表
+
+查询优化器需要分别考虑这两情况下的最优查询成本，然后选区成本更低的连接顺序以及该连接顺序下各个表的最优访问方法作为最终的查询计划。接下来我们分别分析一下这两种情况。
+
+接下来我们分析使用s1作为驱动表的情况。
+
+首先看一下涉及s1表单表的搜索条件有`s1.expire_time > '2021-03-22 18:28:28' AND s1.expire_time <= '2021-03-22 18:35:09'`，所以这个查询可能会用到idx_expire_time索引，从全表扫描和使用idx_expire_time这两个方案中选出成本最低的那个，很显然使用idx_expire_time执行查询的成本更低些。然后分析对于被驱动表的成本最低的执行方案，此时涉及到被驱动表s2的搜索条件就是：
+
+- s2.order_note = 常数（这是因为对驱动表s1结果集中的每一条记录，都需要进行一次被驱动表s2的访问，此时那些设计两表的条件相当于只涉及被驱动表s2了。）
+- `s2.expire_time > '2021-03-22 18:35:09' AND s2.expire_time <= '2021-03-22 18:35:59'`
+
+很显然，第一个条件由于order_note没有用到索引，所以并没有什么用，此时访问s2表时可用的方案也是全表扫描和使用idx_expire_time两种，假设使用idx_expire_time的成本更小。所以此时使用s1作为驱动表的总成本就是（暂时不考虑使用join buffer对成本的影响）：
+
+使用idx_expire_time访问s1的成本 + s1的扇出 × 使用idx_expire_time访问s2的成本。
+
+接下来我们分析使用s2作为驱动表的情况。
+
+首先看一下涉及s2表单表的搜索条件有`s2.expire_time> '2021-03-22 18:35:09' AND s2.expire_time<= '2021-03-22 18:35:59'`，所以这个查询可能使用到idx_expire_time索引，从全表扫描和idx_expire_time这两个方案中选出成本最低的那个，假设使用idx_expire_time执行查询的成本更低些。然后分析对于被驱动表的成本最低的执行方案，此时涉及到被驱动表s1的搜索条件就是：
+
+- s1.order_no = 常数
+- `s1.expire_time> '2021-03-22 18:28:28' AND s1.expire_time<= '2021-03-22 18:35:09'`
+
+使用s2作为被驱动表与使用s1作为被驱动表有一个区别就是，idx_order_no可以进行ref方式访问，使用idx_expire_time可以使用range方式的访问。那么优化器需要从全表扫描、使用idx_order_no、使用idx_expire_time这几个方案里选出一个成本最低的方案。
+
+这里有一个问题，不同于idx_expire_time的范围区间是确定的，s1.order_no=常数中的常数值我们是不知道，怎么衡量使用idx_order_no执行查询的成本呢？其实直接使用我们前面说过的索引统计数据就可以了（即索引列平均一个值重复多少次）。一般情况下，ref的访问方式要比range成本更低，这里假设使用idx_order_no进行对s1的访问。
+
+所以，使用s2作为驱动表的总成本就是：使用idx_expire_time访问s2的成本 + s2的扇出 × 使用idx_order_no访问s1的成本。
+
+最后优化器会比较这两种方式的最优访问成本，选取其中成本更低的连接顺序去真正的执行查询。从上面的计算过程也可以看出来，一般来讲，连接查询成本占大头的其实是驱动表扇出数 × 单次访问被驱动表的成本，所以我们优化的重点就是下面两个部分
+
+1. 尽量减少驱动表的扇出
+2. 对被驱动表的访问成本尽量低
+
+这一点对于我们实际书写连接查询语句时十分有用，我们需要尽量在被驱动表的连接列上建立索引，这样就可以使用ref访问方法来降低访问被驱动表的成本了。如果可以，被驱动表的连接列最好是该表的主键或者唯一二级索引列，这样就可以把访问被驱动表的成本见到更低了。
+
+连接查询的成本输出：
+
+```sql
+EXPLAIN format = json 
+SELECT *
+FROM order_exp s1
+	INNER JOIN order_exp2 s2 ON s1.order_no = s2.order_note
+WHERE s1.expire_time > '2021-03-22 18:28:28'
+	AND s1.expire_time <= '2021-03-22 18:35:09'
+	AND s2.expire_time > '2021-03-22 18:35:09'
+	AND s2.expire_time <= '2021-03-22 18:35:59'
+```
+
+成本数据：
+
+```json
+{
+  "query_block": {
+    "select_id": 1,# 整个查询语句只有1个SELECT关键字，该关键字对应的id号为1
+    "cost_info": {
+      "query_cost": "840.51" # 整个查询的执行成本
+    },
+    "nested_loop": [   # 几个表之间采用嵌套循环连接算法执行
+      {
+        "table": {
+          "table_name": "s2",   # s2表是驱动表
+          "access_type": "range",  # 访问方法为range
+          "possible_keys": [
+            "idx_expire_time"
+          ],
+          "key": "idx_expire_time",
+          "used_key_parts": [
+            "expire_time"
+          ],
+          "key_length": "5",
+          "rows_examined_per_scan": 321, # 查询s2表大致需要扫描321条记录
+          "rows_produced_per_join": 321, # 驱动表s2的扇出是321
+          "filtered": "100.00",   # condition filtering代表的百分比
+          "index_condition": "((`mysqladv`.`s2`.`expire_time` > '2021-03-22 18:35:09') and (`mysqladv`.`s2`.`expire_time` <= '2021-03-22 18:35:59'))",
+          "cost_info": {
+            "read_cost": "386.21",
+            "eval_cost": "64.20",
+            "prefix_cost": "450.41", # 查询s1表总共的成本，read_cost + eval_cost
+            "data_read_per_join": "152K" # 读取的数据量
+          },
+          "used_columns": [
+            "id",
+            "order_no",
+            "order_note",
+            "insert_time",
+            "expire_duration",
+            "expire_time",
+            "order_status"
+          ]
+        }
+      },
+      {
+        "table": {
+          "table_name": "s1",  # s1表是被驱动表
+          "access_type": "ref", 
+          "possible_keys": [
+            "idx_order_no",
+            "idx_expire_time"
+          ],
+          "key": "idx_order_no",
+          "used_key_parts": [
+            "order_no"
+          ],
+          "key_length": "152",
+          "ref": [
+            "mysqladv.s2.order_note"
+          ],
+          "rows_examined_per_scan": 1, # 查询一次s1表大致需要扫描1条记录
+          "rows_produced_per_join": 16, # 被驱动表s2的扇出是16（由于没有多余的表进行连接，所以这个值无用）
+          "filtered": "4.94", # condition filtering代表的百分比
+          "index_condition": "(`mysqladv`.`s1`.`order_no` = `mysqladv`.`s2`.`order_note`)",
+          "cost_info": {
+            "read_cost": "325.08",
+            "eval_cost": "3.21",
+            "prefix_cost": "840.51", # 单次查询s2、多次查询s1表总共的成本
+            "data_read_per_join": "7K"
+          },
+          "used_columns": [
+            "id",
+            "order_no",
+            "order_note",
+            "insert_time",
+            "expire_duration",
+            "expire_time",
+            "order_status"
+          ],
+          "attached_condition": "((`mysqladv`.`s1`.`expire_time` > '2021-03-22 18:28:28') and (`mysqladv`.`s1`.`expire_time` <= '2021-03-22 18:35:09'))"
+        }
+      }
+    ]
+  }
+}
+```
+
+##### 多表连接的成本分析
+
+多表连接查询的成本分析首先要考虑多表连接时可能产生多少种连接顺序：
+
+- 对于两表连接，比如表A和表B连接，只有AB、BA两种连接顺序。其实相当于2 × 1 = 2种连接顺序
+- 对于三表连接，比如表A、表B、表C进行连接，有ABC、ACB、BAC、BCA、CAB、CBA这6种连接顺序。其实相当于3 × 2 × 1=6种连接顺序
+- 对于四表连接，则会有4 × 3 × 2 × 1 = 24 种连接顺序
+- 对于n表连接的话，则有n × (n - 1) × (n - 2) × ... × 1种连接顺序，就是n的阶乘种连接顺序，也就是n!
+
+对于n个表的连接查询，MySQL会用一些办法减少计算连接顺序的成本的方法：
+
+1. 提前结束某种顺序的成本评估：MySQL在计算各种链接顺序的成本之前，会维护一个全局变量，这个变量表示当前最小的连接查询成本。如果在分析某个连接顺序的成本时，该成本已经超过当前最小的连接查询成本，那就不会对该连接顺序继续往下分析了。比如有A、B、C三个表进行连接，已经得到连接顺序ABC时当前的最小连接成本，假如是10.0，在计算连接顺序BCA时，发现B和C的连接成本就已经大于10.0时，就不再继续往后分析BCA这个连接顺序的成本了
+
+2. 系统变量
+
+   为了防止无穷无尽的分析各种连接顺序的成本，MySQL提出了`optimizer_search_depth`系统变量，如果连接表的个数小于该值，那么就继续穷举分析每一种连接顺序的成本，否则只对`optimizer_search_depth`值相同数量的表进行穷举分析。很显然，该值越大，成本分析的越精确，越容易得到好的执行计划，但是消耗的时间也就越长。
+
+3. 根据某些规则压根儿就不考虑某些连接顺序
+
+   即便有上面两条规则的限制，但是分析多个表不同连接顺序成本花费的时间还是会很长，所以MySQL干脆提出了一些所谓的启发式规则（就是根据以往经验指定的一些规则），凡是不满足这些规则的连接顺序不参与分析，这样可以极大的减少需要分析的连接顺序的数量，但是也可能造成错失最优的执行计划。MySQL提供了一个系统变量`optimizer_prune_level`来控制到底是不是用这些启发式规则。
+
+#### 调节成本常数
+
+前面我们提到两个成本常数：读取一个页面花费的成本默认是1.0，检测一条记录是否符合搜索条件的成本默认是0.2。其实除了这两个成本参数，MySQL还支持很多，它们被存储到MySQL的两个表中：
+
+```sql
+SHOW TABLES FROM mysql LIKE '%cost%';
+```
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202308282357467.png" alt="image-20230828235756384" style="zoom:50%;" />
+
+因为一条语句的执行其实是分为两层的：server层、存储引擎层。
+
+MySQL在server层进行连接管理、查询缓存、语法解析、查询优化等操作，在存储引擎层执行具体的数据存取操作。也就是说一条语句在server中执行的成本是和它操作的表使用的存储引擎是没有关系的。所以关于这些操作对应的成本常数就存储在了server_cost表中，而依赖于存储引擎的一些操作对应的成本常数就存储在了engine_cost表中。
+
+首先分析一下server_cost表。
+
+```sql
+SELECT * FROM mysql.server_cost;
+```
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202308292315661.png" alt="image-20230829231530606" style="zoom:50%;" />
+
+cost_value表示成本常数对应的值。如果该列的值为NULL的话，意味着对应的成本常数会采用默认值。
+
+其中每一项成本的含义：
+
+| 名称                         | 默认值 | 含义                                                         |
+| ---------------------------- | ------ | ------------------------------------------------------------ |
+| disk_temptable_create_cost   | 40.0   | 创建基于磁盘的临时表的成本，如果增大这个值的话会让优化器尽量少的创建基于磁盘的临时表 |
+| disk_temptable_row_cost      | 1.0    | 向基于磁盘的临时表写入或读取一条记录的成本，如果增大这个值的话会让优化器尽量少的创建基于磁盘的临时表 |
+| key_compare_cost             | 0.1    | 两条记录做比较操作的成本，多用在排序操作上，如果增大这个值的话会提升filesort的成本，让优化器尽可能的更倾向于使用索引完成排序而不是filesort |
+| memory_temptable_create_cost | 2.0    | 创建基于内存的临时表写入或者读取一条记录的成本，如果增大这个值的话会让优化器尽量少的创建基于内存的临时表 |
+| memory_temptable_row_cost    | 0.2    | 向基于内存的临时表写入或读取一条记录的成本，如果增大这个值的话会让优化器尽量少的创建基于内存的临时表 |
+| row_evaluate_cost            | 0.2    | 检测一条记录是否符合搜索条件的成本，增大这个值可以让优化器倾向于使用索引而不是直接全表扫描 |
+
+MySQL在执行诸如DISTINCT查询、分组查询、Union查询以及某些特殊条件下的排序查询都可能在内部先创建一个临时表，使用这个临时表来辅助完成查询。从上面的表格可以看出，创建临时表和对这个临时表进行写入和读取的操作代价还是很高的。
+
+如果要修改上述参数，首先对表中的cost_value字段值进行update操作，然后执行：
+
+```sql
+FLUSH OPTIMIZER_COSTS;
+```
+
+如果要改回默认值，将cost_value字段值更新为NULL，然后执行上述语句即可。
+
+接下来我们分析一下engine_cost表。
+
+```sql
+SELECT * FROM mysql.engine_cost;
+```
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202308292331848.png" alt="image-20230829233128801" style="zoom: 67%;" />
+
+与server_cost表相比，engine_cost多出了两列：
+
+- engine_name：指定成本常数使用的存储引擎名称。如果该值为default，意味着对应的成本常数使用于所有的存储引擎
+- device_type：执行存储引擎使用的设备类型，这里主要是为了区分机械硬盘和固态硬盘，不过在MySQL 5.7.X这个版本中并没有对机械硬盘的成本和固态硬盘的成本作区分，所以该值默认是0。
+
+表中每一项的含义：
+
+| 名称                   | 默认值 | 含义                                                         |
+| ---------------------- | ------ | ------------------------------------------------------------ |
+| io_block_read_cost     | 1.0    | 从磁盘上读取一个块对应的成本。请注意我使用的是块，而不是页这个词。对于InnoDB存储引擎来说，一个页就是一个块，不过对于MyISAM存储引擎来说，默认是以4096字节作为一个块的。增大这个值会加重I/O成本，可能让优化器更倾向于选择使用索引执行查询而不是执行全表扫描。 |
+| memory_block_read_cost | 1.0    | 从内存中读取一个块对应的成本                                 |
+
+怎么从内存中和从磁盘上读取一个块的默认成本是一样的？这主要是因为在MySQL目前的实现中，并不能准确预测某个查询需要访问的块中有哪些块已经加载到内存中，有哪些块还停留在磁盘上，所以MySQL简单的认为不管这个块有没有加载到内存中，使用的成本都是1.0。
+
+#### InnoDB中的统计数据
+
+InnoDB提供了两种存储统计数据的方式：
+
+- 永久性的统计数据，这种统计数据存储在磁盘上，也就是说服务器重启之后这些统计数据还在
+- 非永久性的统计数据，这种统计数据存储在内存中，当服务器关闭时这些统计数据就被清除掉了，等到服务器重启之后，在某些适当的场景下才会重新收集这些统计数据
+
+MySQL为我们提供了系统变量`innodb_stats_presistent`来控制到底采用哪种方式去存储统计数据。在MySQL5.6.6之前，`innodb_stats_presistent`的值默认是OFF，也就是说InnoDB的统计数据默认是存储到内存的，之后的版本中`innodb_stats_presistent`的值默认是ON，也就是统计数据默认被存储到磁盘中。
+
+```sql
+SHOW VARIABLES LIKE 'innodb_stats_persistent';
+```
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202308292346012.png" alt="image-20230829234606948" style="zoom:67%;" />
+
+
+
+我们可以通过指定`STATS_PERSISTENT`属性来指明该表的统计数据存储方式：
+
+```sql
+CREATE TABLE 表名 (...) Engine=InnoDB, STATS_PERSISTENT = (1|0);
+ALTER TABLE 表名 Engine=InnoDB, STATS_PERSISTENT = (1|0);
+```
+
+当`STATS_PERSISTENT=1`时，表明我们想把该表的统计数据永久的存储到磁盘上，当`STATS_PERSISTENT=0`时，表明我们想把该表的统计数据临时的存储到内存中。如果我们在创建表时未指定`STATS_PERSISTENT`属性，默认会采用系统变量`innodb_stats_persistent`的值作为该属性的值。
+
+当我们选择把某个表以及该表索引的统计数据存放到磁盘上时，实际上是把这些统计数据存储到了两个表里：
+
+```sql
+SHOW TABLES FROM mysql LIKE 'innodb%';
+```
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202308292352560.png" alt="image-20230829235225509" style="zoom:67%;" />
+
+可以看到，这两表都位于mysql系统数据库下面，其中：
+
+- innodb_table_stats存储了关于表的统计数据，每一条记录对应着一个表的统计数据
+- Innodb_index_stats存储了关于索引的统计就数据，每一条记录对应着一个索引的一个统计项的统计数据
+
+```sql
+SELECT * FROM mysql.innodb_table_stats;
+```
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202308292356594.png" alt="image-20230829235621536" style="zoom:80%;" />
+
+几个重要统计信息项的值如下：
+
+- n_rows的值是10350，表明order_exp表中大约有10350条记录，这个值是估计值
+- clustered_index_size的值是97，表明order_exp表的聚簇索引占用97页面，这个值也是一个估计值
+- sum_of_other_index_sizes的值是81，表明order_exp表的其他索引一共占用81个页面，这个值也是一个估计值
+
+InnoDB统计一个表中有多少行记录是这样的：按照一定算法选取几个叶子结点页面，计算每个页面中主键值记录数量，然后计算平均一个页面中主键值的记录数量乘以全部叶子结点的数量就算是该表n_rows值。
+
+可以看出来这个n_rows值精确与否取决于统计时采样的页面数量，MySQL通过系统变量`innodb_stats_persistent_sample_pages`来控制使用永久性的统计数据时，计算统计数据时采样的页面数量。该值设置的越大，统计出的n_rows值越精确，但是统计耗时也就最久，该值设置的越小，统计出的n_rows值越不精确，但是统计耗时特别少，这个值的默认值是20。
+
+InnoDB默认是以表为单位来收集和存储统计数据的，我们可以单独设置某个表的采样页面的数量，设置方式就是在创建或修改表的时候通过STATS_SAMPLE_PAGES属性来指明该表的统计数据存储方式：
+
+```sql
+CREATE TABLE 表名 (...) Engine=InnoDB, STATS_SAMPLE_PAGES = 具体的采样页面数量;
+ALTER TABLE 表名 Engine=InnoDB, STATS_SAMPLE_PAGES = 具体的采样页面数量;
+```
+
+如果我们在创建表的语句并没有制定STATS_SAMPLE_PAGES属性的话，将默认使用系统变量`innodb_stats_persistent_sample_pages`的值作为该属性的值。
+
+接下来观察Innodb_index_stats表的数据：
+
+```sql
+desc mysql.innodb_index_stats;
+```
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202308312211503.png" alt="image-20230831221147447" style="zoom:67%;" />
+
+各个字段的含义：
+
+| 字段名           | 描述                           |
+| ---------------- | ------------------------------ |
+| database_name    | 数据库名                       |
+| table_name       | 表名                           |
+| index_name       | 索引名                         |
+| last_update      | 本条记录最后更新时间           |
+| stat_name        | 统计项名称                     |
+| stat_value       | 对应的统计项的值               |
+| sample_size      | 为生成统计数据而采样的页面数量 |
+| stat_description | 对应的统计项的描述             |
+
+innodb_index_stats表的每条记录代表着一个索引的一个统计项。我们以order_exp表为例：
+
+```sql
+SELECT * FROM mysql.innodb_index_stats WHERE table_name = 'order_exp';
+```
+
+![image-20230831221516062](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202308312215122.png)
+
+从结果中可以看出，PRIMARY索引（也就是组件）占了3条记录，idx_expire_time索引占了6条记录。
+
+stat_name具体的含义：
+
+- size：表示该索引共占用多少页面
+- n_diff_pfxNN：表示对应的索引列不重复的值有多少，其中NN可以被替换为01、02、03...这样的数字，比如对于u_idx_day_status来说，u_diff_pfx01表示的是统计insert_time这单单一列不重复的值有多少，u_diff_pfx02表示insert_time、order_status这两个列组合起来不重复的值有多少，u_diff_pfx03表示的是insert_time、order_status、expire_time这三个列组合起来不重复的值有多少，u_diff_pfx04表示的是insert_time、order_status、expire_time、id这四个列组合起来不重复的值有多少。
+
+对于普通的二级索引，并不能保证它的索引列值是唯一的，比如对于idx_order_no来说，key1列就可能有很多重复的记录。此时只有在索引列上加上主键值才可以区分两条索引列值都是一样的二级索引记录。对于主键和唯一二级索引则没有这个问题，它们本身就可以保证索引列值的不重复，所以也不需要再统计一遍在索引列后加上主键值的不重复值有多少，比如u_idx_day_statu和idx_order_no。
+
+在计算某些索引列中包含多少不重复值时，需要对一些叶子节点页面进行采样，sample_size列就表明了采样的页面数量是多少。对于有多个列的联合索引来说，采样的页面数量是：innodb_stats_persistent_sampe_pages × 索引列的个数。
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202309022312404.png" alt="image-20230902231257340" style="zoom:67%;" />
+
+##### 更新统计数据
+
+随着我们不断的对表进行增删改操作，表中的数据也一直在变化，innodb_table_stats和innodb_index_stats表里的统计数据也在变化，MySQL提供了自动更新和手动更新两种更新统计数据的方式。
+
+系统变量`innodb_stats_auto_recale`决定着服务器是否自动重新计算统计数据，它的默认值是ON，也就是该功能默认是开启的。
+
+![image-20230831223453291](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202308312234358.png)
+
+每个表都维护了一个变量，该变量记录着对该表进行增删改的记录条数，如果发生变动的记录数量超过了表的大小10%，并且自动重新统计数据的功能是打开的，那么服务器会重新进行一次统计数据的计算，并且更新`innodb_table_stats`和`innodb_index_stats`表，不过自动重新计算统计数据的过程是异步发生的，也就是即使表中变动的记录数超过了10%，自动重新计算统计数据也不会立即发生，可能会延迟几秒才会进行计算。
+
+InnoDB默认是以表为单位来收集和存储统计数据的，我们可以单独为某个表设置是否自动重新计算统计数的属性，设置方式就是在创建或修改表的时候通过指定STATS_AUTO_RECALC属性来指明该表的统计数据存储方式：
+
+```sql
+CREATE TABLE 表名 (...) Engine=InnoDB, STATS_AUTO_RECALC = (1|0);
+ALTER TABLE 表名 Engine=InnoDB, STATS_AUTO_RECALC = (1|0);
+```
+
+当STATS_AUTO_RECALC=1时，表明我们想让该表自动重新计算统计数据，当STATS_AUTO_RECALC=0时，表明不想让该表自动重新计算统计数据，如果我们在创建表时未指定STATS_AUTO_RECALC属性，那默认采用系统变量innodb_stats_auto_recalc的值作为该属性的值。
+
+如果innodb_stats_auto_recalc系统变量的值为OFF的话，我们也可以手动调用ANALYZE TABLE语句来重新计算统计数据，比如我们可以这样更新关于order_exp表的统计数据：
+
+```sql
+ANALYZE TABLE order_exp;
+```
+
+ANALYZE TABLE语句会立即重新计算统计数据，这个过程是同步的，在表中索引多或者采样页面也别多的时候，这个过程可能会很慢，需要在业务不是很繁忙的时候再运行。
+
+除此之外，`innodb_table_stats`和`innodb_index_stats`表就相当于一个普通的表一样，我们能对它们多增删改查操作，这就意味着我们可以手动更新某个表或者索引的统计数据。比如我们想把order_exp表关于行数的统计数据更改一下，可以这么做：
+
+1. 更新`innodb_table_stats`表
+2. 使用语句`FLUSH TABLE order_exp`让MySQL查询优化器重新加载我们更改过的数据
 
 ### 表结构设计
 
@@ -6151,13 +6920,9 @@ new指令对应到语言层面上讲是，new关键词、对象克隆、对象�
 
 #### 设置对象头
 
-
-
 ![img202304062332092](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202304062332092.png)
 
 大对象：`-XX:PretenureSizeThreshold=1000000`（单位是字节）。需要配合具体的垃圾收集器一起使用：`-XX:+UseSerialGC`。
-
-
 
 这样做的目的是为了避免大对象分配内存时的复制操作而降低效率。
 
@@ -6235,8 +7000,6 @@ new指令对应到语言层面上讲是，new关键词、对象克隆、对象�
 
 链接：https://note.youdao.com/ynoteshare/index.html?id=ca746f44f16b862e3189e5f24b3a8e64&type=note&_time=1685805324275
 
-
-
 ### Dubbo3.0新特性
 
 #### dubbo协议
@@ -6273,7 +7036,6 @@ Http2可以支持同时发在一个socket上送多个请求。
 
 - 帧长度
 - 帧类型
-- 
 
 ## Zookeeper
 
@@ -6304,20 +7066,6 @@ Redis中字符串实现原理的特点：
 - 二进制安全的数据结构
 - 提供了内存预分配机制，避免了频繁的内存分配
 - 兼容C语言的函数库
-
-## MQ
-
-## Netty
-
-
-
-## SpringCloud
-
-
-
-## MongoDB
-
-
 
 # 参考文献
 
