@@ -1400,7 +1400,7 @@ public class AioClientHandler implements CompletionHandler<Void, AsynchronousSoc
 
 合起来理解，零拷贝就是不需要将数据从一个存储区域复制到另一个存储区域。实际上，最早零拷贝的定义，来源于Linux系统的sendfile方法逻辑。
 
-在Linux 2.4内核中，sendfile系统调用方法，可以将磁盘数据通过DMA拷贝到内核态Buffer后，再通过DMA拷贝到NIC Buffer（socket buffer），无需CPU拷贝，这个过程被称之为零拷贝。也就是说，站在操作系统的角度，零拷贝并不是不需要拷贝数据，而是省掉了CPU拷贝环节，减少了不必要的拷贝次数，提升数据拷贝效率。要想深入了解这其中的原理，就得从IO拷贝机制说起。
+在Linux 2.4内核中，sendfile系统调用方法，可以将磁盘数据通过DMA拷贝到内核态Buffer后，再通过DMA拷贝到NIC Buffer（socket buffer 即网卡），无需CPU拷贝，这个过程被称之为零拷贝。也就是说，站在操作系统的角度，零拷贝并不是不需要拷贝数据，而是省掉了CPU拷贝环节，减少了不必要的拷贝次数，提升数据拷贝效率。要想深入了解这其中的原理，就得从IO拷贝机制说起。
 
 ## 基本概念
 
@@ -1579,7 +1579,7 @@ public static void main(String[] args) {
 }
 ```
 
-Java NIO 提供的FileChannel.transferTo并不保证一定能使用零拷贝。只有操作系统提供sendfile这样的零拷贝系统调用方法，才可以用的上零拷贝的技术。
+Java NIO 提供的FileChannel.transferTo并不保证一定能使用零拷贝。只有操作系统提供sendfile这样的零拷贝系统调用方法，才可以用的上零拷贝。
 
 
 
