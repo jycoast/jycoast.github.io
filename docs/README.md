@@ -1,8 +1,8 @@
 ---
 home: true
-title: '开卷有益'
-heroText: '开卷有益'
-tagline: '知识体系合辑'
+title: 'thinking in programming'
+heroText: 'thinking in programming'
+tagline: null
 heroImage: mlogo.svg
 actions:
   - text: 快速开始 →
