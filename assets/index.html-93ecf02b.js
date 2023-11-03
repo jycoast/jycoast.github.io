@@ -1,1 +1,0 @@
-const t=JSON.parse('{"key":"v-74bc627b","path":"/about/","title":"更多的我","lang":"zh-CN","frontmatter":{"sidebar":false},"headers":[],"git":{"updatedTime":1695694909000,"contributors":[{"name":"jiyongchao","email":"jycoder@163.com","commits":1}]},"filePathRelative":"about/README.md"}');export{t as data};
