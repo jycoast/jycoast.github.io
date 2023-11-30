@@ -126,8 +126,17 @@ export default defineUserConfig({
               ]
           },
           {
-              text: '深度好文',
-              link: '/favorite_article/'
+              text: '学习指南',
+              children: [
+                {
+                    text: '深度好文',
+                    link: '/study_guide/favorite_article/'
+                },
+                {
+                    text: '资料大全',
+                    link: '/study_guide/study_materials/'
+                },
+            ]
           },
           {
             text: '关于',
