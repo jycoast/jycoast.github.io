@@ -136,10 +136,14 @@ export default defineUserConfig({
                     text: '资料大全',
                     link: '/study_guide/study_materials/'
                 },
+                {
+                    text: '学习路线',
+                    link: '/study_guide/study_path/'
+                },
             ]
           },
           {
-            text: '关于',
+            text: '关于我',
             link: '/about/'
           },
         ],
