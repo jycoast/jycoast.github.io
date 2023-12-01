@@ -7,6 +7,7 @@ import codeCopyPlugin from '@snippetors/vuepress-plugin-code-copy'
 import MarkdownItKatex from "markdown-it-katex";
 
 export default defineUserConfig({
+    markdown: {toc: {level:[1, 2, 3], shouldAllowNested: true}},
     lang: 'zh-CN',
     title: 'thinking in programming',
     // description: '这是我的第一个 VuePress 站点',

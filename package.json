@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@snippetors/vuepress-plugin-code-copy": "^1.2.3",
-    "markdown-it-katex": "^2.0.3"
+    "markdown-it-katex": "^2.0.3",
+    "markdown-it-toc": "^1.1.0"
   }
 }
