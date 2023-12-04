@@ -28,18 +28,50 @@ export default defineUserConfig({
           {
               text: 'Java 基础',
               collapsible: true,
-              children: [{
-                  text: '函数式编程',
-                  link: '/java_basics/functional_programming/'
-              },
-              {
-                  text: 'Java核心技术原理',
-                  link: '/java_basics/core_technology/'
-              },
-              {
-                  text: 'Java知识体系合辑',
-                  link: '/java_basics/knowledge_system/'
-              }]
+              children: [
+                {
+                text:'Java语言',
+                children:[
+                    {
+                        text: 'Java函数式编程',
+                        link: '/java_basics/functional_programming/'
+                    },
+                    {
+                        text: 'Java集合与IO',
+                        link: '/java_basics/core_technology/'
+                    },
+                    {
+                        text: 'Java并发编程',
+                        link: '/java_basics/concurrent_programming/'
+                    },
+                    {
+                        text: 'Java知识体系合辑',
+                        link: '/java_basics/knowledge_system/'
+                    },
+                ]
+                },
+                {
+                text:'Java进阶',
+                children:[
+                    {
+                        text: 'JNDI',
+                        link: '/java_basics/jndi/'
+                    },
+                    {
+                        text: 'JMX',
+                        link: '/java_basics/jmx/'
+                    },
+                    {
+                        text: 'Java日志',
+                        link: '/java_basics/log/'
+                    },
+                    {
+                        text: 'Java监控',
+                        link: '/java_basics/monitoring/'
+                    }
+                    ]
+                } 
+             ]
           },
           {
               text: '数据结构与算法',
@@ -48,9 +80,14 @@ export default defineUserConfig({
                   link: '/leetcode/data_structure.md'
               },
               {
-                  text: '算法实战',
+                  text: '常用算法',
                   link: '/leetcode/algorithm.md'
-              }]
+              },
+              {
+                text: '算法刷题',
+                link: '/leetcode/leetcode.md'
+              },
+            ]
           },
           {
               text: '数据库',

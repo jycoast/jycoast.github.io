@@ -1570,7 +1570,7 @@ ShardingSphere分库分表的执行流程：
 - 能够很好的同时支持等值查询和范围查询
   - 等值查询：哈希表、跳表不适合范围查询
   - 范围查询：二叉树/红黑树可以很好的满足范围查询，但当树过高时，会带来磁盘IO过高的问题；B树的范围查询，会一直到根节点再到叶子节点查询，B+树解决了范围查询的带来的问题
-- B树的查询效率不稳定，在O(1-logN)之前，而B+树可以稳定在O(logN)
+- B树的查询效率不稳定，在O(1-logN)之间，而B+树可以稳定在O(logN)
 
 完整链接：https://juejin.cn/post/7081065180301361183
 
@@ -1582,7 +1582,7 @@ ShardingSphere分库分表的执行流程：
 | truncate | 删除所有数据，无条件选择删除，不可回滚，保留表结构           |
 | drop     | 删除数据和表结构 删除速度最快                                |
 
-### MySQL的SQL优化思路？
+### 慢SQL的优化思路？
 
 SQL优化的思路：
 
@@ -1608,6 +1608,9 @@ MySQL目前主要有以下几种索引类型：
 - 使用批处理语句（可能需要修改MySQL的`Max_allowed_packet`配置项）
 - 开启事务，在事务内进行插入操作
 - 数据有序插入，避免B+树出现分裂合并
+
+补充：
+- 避免使用ORM框架
 
 ## Elasticsearch
 
@@ -1912,7 +1915,7 @@ MyBatis动态sql可以在XML映射文件内，以标签的形式编写动态sql�
 
 ### Mybatis如何开启二级缓存？
 
-https://tech.meituan.com/2018/01/19/mybatis-cache.html
+[MyBatis的缓存机制](https://tech.meituan.com/2018/01/19/mybatis-cache.html)
 
 ## Netty面试题
 
