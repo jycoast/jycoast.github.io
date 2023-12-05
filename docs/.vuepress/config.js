@@ -30,7 +30,7 @@ export default defineUserConfig({
               collapsible: true,
               children: [
                 {
-                text:'Java语言',
+                text:'JavaSE',
                 children:[
                     {
                         text: 'Java函数式编程',
@@ -51,7 +51,7 @@ export default defineUserConfig({
                 ]
                 },
                 {
-                text:'Java进阶',
+                text:'JavaEE',
                 children:[
                     {
                         text: 'JNDI',
@@ -62,6 +62,23 @@ export default defineUserConfig({
                         link: '/java_basics/jmx/'
                     },
                     {
+                        text: 'RMi',
+                        link: '/java_basics/rmi/'
+                    },
+                    {
+                        text: 'JMS',
+                        link: '/java_basics/jms/'
+                    },
+                    {
+                        text: 'EJB',
+                        link: '/java_basics/ejb/'
+                    }
+                    ],
+                },
+                {
+                text:'Java性能与监控',
+                children:[
+                    {
                         text: 'Java日志',
                         link: '/java_basics/log/'
                     },
@@ -70,7 +87,7 @@ export default defineUserConfig({
                         link: '/java_basics/monitoring/'
                     }
                     ]
-                } 
+                }
              ]
           },
           {

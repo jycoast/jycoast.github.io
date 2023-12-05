@@ -1,16 +1,2 @@
-# Java基础篇
-
-## Java基础
-
-### Java 语⾔有哪些特点?
-
-- 简单易学
-- 面向对象（封装、继承、多态）
-- 跨平台
-- 可靠性
-- 安全性
-- 支持多线程（C++语言没有内置的多线程机制，因此必须调用操作系统的多线程功能来进行多线程设计，Java提供了多线程支持）
-- 支持网络编程
-- 编译与解释并存
-
-### JVM、JDK 和 JRE 联系与区别？
+# Java EE简介
+Java EE 号称有十三种核心技术。它们分别是：JDBC、JNDI、EJB、RMI、Servlet、JSP、XML、JMS、Java IDL、JTS、JTA、JavaMail和JAF。
