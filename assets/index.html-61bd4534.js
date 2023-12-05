@@ -1,0 +1,1 @@
+const a=JSON.parse('{"key":"v-2a996520","path":"/java_basics/jndi/","title":"JNDI 简介","lang":"zh-CN","frontmatter":{},"headers":[],"git":{"updatedTime":1701757930000,"contributors":[{"name":"jiyongchao","email":"jycoder@163.com","commits":1}]},"filePathRelative":"java_basics/jndi/README.md"}');export{a as data};
