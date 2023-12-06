@@ -1,0 +1,1 @@
+import{_ as t,o as a,c as n,a as e,b as c}from"./app-6a04670c.js";const o={},r=e("h1",{id:"jndi-简介",tabindex:"-1"},[e("a",{class:"header-anchor",href:"#jndi-简介","aria-hidden":"true"},"#"),c(" JNDI 简介")],-1),s=[r];function d(_,i){return a(),n("div",null,s)}const l=t(o,[["render",d],["__file","index.html.vue"]]);export{l as default};
