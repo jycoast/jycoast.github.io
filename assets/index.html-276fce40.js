@@ -1,1 +1,0 @@
-import{_ as a,o as t,c,a as e,b as n}from"./app-d3c161d8.js";const o={},r=e("h1",{id:"java监控简介",tabindex:"-1"},[e("a",{class:"header-anchor",href:"#java监控简介","aria-hidden":"true"},"#"),n(" Java监控简介")],-1),s=[r];function _(d,i){return t(),c("div",null,s)}const l=a(o,[["render",_],["__file","index.html.vue"]]);export{l as default};
