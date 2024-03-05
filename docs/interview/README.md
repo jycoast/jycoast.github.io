@@ -1390,6 +1390,10 @@ Redis中事务的实现特征：
 
 可以将多次IO往返的时间缩减为一次，前提是pipeline执行的指令之间没有因果相关性。使用redis-benchmark进行压测的时候可以发现影响redis的QPS峰值的一个重要因素是pipeline批次指令的数目。
 
+### Redis延迟队列怎么实现的？
+
+https://juejin.cn/post/7037860077855834119
+
 ## MySQL
 
 ### MySQL有哪几种数据存储引擎?
@@ -1588,6 +1592,14 @@ SQL优化的思路：
 
 - 定位优化对象的性能瓶颈，确定时IO还是CPU瓶颈
 - 从Explain入手，保证索引生效
+
+### limit语句会扫描全表吗？
+
+
+
+### 大数量分页查询该怎么优化？
+
+
 
 ### MySQL的索引类型？
 
@@ -2240,6 +2252,38 @@ AB发布：
 - Nacos同时支持AP和CP模式，而Eureka只满足AP模式
 
 <div class="note info"><p>CAP原则又称为CAP定理，指的是在一个分布式系统中，Consistency（一致性），Availability（可用性）、Partition tolerance（分区容错性），三者不可得兼。</p></div>
+
+### Nacos配置中心，本地Resource，jar包中同级目录的配置文件加载优先级？
+
+
+
+### Nacos的配置动态更新原理？
+
+[nacos配置动态更新原理](https://juejin.cn/s/nacos%E9%85%8D%E7%BD%AE%E5%8A%A8%E6%80%81%E6%9B%B4%E6%96%B0%E5%8E%9F%E7%90%86)
+
+### 使用Nacos配置中心，@Value对应的配置项如何动态更新？
+
+
+
+### Nacos中命名空间和分组的概念及区别？
+
+
+
+### Nacos同一个namespace中的不同的group注册的服务可以相互访问吗？
+
+
+
+### Nacos服务注册的流程是怎么样的？
+
+
+
+### 微服务下服务a调用服务b的流程？
+
+
+
+### 注册中心，如何通过服务名找到服务实例？
+
+
 
 ### 熔断和限流有什么区别？
 
