@@ -1,0 +1,1 @@
+const a=JSON.parse('{"key":"v-0dbd4ef2","path":"/java_basics/rmi/","title":"RMI 简介","lang":"zh-CN","frontmatter":{},"headers":[],"git":{"updatedTime":1709691746000,"contributors":[{"name":"jiyongchao","email":"jycoder@163.com","commits":1}]},"filePathRelative":"java_basics/rmi/README.md"}');export{a as data};
