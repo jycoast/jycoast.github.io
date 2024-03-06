@@ -805,6 +805,14 @@ class Fibonacci extends RecursiveTask<Integer> {
 
 [高并发下如何保证接口的幂等性？](https://segmentfault.com/a/1190000039737646)
 
+### 除了Lock和synchronized，还有什么方式可以保障线程安全？
+
+- 使用Atomic原子类，它通过CAS操作，保障线程安全
+- 使用线程安全的集合类，例如ConcurrentHashMap、CopyOnWriteArrayList
+- 使用volatile，如果是共享变量引起的线程安全问题，volatile可以共享保障变量的可见性
+- 使用ThreadLocal，使得每个线程都可以独立地访问和修改自己的变量副本
+- 使用不可变的变量，例如String，使用final关键字修饰的变量等
+
 ## Java网络通信
 
 ### TCP和UDP有什么区别？
@@ -1221,6 +1229,10 @@ JVM参数大致可以分为三类：
     }
 ```
 
+### JDK8 为什么要把元空间改为方法区？
+
+
+
 # 数据库面试题
 
 ## Redis
@@ -1375,8 +1387,7 @@ Redis每秒可以承受10w+的QPS，它如此优秀的性能主要取决于以�
 ### Redis 为什么能通过 Lua 脚本保证并发的线程安全？
 
 
-
-### 谈一下redis事务的了解？
+### 谈一下Redis事务的了解？
 
 Redis中事务的实现特征：
 
@@ -1598,6 +1609,10 @@ SQL优化的思路：
 
 
 ### 大数量分页查询该怎么优化？
+
+
+
+### 平时项目里面表结构是如何进行设计的？
 
 
 
@@ -1859,6 +1874,10 @@ https://blog.fundebug.com/2019/01/09/how-does-springboot-start/
 - 状态机：状态变更，更新数据时判断状态
 
 其中，前三种最为常见，更多内容可以参考：[SpringBoot/Web项目防止表单/请求重复提交（单体和分布式）](https://blog.csdn.net/ITBigGod/article/details/105510980)
+
+### 如何自己写一个SpringBoot Starter？
+
+参见：[手把手教你写一个 Starter](https://juejin.cn/post/7124603507025379365#heading-16)。
 
 ## MyBatis面试题
 
@@ -2444,3 +2463,40 @@ RabbitMQ：使用erlang语言天生就成为了一种屏障
 ### Kafka如何避免重复消费？
 
 详细参见：[一文理解Kafka重复消费的原因和解决方案](https://www.modb.pro/db/73387)
+
+# 部署运维
+
+## Linux命令
+
+### 使用cat命令如何统计文件中一个字符串出现的频率？
+
+```shell
+cat 文件名 | grep -o "要统计的字符串" | wc -l
+```
+
+命令含义：
+
+- `cat`命令用于将文件内容输出到标准输出。
+- `grep -o "要统计的字符串"`命令用于从标准输入中匹配并提取指定字符串（使用`-o`选项只输出匹配的部分）。
+- `wc -l`命令用于统计行数（`-l`选项只统计行数）。
+
+### 如何查看一个应用的信息？
+
+
+
+## Dokcer命令
+
+### docker常用的命令？
+
+查看容器情况：
+
+```shell
+docker ps
+```
+
+### 查看所有容器的命令？
+
+```shell
+docker ps -a
+```
+
