@@ -44,10 +44,10 @@ export default defineUserConfig({
                         text: 'Java并发编程',
                         link: '/java_basics/concurrent_programming/'
                     },
-                    {
-                        text: 'Java知识体系合辑',
-                        link: '/java_basics/knowledge_system/'
-                    },
+                    // {
+                    //     text: 'Java知识体系合辑',
+                    //     link: '/java_basics/knowledge_system/'
+                    // },
                 ]
                 },
                 {
@@ -111,17 +111,26 @@ export default defineUserConfig({
               collapsible: true,
               children: [{
                   text: '关系型数据库',
-                  children: [{
-                      text: '深入浅出MySQL',
+                  children: [
+                    {
+                      text: 'MySQL基础',
                       link: '/database/mysql/'
-                  },
+                    },
+                    {
+                        text: 'MySQL性能优化',
+                        link: '/database/mysql_perfomance/'
+                      },
                   ]
               },
               {
                   text: 'NoSQL',
                   children: [{
-                      text: '深入浅出Redis',
+                      text: 'Redis',
                       link: '/database/redis/'
+                  },
+                  {
+                    text: 'ElaticSearch',
+                    link: '/database/elaticSearch/'
                   },
                   ]
               }]
@@ -149,26 +158,46 @@ export default defineUserConfig({
                   ]
               },
               {
+                text: 'Dubbo',
+                children: [{
+                    text: 'Dubbo',
+                    link: '/framework/dubbo/'
+                }]
+              },
+              {
                   text: '网络通信',
                   children: [{
-                      text: '深入理解Netty',
+                      text: 'Netty',
                       link: '/framework/netty/'
                   }]
-              }]
+              },
+              {
+                text: 'Orm',
+                children: [{
+                    text: 'Mybatis',
+                    link: '/framework/mybatis/'
+                },
+                ]
+            },
+            ]
           },
           {
               text: '中间件',
               children: [{
-                  text: '深入理解JVM',
+                  text: 'Java虚拟机',
                   link: '/middleware/jvm/'
               },
               {
-                  text: 'RocketMQ从实践到原理',
+                  text: 'RocketMQ',
                   link: '/middleware/mq/'
               },
               {
-                  text: 'Tomcat核心原理',
+                  text: 'Tomcat',
                   link: '/middleware/tomcat/'
+              },
+              {
+                text: 'Zookeeper',
+                link: '/middleware/zookeeper/'
               },
               ]
           },
