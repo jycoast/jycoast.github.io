@@ -1,1 +1,0 @@
-import{_ as t,o as a,c,a as e,b as o}from"./app-2d7729b6.js";const s={},n=e("h1",{id:"jmx",tabindex:"-1"},[e("a",{class:"header-anchor",href:"#jmx","aria-hidden":"true"},"#"),o(" JMX")],-1),r=e("p",null,"https://www.wdbyte.com/java/jmx/",-1),_=[n,r];function d(i,h){return a(),c("div",null,_)}const m=t(s,[["render",d],["__file","index.html.vue"]]);export{m as default};
