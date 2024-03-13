@@ -1,6 +1,8 @@
-# 高频考题
+# 算法刷题
 
-## [1. 两数之和](https://leetcode-cn.com/problems/two-sum/)
+## 数组
+
+### [1. 两数之和](https://leetcode-cn.com/problems/two-sum/)
 
 梦开始的地方：
 
@@ -17,92 +19,11 @@
     }
 ```
 
-## [283. 移动零](https://leetcode-cn.com/problems/move-zeroes/)
+## 链表
 
-```java
-public void moveZeroes(int[] nums) {
-        if (nums == null || nums.length == 0) {
-            return;
-        }
-        // 将非零数移动到index处
-        int index = 0;
-        for (int i = 0; i < nums.length; i++) {
-            if (nums[i] != 0) {
-                nums[index] = nums[i];
-                index++;
-            }
-        }
 
-        for (int i = index; i < nums.length; i++) {
-            nums[i] = 0;
-        }
-    }
-```
 
-## [136. 只出现一次的数字](https://leetcode-cn.com/problems/single-number/)
-
-```java
-    public int singleNumber(int[] nums) {
-        int single = 0;
-        for (int num : nums) {
-            single ^= num;
-        }
-        return single;
-    }
-```
-
-## [70. 爬楼梯 ](https://leetcode-cn.com/problems/climbing-stairs/)
-
-直接使用递归求接斐波那契数列：
-
-```java
-    public int climbStairs(int n) {
-        if (n == 1) {
-            return 1;
-        }
-        if (n == 2) {
-            return 2;
-        }
-        return climbStairs(n - 1) + climbStairs(n - 2);
-    }
-```
-
-使用循环求解：
-
-```java
-    public int climbStairs(int n) {
-        if (n <= 2) {
-            return n;
-        }
-        int f1 = 1, f2 = 2, f3 = 3;
-        for (int i = 3; i < n + 1; i++) {
-            f3 = f1 + f2;
-            // 优化
-            f1 = f2;
-            f2 = f3;
-        }
-        return f3;
-    }
-```
-
-也可以直接dp求解：
-
-```java
-    public int climbStairs(int n) {
-        if(n <= 2) {
-            return n;
-        }
-        int[] dp = new int[n];
-        dp[0] = 1;
-        dp[1] = 2;
-        for(int i = 2; i < n; i++) {
-            dp[i] = dp[i-1] + dp[i - 2];
-        }
-        return dp[n -1];
-    }
-```
-
-## [206. 反转链表](https://leetcode-cn.com/problems/reverse-linked-list/)
+### [206. 反转链表](https://leetcode-cn.com/problems/reverse-linked-list/)
 
 双指针的解法：
 
@@ -120,7 +41,7 @@ public void moveZeroes(int[] nums) {
     }
 ```
 
-## [141. 环形链表 ](https://leetcode-cn.com/problems/linked-list-cycle/)
+### [141. 环形链表 ](https://leetcode-cn.com/problems/linked-list-cycle/)
 
 使用哈希表来实现：
 
@@ -158,7 +79,33 @@ public boolean hasCycle(ListNode head) {
 
 ```
 
-## [20. 有效的括号](https://leetcode-cn.com/problems/valid-parentheses/)
+## 哈希表
+
+### [49. 字母异位词分组](https://leetcode-cn.com/problems/group-anagrams/)
+
+使用哈希表，将排序之后的字符串作为key，并且排序之后相同的字符串添加到列表中，最后从Map中获取值并返回。
+
+```java
+public List<List<String>> groupAnagrams(String[] strs) {
+        HashMap<String, List<String>> map = new HashMap<>();
+        for (int i = 0; i < strs.length; i++) {
+            char[] chars = strs[i].toCharArray();
+            Arrays.sort(chars);
+            String key = String.valueOf(chars);
+            if (!map.containsKey(key)) {
+                map.put(key, new ArrayList<>());
+            }
+            map.get(key).add(strs[i]);
+        }
+        return new ArrayList<>(map.values());
+    }
+```
+
+
+
+## 字符串
+
+### [20. 有效的括号](https://leetcode-cn.com/problems/valid-parentheses/)
 
 可以使用暴力破解法，即遍历字符串，找到最近的匹配括号开始，如果匹配就替换为空字符串，一直循环下去，如果括号是匹配的，那么最终的结果应该是个空字符串。
 
@@ -214,7 +161,255 @@ public boolean isValid(String s) {
     }
 ```
 
-## [155. 最小栈 ](https://leetcode-cn.com/problems/min-stack/)
+
+
+### [242. 有效的字母异位词](https://leetcode-cn.com/problems/valid-anagram/)
+
+使用排序：
+
+```java
+    public boolean isAnagram(String s, String t) {
+        char[] sChars = s.toCharArray();
+        char[] tChars = t.toCharArray();
+        // 注意这里不能简写为 Arrays.sort(s.toCharArray())，因为Arrays.sort采用的就地排序。
+        Arrays.sort(sChars);
+        Arrays.sort(tChars);
+        return Arrays.equals(sChars, tChars);
+    }
+```
+
+使用哈希表：
+
+```java
+    public boolean isAnagram(String s, String t) {
+        HashMap<Character, Integer> hashTable = new HashMap<>();
+        for (char c : s.toCharArray()) {
+            hashTable.put(c, hashTable.getOrDefault(c, 0) + 1);
+        }
+        for (char c : t.toCharArray()) {
+            hashTable.put(c, hashTable.getOrDefault(c, 0) - 1);
+            if (hashTable.get(c) < 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+```
+
+### [剑指 Offer 67. 把字符串转换成整数](https://leetcode-cn.com/problems/ba-zi-fu-chuan-zhuan-huan-cheng-zheng-shu-lcof/)
+
+```java
+public int myAtoi(String str) {
+        int index = 0, sign = 1, total = 0;
+        // 空字符串
+        if (str.length() == 0) {
+            return 0;
+        }
+        // 移除空格
+        while (str.charAt(index) == ' ') {
+            index++;
+        }
+        // 处理正负号
+        if (str.charAt(index) == '+' || str.charAt(index) == '-') {
+            sign = str.charAt(index) == '+' ? 1 : -1;
+            index++;
+        }
+        // 转为数字
+        while (index < str.length()) {
+            int digit = str.charAt(index) - '0';
+            if (digit < 0 || digit > 9) {
+                break;
+            }
+            // 越界处理
+            if (Integer.MAX_VALUE / 10 < total ||
+                    (Integer.MAX_VALUE / 10 == total && Integer.MAX_VALUE % 10 < digit)) {
+                return sign == 1 ? Integer.MAX_VALUE : Integer.MIN_VALUE;
+            } else {
+                total = 10 * total + digit;
+                index++;
+            }
+        }
+        return total * sign;
+    }
+```
+
+
+
+## 双指针
+
+### [283. 移动零](https://leetcode-cn.com/problems/move-zeroes/)
+
+```java
+public void moveZeroes(int[] nums) {
+        if (nums == null || nums.length == 0) {
+            return;
+        }
+        // 将非零数移动到index处
+        int index = 0;
+        for (int i = 0; i < nums.length; i++) {
+            if (nums[i] != 0) {
+                nums[index] = nums[i];
+                index++;
+            }
+        }
+
+        for (int i = index; i < nums.length; i++) {
+            nums[i] = 0;
+        }
+    }
+```
+
+### [15. 三数之和](https://leetcode-cn.com/problems/3sum/)
+
+穷举法：
+
+```java
+    public List<List<Integer>> threeSum(int[] nums) {
+        List<List<Integer>> res = new LinkedList<>();
+        int target = 0;
+        for (int i = 0; i < nums.length - 2; i++) {
+            for (int j = i + 1; j < nums.length - 1; j++) {
+                for (int k = j + 1; k < nums.length; k++) {
+                    if ((nums[i] + nums[j] + nums[k]) == target) {
+                        List<Integer> integers = Arrays.asList(nums[i],nums[j],nums[k]);
+                        res.add(integers);
+                    }
+                }
+            }
+        }
+        return res;
+    }
+```
+
+双指针法：
+
+```java
+    public List<List<Integer>> threeSum(int[] nums) {
+        List<List<Integer>> res = new LinkedList<>();
+        if (nums == null || nums.length < 3) {
+            return res;
+        }
+        // 排序
+        Arrays.sort(nums);
+        // O(n^2)
+        for (int i = 0; i <= nums.length - 1; i++) {
+            // 经过排序之后的数组第一个数大于0，后面的数都比它大，一定不成立
+            if (nums[i] > 0) {
+                break;
+            }
+            // 去掉重复情况
+            if (i > 0 && nums[i] == nums[i - 1]) {
+                continue;
+            }
+            int left = i + 1, right = nums.length - 1;
+            while (left < right) {
+                if (nums[left] + nums[right] + nums[i] == 0) {
+                    res.add(new ArrayList<>(Arrays.asList(nums[i], nums[left], nums[right])));
+                    left++;
+                    right--;
+                    // 去掉重复情况，一直移动到没有相同项
+                    while (left < right && nums[left] == nums[left - 1]) {
+                        left++;
+                    }
+                    while (left < right && nums[right] == nums[right + 1]) {
+                        right--;
+                    }
+                } else if (nums[left] + nums[right] + nums[i] < 0) {
+                    left++;
+                } else { // nums[left] + nums[right] + nums[i] > 0
+                    right--;
+                }
+            }
+        }
+
+        return res;
+    }
+```
+
+### [84. 柱状图中最大的矩形](https://leetcode-cn.com/problems/largest-rectangle-in-histogram/)
+
+使用暴力法求解：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210713190144.png" alt="image.png" style="zoom: 33%;" />
+
+对于每一个位置，我们需要：
+
+- 向左遍历，找到大于等于当前柱形高度最左元素的下标
+- 向右遍历，找到大于等于当前柱形高度最右元素的下标
+
+然后得到一个矩形的面积，求出他们的最大值。
+
+```java
+    public int largestRectangleArea(int[] heights) {
+        if (heights.length == 0) {
+            return 0;
+        }
+        int res = 0;
+        for (int i = 0; i < heights.length; i++) {
+            // 向左遍历，找到大于等于当前柱形高度最左元素的下标
+            int left = i;
+            while (left > 0 && heights[left - 1] >= heights[i]) {
+                left--;
+            }
+            // 向右遍历，找到大于等于当前柱形高度最右元素的下标，注意这里的边界条件
+            int right = i;
+            while (right < heights.length - 1 && heights[right + 1] >= heights[i]) {
+                right++;
+            }
+            int width = right - left + 1;
+            res = Math.max(res, width * heights[i]);
+        }
+        return res;
+    }
+```
+
+
+
+### [11. 盛最多水的容器 ](https://leetcode-cn.com/problems/container-with-most-water/)
+
+传统的遍历方式，时间复杂度为O(n^2)。
+
+```java
+   public int maxArea(int[] height) {
+        if (height == null || height.length <= 2) {
+            return 0;
+        }
+        int max = 0;
+        for (int i = 0; i < height.length - 1; i++) {
+            for (int j = i + 1; j < height.length; j++) {
+                int hg = Math.min(height[i], height[j]);
+                int area = Math.abs(j - i) * hg;
+                max = Math.max(max,area);
+            }
+        }
+        return max;
+    }
+```
+
+也可以采用双边收敛的方式：
+
+```java
+private int maxArea(int[] height) {
+        int i = 0, j = height.length - 1, max = 0;
+        while (i < j) {
+            int h = Math.min(height[i],height[j]);
+            int res = h * (j - i);
+            max = Math.max(res,max);
+            if (height[i] < height[j]) {
+                i++;
+            }else {
+                j--;
+            }
+        }
+        return max;
+    }
+```
+
+
+
+## 栈与队列
+
+### [155. 最小栈 ](https://leetcode-cn.com/problems/min-stack/)
 
 ```java
 class MinStack {
@@ -252,40 +447,41 @@ class MinStack {
 }
 ```
 
-## [242. 有效的字母异位词](https://leetcode-cn.com/problems/valid-anagram/)
+### [239. 滑动窗口最大值](https://leetcode-cn.com/problems/sliding-window-maximum/)
 
-使用排序：
+<div class="note info"><p>所有滑动窗口的问题都可以使用队列来解决。</p></div>
 
-```java
-    public boolean isAnagram(String s, String t) {
-        char[] sChars = s.toCharArray();
-        char[] tChars = t.toCharArray();
-        // 注意这里不能简写为 Arrays.sort(s.toCharArray())，因为Arrays.sort采用的就地排序。
-        Arrays.sort(sChars);
-        Arrays.sort(tChars);
-        return Arrays.equals(sChars, tChars);
-    }
-```
-
-使用哈希表：
+使用最大堆（优先队列）：
 
 ```java
-    public boolean isAnagram(String s, String t) {
-        HashMap<Character, Integer> hashTable = new HashMap<>();
-        for (char c : s.toCharArray()) {
-            hashTable.put(c, hashTable.getOrDefault(c, 0) + 1);
+ public int[] maxSlidingWindow(int[] nums, int k) {
+        int n = nums.length;
+        // 传入比较器，当两者的值相同时，比较下标的位置，下标大的在前面。
+        PriorityQueue<int[]> queue = new PriorityQueue<>((p1, p2) -> p1[0] != p2[0] ? p2[0] - p1[0] : p2[1] - p1[1]);
+        // 初始化k前面的元素到堆中
+        for (int i = 0; i < k; i++) {
+            queue.offer(new int[]{nums[i], i});
         }
-        for (char c : t.toCharArray()) {
-            hashTable.put(c, hashTable.getOrDefault(c, 0) - 1);
-            if (hashTable.get(c) < 0) {
-                return false;
+        // 答案总共有n-k+1个
+        int[] ans = new int[n - k + 1];
+        // 将第一次的答案添加到结果当中
+        ans[0] = queue.peek()[0];
+        for (int i = k; i < n; i++) {
+            // 将新元素加入优先队列
+            queue.offer(new int[]{nums[i], i});
+            // 循环判断当前队首是否在窗口中，窗口的左边界为i-k
+            while (queue.peek()[1] <= i - k) {
+                queue.poll();
             }
+            ans[i - k + 1] = queue.peek()[0];
         }
-        return true;
+        return ans;
     }
 ```
 
-## [94. 二叉树的中序遍历](https://leetcode-cn.com/problems/binary-tree-inorder-traversal/)
+## 树
+
+### [94. 二叉树的中序遍历](https://leetcode-cn.com/problems/binary-tree-inorder-traversal/)
 
 使用传统的递归方式：
 
@@ -367,7 +563,7 @@ public List<Integer> inorderTraversal3(TreeNode root) {
     }
 ```
 
-## [104. 二叉树的最大深度](https://leetcode-cn.com/problems/maximum-depth-of-binary-tree/)
+### [104. 二叉树的最大深度](https://leetcode-cn.com/problems/maximum-depth-of-binary-tree/)
 
 递归解法：
 
@@ -409,7 +605,353 @@ public int maxDepthByBFS(TreeNode root) {
     }
 ```
 
-## [455. 分发饼干](https://leetcode-cn.com/problems/assign-cookies/)
+### [98. 验证二叉搜索树](https://leetcode-cn.com/problems/validate-binary-search-tree/)
+
+> 二叉搜索树有两个重要性质，第一，左子树上所有结点的值都要小于根节点的值，右子树所有结点的值都要大于根节点的值；第二，中序遍历后的结果是一个递增的数列。
+
+使用递归：
+
+```java
+    public boolean validate(TreeNode node, long min, long max) {
+        // 终止条件
+        if (node == null) {
+            return true;
+        }
+
+        if (node.val <= min || node.val >= max) {
+            return false;
+        }
+        // 相当于给子树上所有的节点都添加了min和max的边界
+        // 约束root的左子树的值不超过root的值，右子树的值不小于root的值
+        return validate(node.left, min, node.val) && validate(node.right, node.val, max);
+    }
+```
+
+利用中序遍历的性质：
+
+```java
+    public boolean isValidBST(TreeNode root) {
+        Deque<TreeNode> stack = new LinkedList<>();
+        // 存储上一个节点的值
+        double inorder = -Double.MAX_VALUE;
+        while (root != null || !stack.isEmpty()) {
+            while (root != null) {
+                stack.push(root);
+                root = root.left;
+            }
+            TreeNode node = stack.pop();
+            // 当前节点的值与上一个节点的值进行比较
+            if (node.val <= inorder) {
+                return false;
+            }
+            inorder = node.val;
+            root = node.right;
+        }
+        return true;
+    }
+```
+
+除此之外，也可以先进行中序遍历，然后判断返回的列表是否为升序。
+
+### [236. 二叉树的最近公共祖先](https://leetcode-cn.com/problems/lowest-common-ancestor-of-a-binary-tree/)
+
+树的祖先的定义：若节点P在节点root的左（右）子树中，或P=root，则称root是p的祖先。
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210713224143.png" alt="Picture1.png" style="zoom:50%;" />
+
+最近公共祖先的定义：设节点root为节点p，q的某公共祖先，若其左子节点root.left和右子节点root.right都不是p,q的公共祖先，则称root是"最近的公共祖先"。
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210713224306.png" alt="Picture2.png" style="zoom:50%;" />
+
+根据以上定义，若root是p,q的最近公共祖先，则只可能为以下情况之一：
+
+- p 和q 在root的子树中，且分列root的异侧即分别在左、右子树中）
+- p = root，且q在root的左或右子树中
+- q = root，且p在root的左或右子树中
+
+```java
+class Solution {
+    public TreeNode lowestCommonAncestor(TreeNode root, TreeNode p, TreeNode q) {
+        if (root == null) return null;
+        // 如果p,q为根节点，则公共祖先为根节点
+        if (root.val == p.val || root.val == q.val) return root;
+        // 如果p,q在左子树，则公共祖先在左子树查找
+        if (find(root.left, p) && find(root.left, q)) {
+            return lowestCommonAncestor(root.left, p, q);
+        }
+        // 如果p,q在右子树，则公共祖先在右子树查找
+        if (find(root.right, p) && find(root.right, q)) {
+            return lowestCommonAncestor(root.right, p, q);
+        }
+        // 如果p,q分属两侧，则公共祖先为根节点
+        return root;
+    }
+    
+    private boolean find(TreeNode root, TreeNode c) {
+        if (root == null) return false;
+        if (root.val == c.val) {
+            return true;
+        }
+        
+        return find(root.left, c) || find(root.right, c);
+    }
+}
+```
+
+
+
+### [78. 子集](https://leetcode-cn.com/problems/subsets/)
+
+以求解[1,2,3]的子集为例，画出的树形图如下所示：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210711180106.png" alt="image.png" style="zoom: 50%;" />
+
+使用回溯算法：
+
+```java
+ public List<List<Integer>> subsets(int[] nums) {
+        List<List<Integer>> res = new LinkedList<>();
+        dfs(nums, res, 0, new ArrayList<>());
+        return res;
+    }
+
+    public void dfs(int[] nums, List<List<Integer>> res, int n, ArrayList<Integer> temp) {
+        res.add(new ArrayList<>(temp));
+        for (int i = n; i < nums.length; i++) {
+            temp.add(nums[i]);
+            dfs(nums, res, i + 1, temp);
+            temp.remove(temp.size() - 1);
+        }
+    }
+```
+
+### [17. 电话号码的字母组合](https://leetcode-cn.com/problems/letter-combinations-of-a-phone-number/)
+
+题目的状态树：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210712235154.png" alt="17. 电话号码的字母组合" style="zoom:50%;" />
+
+使用回溯法：
+
+```java
+     public List<String> letterCombinations(String digits) {
+        List<String> res = new ArrayList<>();
+        if (digits.length() == 0) {
+            return res;
+        }
+        Map<String, String> map = new HashMap<>();
+        map.put("2", "abc");
+        map.put("3", "def");
+        map.put("4", "ghi");
+        map.put("5", "jkl");
+        map.put("6", "mno");
+        map.put("7", "pqrs");
+        map.put("8", "tuv");
+        map.put("9", "wxyz");
+        dfs(digits, 0, map, res, new StringBuilder());
+        return res;
+    }
+
+    public void dfs(String digits, int index, Map<String, String> map, List<String> res, StringBuilder str) {
+        if (index == digits.length()) {
+            res.add(str.toString());
+            return;
+        }
+        // 获取当前数字对应的字符值
+        String val = map.get(digits.substring(index, index + 1));
+        for (char c : val.toCharArray()) {
+            str.append(c);
+            dfs(digits, index + 1, map, res, str);
+            // 删除刚才添加到末尾的元素，选择当前数字对应字符串的下一个值进行遍历
+            str.deleteCharAt(str.length() - 1);
+        }
+    }
+```
+
+### [102. 二叉树的层序遍历](https://leetcode-cn.com/problems/binary-tree-level-order-traversal/)
+
+```java
+public List<List<Integer>> levelOrder(TreeNode root) {
+        List<List<Integer>> res = new LinkedList<>();
+        if (root == null) {
+            return res;
+        }
+        Queue<TreeNode> queue = new LinkedList<>();
+        queue.offer(root);
+        while (!queue.isEmpty()) {
+            List<Integer> num = new LinkedList<>();
+            int size = queue.size();
+            // 遍历当前层结点
+            while (size > 0) {
+                TreeNode treeNode = queue.poll();
+                num.add(treeNode.val);
+                if (treeNode.left != null) {
+                    queue.offer(treeNode.left);
+                }
+                if (treeNode.right != null) {
+                    queue.offer(treeNode.right);
+                }
+                size--;
+            }
+            res.add(num);
+        }
+        return res;
+    }
+```
+
+
+
+## 回溯算法
+
+### [22. 括号生成](https://leetcode-cn.com/problems/generate-parentheses/)
+
+括号生成的状态树：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210712114808.png" alt="image.png" style="zoom:50%;" />
+
+```java
+    public List<String> generateParenthesis(int n) {
+        List<String> res = new LinkedList<>();
+        if (n <= 0) {
+            return res;
+        }
+        dfs("", res, n, 0, 0);
+        return res;
+    }
+
+    public void dfs(String paths, List<String> res, int n, int left, int right) {
+        // 剪枝,去掉( > n 或 ) > n 或 ) > (的情况，由于传递性，) > n可以去掉
+        if (left > n || right > left) {
+            return;
+        }
+        // 因为括号都是成对出现的，因此需要遍历的树的深度为n*2
+        if (paths.length() == n * 2) {
+            res.add(paths);
+            // 每次遍历后，需要将上一次的结果清理，从根结点继续遍历
+            paths = "";
+            return;
+        }
+        dfs(paths + '(', res, n, left + 1, right);
+        dfs(paths + ')', res, n, left, right + 1);
+    }
+```
+
+
+
+### [212. 单词搜索 II](https://leetcode-cn.com/problems/word-search-ii/)
+
+### [51. N 皇后](https://leetcode-cn.com/problems/n-queens/)
+
+```java
+ public List<List<String>> solveNQueens(int n) {
+        List<List<String>> solutions = new ArrayList<List<String>>();
+        int[] queens = new int[n];
+        Arrays.fill(queens, -1);
+        Set<Integer> columns = new HashSet<Integer>();
+        Set<Integer> diagonals1 = new HashSet<Integer>();
+        Set<Integer> diagonals2 = new HashSet<Integer>();
+        backtrack(solutions, queens, n, 0, columns, diagonals1, diagonals2);
+        return solutions;
+    }
+
+    public void backtrack(List<List<String>> solutions, int[] queens, int n, int row, Set<Integer> columns, Set<Integer> diagonals1, Set<Integer> diagonals2) {
+        if (row == n) {
+            List<String> board = generateBoard(queens, n);
+            solutions.add(board);
+        } else {
+            for (int i = 0; i < n; i++) {
+                if (columns.contains(i)) {
+                    continue;
+                }
+                int diagonal1 = row - i;
+                if (diagonals1.contains(diagonal1)) {
+                    continue;
+                }
+                int diagonal2 = row + i;
+                if (diagonals2.contains(diagonal2)) {
+                    continue;
+                }
+                queens[row] = i;
+                columns.add(i);
+                diagonals1.add(diagonal1);
+                diagonals2.add(diagonal2);
+                backtrack(solutions, queens, n, row + 1, columns, diagonals1, diagonals2);
+                queens[row] = -1;
+                columns.remove(i);
+                diagonals1.remove(diagonal1);
+                diagonals2.remove(diagonal2);
+            }
+        }
+    }
+
+    public List<String> generateBoard(int[] queens, int n) {
+        List<String> board = new ArrayList<String>();
+        for (int i = 0; i < n; i++) {
+            char[] row = new char[n];
+            Arrays.fill(row, '.');
+            row[queens[i]] = 'Q';
+            board.add(new String(row));
+        }
+        return board;
+    }
+```
+
+
+
+## 贪心算法
+
+### [121. 买卖股票的最佳时机](https://leetcode-cn.com/problems/best-time-to-buy-and-sell-stock/)
+
+使用贪心算法：
+
+```java
+    public int maxProfit(int[] prices) {
+        int profit = 0;
+        int min = prices[0];
+        for (int i = 0; i < prices.length; i++) {
+            if (prices[i] < min) {
+                min = prices[i];
+            } else {
+                profit = Math.max(prices[i] - min, profit);
+            }
+        }
+        return profit;
+    }
+```
+
+需要注意的是，本题中股票值买卖一次。
+
+### [322. 零钱兑换](https://leetcode-cn.com/problems/coin-change/)
+
+使用贪心算法：
+
+```java
+public
+```
+
+### [55. 跳跃游戏](https://leetcode-cn.com/problems/jump-game/)
+
+使用贪心算法：
+
+![image-20210719235247657](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210719235247.png)
+
+此时0这个位置的下标是4，但是之前最大的可达步数是3，因为无法再进行跳跃。
+
+```java
+   public boolean canJump(int[] nums) {
+        // 最大能跳跃到的地方
+        int maxJump = 0;
+        for (int i = 0; i < nums.length; i++) {
+            if (i > maxJump) {
+                return false;
+            }
+            maxJump = Math.max(i + nums[i], maxJump);
+        }
+        return true;
+    }
+```
+
+### [455. 分发饼干](https://leetcode-cn.com/problems/assign-cookies/)
 
 使用贪心算法：
 
@@ -434,187 +976,164 @@ public int maxDepthByBFS(TreeNode root) {
     }
 ```
 
-## [121. 买卖股票的最佳时机](https://leetcode-cn.com/problems/best-time-to-buy-and-sell-stock/)
 
-使用贪心算法：
+
+
+
+## 动态规划
+### [70. 爬楼梯 ](https://leetcode-cn.com/problems/climbing-stairs/)
+
+直接使用递归求接斐波那契数列：
 
 ```java
-    public int maxProfit(int[] prices) {
-        int profit = 0;
-        int min = prices[0];
-        for (int i = 0; i < prices.length; i++) {
-            if (prices[i] < min) {
-                min = prices[i];
-            } else {
-                profit = Math.max(prices[i] - min, profit);
-            }
+    public int climbStairs(int n) {
+        if (n == 1) {
+            return 1;
         }
-        return profit;
+        if (n == 2) {
+            return 2;
+        }
+        return climbStairs(n - 1) + climbStairs(n - 2);
     }
 ```
 
-需要注意的是，本题中股票值买卖一次。
-
-## [69. x 的平方根](https://leetcode-cn.com/problems/sqrtx/)
-
-使用二分查找：
-
-````java
-    public int mySqrt(int x) {
-        int left = 0;
-        int right = x;
-        while (left < right) {
-            int mid = left + (right - left + 1) / 2;
-            // 注意：这里为了避免乘法溢出，改用除法
-            if (mid > x / mid) {
-                right = mid - 1;
-            } else {
-                left = mid + 1;
-            }
-        }
-        return left;
-    }
-````
-
-另外，解决此类问题也可以使用平方根法。
-
-## [367. 有效的完全平方数](https://leetcode-cn.com/problems/valid-perfect-square/)
+使用循环求解：
 
 ```java
-    public boolean isPerfectSquare(int num) {
-        int left = 0;
-        int right = num;
-        while (left <= right) {
-            // 这么写的原因是极端情况下left + right相加的结果溢出
-            int mid =  left + (right - left) / 2;
-            if (mid * mid == num) {
-                return true;
-            } else if (mid * mid > num) {
-                right = mid - 1;
-            } else {
-                left = mid + 1;
-            }
-        }
-        return false;
-    }
-```
-
-## [509. 斐波那契数](https://leetcode-cn.com/problems/fibonacci-number/)
-
-直接暴力递归的时间复杂度是O(2<sup>n</sup>)，因为需要优化，优化的思路大致分为两种，一种是记忆化搜索，一种是动态规划，使用记忆化搜索相当于剪枝，记忆化搜索的递归树：
-
-<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210727102616.png" alt="image-20210727102609636" style="zoom: 67%;" />
-
-代码：
-
-```java
-    public int fib(int n, int[] mem) {
-        if (n <= 1) {
+    public int climbStairs(int n) {
+        if (n <= 2) {
             return n;
         }
-        if (mem[n] == 0) {
-            mem[n] = fib(n - 1, mem) + fib(n - 2, mem);
+        int f1 = 1, f2 = 2, f3 = 3;
+        for (int i = 3; i < n + 1; i++) {
+            f3 = f1 + f2;
+            // 优化
+            f1 = f2;
+            f2 = f3;
         }
-        return mem[n];
+        return f3;
     }
 ```
 
-所谓的状态转移方程或者说递推公式为：`dp[i] = dp[i - 1] + dp[i - 2]`。
+也可以直接dp求解：
 
 ```java
-    public int fib(int n) {
-        int[] dp = {0, 1};
-        for (int i = 2; i < n; i++) {
-            dp[i] = dp[i - 1] + dp[i - 2];
-        }
-        return dp[n];
-    }
-```
-
-还可以进一步优化，实际上每次只需要存储最近的两个结果即可，按照这个思路，可以将空间复杂度优化到O(1)。
-
-```java
-    public int fib(int n) {
-        if (n <= 1)
+    public int climbStairs(int n) {
+        if(n <= 2) {
             return n;
-        // 初始的时候，分别对应f(o) = 0和f(1) = 1
-        int prev = 0, curr = 1;
-        for (int i = 2; i <= n; i++) {
-            int sum = prev + curr;
-            // 原来的值变成前一个元素
-            prev = curr;
-            // 新的值变成当前值
-            curr = sum;
         }
-        return curr;
+        int[] dp = new int[n];
+        dp[0] = 1;
+        dp[1] = 2;
+        for(int i = 2; i < n; i++) {
+            dp[i] = dp[i-1] + dp[i - 2];
+        }
+        return dp[n -1];
     }
 ```
 
-## [53. 最大子序和](https://leetcode-cn.com/problems/maximum-subarray/)
 
-不难写出，这个问题的状态转移方程：
+
+### [62. 不同路径](https://leetcode-cn.com/problems/unique-paths/)
+
+递推公式：
 $$
-f(i) = max\{f(i - 1) + nums[i],num[i]\}
+f(m,n) = f(m - 1, n) + f(m, n - 1)
 $$
-使用数组来保存 $f(i)$ 的值，遍历求出所有的 $f(i)$ 即可：
+直接求解即可：
 
 ```java
-    public int maxSubArray(int[] nums) {
-        int[] dp = new int[nums.length];
-        dp[0] = nums[0];
-        int res = nums[0];
-        for (int i = 1; i < nums.length; i++) {
-            dp[i] = Math.max(dp[i - 1] + nums[i], nums[i]);
-            res = Math.max(dp[i], res);
+    public int uniquePaths(int m, int n) {
+        int[][] dp = new int[m][n];
+        // 最后一行和最后一列都只有一种走法
+        for (int i = 0; i < m; i++) {
+            dp[i][0] = 1;
         }
-        return res;
-    }
-```
-
-实际上我们无需记录所有的中间状态，只需要记录前一个值即可：
-
-```java
-    public int maxSubArray(int[] nums) {
-        int pre = 0, maxAns = nums[0];
-        for (int x : nums) {
-            pre = Math.max(pre + x, x);
-            maxAns = Math.max(maxAns, pre);
+        for (int j = 0; j < n; j++) {
+            dp[0][j] = 1;
         }
-        return maxAns;
-    }
-```
-
-## [409. 最长回文串](https://leetcode-cn.com/problems/longest-palindrome/)
-
-```java
-class {
-    
-}
-```
-
-## [414. 第三大的数](https://leetcode-cn.com/problems/third-maximum-number/)
-
-```java
-    public static int thirdMax(int[] nums) {
-        Set<Integer> set = new HashSet<>();
-        for (int n : nums) {
-            set.add(n);
-            if (set.size() > 3) {
-                set.remove(Collections.min(set));
+        for (int i = 1; i < m; i++) {
+            for (int j = 1; j < n; j++) {
+                dp[i][j] = dp[i - 1][j] + dp[i][j - 1];
             }
         }
-        // 第三大的正好是集合当中最小的元素
-        if (set.size() == 3) {
-            return Collections.min(set);
-        }
-        // 说明数组的元素不超过3个
-        return Collections.max(set);
+        return dp[m - 1][n - 1];
     }
 ```
 
-# 高频考题（中等）
+### [120. 三角形最小路径和](https://leetcode-cn.com/problems/triangle/)
 
-## [5. 最长回文子串](https://leetcode-cn.com/problems/longest-palindromic-substring/)
+注意，本题要求每一步只能移动到下一行相邻的结点上，由此，递归方程为：
+$$
+f(i,j) = min \{f(i - 1, j),f(i-1, j-1) \} + c(i)(j)
+$$
+其中$c(i)(j)$表示位置$(i, j)$对应的元素值。
+
+```java
+    public int minimumTotal(List<List<Integer>> triangle) {
+        int n = triangle.size();
+        // 结果一定是下三角矩阵
+        int[][] dp = new int[n][n];
+        dp[0][0] = triangle.get(0).get(0);
+        for (int i = 1; i < n; i++) {
+            // 第一列的结果等于上一行的元素加上当前行的元素
+            dp[i][0] = dp[i - 1][0] + triangle.get(i).get(0);
+            for (int j = 1; j < i; j++) {
+                // 除了第一列元素和最后一列元素都满足状态转移方程
+                dp[i][j] = Math.min(dp[i - 1][j - 1], dp[i - 1][j]) + triangle.get(i).get(j);
+            }
+            // 对角线上的元素等于上一个对角线元素加上当前元素
+            dp[i][i] = dp[i - 1][i - 1] + triangle.get(i).get(i);
+        }
+        // 最后一行就是所有的结果，找出最小值即可
+        int min = dp[n - 1][0];
+        for (int i = 1; i < n; i++) {
+            min = Math.min(min, dp[n - 1][i]);
+        }
+        return min;
+    }
+```
+
+### [1143. 最长公共子序列](https://leetcode-cn.com/problems/longest-common-subsequence/) 
+
+假设字符串$text_1$和$text_2$的长度分别为$m$和$n$，创建$m+1$行$n+1$列的二维数组$dp$，其中$dp[i][j]$表示$text_1[0:i]$和$text_2[0:j]$的最长公共序列的长度，状态转移方程如下：
+$$
+dp[i][j]=\left\{
+\begin{array}{lcl}
+dp[i-1][j-1] + 1, & text_1[i-1] = text_2[j-1] \\
+max(dp[i-1][j],dp[i][j-1]), & text_1[i-1] \neq text_2[j-1]
+\end{array}\right.
+$$
+示意图：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210819120336.png" style="zoom:67%;" />
+
+直接求解即可：
+
+```java
+    public int longestCommonSubsequence(String text1, String text2) {
+        int m = text1.length();
+        int n = text2.length();
+        int[][] dp = new int[m + 1][n + 1];
+
+        for (int i = 1; i < m + 1; i++) {
+            char c1 = text1.charAt(i - 1);
+            for (int j = 1; j < n + 1; j++) {
+                char c2 = text2.charAt(j - 1);
+                // text_1[i - 1] = text_2[j -1]
+                if (c1 == c2) {
+                    dp[i][j] = dp[i - 1][j - 1] + 1;
+                } else {
+                    // text_1[i - 1] ≠ text_2[j -1]
+                    dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+                }
+            }
+        }
+        return dp[m][n];
+    }
+```
+
+### 5. [最长回文子串](https://leetcode-cn.com/problems/longest-palindromic-substring/)
 
 我们使用$p(i,j)$表示字符串$s$的第$i$到$j$个字母组成的串（下文表示成$s[i:j]$）是否为回文串：
 $$
@@ -689,444 +1208,170 @@ $$
     }
 ```
 
-## [剑指 Offer 67. 把字符串转换成整数](https://leetcode-cn.com/problems/ba-zi-fu-chuan-zhuan-huan-cheng-zheng-shu-lcof/)
+
+
+### [509. 斐波那契数](https://leetcode-cn.com/problems/fibonacci-number/)
+
+直接暴力递归的时间复杂度是O(2<sup>n</sup>)，因为需要优化，优化的思路大致分为两种，一种是记忆化搜索，一种是动态规划，使用记忆化搜索相当于剪枝，记忆化搜索的递归树：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210727102616.png" alt="image-20210727102609636" style="zoom: 67%;" />
+
+代码：
 
 ```java
-public int myAtoi(String str) {
-        int index = 0, sign = 1, total = 0;
-        // 空字符串
-        if (str.length() == 0) {
+    public int fib(int n, int[] mem) {
+        if (n <= 1) {
+            return n;
+        }
+        if (mem[n] == 0) {
+            mem[n] = fib(n - 1, mem) + fib(n - 2, mem);
+        }
+        return mem[n];
+    }
+```
+
+所谓的状态转移方程或者说递推公式为：`dp[i] = dp[i - 1] + dp[i - 2]`。
+
+```java
+    public int fib(int n) {
+        int[] dp = {0, 1};
+        for (int i = 2; i < n; i++) {
+            dp[i] = dp[i - 1] + dp[i - 2];
+        }
+        return dp[n];
+    }
+```
+
+还可以进一步优化，实际上每次只需要存储最近的两个结果即可，按照这个思路，可以将空间复杂度优化到O(1)。
+
+```java
+    public int fib(int n) {
+        if (n <= 1)
+            return n;
+        // 初始的时候，分别对应f(o) = 0和f(1) = 1
+        int prev = 0, curr = 1;
+        for (int i = 2; i <= n; i++) {
+            int sum = prev + curr;
+            // 原来的值变成前一个元素
+            prev = curr;
+            // 新的值变成当前值
+            curr = sum;
+        }
+        return curr;
+    }
+```
+
+### [53. 最大子序和](https://leetcode-cn.com/problems/maximum-subarray/)
+
+不难写出，这个问题的状态转移方程：
+$$
+f(i) = max\{f(i - 1) + nums[i],num[i]\}
+$$
+使用数组来保存 $f(i)$ 的值，遍历求出所有的 $f(i)$ 即可：
+
+```java
+    public int maxSubArray(int[] nums) {
+        int[] dp = new int[nums.length];
+        dp[0] = nums[0];
+        int res = nums[0];
+        for (int i = 1; i < nums.length; i++) {
+            dp[i] = Math.max(dp[i - 1] + nums[i], nums[i]);
+            res = Math.max(dp[i], res);
+        }
+        return res;
+    }
+```
+
+实际上我们无需记录所有的中间状态，只需要记录前一个值即可：
+
+```java
+    public int maxSubArray(int[] nums) {
+        int pre = 0, maxAns = nums[0];
+        for (int x : nums) {
+            pre = Math.max(pre + x, x);
+            maxAns = Math.max(maxAns, pre);
+        }
+        return maxAns;
+    }
+```
+
+
+
+### [198. 打家劫舍](https://leetcode-cn.com/problems/house-robber/)
+
+假设一共有$n$个房子，每个房子的金额分别是$H_0,H_1,...H_{n-1}$，子问题$f(k)$表示从前$k$个房子（即$H_0，H_1,...,H_{k-1}$）中能偷盗的最大金额。那么偷$k$个房子有两种偷法：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210820105009.png" alt="image-20210820104524320" style="zoom:67%;" />
+
+状态转移方程为：
+$$
+f(k)=max\{ {f(k-1),H_{k-1} + f(k-2)} \}
+$$
+使用一维数组的方式：
+
+```java
+    public int rob(int[] nums) {
+        if (nums == null || nums.length == 0)
             return 0;
+        int n = nums.length;
+        // 第0位用来存储0的情况，从第1位开始存储nums[1]
+        int[] dp = new int[n + 1];
+        dp[0] = 0;
+        dp[1] = nums[0];
+        // 注意这里从2开始，到n+1
+        for (int i = 2; i < n + 1; i++) {
+            dp[i] = Math.max(dp[i - 1], nums[i] + dp[i - 2]);
         }
-        // 移除空格
-        while (str.charAt(index) == ' ') {
-            index++;
-        }
-        // 处理正负号
-        if (str.charAt(index) == '+' || str.charAt(index) == '-') {
-            sign = str.charAt(index) == '+' ? 1 : -1;
-            index++;
-        }
-        // 转为数字
-        while (index < str.length()) {
-            int digit = str.charAt(index) - '0';
-            if (digit < 0 || digit > 9) {
-                break;
-            }
-            // 越界处理
-            if (Integer.MAX_VALUE / 10 < total ||
-                    (Integer.MAX_VALUE / 10 == total && Integer.MAX_VALUE % 10 < digit)) {
-                return sign == 1 ? Integer.MAX_VALUE : Integer.MIN_VALUE;
-            } else {
-                total = 10 * total + digit;
-                index++;
-            }
-        }
-        return total * sign;
+        return dp[n];
     }
 ```
 
-## [11. 盛最多水的容器 ](https://leetcode-cn.com/problems/container-with-most-water/)
-
-传统的遍历方式，时间复杂度为O(n^2)。
+还可以多开一维数组来存每次偷或者不偷的状态：
 
 ```java
-   public int maxArea(int[] height) {
-        if (height == null || height.length <= 2) {
+    public int rob(int[] nums) {
+        if (nums == null || nums.length == 0)
             return 0;
+        int n = nums.length;
+        int[][] dp = new int[n][2];
+        // 0表示不选当前元素，1表示选择当前元素
+        dp[0][0] = 0;
+        dp[0][1] = nums[0];
+        for (int i = 1; i < n; i++) {
+            dp[i][0] = Math.max(dp[i - 1][0], dp[i - 1][1]);
+            dp[i][1] = dp[i - 1][0] + nums[i];
         }
-        int max = 0;
-        for (int i = 0; i < height.length - 1; i++) {
-            for (int j = i + 1; j < height.length; j++) {
-                int hg = Math.min(height[i], height[j]);
-                int area = Math.abs(j - i) * hg;
-                max = Math.max(max,area);
-            }
-        }
-        return max;
+        return Math.max(dp[n - 1][0], dp[n - 1][1]);
     }
 ```
 
-也可以采用双边收敛的方式：
+### [213. 打家劫舍 II](https://leetcode-cn.com/problems/house-robber-ii/)
+
+状态转移方程：
+$$
+dp[i]=max(dp[i-2]+nums[i],dp[i-1])
+$$
+边界条件为：
+$$
+\left\{
+\begin{array}{lcl}
+dp[start] = nums[start] & 只有一间房屋，则偷窃该房屋 \\
+dp[start+1] = max(nums[start],nums[start+1]) & 只有两件房屋，偷窃其中金额较高的房屋
+\end{array}\right.
+$$
+相应的实现：
 
 ```java
-private int maxArea(int[] height) {
-        int i = 0, j = height.length - 1, max = 0;
-        while (i < j) {
-            int h = Math.min(height[i],height[j]);
-            int res = h * (j - i);
-            max = Math.max(res,max);
-            if (height[i] < height[j]) {
-                i++;
-            }else {
-                j--;
-            }
-        }
-        return max;
-    }
-```
-
-## [15. 三数之和](https://leetcode-cn.com/problems/3sum/)
-
-穷举法：
-
-```java
-    public List<List<Integer>> threeSum(int[] nums) {
-        List<List<Integer>> res = new LinkedList<>();
-        int target = 0;
-        for (int i = 0; i < nums.length - 2; i++) {
-            for (int j = i + 1; j < nums.length - 1; j++) {
-                for (int k = j + 1; k < nums.length; k++) {
-                    if ((nums[i] + nums[j] + nums[k]) == target) {
-                        List<Integer> integers = Arrays.asList(nums[i],nums[j],nums[k]);
-                        res.add(integers);
-                    }
-                }
-            }
-        }
-        return res;
-    }
-```
-
-双指针法：
-
-```java
-    public List<List<Integer>> threeSum(int[] nums) {
-        List<List<Integer>> res = new LinkedList<>();
-        if (nums == null || nums.length < 3) {
-            return res;
-        }
-        // 排序
-        Arrays.sort(nums);
-        // O(n^2)
-        for (int i = 0; i <= nums.length - 1; i++) {
-            // 经过排序之后的数组第一个数大于0，后面的数都比它大，一定不成立
-            if (nums[i] > 0) {
-                break;
-            }
-            // 去掉重复情况
-            if (i > 0 && nums[i] == nums[i - 1]) {
-                continue;
-            }
-            int left = i + 1, right = nums.length - 1;
-            while (left < right) {
-                if (nums[left] + nums[right] + nums[i] == 0) {
-                    res.add(new ArrayList<>(Arrays.asList(nums[i], nums[left], nums[right])));
-                    left++;
-                    right--;
-                    // 去掉重复情况，一直移动到没有相同项
-                    while (left < right && nums[left] == nums[left - 1]) {
-                        left++;
-                    }
-                    while (left < right && nums[right] == nums[right + 1]) {
-                        right--;
-                    }
-                } else if (nums[left] + nums[right] + nums[i] < 0) {
-                    left++;
-                } else { // nums[left] + nums[right] + nums[i] > 0
-                    right--;
-                }
-            }
-        }
-
-        return res;
-    }
-```
-
-## [49. 字母异位词分组](https://leetcode-cn.com/problems/group-anagrams/)
-
-使用哈希表，将排序之后的字符串作为key，并且排序之后相同的字符串添加到列表中，最后从Map中获取值并返回。
-
-```java
-public List<List<String>> groupAnagrams(String[] strs) {
-        HashMap<String, List<String>> map = new HashMap<>();
-        for (int i = 0; i < strs.length; i++) {
-            char[] chars = strs[i].toCharArray();
-            Arrays.sort(chars);
-            String key = String.valueOf(chars);
-            if (!map.containsKey(key)) {
-                map.put(key, new ArrayList<>());
-            }
-            map.get(key).add(strs[i]);
-        }
-        return new ArrayList<>(map.values());
-    }
-```
-
-## [22. 括号生成](https://leetcode-cn.com/problems/generate-parentheses/)
-
-括号生成的状态树：
-
-<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210712114808.png" alt="image.png" style="zoom:50%;" />
-
-```java
-    public List<String> generateParenthesis(int n) {
-        List<String> res = new LinkedList<>();
-        if (n <= 0) {
-            return res;
-        }
-        dfs("", res, n, 0, 0);
-        return res;
-    }
-
-    public void dfs(String paths, List<String> res, int n, int left, int right) {
-        // 剪枝,去掉( > n 或 ) > n 或 ) > (的情况，由于传递性，) > n可以去掉
-        if (left > n || right > left) {
-            return;
-        }
-        // 因为括号都是成对出现的，因此需要遍历的树的深度为n*2
-        if (paths.length() == n * 2) {
-            res.add(paths);
-            // 每次遍历后，需要将上一次的结果清理，从根结点继续遍历
-            paths = "";
-            return;
-        }
-        dfs(paths + '(', res, n, left + 1, right);
-        dfs(paths + ')', res, n, left, right + 1);
-    }
-```
-
-## [98. 验证二叉搜索树](https://leetcode-cn.com/problems/validate-binary-search-tree/)
-
-> 二叉搜索树有两个重要性质，第一，左子树上所有结点的值都要小于根节点的值，右子树所有结点的值都要大于根节点的值；第二，中序遍历后的结果是一个递增的数列。
-
-使用递归：
-
-```java
-    public boolean validate(TreeNode node, long min, long max) {
-        // 终止条件
-        if (node == null) {
-            return true;
-        }
-
-        if (node.val <= min || node.val >= max) {
-            return false;
-        }
-        // 相当于给子树上所有的节点都添加了min和max的边界
-        // 约束root的左子树的值不超过root的值，右子树的值不小于root的值
-        return validate(node.left, min, node.val) && validate(node.right, node.val, max);
-    }
-```
-
-利用中序遍历的性质：
-
-```java
-    public boolean isValidBST(TreeNode root) {
-        Deque<TreeNode> stack = new LinkedList<>();
-        // 存储上一个节点的值
-        double inorder = -Double.MAX_VALUE;
-        while (root != null || !stack.isEmpty()) {
-            while (root != null) {
-                stack.push(root);
-                root = root.left;
-            }
-            TreeNode node = stack.pop();
-            // 当前节点的值与上一个节点的值进行比较
-            if (node.val <= inorder) {
-                return false;
-            }
-            inorder = node.val;
-            root = node.right;
-        }
-        return true;
-    }
-```
-
-除此之外，也可以先进行中序遍历，然后判断返回的列表是否为升序。
-
-## [236. 二叉树的最近公共祖先](https://leetcode-cn.com/problems/lowest-common-ancestor-of-a-binary-tree/)
-
-树的祖先的定义：若节点P在节点root的左（右）子树中，或P=root，则称root是p的祖先。
-
-<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210713224143.png" alt="Picture1.png" style="zoom:50%;" />
-
-最近公共祖先的定义：设节点root为节点p，q的某公共祖先，若其左子节点root.left和右子节点root.right都不是p,q的公共祖先，则称root是"最近的公共祖先"。
-
-<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210713224306.png" alt="Picture2.png" style="zoom:50%;" />
-
-根据以上定义，若root是p,q的最近公共祖先，则只可能为以下情况之一：
-
-- p 和q 在root的子树中，且分列root的异侧即分别在左、右子树中）
-- p = root，且q在root的左或右子树中
-- q = root，且p在root的左或右子树中
-
-```java
-class Solution {
-    public TreeNode lowestCommonAncestor(TreeNode root, TreeNode p, TreeNode q) {
-        if (root == null) return null;
-        // 如果p,q为根节点，则公共祖先为根节点
-        if (root.val == p.val || root.val == q.val) return root;
-        // 如果p,q在左子树，则公共祖先在左子树查找
-        if (find(root.left, p) && find(root.left, q)) {
-            return lowestCommonAncestor(root.left, p, q);
-        }
-        // 如果p,q在右子树，则公共祖先在右子树查找
-        if (find(root.right, p) && find(root.right, q)) {
-            return lowestCommonAncestor(root.right, p, q);
-        }
-        // 如果p,q分属两侧，则公共祖先为根节点
-        return root;
-    }
+class{
     
-    private boolean find(TreeNode root, TreeNode c) {
-        if (root == null) return false;
-        if (root.val == c.val) {
-            return true;
-        }
-        
-        return find(root.left, c) || find(root.right, c);
-    }
 }
 ```
 
-## [50. Pow(x, n)](https://leetcode-cn.com/problems/powx-n/)
+### [409. 最长回文串](https://leetcode-cn.com/problems/longest-palindrome/)
 
-使用暴力解法：
+## 图论
 
-```java
-    public double myPow(double x, int n) {
-        long N = n;
-        if (N < 0) {
-            N = -n;
-            x = 1 / x;
-        }
-        double ans = 1;
-        while (N > 0) {
-            ans = ans * x;
-            N--;
-        }
-        return x;
-    }
-```
-
-通过观察不难发现，对于f(n) = x<sup>n</sup>（x为常数）都有f(n) = f(n/2)* f(n/2)，因此可以通过分治的方式来处理：
-
-```java
-public double myPow2(double x, int n) {
-        if (n == 0 || x==1) {
-            return 1;
-        }
-        long N = n;
-        if (N < 0) {
-            N = -N;
-            x = 1 / x;
-        }
-        return myPow2Helper(x, N);
-    }
-
-    private double myPow2Helper(double x, long N) {
-        if (N == 1) {
-            return x;
-        }
-        // 如果指数是奇数，则需要补乘一个x
-        if (N % 2 != 0) {
-            return myPow2Helper(x, N / 2) * myPow2Helper(x, N / 2) * x;
-        } else {
-            return myPow2Helper(x, N / 2) * myPow2Helper(x, N / 2);
-        }
-    }
-```
-
-## [78. 子集](https://leetcode-cn.com/problems/subsets/)
-
-以求解[1,2,3]的子集为例，画出的树形图如下所示：
-
-<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210711180106.png" alt="image.png" style="zoom: 50%;" />
-
-使用回溯算法：
-
-```java
- public List<List<Integer>> subsets(int[] nums) {
-        List<List<Integer>> res = new LinkedList<>();
-        dfs(nums, res, 0, new ArrayList<>());
-        return res;
-    }
-
-    public void dfs(int[] nums, List<List<Integer>> res, int n, ArrayList<Integer> temp) {
-        res.add(new ArrayList<>(temp));
-        for (int i = n; i < nums.length; i++) {
-            temp.add(nums[i]);
-            dfs(nums, res, i + 1, temp);
-            temp.remove(temp.size() - 1);
-        }
-    }
-```
-
-## [17. 电话号码的字母组合](https://leetcode-cn.com/problems/letter-combinations-of-a-phone-number/)
-
-题目的状态树：
-
-<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210712235154.png" alt="17. 电话号码的字母组合" style="zoom:50%;" />
-
-使用回溯法：
-
-```java
-     public List<String> letterCombinations(String digits) {
-        List<String> res = new ArrayList<>();
-        if (digits.length() == 0) {
-            return res;
-        }
-        Map<String, String> map = new HashMap<>();
-        map.put("2", "abc");
-        map.put("3", "def");
-        map.put("4", "ghi");
-        map.put("5", "jkl");
-        map.put("6", "mno");
-        map.put("7", "pqrs");
-        map.put("8", "tuv");
-        map.put("9", "wxyz");
-        dfs(digits, 0, map, res, new StringBuilder());
-        return res;
-    }
-
-    public void dfs(String digits, int index, Map<String, String> map, List<String> res, StringBuilder str) {
-        if (index == digits.length()) {
-            res.add(str.toString());
-            return;
-        }
-        // 获取当前数字对应的字符值
-        String val = map.get(digits.substring(index, index + 1));
-        for (char c : val.toCharArray()) {
-            str.append(c);
-            dfs(digits, index + 1, map, res, str);
-            // 删除刚才添加到末尾的元素，选择当前数字对应字符串的下一个值进行遍历
-            str.deleteCharAt(str.length() - 1);
-        }
-    }
-```
-
-## [102. 二叉树的层序遍历](https://leetcode-cn.com/problems/binary-tree-level-order-traversal/)
-
-```java
-public List<List<Integer>> levelOrder(TreeNode root) {
-        List<List<Integer>> res = new LinkedList<>();
-        if (root == null) {
-            return res;
-        }
-        Queue<TreeNode> queue = new LinkedList<>();
-        queue.offer(root);
-        while (!queue.isEmpty()) {
-            List<Integer> num = new LinkedList<>();
-            int size = queue.size();
-            // 遍历当前层结点
-            while (size > 0) {
-                TreeNode treeNode = queue.poll();
-                num.add(treeNode.val);
-                if (treeNode.left != null) {
-                    queue.offer(treeNode.left);
-                }
-                if (treeNode.right != null) {
-                    queue.offer(treeNode.right);
-                }
-                size--;
-            }
-            res.add(num);
-        }
-        return res;
-    }
-```
-
-## [200. 岛屿数量](https://leetcode-cn.com/problems/number-of-islands/)
+### [200. 岛屿数量](https://leetcode-cn.com/problems/number-of-islands/)
 
 岛屿问题是一类典型的网格问题。通常而言，网格中的格子的相邻的格子节点分别是上下左右四个。
 
@@ -1237,37 +1482,136 @@ boolean inArea(int[][] grid, int r, int c) {
     }
 ```
 
-## [322. 零钱兑换](https://leetcode-cn.com/problems/coin-change/)
 
-使用贪心算法：
 
-```java
-public
-```
-
-## [55. 跳跃游戏](https://leetcode-cn.com/problems/jump-game/)
-
-使用贪心算法：
-
-![image-20210719235247657](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210719235247.png)
-
-此时0这个位置的下标是4，但是之前最大的可达步数是3，因为无法再进行跳跃。
+## 数学
+### [136. 只出现一次的数字](https://leetcode-cn.com/problems/single-number/)
 
 ```java
-   public boolean canJump(int[] nums) {
-        // 最大能跳跃到的地方
-        int maxJump = 0;
-        for (int i = 0; i < nums.length; i++) {
-            if (i > maxJump) {
-                return false;
-            }
-            maxJump = Math.max(i + nums[i], maxJump);
+    public int singleNumber(int[] nums) {
+        int single = 0;
+        for (int num : nums) {
+            single ^= num;
         }
-        return true;
+        return single;
     }
 ```
 
-## [74. 搜索二维矩阵](https://leetcode-cn.com/problems/search-a-2d-matrix/)
+### [50. Pow(x, n)](https://leetcode-cn.com/problems/powx-n/)
+
+使用暴力解法：
+
+```java
+    public double myPow(double x, int n) {
+        long N = n;
+        if (N < 0) {
+            N = -n;
+            x = 1 / x;
+        }
+        double ans = 1;
+        while (N > 0) {
+            ans = ans * x;
+            N--;
+        }
+        return x;
+    }
+```
+
+通过观察不难发现，对于f(n) = x<sup>n</sup>（x为常数）都有f(n) = f(n/2)* f(n/2)，因此可以通过分治的方式来处理：
+
+```java
+public double myPow2(double x, int n) {
+        if (n == 0 || x==1) {
+            return 1;
+        }
+        long N = n;
+        if (N < 0) {
+            N = -N;
+            x = 1 / x;
+        }
+        return myPow2Helper(x, N);
+    }
+
+    private double myPow2Helper(double x, long N) {
+        if (N == 1) {
+            return x;
+        }
+        // 如果指数是奇数，则需要补乘一个x
+        if (N % 2 != 0) {
+            return myPow2Helper(x, N / 2) * myPow2Helper(x, N / 2) * x;
+        } else {
+            return myPow2Helper(x, N / 2) * myPow2Helper(x, N / 2);
+        }
+    }
+```
+
+### [69. x 的平方根](https://leetcode-cn.com/problems/sqrtx/)
+
+使用二分查找：
+
+````java
+    public int mySqrt(int x) {
+        int left = 0;
+        int right = x;
+        while (left < right) {
+            int mid = left + (right - left + 1) / 2;
+            // 注意：这里为了避免乘法溢出，改用除法
+            if (mid > x / mid) {
+                right = mid - 1;
+            } else {
+                left = mid + 1;
+            }
+        }
+        return left;
+    }
+````
+
+另外，解决此类问题也可以使用平方根法。
+
+### [367. 有效的完全平方数](https://leetcode-cn.com/problems/valid-perfect-square/)
+
+```java
+    public boolean isPerfectSquare(int num) {
+        int left = 0;
+        int right = num;
+        while (left <= right) {
+            // 这么写的原因是极端情况下left + right相加的结果溢出
+            int mid =  left + (right - left) / 2;
+            if (mid * mid == num) {
+                return true;
+            } else if (mid * mid > num) {
+                right = mid - 1;
+            } else {
+                left = mid + 1;
+            }
+        }
+        return false;
+    }
+```
+
+### [414. 第三大的数](https://leetcode-cn.com/problems/third-maximum-number/)
+
+```java
+    public static int thirdMax(int[] nums) {
+        Set<Integer> set = new HashSet<>();
+        for (int n : nums) {
+            set.add(n);
+            if (set.size() > 3) {
+                set.remove(Collections.min(set));
+            }
+        }
+        // 第三大的正好是集合当中最小的元素
+        if (set.size() == 3) {
+            return Collections.min(set);
+        }
+        // 说明数组的元素不超过3个
+        return Collections.max(set);
+    }
+```
+
+## 矩阵
+
+### [74. 搜索二维矩阵](https://leetcode-cn.com/problems/search-a-2d-matrix/)
 
 将矩阵每一行拼接在上一行的末尾，则会得到一个升序数组，我们可以在该数组上二分找到目标元素，可以二分升序数组的下标，将其映射到原矩阵的行和列上：
 
@@ -1295,312 +1639,5 @@ public
     }
 ```
 
-## [62. 不同路径](https://leetcode-cn.com/problems/unique-paths/)
+## 额外题目
 
-export PATH="$PATH:Users/jiyongchao/application/flutter/bin/flutter/bin"
-
-递推公式：
-$$
-f(m,n) = f(m - 1, n) + f(m, n - 1)
-$$
-直接求解即可：
-
-```java
-    public int uniquePaths(int m, int n) {
-        int[][] dp = new int[m][n];
-        // 最后一行和最后一列都只有一种走法
-        for (int i = 0; i < m; i++) {
-            dp[i][0] = 1;
-        }
-        for (int j = 0; j < n; j++) {
-            dp[0][j] = 1;
-        }
-        for (int i = 1; i < m; i++) {
-            for (int j = 1; j < n; j++) {
-                dp[i][j] = dp[i - 1][j] + dp[i][j - 1];
-            }
-        }
-        return dp[m - 1][n - 1];
-    }
-```
-
-## [120. 三角形最小路径和](https://leetcode-cn.com/problems/triangle/)
-
-注意，本题要求每一步只能移动到下一行相邻的结点上，由此，递归方程为：
-$$
-f(i,j) = min \{f(i - 1, j),f(i-1, j-1) \} + c(i)(j)
-$$
-其中$c(i)(j)$表示位置$(i, j)$对应的元素值。
-
-```java
-    public int minimumTotal(List<List<Integer>> triangle) {
-        int n = triangle.size();
-        // 结果一定是下三角矩阵
-        int[][] dp = new int[n][n];
-        dp[0][0] = triangle.get(0).get(0);
-        for (int i = 1; i < n; i++) {
-            // 第一列的结果等于上一行的元素加上当前行的元素
-            dp[i][0] = dp[i - 1][0] + triangle.get(i).get(0);
-            for (int j = 1; j < i; j++) {
-                // 除了第一列元素和最后一列元素都满足状态转移方程
-                dp[i][j] = Math.min(dp[i - 1][j - 1], dp[i - 1][j]) + triangle.get(i).get(j);
-            }
-            // 对角线上的元素等于上一个对角线元素加上当前元素
-            dp[i][i] = dp[i - 1][i - 1] + triangle.get(i).get(i);
-        }
-        // 最后一行就是所有的结果，找出最小值即可
-        int min = dp[n - 1][0];
-        for (int i = 1; i < n; i++) {
-            min = Math.min(min, dp[n - 1][i]);
-        }
-        return min;
-    }
-```
-
-## [1143. 最长公共子序列](https://leetcode-cn.com/problems/longest-common-subsequence/) 
-
-假设字符串$text_1$和$text_2$的长度分别为$m$和$n$，创建$m+1$行$n+1$列的二维数组$dp$，其中$dp[i][j]$表示$text_1[0:i]$和$text_2[0:j]$的最长公共序列的长度，状态转移方程如下：
-$$
-dp[i][j]=\left\{
-\begin{array}{lcl}
-dp[i-1][j-1] + 1, & text_1[i-1] = text_2[j-1] \\
-max(dp[i-1][j],dp[i][j-1]), & text_1[i-1] \neq text_2[j-1]
-\end{array}\right.
-$$
-示意图：
-
-<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210819120336.png" style="zoom:67%;" />
-
-直接求解即可：
-
-```java
-    public int longestCommonSubsequence(String text1, String text2) {
-        int m = text1.length();
-        int n = text2.length();
-        int[][] dp = new int[m + 1][n + 1];
-
-        for (int i = 1; i < m + 1; i++) {
-            char c1 = text1.charAt(i - 1);
-            for (int j = 1; j < n + 1; j++) {
-                char c2 = text2.charAt(j - 1);
-                // text_1[i - 1] = text_2[j -1]
-                if (c1 == c2) {
-                    dp[i][j] = dp[i - 1][j - 1] + 1;
-                } else {
-                    // text_1[i - 1] ≠ text_2[j -1]
-                    dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-                }
-            }
-        }
-        return dp[m][n];
-    }
-```
-
-## [198. 打家劫舍](https://leetcode-cn.com/problems/house-robber/)
-
-假设一共有$n$个房子，每个房子的金额分别是$H_0,H_1,...H_{n-1}$，子问题$f(k)$表示从前$k$个房子（即$H_0，H_1,...,H_{k-1}$）中能偷盗的最大金额。那么偷$k$个房子有两种偷法：
-
-<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210820105009.png" alt="image-20210820104524320" style="zoom:67%;" />
-
-状态转移方程为：
-$$
-f(k)=max\{ {f(k-1),H_{k-1} + f(k-2)} \}
-$$
-使用一维数组的方式：
-
-```java
-    public int rob(int[] nums) {
-        if (nums == null || nums.length == 0)
-            return 0;
-        int n = nums.length;
-        // 第0位用来存储0的情况，从第1位开始存储nums[1]
-        int[] dp = new int[n + 1];
-        dp[0] = 0;
-        dp[1] = nums[0];
-        // 注意这里从2开始，到n+1
-        for (int i = 2; i < n + 1; i++) {
-            dp[i] = Math.max(dp[i - 1], nums[i] + dp[i - 2]);
-        }
-        return dp[n];
-    }
-```
-
-还可以多开一维数组来存每次偷或者不偷的状态：
-
-```java
-    public int rob(int[] nums) {
-        if (nums == null || nums.length == 0)
-            return 0;
-        int n = nums.length;
-        int[][] dp = new int[n][2];
-        // 0表示不选当前元素，1表示选择当前元素
-        dp[0][0] = 0;
-        dp[0][1] = nums[0];
-        for (int i = 1; i < n; i++) {
-            dp[i][0] = Math.max(dp[i - 1][0], dp[i - 1][1]);
-            dp[i][1] = dp[i - 1][0] + nums[i];
-        }
-        return Math.max(dp[n - 1][0], dp[n - 1][1]);
-    }
-```
-
-## [213. 打家劫舍 II](https://leetcode-cn.com/problems/house-robber-ii/)
-
-状态转移方程：
-$$
-dp[i]=max(dp[i-2]+nums[i],dp[i-1])
-$$
-边界条件为：
-$$
-\left\{
-\begin{array}{lcl}
-dp[start] = nums[start] & 只有一间房屋，则偷窃该房屋 \\
-dp[start+1] = max(nums[start],nums[start+1]) & 只有两件房屋，偷窃其中金额较高的房屋
-\end{array}\right.
-$$
-相应的实现：
-
-```java
-class{
-    
-}
-```
-
-## [79. 单词搜索](https://leetcode-cn.com/problems/word-search/)
-
-
-
-# 高频考题（困难）
-
-## [84. 柱状图中最大的矩形](https://leetcode-cn.com/problems/largest-rectangle-in-histogram/)
-
-使用暴力法求解：
-
-<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210713190144.png" alt="image.png" style="zoom: 33%;" />
-
-对于每一个位置，我们需要：
-
-- 向左遍历，找到大于等于当前柱形高度最左元素的下标
-- 向右遍历，找到大于等于当前柱形高度最右元素的下标
-
-然后得到一个矩形的面积，求出他们的最大值。
-
-```java
-    public int largestRectangleArea(int[] heights) {
-        if (heights.length == 0) {
-            return 0;
-        }
-        int res = 0;
-        for (int i = 0; i < heights.length; i++) {
-            // 向左遍历，找到大于等于当前柱形高度最左元素的下标
-            int left = i;
-            while (left > 0 && heights[left - 1] >= heights[i]) {
-                left--;
-            }
-            // 向右遍历，找到大于等于当前柱形高度最右元素的下标，注意这里的边界条件
-            int right = i;
-            while (right < heights.length - 1 && heights[right + 1] >= heights[i]) {
-                right++;
-            }
-            int width = right - left + 1;
-            res = Math.max(res, width * heights[i]);
-        }
-        return res;
-    }
-```
-
-## [239. 滑动窗口最大值](https://leetcode-cn.com/problems/sliding-window-maximum/)
-
-<div class="note info"><p>所有滑动窗口的问题都可以使用队列来解决。</p></div>
-
-暴力求解法：
-
-```java
-
-```
-
-使用最大堆（优先队列）：
-
-```java
- public int[] maxSlidingWindow(int[] nums, int k) {
-        int n = nums.length;
-        // 传入比较器，当两者的值相同时，比较下标的位置，下标大的在前面。
-        PriorityQueue<int[]> queue = new PriorityQueue<>((p1, p2) -> p1[0] != p2[0] ? p2[0] - p1[0] : p2[1] - p1[1]);
-        // 初始化k前面的元素到堆中
-        for (int i = 0; i < k; i++) {
-            queue.offer(new int[]{nums[i], i});
-        }
-        // 答案总共有n-k+1个
-        int[] ans = new int[n - k + 1];
-        // 将第一次的答案添加到结果当中
-        ans[0] = queue.peek()[0];
-        for (int i = k; i < n; i++) {
-            // 将新元素加入优先队列
-            queue.offer(new int[]{nums[i], i});
-            // 循环判断当前队首是否在窗口中，窗口的左边界为i-k
-            while (queue.peek()[1] <= i - k) {
-                queue.poll();
-            }
-            ans[i - k + 1] = queue.peek()[0];
-        }
-        return ans;
-    }
-```
-
-## [51. N 皇后](https://leetcode-cn.com/problems/n-queens/)
-
-```java
- public List<List<String>> solveNQueens(int n) {
-        List<List<String>> solutions = new ArrayList<List<String>>();
-        int[] queens = new int[n];
-        Arrays.fill(queens, -1);
-        Set<Integer> columns = new HashSet<Integer>();
-        Set<Integer> diagonals1 = new HashSet<Integer>();
-        Set<Integer> diagonals2 = new HashSet<Integer>();
-        backtrack(solutions, queens, n, 0, columns, diagonals1, diagonals2);
-        return solutions;
-    }
-
-    public void backtrack(List<List<String>> solutions, int[] queens, int n, int row, Set<Integer> columns, Set<Integer> diagonals1, Set<Integer> diagonals2) {
-        if (row == n) {
-            List<String> board = generateBoard(queens, n);
-            solutions.add(board);
-        } else {
-            for (int i = 0; i < n; i++) {
-                if (columns.contains(i)) {
-                    continue;
-                }
-                int diagonal1 = row - i;
-                if (diagonals1.contains(diagonal1)) {
-                    continue;
-                }
-                int diagonal2 = row + i;
-                if (diagonals2.contains(diagonal2)) {
-                    continue;
-                }
-                queens[row] = i;
-                columns.add(i);
-                diagonals1.add(diagonal1);
-                diagonals2.add(diagonal2);
-                backtrack(solutions, queens, n, row + 1, columns, diagonals1, diagonals2);
-                queens[row] = -1;
-                columns.remove(i);
-                diagonals1.remove(diagonal1);
-                diagonals2.remove(diagonal2);
-            }
-        }
-    }
-
-    public List<String> generateBoard(int[] queens, int n) {
-        List<String> board = new ArrayList<String>();
-        for (int i = 0; i < n; i++) {
-            char[] row = new char[n];
-            Arrays.fill(row, '.');
-            row[queens[i]] = 'Q';
-            board.add(new String(row));
-        }
-        return board;
-    }
-```
-
-## [212. 单词搜索 II](https://leetcode-cn.com/problems/word-search-ii/)
