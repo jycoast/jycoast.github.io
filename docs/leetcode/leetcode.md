@@ -19,9 +19,150 @@
     }
 ```
 
+### 704. 二分查找
+
+[leetcode题目链接](https://leetcode.cn/problems/binary-search/)
+
+模板代码：
+
+```java
+class Solution {
+    public int search(int[] nums, int target) {
+        int l = 0, r = nums.length - 1;
+        while (l <= r) {
+            int mid = (l + r) / 2; // 为了避免 l + r 超过int的最大值，更安全的写法是：int mid = (r - l) / 2 + l;
+            if (nums[mid] == target) {
+                return mid;
+            } else if (nums[mid] > target) {
+                r--;
+            } else if (nums[mid] < target) {
+                l++;
+            }
+        }
+        return -1;
+    }
+}
+```
+
+### 27. 移除元素
+
+[力扣题目链接](https://leetcode.cn/problems/remove-element/)
+
+使用for循环的双指针：
+
+```java
+class Solution {
+    public int removeElement(int[] nums, int val) {
+        int slow = 0;
+        for (int fast = 0; fast < nums.length; fast++) {
+            if (nums[fast] != val) {
+                nums[slow] = nums[fast];
+                slow++;
+            }
+        }
+        return slow;
+    }
+}
+```
+
+使用while循环的双指针：
+
+```java
+class Solution {
+    public int removeElement(int[] nums, int val) {
+        int slow = 0, fast = 0;
+        while (fast < nums.length) {
+            if (nums[fast] != val) {
+                nums[slow] = nums[fast];
+                slow++;
+            }
+            fast++;
+        }
+        return slow;
+    }
+}
+```
+
+
+
+### 977.有序数组的平方
+
+[力扣题目链接](https://leetcode.cn/problems/squares-of-a-sorted-array/)
+
+
+
+### 209.长度最小的子数组
+
+[力扣题目链接](https://leetcode.cn/problems/minimum-size-subarray-sum/)
+
+滑动窗口：
+
+```java
+class Solution {
+    public int minSubArrayLen(int target, int[] nums) {
+        if (nums == null || nums.length == 0) {
+            return 0;
+        }
+        int ans = Integer.MAX_VALUE;
+        int sum = 0, left = 0;
+        for (int right = 0; right < nums.length; right++) {
+            sum += nums[right];
+            while (sum >= target) { // 根据题意大于等于即可
+                ans = Math.min(ans, right - left + 1); // 更新结果
+                sum -= nums[left]; // 滑动窗口
+                left++;
+            }
+        }
+        return ans == Integer.MAX_VALUE ? 0 : ans; // 如果等于 Integer.MAX_VALUE 说明没有满足的元素
+    }
+}
+```
+
+### 59.螺旋矩阵II
+
+[力扣题目链接](https://leetcode.cn/problems/spiral-matrix-ii/)
+
+```java
+class Solution {
+    public int[][] generateMatrix(int n) {
+        int l = 0, r = n - 1, t = 0, b = n - 1;
+        int[][] result = new int[n][n];
+        int num = 1, tar = n * n;
+
+        while (num <= tar) {
+            // 从左到右
+            for (int i = l; i <= r; i++) {
+                result[t][i] = num++;
+            }
+            t++;
+
+            // 从上到下
+            for (int i = t; i <= b; i++) {
+                result[i][r] = num++;
+            }
+            r--;
+
+            // 从右到左
+            for (int i = r; i >= l; i--) {
+                result[b][i] = num++;
+            }
+            b--;
+
+            // 从下到上
+            for (int i = b; i >= t; i--) {
+                result[i][l] = num++;
+            }
+            l++;
+        }
+
+        return result;
+    }
+}
+```
+
+
+
 ## 链表
-
-
 
 ### [206. 反转链表](https://leetcode-cn.com/problems/reverse-linked-list/)
 
@@ -1638,6 +1779,4 @@ public double myPow2(double x, int n) {
         return false;
     }
 ```
-
-## 额外题目
 

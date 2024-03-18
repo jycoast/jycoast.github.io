@@ -132,6 +132,10 @@ export default defineUserConfig({
                     text: 'ElaticSearch',
                     link: '/database/elaticSearch/'
                   },
+                  {
+                    text: 'MongoDB',
+                    link: '/database/mongodb/'
+                  },
                   ]
               }]
           },

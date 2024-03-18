@@ -130,7 +130,7 @@ Integer 是对小数据（-128到127）是有缓存的，在JVM初始化的时�
 
 ### hashCode和equals的作用？
 
-
+两个相同对象
 
 ### JDK8有哪些新特性？
 
@@ -266,6 +266,10 @@ public class HashMapDemo {
 
 - 重写hashcode和equals
 - 如何设计一个不可变类
+
+### 两个相同对象没有重写equals方法放到HashMap覆盖吗?
+
+不会覆盖，HashMap使用对象的hashCode方法确定对象在哈希表中的存储位置，并使用equals方法来比较key是否相等，如果对象不重写equals方法，将对象放到HashMap的时候就会调用Object的equals方法，比较地址，这时候就会认为是两个不同的对象，所以不会覆盖。
 
 ### HashSet实现原理？
 
@@ -1427,6 +1431,10 @@ Redis中事务的实现特征：
 - volatile-ttl：根据键的剩余过期时间来选择删除键，越早过期的键优先删除
 - volatile-lfu：Least Frequently Used (LFU) 最不经常使用策略，从设置了过期时间的键中选择使用频率最低的键进行删除
 
+### 如何保证Redis的高可用？
+
+
+
 
 ## MySQL
 
@@ -1525,17 +1533,19 @@ Redis中事务的实现特征：
 
 ### MySQL索引结构是什么样的？
 
-  二叉树 -> AVL树 -> 红黑树 -> B-树 -> B+树
+MySQL采用B+树作为存储索引的数据结构。
 
-  二叉树：每个节点最多只有两个子节点，左边的子节点都比当前节点小，右边的子节点都比当前节点大。
+### Mysql的索引结构为什么使用B+树？
 
-  AVL:树中任意节点的两个子树的高度差最大为1.
+总体来说有以下好处：
 
-  红黑树：1、每个节点都是红色或者黑色 2、根节点是黑色 3、每个叶子节点都是黑色的空节点。4、红色节点的父子节点都必须是黑色。5、从任一节点到其中每个叶子节点的所有路径都包含相同的黑色节点。
+- 可以减少磁盘IO的次数
+- 能够很好的同时支持等值查询和范围查询
+  - 等值查询：哈希表、跳表不适合范围查询
+  - 范围查询：二叉树/红黑树可以很好的满足范围查询，但当树过高时，会带来磁盘IO过高的问题；B树的范围查询，会一直到根节点再到叶子节点查询，B+树解决了范围查询的带来的问题
+- B树的查询效率不稳定，在O(1-logN)之间，而B+树可以稳定在O(logN)
 
-  B-树：1、B-树的每个非叶子节点的子节点个数都不会超过D（这个D就是B-树的阶）2、所有的叶子节点都在同一层 3、所有节点关键字都是按照递增顺序排列。
-
-  B+树：1、非叶子节点不存储数据，只进行数据索引 2、所有数据都存储在叶子节点当中 3、每个叶子节点都存有相邻叶子节点的指针 4、叶子节点按照本身关键字从小到大排序。
+完整链接：[MySQL 为什么采用 B+树作为索引](https://juejin.cn/post/7081065180301361183)。
 
 ### 聚簇索引和非聚簇索引有什么区别？
 
@@ -1601,18 +1611,6 @@ ShardingSphere分库分表的执行流程：
 - 跨节点关联查询问题
 - 跨节点分页、排序函数
 - 主键避重
-
-### Mysql的索引结构为什么使用B+树？
-
-总体来说有以下好处：
-
-- 可以减少磁盘IO的次数
-- 能够很好的同时支持等值查询和范围查询
-  - 等值查询：哈希表、跳表不适合范围查询
-  - 范围查询：二叉树/红黑树可以很好的满足范围查询，但当树过高时，会带来磁盘IO过高的问题；B树的范围查询，会一直到根节点再到叶子节点查询，B+树解决了范围查询的带来的问题
-- B树的查询效率不稳定，在O(1-logN)之间，而B+树可以稳定在O(logN)
-
-完整链接：[MySQL 为什么采用 B+树作为索引](https://juejin.cn/post/7081065180301361183)
 
 ### Mysql的三种删除方式的区别？
 
@@ -1862,7 +1860,7 @@ Spring中保证线程安全的方法
 
 ### 为什么SpringBoot的 jar可以直接运行？
 
-https://blog.fundebug.com/2019/01/09/how-does-springboot-start/
+详细参见：[SpringBoot的 jar可以直接运行](https://blog.fundebug.com/2019/01/09/how-does-springboot-start/)。
 
 ### SpringBoot自动装配过程及实现原理？
 
@@ -1929,6 +1927,8 @@ Mybatis在XML文件中寻找对应的SQL语句的时候，会根据StrictMap<Str
 
 - 通过在查询的sql语句中定义字段名的别名，让字段名的别名和实体类的属性名一致
 - 通过`<resultMap>`来映射字段名和实体类属性名的一一对应的关系。
+
+### 执行插入语句后如何该数据的主键？
 
 ### 模糊查询like语句该怎么写？
 
@@ -2082,6 +2082,12 @@ CPU核心线程数*2：
 - ByteBuf支持slice操作，因此可以将ByteBuf分为多个共享同一个存储区域的ByteBuf，避免了内存的拷贝
 - 通过FileRegion包装的FileChannel.tranferTo实现文件传输，可以直接将文件缓冲区的数据发送到目标Channel，避免了传统通过循环write方式导致的内存拷贝问题
 
+## Spring Sercuity
+
+### Spring Sercuity 和 Shiro有什么区别？
+
+
+
 # 认证授权
 
 ## 网络安全
@@ -2096,7 +2102,7 @@ CPU核心线程数*2：
 
 认证和授权也是对一个权限认证框架进行评估的两个主要的方面。
 
-### cookie和session有什么区别？如果没有Cookie、Seesion还能进行身份验证吗？
+### Cookie和Session有什么区别？如果没有Cookie、Seesion还能进行身份验证吗？
 
 当服务器tomcat第一次接收到客户端的请求时，会开辟一块独立的session空间，建立一个session对象，同时会生成session id，通过响应头的方式保存到客户端浏览器的cookie当中，以后客户端的每次请求，都会在请求头部带上这个session id，这样就可以对应上服务端的一些会话信息，比如用户的登录状态。
 
@@ -2301,6 +2307,14 @@ AB发布：
 
 
 
+### Gateway有哪些功能？如何配置动态路由？
+
+
+
+### 如何手写一个注册中心？
+
+
+
 ## 消息队列
 
 ### ＭＱ有什么用？有哪些具体的使用场景？
@@ -2442,17 +2456,6 @@ Kafka：在最新版本的饿源码当中，提供了exactly once的demo。
 
 RabbitMQ：使用erlang语言天生就成为了一种屏障
 
-### 如何设计一个MQ？
-
-从整体到细节，从业务场景到技术实现，以现产品为基础。具体的设计思路：
-
-- 实现单机的队列的数据结构。高效，可扩展
-- 将单机队列扩展成为分布式队列，分布式集群管理
-- 基于Topic定制消息路由策略
-- 实现高效的网络通信 netty - http
-- 规划日志文件，实现文件告诉读写，零拷贝，顺序写，服务重启后，快速还原运行现场
-- 定制高级功能，死信队列、延迟队列、事务消息等等，注意贴合实际
-
 ### Kafka如何避免重复消费？
 
 详细参见：[一文理解Kafka重复消费的原因和解决方案](https://www.modb.pro/db/73387)
@@ -2479,7 +2482,7 @@ cat 文件名 | grep -o "要统计的字符串" | wc -l
 
 ## Dokcer命令
 
-### docker常用的命令？
+### Docker常用的命令？
 
 查看容器情况：
 
@@ -2493,6 +2496,12 @@ docker ps
 docker ps -a
 ```
 
+## Nginx
+
+### Nginx如何保证高可用？
+
+
+
 # 系统架构
 
 ## 设计模式
@@ -2505,5 +2514,88 @@ docker ps -a
 
 
 
-### 工作中有用过设计模式吗？
+### 项目中有用过设计模式吗？
 
+
+
+### 单例模式有哪些实现方式？
+
+#### 懒汉式
+
+```java
+public class Singleton {
+    private static Singleton uniqueInstance;
+
+    private Singleton() {
+    }
+
+    public static Singleton getUniqueInstance() {
+        if (uniqueInstance == null) {
+            uniqueInstance = new Singleton();
+        }
+        return uniqueInstance;
+    }
+}
+```
+
+说明：
+
+优点：
+
+缺点：
+
+#### 饿汉式
+
+```java
+public class Singleton {
+    private static Singleton uniqueInstance = new Singleton();
+
+    private Singleton() {
+    }
+
+    public static Singleton getUniqueInstance() {
+        return uniqueInstance;
+    }
+}
+```
+
+
+
+#### 双重检查锁
+
+```java
+public class Singleton {
+
+    private volatile Singleton uniqueInstance;
+
+    private Singleton() {}
+
+    public Singleton getInstance() {
+        if (null == this.uniqueInstance) {
+           synchronized (Singleton.class) {
+              if (null == this.singleDemo) {
+                    uniqueInstance = new Singleton();
+                }
+            }
+        Singleton = new Singleton();
+        return uniqueInstance;
+    }
+}
+```
+
+
+
+#### 静态内部类
+
+
+
+#### 枚举类
+
+
+
+### 单例模式有什么应用场景？
+
+- 数据库连接池
+- 线程池
+- 网站计数器
+- 应用的配置
