@@ -1,1 +1,0 @@
-const a=JSON.parse('{"key":"v-0dc2b4de","path":"/java_basics/log/","title":"Java 日志体系","lang":"zh-CN","frontmatter":{},"headers":[],"git":{"updatedTime":1710328401000,"contributors":[{"name":"jiyongchao","email":"jycoder@163.com","commits":1}]},"filePathRelative":"java_basics/log/README.md"}');export{a as data};
