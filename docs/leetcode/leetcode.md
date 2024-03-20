@@ -89,7 +89,45 @@ class Solution {
 
 [力扣题目链接](https://leetcode.cn/problems/squares-of-a-sorted-array/)
 
+最直观的做法，对于数组中的每个元素平方后排序：
 
+```java
+class Solution {
+    public int[] sortedSquares(int[] nums) {
+        for (int i = 0; i < nums.length; i++) {
+            nums[i] = nums[i] * nums[i];
+        }
+
+        Arrays.sort(nums);
+        return nums;
+    }
+}
+```
+
+也可以使用双指针来降低时间复杂度：
+
+```java
+class Solution {
+    public int[] sortedSquares(int[] nums) {
+        int left = 0;
+        int right = nums.length - 1;
+        int[] ans = new int[nums.length];
+        int index = right;
+        while (left <= right) {
+            // 当前元素等于绝对值大的那个元素的平方和
+            if (Math.abs(nums[right]) > Math.abs(nums[left])) {
+                ans[index] = nums[right] * nums[right];
+                right--;
+            } else {
+                ans[index] = nums[left] * nums[left];
+                left++;
+            }
+            index--; // 处理下一个元素
+        }
+        return ans;
+    }
+}
+```
 
 ### 209.长度最小的子数组
 
@@ -159,224 +197,6 @@ class Solution {
     }
 }
 ```
-
-
-
-## 链表
-
-### [206. 反转链表](https://leetcode-cn.com/problems/reverse-linked-list/)
-
-双指针的解法：
-
-```java
-    public ListNode reverseList(ListNode head) {
-        ListNode prev = null;
-        ListNode curr = head;
-        while (curr != null) {
-            ListNode next = curr.next;
-            curr.next = prev;
-            prev = curr;
-            curr = next;
-        }
-        return prev;
-    }
-```
-
-### [141. 环形链表 ](https://leetcode-cn.com/problems/linked-list-cycle/)
-
-使用哈希表来实现：
-
-```java
-    public boolean hasCycle(ListNode head) {
-        Set<ListNode> listNodes = new LinkedHashSet<ListNode>;
-        while (head != null) {
-            if (!listNodes.add(head.next)) {
-                return true;
-            }
-            head = head.next;
-        }
-        return false;
-    }
-```
-
-快慢指针法：
-
-```java
-public boolean hasCycle(ListNode head) {
-        if (head == null || head.next == null) {
-            return false;
-        }
-        ListNode slow = head;
-        ListNode fast = head.next;
-        while (slow != fast) {
-            if (fast == null || fast.next == null) {
-                return false;
-            }
-            slow = slow.next;
-            fast = fast.next.next;
-        }
-        return true;
-    }
-
-```
-
-## 哈希表
-
-### [49. 字母异位词分组](https://leetcode-cn.com/problems/group-anagrams/)
-
-使用哈希表，将排序之后的字符串作为key，并且排序之后相同的字符串添加到列表中，最后从Map中获取值并返回。
-
-```java
-public List<List<String>> groupAnagrams(String[] strs) {
-        HashMap<String, List<String>> map = new HashMap<>();
-        for (int i = 0; i < strs.length; i++) {
-            char[] chars = strs[i].toCharArray();
-            Arrays.sort(chars);
-            String key = String.valueOf(chars);
-            if (!map.containsKey(key)) {
-                map.put(key, new ArrayList<>());
-            }
-            map.get(key).add(strs[i]);
-        }
-        return new ArrayList<>(map.values());
-    }
-```
-
-
-
-## 字符串
-
-### [20. 有效的括号](https://leetcode-cn.com/problems/valid-parentheses/)
-
-可以使用暴力破解法，即遍历字符串，找到最近的匹配括号开始，如果匹配就替换为空字符串，一直循环下去，如果括号是匹配的，那么最终的结果应该是个空字符串。
-
-这里使用的栈来解决。
-
-```java
-public boolean isValid(String s) {
-        int n = s.length();
-        // 如果个数是奇数个直接返回
-        if(n % 2 == 1) {
-            return false;
-        }
-        Map<Character, Character> characterMap = new HashMap<>();
-        characterMap.put('}', '{');
-        characterMap.put(']', '[');
-        characterMap.put(')', '(');
-        Deque<Character> stack = new LinkedList<>();
-        for (int i = 0; i < s.length(); i++) {
-            char bracket = s.charAt(i);
-            // 栈中有左括号
-            if (characterMap.containsKey(bracket)) {
-                // 如果栈中元素为空或者与Map中括号不匹配
-                if (stack.isEmpty() || stack.peek() != characterMap.get(bracket)) {
-                    return false;
-                }
-                stack.pop();
-            } else {
-                stack.push(bracket);
-            }
-        }
-
-        return stack.isEmpty();
-    }
-```
-
-除了这种，还有一种相对比较简单的写法：
-
-```java
-    public boolean isValid(String s) {
-        Deque<Character> stack = new LinkedList<>();
-        for (char c : s.toCharArray()) {
-            if (c == '[') {
-                stack.push(']');
-            } else if (c == '{') {
-                stack.push('}');
-            } else if (c == '(') {
-                stack.push(')');
-            } else if (stack.isEmpty() || c != stack.pop()) {
-                return false;
-            }
-        }
-        return stack.isEmpty();
-    }
-```
-
-
-
-### [242. 有效的字母异位词](https://leetcode-cn.com/problems/valid-anagram/)
-
-使用排序：
-
-```java
-    public boolean isAnagram(String s, String t) {
-        char[] sChars = s.toCharArray();
-        char[] tChars = t.toCharArray();
-        // 注意这里不能简写为 Arrays.sort(s.toCharArray())，因为Arrays.sort采用的就地排序。
-        Arrays.sort(sChars);
-        Arrays.sort(tChars);
-        return Arrays.equals(sChars, tChars);
-    }
-```
-
-使用哈希表：
-
-```java
-    public boolean isAnagram(String s, String t) {
-        HashMap<Character, Integer> hashTable = new HashMap<>();
-        for (char c : s.toCharArray()) {
-            hashTable.put(c, hashTable.getOrDefault(c, 0) + 1);
-        }
-        for (char c : t.toCharArray()) {
-            hashTable.put(c, hashTable.getOrDefault(c, 0) - 1);
-            if (hashTable.get(c) < 0) {
-                return false;
-            }
-        }
-        return true;
-    }
-```
-
-### [剑指 Offer 67. 把字符串转换成整数](https://leetcode-cn.com/problems/ba-zi-fu-chuan-zhuan-huan-cheng-zheng-shu-lcof/)
-
-```java
-public int myAtoi(String str) {
-        int index = 0, sign = 1, total = 0;
-        // 空字符串
-        if (str.length() == 0) {
-            return 0;
-        }
-        // 移除空格
-        while (str.charAt(index) == ' ') {
-            index++;
-        }
-        // 处理正负号
-        if (str.charAt(index) == '+' || str.charAt(index) == '-') {
-            sign = str.charAt(index) == '+' ? 1 : -1;
-            index++;
-        }
-        // 转为数字
-        while (index < str.length()) {
-            int digit = str.charAt(index) - '0';
-            if (digit < 0 || digit > 9) {
-                break;
-            }
-            // 越界处理
-            if (Integer.MAX_VALUE / 10 < total ||
-                    (Integer.MAX_VALUE / 10 == total && Integer.MAX_VALUE % 10 < digit)) {
-                return sign == 1 ? Integer.MAX_VALUE : Integer.MIN_VALUE;
-            } else {
-                total = 10 * total + digit;
-                index++;
-            }
-        }
-        return total * sign;
-    }
-```
-
-
-
-## 双指针
 
 ### [283. 移动零](https://leetcode-cn.com/problems/move-zeroes/)
 
@@ -545,6 +365,498 @@ private int maxArea(int[] height) {
         return max;
     }
 ```
+
+
+
+### 数组题目总结
+
+双指针、排序、哈希表是解决数组问题的常见手段。
+
+## 链表
+
+###  203.移除链表元素
+
+[力扣题目链接](https://leetcode.cn/problems/remove-linked-list-elements/)
+
+使用虚拟的头节点：
+
+```java
+class Solution {
+    public ListNode removeElements(ListNode head, int val) {
+        ListNode dummy = new ListNode(0);
+        dummy.next = head;
+        ListNode pre = dummy;
+        ListNode curr = head;
+
+        while (curr != null) {
+            if (curr.val == val) { // 相等就移除节点
+                pre.next = curr.next;
+            } else {
+                pre = curr;
+            }
+            curr = curr.next;
+        }
+
+        return dummy.next;
+    }
+}
+```
+
+
+
+### [206. 反转链表](https://leetcode-cn.com/problems/reverse-linked-list/)
+
+双指针的解法：
+
+```java
+    public ListNode reverseList(ListNode head) {
+        ListNode prev = null;
+        ListNode curr = head;
+        while (curr != null) {
+            ListNode next = curr.next;
+            curr.next = prev;
+            prev = curr;
+            curr = next;
+        }
+        return prev;
+    }
+```
+
+### [141. 环形链表 ](https://leetcode-cn.com/problems/linked-list-cycle/)
+
+使用哈希表来实现：
+
+```java
+    public boolean hasCycle(ListNode head) {
+        Set<ListNode> listNodes = new LinkedHashSet<ListNode>;
+        while (head != null) {
+            if (!listNodes.add(head.next)) {
+                return true;
+            }
+            head = head.next;
+        }
+        return false;
+    }
+```
+
+快慢指针法：
+
+```java
+public boolean hasCycle(ListNode head) {
+        if (head == null || head.next == null) {
+            return false;
+        }
+        ListNode slow = head;
+        ListNode fast = head.next;
+        while (slow != fast) {
+            if (fast == null || fast.next == null) {
+                return false;
+            }
+            slow = slow.next;
+            fast = fast.next.next;
+        }
+        return true;
+    }
+
+```
+
+### 24. 两两交换链表中的节点
+
+[力扣题目链接](https://leetcode.cn/problems/swap-nodes-in-pairs/)
+
+
+
+### 19.删除链表的倒数第N个节点
+
+[力扣题目链接](https://leetcode.cn/problems/remove-nth-node-from-end-of-list/)
+
+```java
+class Solution {
+    public ListNode removeNthFromEnd(ListNode head, int n) {
+        ListNode dummy = new ListNode(0);
+        dummy.next = head;
+        ListNode slow = dummy;
+        ListNode fast = dummy;
+
+        for (int i = 0; i <= n; i++) { // 让快慢指针相距n个节点, 需要走n + 1步，所以是小于等于n
+            fast = fast.next;
+        }
+
+        while (fast != null) { // 让慢指针异动到倒数第n个节点的地方
+            slow = slow.next;
+            fast = fast.next;
+        }
+
+        // 此时 fast指向null，slow 刚好在第 n - 1 的位置上
+        slow.next = slow.next.next;
+        return dummy.next;
+    }
+}
+```
+
+
+
+### 160.链表相交
+
+[力扣题目链接](https://leetcode.cn/problems/intersection-of-two-linked-lists-lcci/)
+
+```java
+public class Solution {
+    public ListNode getIntersectionNode(ListNode headA, ListNode headB) {
+        if (headA == null || headB == null) {
+            return null;
+        }
+
+        ListNode a = headA;
+        ListNode b = headB;
+
+        while (a != b) {
+            a = a == null ? headB : a.next;
+            b = b == null ? headA : b.next;
+        }
+        return b;
+    }
+}
+```
+
+
+
+### 142.环形链表II
+
+[力扣题目链接](https://leetcode.cn/problems/linked-list-cycle-ii/)
+
+```java
+public class Solution {
+    public ListNode detectCycle(ListNode head) {
+        ListNode slow = head;
+        ListNode fast = head;
+        while (fast != null && fast.next != null) {
+            slow = slow.next;
+            fast = fast.next.next;
+            if (slow == fast) { // 证明有环
+                ListNode index1 = fast;
+                ListNode index2 = head;
+                // 两个指针，从头结点和相遇结点，各走一步，直到相遇，相遇点即为环入口
+                while (index1 != index2) {
+                    index1 = index1.next;
+                    index2 = index2.next;
+                }
+                return index1;
+            }
+        }
+
+        return null;
+    }
+}
+```
+
+
+
+### 链表总结
+
+创建虚拟的头节点和快慢指针是链表常见的解题思路。
+
+## 哈希表
+
+### [49. 字母异位词分组](https://leetcode-cn.com/problems/group-anagrams/)
+
+使用哈希表，将排序之后的字符串作为key，并且排序之后相同的字符串添加到列表中，最后从Map中获取值并返回。
+
+```java
+public List<List<String>> groupAnagrams(String[] strs) {
+        HashMap<String, List<String>> map = new HashMap<>();
+        for (int i = 0; i < strs.length; i++) {
+            char[] chars = strs[i].toCharArray();
+            Arrays.sort(chars);
+            String key = String.valueOf(chars);
+            if (!map.containsKey(key)) {
+                map.put(key, new ArrayList<>());
+            }
+            map.get(key).add(strs[i]);
+        }
+        return new ArrayList<>(map.values());
+    }
+```
+
+
+
+## 字符串
+
+### 344.反转字符串
+
+[力扣题目链接](https://leetcode.cn/problems/reverse-string/)
+
+双指针：
+
+```java
+class Solution {
+    public void reverseString(char[] s) {
+        if (s == null || s.length == 0) {
+            return;
+        }
+
+        int left = 0, right = s.length - 1;
+        while (left < right) {
+            char temp = s[left];
+            s[left] = s[right];
+            s[right] = temp;
+            left++;
+            right--;
+        }
+    }
+}
+```
+
+### 541. 反转字符串II
+
+[力扣题目链接](https://leetcode.cn/problems/reverse-string-ii/)
+
+题目的意思是：反转字符串中k个字符，下面k个不反转，如此反复，最后剩下的不够k个字符时全部反转。
+
+```java
+class Solution {
+    public String reverseStr(String s, int k) {
+        int n = s.length();
+        char[] ch = s.toCharArray();
+        for (int i = 0; i < n - 1; i += 2 * k) {
+            // 剩下的字符够k个，则反转前k个字符
+            if (i + k <= n) {
+                reverse(ch, i, i + k - 1);
+            } else {
+                reverse(ch, i, n - 1);
+            }
+        }
+        return new String(ch);
+    }
+
+    private void reverse(char[] ch, int start, int end) {
+        while (start < end) {
+            char temp = ch[start];
+            ch[start] = ch[end];
+            ch[end] = temp;
+            start++;
+            end--;
+        }
+    }
+}
+```
+
+
+
+### 151.翻转字符串里的单词
+
+[力扣题目链接](https://leetcode.cn/problems/reverse-words-in-a-string/)
+
+调用库函数的方式：
+
+```java
+class Solution {
+    public String reverseWords(String s) {
+        if (s == null) {
+            return null;
+        }
+        String[] splitArray = s.trim().split(" ");
+        StringBuilder ans = new StringBuilder();
+
+        for (int i = splitArray.length - 1; i >= 0; i--) {
+            if (!"".equals(splitArray[i])) {
+                ans.append(" ");
+                ans.append(splitArray[i].trim());
+            }
+        }
+
+        return ans.toString().trim();
+    }
+}
+```
+
+完全手写的方式：
+
+```java
+public class Solution {
+
+    public String reverseWords(String s) {
+        if (s == null) return null;
+
+        char[] a = s.toCharArray();
+        int n = a.length;
+
+        // step 1. reverse the whole string
+        reverse(a, 0, n - 1);
+        // step 2. reverse each word
+        reverseWords(a, n);
+        // step 3. clean up spaces
+        return cleanSpaces(a, n);
+    }
+
+    void reverseWords(char[] a, int n) {
+        int i = 0, j = 0;
+
+        while (i < n) {
+            while (i < j || i < n && a[i] == ' ') i++; // skip spaces
+            while (j < i || j < n && a[j] != ' ') j++; // skip non spaces
+            reverse(a, i, j - 1);                      // reverse the word
+        }
+    }
+
+    // trim leading, trailing and multiple spaces
+    String cleanSpaces(char[] a, int n) {
+        int i = 0, j = 0;
+
+        while (j < n) {
+            while (j < n && a[j] == ' ') j++;             // skip spaces
+            while (j < n && a[j] != ' ') a[i++] = a[j++]; // keep non spaces
+            while (j < n && a[j] == ' ') j++;             // skip spaces
+            if (j < n) a[i++] = ' ';                      // keep only one space
+        }
+
+        return new String(a).substring(0, i);
+    }
+
+    // reverse a[] from a[i] to a[j]
+    private void reverse(char[] a, int i, int j) {
+        while (i < j) {
+            char t = a[i];
+            a[i++] = a[j];
+            a[j--] = t;
+        }
+    }
+}
+```
+
+
+
+### [20. 有效的括号](https://leetcode-cn.com/problems/valid-parentheses/)
+
+可以使用暴力破解法，即遍历字符串，找到最近的匹配括号开始，如果匹配就替换为空字符串，一直循环下去，如果括号是匹配的，那么最终的结果应该是个空字符串。
+
+这里使用的栈来解决。
+
+```java
+public boolean isValid(String s) {
+        int n = s.length();
+        // 如果个数是奇数个直接返回
+        if(n % 2 == 1) {
+            return false;
+        }
+        Map<Character, Character> characterMap = new HashMap<>();
+        characterMap.put('}', '{');
+        characterMap.put(']', '[');
+        characterMap.put(')', '(');
+        Deque<Character> stack = new LinkedList<>();
+        for (int i = 0; i < s.length(); i++) {
+            char bracket = s.charAt(i);
+            // 栈中有左括号
+            if (characterMap.containsKey(bracket)) {
+                // 如果栈中元素为空或者与Map中括号不匹配
+                if (stack.isEmpty() || stack.peek() != characterMap.get(bracket)) {
+                    return false;
+                }
+                stack.pop();
+            } else {
+                stack.push(bracket);
+            }
+        }
+
+        return stack.isEmpty();
+    }
+```
+
+除了这种，还有一种相对比较简单的写法：
+
+```java
+    public boolean isValid(String s) {
+        Deque<Character> stack = new LinkedList<>();
+        for (char c : s.toCharArray()) {
+            if (c == '[') {
+                stack.push(']');
+            } else if (c == '{') {
+                stack.push('}');
+            } else if (c == '(') {
+                stack.push(')');
+            } else if (stack.isEmpty() || c != stack.pop()) {
+                return false;
+            }
+        }
+        return stack.isEmpty();
+    }
+```
+
+
+
+### [242. 有效的字母异位词](https://leetcode-cn.com/problems/valid-anagram/)
+
+使用排序：
+
+```java
+    public boolean isAnagram(String s, String t) {
+        char[] sChars = s.toCharArray();
+        char[] tChars = t.toCharArray();
+        // 注意这里不能简写为 Arrays.sort(s.toCharArray())，因为Arrays.sort采用的就地排序。
+        Arrays.sort(sChars);
+        Arrays.sort(tChars);
+        return Arrays.equals(sChars, tChars);
+    }
+```
+
+使用哈希表：
+
+```java
+    public boolean isAnagram(String s, String t) {
+        HashMap<Character, Integer> hashTable = new HashMap<>();
+        for (char c : s.toCharArray()) {
+            hashTable.put(c, hashTable.getOrDefault(c, 0) + 1);
+        }
+        for (char c : t.toCharArray()) {
+            hashTable.put(c, hashTable.getOrDefault(c, 0) - 1);
+            if (hashTable.get(c) < 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+```
+
+### [剑指 Offer 67. 把字符串转换成整数](https://leetcode-cn.com/problems/ba-zi-fu-chuan-zhuan-huan-cheng-zheng-shu-lcof/)
+
+```java
+public int myAtoi(String str) {
+        int index = 0, sign = 1, total = 0;
+        // 空字符串
+        if (str.length() == 0) {
+            return 0;
+        }
+        // 移除空格
+        while (str.charAt(index) == ' ') {
+            index++;
+        }
+        // 处理正负号
+        if (str.charAt(index) == '+' || str.charAt(index) == '-') {
+            sign = str.charAt(index) == '+' ? 1 : -1;
+            index++;
+        }
+        // 转为数字
+        while (index < str.length()) {
+            int digit = str.charAt(index) - '0';
+            if (digit < 0 || digit > 9) {
+                break;
+            }
+            // 越界处理
+            if (Integer.MAX_VALUE / 10 < total ||
+                    (Integer.MAX_VALUE / 10 == total && Integer.MAX_VALUE % 10 < digit)) {
+                return sign == 1 ? Integer.MAX_VALUE : Integer.MIN_VALUE;
+            } else {
+                total = 10 * total + digit;
+                index++;
+            }
+        }
+        return total * sign;
+    }
+```
+
+
+
+### 字符串总结
 
 
 
