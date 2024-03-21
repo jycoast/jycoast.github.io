@@ -854,6 +854,21 @@ public int myAtoi(String str) {
     }
 ```
 
+###  459.重复的子字符串
+
+[力扣题目链接](https://leetcode.cn/problems/repeated-substring-pattern/)
+
+移动匹配法：
+
+```java
+class Solution {
+    public boolean repeatedSubstringPattern(String s) {
+        int idx = (s + s).indexOf(s, 1);
+        return  idx < s.length();
+    }
+}
+```
+
 
 
 ### 字符串总结
@@ -1223,36 +1238,305 @@ class Solution {
 
 ### [102. 二叉树的层序遍历](https://leetcode-cn.com/problems/binary-tree-level-order-traversal/)
 
+模板代码：
+
 ```java
-public List<List<Integer>> levelOrder(TreeNode root) {
-        List<List<Integer>> res = new LinkedList<>();
+class Solution {
+    public List<List<Integer>> levelOrder(TreeNode root) {
+        List<List<Integer>> ans = new ArrayList<>();
         if (root == null) {
-            return res;
+            return ans;
+        }
+        Queue<TreeNode> queue = new LinkedList<>();
+        queue.offer(root);
+
+        while (!queue.isEmpty()) {
+            int size = queue.size();
+            List<Integer> list = new ArrayList<>();
+            for (int i = 0; i < size; i++) {
+                TreeNode node = queue.poll();
+                list.add(node.val);
+
+                TreeNode left = node.left;
+                if (left != null) {
+                    queue.offer(left);
+                }
+                TreeNode right = node.right;
+                if (right != null) {
+                    queue.offer(right);
+                }
+            }
+            ans.add(list);
+        }
+        return ans;
+    }
+}
+```
+
+### 107.二叉树的层次遍历 II
+
+[力扣题目链接](https://leetcode.cn/problems/binary-tree-level-order-traversal-ii/)
+
+在二叉树的层次遍历上稍做改动：
+
+```java
+class Solution {
+    public List<List<Integer>> levelOrderBottom(TreeNode root) {
+        List<List<Integer>> ans = new ArrayList<>();
+        if (root == null) {
+            return ans;
         }
         Queue<TreeNode> queue = new LinkedList<>();
         queue.offer(root);
         while (!queue.isEmpty()) {
-            List<Integer> num = new LinkedList<>();
+            List<Integer> list = new ArrayList<>();
             int size = queue.size();
-            // 遍历当前层结点
-            while (size > 0) {
-                TreeNode treeNode = queue.poll();
-                num.add(treeNode.val);
-                if (treeNode.left != null) {
-                    queue.offer(treeNode.left);
+            for (int i = 0; i < size; i++) {
+                TreeNode node = queue.poll();
+                list.add(node.val);
+                TreeNode left = node.left;
+                if (left != null) {
+                    queue.offer(left);
                 }
-                if (treeNode.right != null) {
-                    queue.offer(treeNode.right);
+                TreeNode right = node.right;
+                if (right != null) {
+                    queue.offer(right);
+                }
+            }
+            ans.add(0, list);
+        }
+        return ans;
+    }
+}
+```
+
+### 199.二叉树的右视图
+
+[力扣题目链接](https://leetcode.cn/problems/binary-tree-right-side-view/)
+
+同样的，在二叉树的层次遍历上稍做改动：
+
+```java
+class Solution {
+    public List<Integer> rightSideView(TreeNode root) {
+        List<Integer> ans = new ArrayList<>();
+        if (root == null) {
+            return ans;
+        }
+        Queue<TreeNode> queue = new LinkedList<>();
+        queue.offer(root);
+        while (!queue.isEmpty()) {
+            int size = queue.size();
+            for (int i = 0; i < size; i++) {
+                TreeNode node = queue.poll();
+                if (i == size - 1) {
+                    ans.add(node.val);
+                }
+
+                TreeNode left = node.left;
+                if (left != null) {
+                    queue.offer(left);
+                }
+
+                TreeNode right = node.right;
+                if (right != null) {
+                    queue.offer(right);
+                }
+            }
+        }
+        return ans;
+    }
+}
+```
+
+递归解法：
+
+```java
+class Solution {
+    public List<Integer> rightSideView(TreeNode root) {
+        List<Integer> res = new ArrayList<>();
+        recursion(root, res, 0);
+        return res;
+    }
+
+    private void recursion(TreeNode curr, List<Integer> res, int currDepth) {
+        if (curr == null) {
+            return;
+        }
+        if (currDepth == res.size()) {
+            res.add(curr.val);
+        }
+        recursion(curr.right, res, currDepth + 1);
+        recursion(curr.left, res, currDepth + 1);
+    }
+}
+```
+
+### 515.在每个树行中找最大值
+
+[力扣题目链接](https://leetcode.cn/problems/find-largest-value-in-each-tree-row/)
+
+```java
+class Solution {
+    public List<Integer> largestValues(TreeNode root) {
+        List<Integer> ans = new ArrayList<>();
+        if (root == null) {
+            return ans;
+        }
+        Queue<TreeNode> queue = new LinkedList<>();
+        queue.offer(root);
+        while (!queue.isEmpty()) {
+            int size = queue.size();
+            Integer max = Integer.MIN_VALUE;
+            while (size > 0) { // 和for循环一样，没有区别
+                TreeNode node = queue.poll();
+                max = Math.max(max, node.val);
+
+                TreeNode left = node.left;
+                if (left != null) {
+                    queue.offer(left);
+                }
+                TreeNode right = node.right;
+                if (right != null) {
+                    queue.offer(right);
                 }
                 size--;
             }
-            res.add(num);
+            ans.add(max);
         }
-        return res;
+        return ans;
     }
+}
 ```
 
+### 226.翻转二叉树
 
+递归即可：
+
+```java
+class Solution {
+    public TreeNode invertTree(TreeNode root) {
+        if (root == null) {
+            return null;
+        }
+
+        TreeNode temp = root.left;
+        root.left = root.right;
+        root.right = temp;
+        // 注意这里不需要判断 root.left 是否为空
+        invertTree(root.left);
+        invertTree(root.right);
+
+        return root;
+    }
+}
+```
+
+### 101. 对称二叉树
+
+```java
+class Solution {
+    public boolean isSymmetric(TreeNode root) {
+        if (root == null) {
+            return false;
+        }
+        return recusion(root.left, root.right);
+    }
+
+    private boolean recusion(TreeNode left, TreeNode right) {
+        if (left == null && right != null) {
+            return false;
+        }
+
+        if (left != null && right == null) {
+            return false;
+        }
+
+        if (left == null && right == null) {
+            return true;
+        }
+
+        if (left.val != right.val) {
+            return false;
+        }
+
+        boolean leftSsSymmetric = recusion(left.left, right.right);
+        boolean rightSsSymmetric = recusion(left.right, right.left);
+        return leftSsSymmetric && rightSsSymmetric;
+    }
+}
+```
+
+简洁一点的写法：
+
+```java
+class Solution {
+    public boolean isSymmetric(TreeNode root) {
+        if (root == null) return false;
+        return recursion(root.left, root.right);
+    }
+
+    private boolean recursion(TreeNode left, TreeNode right) {
+        if (left != null && right == null) return false;
+        if (left == null && right != null) return false;
+        if (left == null && right == null) return true;
+        if (left.val != right.val) return false;
+        return recursion(left.left, right.right) && recursion(left.right, right.left);
+    }
+}
+```
+
+### 222.完全二叉树的节点个数
+
+[力扣题目链接](https://leetcode.cn/problems/count-complete-tree-nodes/)
+
+```java
+class Solution {
+    public int countNodes(TreeNode root) {
+        if (root == null) {
+            return 0;
+        }
+        return countNodes(root.left) + countNodes(root.right) + 1;
+    }
+}
+```
+
+### 110.平衡二叉树
+
+[力扣题目链接](https://leetcode.cn/problems/balanced-binary-tree/)
+
+```java
+class Solution {
+    public boolean isBalanced(TreeNode root) {
+        return height(root) != -1;
+    }
+
+    private int height(TreeNode root) {
+        if (root == null) {
+            return 0;
+        }
+        int left = height(root.left);
+        if (left == -1) {
+            return -1;
+        }
+        int right = height(root.right);
+        if (right == -1) {
+            return -1;
+        }
+
+        if (Math.abs(right - left) > 1) { // 左右子树的高度差1，说明已经不是平衡树了
+            return -1;
+        }
+
+        return Math.max(left, right) + 1;
+
+    }
+}
+```
+
+### 树总结
+
+递归是解决树的最重要的方法。
 
 ## 回溯算法
 
@@ -1428,8 +1712,6 @@ public
         return i;
     }
 ```
-
-
 
 
 
