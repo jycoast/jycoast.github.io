@@ -1,0 +1,1 @@
+const a=JSON.parse('{"key":"v-0dc49276","path":"/java_basics/jms/","title":"JMS 简介","lang":"zh-CN","frontmatter":{},"headers":[],"git":{"updatedTime":1711014681000,"contributors":[{"name":"jiyongchao","email":"jycoder@163.com","commits":1}]},"filePathRelative":"java_basics/jms/README.md"}');export{a as data};
