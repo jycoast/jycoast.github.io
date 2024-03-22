@@ -104,7 +104,7 @@ public void divideConquer(problem, param1, param2,...) {
 ### 代码模板
 
 二叉树递归模板：
-```
+```java
 public void dfs(TreeNode root) {
 	if (root == null) {
 		return;
