@@ -5,6 +5,8 @@ import { searchProPlugin } from "vuepress-plugin-search-pro";
 import { lightgalleryPlugin } from "vuepress-plugin-lightgallery";
 import { googleAnalyticsPlugin } from '@vuepress/plugin-google-analytics'
 import { mdEnhancePlugin } from "vuepress-plugin-md-enhance";
+import { mediumZoomPlugin } from '@vuepress/plugin-medium-zoom'
+import { readingTimePlugin } from '@vuepress/plugin-reading-time'
 
 export default defineUserConfig({
   lang: 'zh-CN',
@@ -39,10 +41,6 @@ export default defineUserConfig({
                     text: 'Java并发编程',
                     link: '/java_basics/concurrent_programming/'
                 },
-                // {
-                //     text: 'Java知识体系合辑',
-                //     link: '/java_basics/knowledge_system/'
-                // },
             ]
             },
             {
@@ -125,7 +123,7 @@ export default defineUserConfig({
               },
               {
                 text: 'ElaticSearch',
-                link: '/database/elaticSearch/'
+                link: '/database/elatic_search/'
               },
               {
                 text: 'MongoDB',
@@ -235,10 +233,10 @@ export default defineUserConfig({
   bundler: viteBundler(),
   plugins: [
     searchProPlugin({
-      // 配置选项
+      queryHistoryCount: 0,
+    //   hotKeys:[{ key: "k", ctrl: true }, { key: "M", ctrl: true }]
     }),
     googleAnalyticsPlugin({
-      // 配置项
     }),
     // lightgalleryPlugin({delay:0})
     mdEnhancePlugin({
@@ -246,6 +244,17 @@ export default defineUserConfig({
       katex: true,
       // 使用 mathjax 启用 TeX 支持
       mathjax: true,
+      // 启用 Markmap
+      markmap: true,
     }),
+    // 这个插件有问题，所以让它对所有的元素都不生效
+    mediumZoomPlugin({
+        // 配置项
+        selector: null
+      }),
+     lightgalleryPlugin(),
+     readingTimePlugin({
+        // 配置项
+      }),
   ],
 })
