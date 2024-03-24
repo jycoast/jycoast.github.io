@@ -1111,10 +1111,101 @@ MySQL在读已提交和可重复读的隔离级别下的隔离性都依靠MVCC�
 
 在了解MVCC多版本并发控制之前，我们必须首先了解一下，什么是MySQL InnoDB下的当前读和快照读。
 
-- 当前读：读取记录最新的版本，读取时还要保证其他并发事务不能修改当前记录，会对读取的记录进行枷锁，`select lock in share mode(共享锁),select for update,update,insert,delete（排他锁）`，这些都是当前读。
-- 快照读：不加锁的非阻塞读。
+- 当前读：读取记录最新的版本，读取时还要保证其他并发事务不能修改当前记录，会对读取的记录进行加锁，`select lock in share mode(共享锁),select for update,update,insert,delete（排他锁）`，这些都是当前读。
+- 快照读：不加锁的非阻塞读。快照读的前提是隔离级别不是串行级别，串行级别下的快照读会退化成当前读，之所以出现快照读的情况，是基于提高并发性能的考虑，快照读的实现是基于多版本并发控制，即MVCC，可以认为MVCC是行锁的一个变种，但是在很多情况下，避免了加锁操作，降低了开销。需要注意的是，快照读读到的并不一定是数据的最新版本，而有可能是之前的历史版本。
+
+当前读实际上是一个悲观锁的操作，而MVCC实现了快照读和写冲突不加锁。
+
+多版本并发控制（MVCC）是一种解决读-写冲突的无锁并发控制，也就是为事务分配单向增长的时间戳，为每个修改保存一个版本，版本与事务时间戳关联，读操作只读该事务开始前的数据库的快照。所以MVCC可以为数据库解决一下问题：在并发读写数据库时，可以做到在读操作时不用阻塞写操作，写操作也不用阻塞读操作，提高了数据库并发读写的性能，同时还可以解决脏读，幻读，不可重复读等事务隔离问题，但不能解决更新丢失问题。
 
 ### undo日志版本链与read view机制详解
+数据库当中的每一行记录除了我们自定义的字段外，还有数据库隐式定义的DB_ROW_ID、DB_TRX_ID、DB_ROLL_PTR等字段，它们的含义如下：
+
+- DB_ROW_ID（6byte），隐含的自增ID（隐藏主键），如果数据表没有主键，InnoDB会自动以DB_ROW_ID产生一个聚簇索引
+- DB_TRX_ID（6byte），最近修改（修改/插入）事务ID，记录创建这条记录/最后一次修改该记录的事务ID
+- DB_ROLL_PTR（7byte），回滚指针，指向这条记录的上一个版本（存储于rollback segment里）
+- DELETE_BIT（1byte），记录被更新或删除并不代表真的删除，而是删除的flag变了
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202309031058849.png" alt="image-20230903105843745" style="zoom:67%;" />
+
+上图中，DB_ROW_ID是数据库默认为改行记录生成唯一隐式主键，DB_TRX_ID是当前操作该记录的事务ID，而DB_ROLL_PTR是一个回滚指针，用于配合undo日志，指向上一个旧版本。
+
+InnoDB把这些为了回滚而记录的这些东西称之为undo log，需要注意的是，由于查询操作（SELECT）并不会修改任何用户记录，所以在查询操作时，并不需要记录相应的undo log。undo log主要分为3种：
+
+- Insert undo log：插入一条记录时，至少要把这条记录的主键值记下来，之后回滚的时候只需要把这个主键值对应的记录删掉就好了
+- Update undo log：修改一条记录时，至少要把修改这条记录之前的旧值都记录下来，这样之后回滚时再把这条记录更新为旧值就好了
+- Delete undo log：删除一条记录时，至少要把这条记录中的内容都记下来，这样之后回滚时再把由这些内容组成的记录插入到表中就好了
+  - 删除操作都只是设置一下老记录的DELETE_BIT，并不真正将过时的记录删除
+  - 为了节省磁盘空间，InnoDB有专门的purge线程来清理DELETE_BIT为true的记录。为了不影响MVCC的正常工作，purge线程自己也维护了一个read view（这个read view相当于系统中最老活跃事务的read view），如果某个记录的DELETED_BIT为true。并且DB_TRX_ID相对于purge线程的read view可见，那么这条记录一定是可以被安全清除的。
+
+对MVCC有帮助的实质是update undo log，undo log实际上就是存在rollback segment中旧记录链，它的执行流程如下：
+
+比如有一个事务插入person表插入了一条新的记录，name为Jerry，age为24岁，隐式主键是1，事务ID和回滚指针，我们假设为NULL
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202309031119809.png" alt="image-20230903111925716" style="zoom:67%;" />
+
+现在来了一个事务1对该记录的name做出了修改，改为Tom，修改的数据的过程如下：
+
+1. 在事务1修改该行数据时，数据库会先对该行加排他锁
+2. 然后把该行数据拷贝到undo log中，作为旧记录，即在undo log中有当前行的拷贝副本
+3. 拷贝完毕后，修改该行name为Tom，并且修改隐藏字段的事务ID为当前事务1的ID，我们默认从1开始，之后递增，回滚指针指向拷贝到undo log的副本记录
+4. 事务提交后，释放锁
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202309031125259.png" alt="image-20230903112512158" style="zoom:50%;" />
+
+假设又来了事务2修改person表的同一条记录，将age修改为30岁，修改数据的过程如下：
+
+1. 在事务2修改该行数据时，数据先加行锁
+2. 然后把改行数据拷贝到undo log中，作为旧记录，发现该行记录已经有undo log了，那么最新的旧数据作为链表的表头，插在该行记录的undo log的最前面
+3. 修改该行age为30岁，并且修改隐藏字段的事务ID作为当前事务2的ID，就是2，回滚指针指向刚刚拷贝到undo log的副本记录
+4. 事务提交，释放锁
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202309031129124.png" alt="image-20230903112923029" style="zoom: 50%;" />
+
+从上面的过程可以看出，不同事务或者相同事务的对同一记录的修改，会导致该记录的undo log成为一条记录版本先行表，即链接，undo log的链首就是最新的旧记录，链尾就是最早的旧记录。当事务提交后，purge线程会清除掉没有用的节点。
+
+MySQL会用read view来做可见性的判断，当某个事物执行快照读的时候，对该记录创建一个Read view读视图，把它比作条件用来判断当前事务能够看到哪个版本的数据，即可能是当前最新的数据，也有可能是该行记录的undo log里面的某个版本的数据。
+
+Read view遵循一个可见性算法，主要是将要被修改的数据的最新记录中的DB_TRX_ID（即当前事务ID）取出来，与系统当前其他活跃事务的ID去对比（由Read view维护），如果DB_TRX_ID跟Read View的属性做了某些比较，不符合可见性，那就通过DB_ROLL_PTR回滚指针去取出Undo Log中的DB_TRX_ID再比较，即遍历链表的DB_TRX_ID（从链首到链尾，即从最近的一次修改查起），直到找到满足特定条件的DB_TRX_ID，那么这个DB_TRX_ID所在的旧记录就是当前事务能看见的最新老版本。
+
+```c
+/* 判断某个事务的修改对当前事务是否可见 */
+bool changes_visible(){
+
+        /**
+         * 可见的情况：
+         *  1. 小于低水位线，即创建快照时，该事务已经提交(或回滚)
+         *  2. 事务ID是当前事务。
+         */
+        if (id < m_up_limit_id || id == m_creator_trx_id) {
+            return(true);
+        }
+
+        if (id >= m_low_limit_id) { /* 高于水位线不可见，即创建快照时，该事务还没有提交 */
+            return(false);
+
+        } else if (m_ids.empty()) { /* 创建快照时，没有其它活跃的读写事务时，可见 */
+
+            return(true);
+        }
+
+        /**
+         * 执行到这一步，说明事务ID在低水位和高水位之间，即 id ∈ [m_up_limit_id, m_low_limit_id)
+         * 需要判断是否属于在活跃事务列表m_ids中，
+         * 如果在，说明创建快照时，该事务处于活跃状态（未提交），修改对当前事务不可见。
+         */
+
+        // 获取活跃事务ID列表，并使用二分查找判断事务ID是否在 m_ids中
+        const ids_t::value_type*	p = m_ids.data();
+        return(!std::binary_search(p, p + m_ids.size(), id));
+}
+```
+
+Read View有三个全局属性：
+
+- trx_list未提交事务ID列表，用来维护Read View生成时刻系统正活跃的事务ID
+- up_limit_id记录trx_list列表中事务ID最小的ID
+- low_limit_id ReadView生成时刻系统尚未分配下一个事务ID，也就是目前已出现过的事务ID的最大值+1
 
 undo日志版本链是指一行数据被多个事务依次修改过后，在每个事务修改完后，MySQL会保留修改前的数据undo回滚日志，并且用两个隐藏字段trx_id（事务ID）和roll_pointer（上一条数据的历史版本指针）把这些undo日志串联起来形成一个历史记录版本链，具体如下图。
 
@@ -1135,6 +1226,15 @@ undo日志版本链是指一行数据被多个事务依次修改过后，在每�
 <div class="note warning">begin/start transaction 命令并不是一个事务的起点，在执行到它们之后的第一个修改InnoDB操作的语句，事务才真正启动，才会向mysql申请事务id，mysql内部是严格按照事务的启动顺序来分配事务id的。</div>
 
 总而言之，MVCC机制的实现就是通过read-view机制与undo版本链对比机制，使得不同的事务会根据数据版本链对比规则读取同一条数据在版本链上的不同版本数据。
+
+RC，RR级别下的InnoDB快照读有什么不同？
+
+正式Read view生成时机的不同，从而造成RC、RR级别下快照读的结果不同。
+
+- 在RR级别下的某个事务对某条记录的第一次快照读会创建一个快照及Read View，将当前活跃的其他的事务记录起来，此后在调用快照读的时候，还是使用的是同一个Read View，所以只要当前事务在其他事务提交更新之前使用过快照读，那么之后的快照读使用的都是同一个Read View，所以对之后的修改不可见。即RR级别下，快照读生成Read View时，Read View会记录此时所有其他活动事务的快照，这些事务的修改对于当前事务都是不可见的。而早于Read View创建的事务所做的修改均是可见
+- 在RC级别下的事务中，每次读快照都会重新生成一个快照和Read View，这就是为什么我们可以在RC级别下的事务中可以看到别的事务提交的更新的原因
+
+总而言之，在RC隔离级别下，是每个快照读都会生成并获取最新的Read View，而在RR隔离级别下，则是同一个事务中的第一个快照读才会创建Read View，之后的快照读获取的都是同一个Read View。
 
 ### BufferPool缓存机制
 
