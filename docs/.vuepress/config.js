@@ -2,7 +2,7 @@ import { defaultTheme } from '@vuepress/theme-default'
 import { defineUserConfig } from 'vuepress/cli'
 import { viteBundler } from '@vuepress/bundler-vite'
 import { searchProPlugin } from "vuepress-plugin-search-pro";
-import { lightgalleryPlugin } from "vuepress-plugin-lightgallery";
+import { photoSwipePlugin } from "@vuepress/plugin-photo-swipe";
 import { googleAnalyticsPlugin } from '@vuepress/plugin-google-analytics'
 import { mdEnhancePlugin } from "vuepress-plugin-md-enhance";
 import { mediumZoomPlugin } from '@vuepress/plugin-medium-zoom'
@@ -252,7 +252,7 @@ export default defineUserConfig({
         // 配置项
         selector: null
       }),
-     lightgalleryPlugin(),
+    photoSwipePlugin(),
      readingTimePlugin({
         // 配置项
       }),
