@@ -31,13 +31,13 @@ jobs:
           key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
             ${{ runner.os }}-yarn-
-      # 设置 nodejs 版本为 14.x，太高会运行出错
+      # 设置 nodejs 版本为 16.x，太高会运行出错
       - name: Setup Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: '18'
-      - name: yarn run docs:build
-        run: yarn install && yarn run docs:build
+          node-version: '16'
+      - name: npm run docs:build
+        run: npm install && npm run docs:build
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:

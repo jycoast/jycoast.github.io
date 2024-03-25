@@ -103,28 +103,6 @@ public void divideConquer(problem, param1, param2,...) {
 
 ### 代码模板
 
-二叉树递归模板：
-```
-public void dfs(TreeNode root) {
-	if (root == null) {
-		return;
-	}
-	Stack<TreeNode> stack = new Stack<TreeNode>();
-	stack.push(root);
-	while (!stack.isEmpty()) {
-		TreeNode node = stack.pop();
-		TreeNode left = node.left;
-		if (left != null) {
-			stack.push(left);
-		}
-		TreeNode right = node.right;
-		if (right != null) {
-			stack.push(right);
-		}
-	}
-}
-```
-
 ## 广度优先搜索
 
 ### 定义
