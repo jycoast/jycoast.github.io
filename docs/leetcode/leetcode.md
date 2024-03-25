@@ -21,7 +21,7 @@
 
 ### 704. 二分查找
 
-[leetcode题目链接](https://leetcode.cn/problems/binary-search/)
+[力扣题目链接](https://leetcode.cn/problems/binary-search/)
 
 模板代码：
 
@@ -576,6 +576,48 @@ public List<List<String>> groupAnagrams(String[] strs) {
         }
         return new ArrayList<>(map.values());
     }
+```
+
+### [136. 只出现一次的数字](https://leetcode.cn/problems/single-number/)
+
+使用Map统计 每个数字出现的次数，然后遍历map，找出出现次数为1次的数字：
+
+```java
+class Solution {
+    public int singleNumber(int[] nums) {
+        Map<Integer, Integer> map = new HashMap<>();
+        for (int num : nums) {
+            int count = map.getOrDefault(num, 0);
+            map.put(num, ++count);
+        }
+
+        for (Map.Entry<Integer, Integer> entry : map.entrySet()) {
+            if (entry.getValue() == 1) {
+                return entry.getKey();
+            }
+        }
+       throw new IllegalArgumentException("not found");
+    }
+}
+```
+
+更简单的做法是用set：
+
+```java
+class Solution {
+    public int singleNumber(int[] nums) {
+        Set<Integer> set = new HashSet<>();
+        for (int num : nums) {
+            if (!set.contains(num)) {
+                set.add(num);
+            } else {
+                set.remove(num);
+            }
+        }
+
+        return set.iterator().next();
+    }
+}
 ```
 
 
@@ -1534,6 +1576,259 @@ class Solution {
 }
 ```
 
+###  257. 二叉树的所有路径
+
+[力扣题目链接](https://leetcode.cn/problems/binary-tree-paths/)
+
+递归：
+
+```java
+class Solution {
+    public List<String> binaryTreePaths(TreeNode root) {
+        List<String> ans = new ArrayList<>();
+        dfs(ans, "", root);
+        return ans;
+    }
+
+    private void dfs(List<String> ans, String path, TreeNode root) {
+        if (root == null) {
+            return;
+        }
+        if (root.left == null && root.right == null) {
+            path += root.val;
+            ans.add(path);
+            return;
+        }
+        path += root.val + "->";
+        dfs(ans, path, root.left);
+        dfs(ans, path, root.right);
+    }
+}
+```
+
+执行结果：
+
+![image-20240322114537071](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/image-20240322114537071.png)
+
+使用StringBuilder效率会有所提升：
+
+```java
+class Solution {
+    public List<String> binaryTreePaths(TreeNode root) {
+        List<String> ans = new ArrayList<>();
+        dfs(ans, "", root);
+        return ans;
+    }
+
+    private void dfs(List<String> ans, String path, TreeNode root) {
+        if (root == null) {
+            return;
+        }
+        if (root.left == null && root.right == null) {
+            String s = new StringBuilder(path).append(root.val).toString();
+            ans.add(s);
+            return;
+        }
+        String s = new StringBuilder(path).append(root.val).append("->").toString();
+        dfs(ans, s, root.left);
+        dfs(ans, s, root.right);
+    }
+}
+```
+
+执行结果：
+
+![image-20240322114445685](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/image-20240322114445685.png)
+
+前序遍历的回溯算法：
+
+```java
+class Solution {
+    public List<String> binaryTreePaths(TreeNode root) {
+        List<String> ans = new ArrayList<>();
+        List<Integer> paths = new ArrayList<>();
+        dfs(ans, paths, root);
+        return ans;
+    }
+
+    private void dfs(List<String> ans, List<Integer> paths, TreeNode root) {
+        paths.add(root.val);
+        if (root.left == null && root.right == null) {
+            StringBuilder sb = new StringBuilder();
+            for (Integer path : paths) {
+                sb.append(path).append("->");
+            }
+            sb.delete(sb.length() - 2, sb.length());
+            ans.add(sb.toString());
+            return;
+        }
+
+        if (root.left != null) {
+            dfs(ans, paths, root.left);
+            paths.remove(paths.size() - 1);
+        }
+
+        if (root.right != null) {
+            dfs(ans, paths, root.right);
+            paths.remove(paths.size() - 1);
+        }
+    }
+}
+```
+
+### 404.左叶子之和
+
+[力扣题目链接](https://leetcode.cn/problems/sum-of-left-leaves/)
+
+递归法：
+
+```java
+class Solution {
+    public int sumOfLeftLeaves(TreeNode root) {
+        if (root == null) {
+            return 0;
+        }
+        return dfs(root);
+    }
+
+    private int dfs(TreeNode root) {
+        if (root == null) {
+            return 0;
+        }
+        int left = dfs(root.left);
+        int right = dfs(root.right);
+        int val = 0;
+        if (root.left != null && root.left.left == null && root.left.right == null) { // 说明是左侧节点
+            val = root.left.val;
+        }
+        return left + right + val;
+    }
+}
+```
+
+迭代法：
+
+```java
+class Solution {
+    public int sumOfLeftLeaves(TreeNode root) {
+        if (root == null) {
+            return 0;
+        }
+        int ans = 0;
+        Stack<TreeNode> stack = new Stack<TreeNode>();
+        stack.push(root);
+        while (!stack.isEmpty()) {
+            TreeNode node = stack.pop();
+
+            if (node.left != null && node.left.left == null && node.left.right == null) {
+                ans += node.left.val;
+            }
+
+            TreeNode left = node.left;
+            if (left != null) {
+                stack.push(left);
+            }
+            TreeNode right = node.right;
+            if (right != null) {
+                stack.push(right);
+            }
+        }
+        return ans;
+    }
+}
+```
+
+### 513.找树左下角的值
+
+[力扣题目链接](https://leetcode.cn/problems/find-bottom-left-tree-value/)
+
+递归解法：
+
+```java
+class Solution {
+
+    private int maxDepth = Integer.MIN_VALUE;
+    private int ans = 0;
+
+    public int findBottomLeftValue(TreeNode root) {
+        if (root == null) {
+            return ans;
+        }
+        dfs(root, 0);
+        return ans;
+    }
+
+    private void dfs(TreeNode root, int depth) {
+        if (root == null) {
+            return;
+        }
+        if (root.left == null && root.right == null) { // 是叶子节点
+            if (depth > maxDepth) {
+                ans = root.val;
+                maxDepth = depth;
+            }
+        }
+        dfs(root.left, depth + 1);
+        dfs(root.right, depth + 1);
+    }
+}
+```
+
+层序遍历：
+
+```java
+class Solution {
+
+    public int findBottomLeftValue(TreeNode root) {
+        if (root == null) {
+            return 0;
+        }
+        int ans = 0;
+        Queue<TreeNode> queue = new LinkedList<>();
+        queue.offer(root);
+        while (!queue.isEmpty()) {
+            int size = queue.size();
+            for (int i = 0; i < size; i++) {
+                TreeNode node = queue.poll();
+                if (i == 0) {
+                    ans = node.val;
+                }
+                TreeNode left = node.left;
+                if (left != null) {
+                    queue.offer(left);
+                }
+                TreeNode right = node.right;
+                if (right != null) {
+                    queue.offer(right);
+                }
+            }
+        }
+        return ans;
+    }
+}
+```
+
+### 112. 路径总和
+
+[力扣题目链接](https://leetcode.cn/problems/path-sum/)
+
+```java
+class Solution {
+    public boolean hasPathSum(TreeNode root, int targetSum) {
+        if (root == null) {
+            return false;
+        }
+        if (root.left == null && root.right == null) {
+            return root.val == targetSum;
+        }
+
+        return hasPathSum(root.left, targetSum - root.val) || hasPathSum(root.right, targetSum - root.val);
+    }
+}
+```
+
+
+
 ### 树总结
 
 递归是解决树的最重要的方法。
@@ -1716,6 +2011,7 @@ public
 
 
 ## 动态规划
+
 ### [70. 爬楼梯 ](https://leetcode-cn.com/problems/climbing-stairs/)
 
 直接使用递归求接斐波那契数列：
@@ -1954,15 +2250,20 @@ $$
 代码：
 
 ```java
-    public int fib(int n, int[] mem) {
-        if (n <= 1) {
+class Solution {
+    public int fib(int n) {
+        if (n < 2) {
             return n;
         }
-        if (mem[n] == 0) {
-            mem[n] = fib(n - 1, mem) + fib(n - 2, mem);
+        int[] dp = new int[n + 1];
+        dp[0] = 0;
+        dp[1] = 1;
+        for (int i = 2; i <= n; i++) {
+            dp[i] = dp[i - 1] + dp[i - 2];
         }
-        return mem[n];
+        return dp[n];
     }
+}
 ```
 
 所谓的状态转移方程或者说递推公式为：`dp[i] = dp[i - 1] + dp[i - 2]`。
