@@ -16,7 +16,7 @@
     "@vuepress/plugin-photo-swipe": "^2.0.0-rc.19",
     "@vuepress/plugin-reading-time": "^2.0.0-rc.19",
     "@vuepress/theme-default": "^2.0.0-rc.11",
-    "katex": "^0.16.9",
+    "katex": "^0.16.10",
     "markmap-lib": "^0.16.1",
     "markmap-toolbar": "^0.16.0",
     "markmap-view": "^0.16.0",
