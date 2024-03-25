@@ -40,17 +40,17 @@ Tomcat要实现2个核心功能：
 
 因此Tomcat设计了两个核心组件连接器（Connector）和容器（Container）来分别做这两件事情。连接器负责对外交流，容器负责内部处理。
 
-### Tomcat核心组件
+## Tomcat核心组件
 
-#### Server组件
+### Server组件
 
 Server组件指的就是整个Tomcat服务器，包含多组服务（Service），负责管理和启动各个Service，同时监听8005端口发过来的shutdown命令，用于关闭整个容器。
 
-#### Service组件
+### Service组件
 
 每个Service组件都包含了若干接收客户端消息的Connector组件和处理请求的Engine组件。Service组件还包含了若干Executor组件，每个Executor都是一个线程池，它可以为Service内所有组件提供线程池执行任务。
 
-#### 连接器Connector组件
+### 连接器Connector组件
 
 Tomcat与外部世界的连接器，监听固定端口接收外部请求，传递给Container，并将Container处理的结果返回给外部。连接器对Servlet容器屏蔽了不同的应用层协议及I/O模型，无论是HTTP还是AJP，在容器中获取到的都是一个标准的ServletRequest对象。连接器需要实现的功能：
 
@@ -81,7 +81,7 @@ Tomcat与外部世界的连接器，监听固定端口接收外部请求，传�
 
 <img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img202304032351641.png" alt="img202304032351641" style="zoom: 67%;" />
 
-#### ProtocolHandler组件
+### ProtocolHandler组件
 
 连接器用ProtocolHandler来处理网络连接和应用层协议，包含两个重要部件：EndPoint和Processor。
 
@@ -89,7 +89,7 @@ Tomcat与外部世界的连接器，监听固定端口接收外部请求，传�
 
 连接器用ProtocolHandler接口来封装通信协议个I/O模型的差异，ProtocolHandler内部又分为EndPoint和Processor模块，EndPoint负责底层Sokcet通信，Processor负责应用层协议解析。连接器通过适配器Adapter调用容器。
 
-### Tomcat线程模型
+## Tomcat线程模型
 
 MMU内存管理模型。
 
@@ -121,16 +121,16 @@ public boolean offer(Runnable o) {
 
 这样在未达到最大线程数的时候，会首先创建线程，只有在达到了线程池最大线程数的时候才会将任务放入到阻塞队列。
 
-### Tomcat类加载机制
+## Tomcat类加载机制
 
-#### JVM类加载器
+### JVM类加载器
 
 - BootStrapClassLoader（启动类加载器），
 - ExtClassLoader（扩展类加载器），
 - AppClassLoader（系统类加载器）
 - 自定义类加载器，用来加载自定义路径下的类
 
-#### 双亲委托机制
+### 双亲委托机制
 
 加载某个类会先委托父加载器寻找目标类，找不到再委托上层父加载器加载，如果所有父加载器在自己的加载路径下都找不到目标类，则在自己的类加载路径中查找并载入目标类。这就是双亲委托机制。
 
@@ -145,7 +145,7 @@ public boolean offer(Runnable o) {
 - 沙箱安全机制
 - 避免类的重复加载
 
-#### Tomcat的类加载机制
+### Tomcat的类加载机制
 
 Tomcat作为Servlet容器，它负责加载Servlet类，此外它还负责加载Servlet所依赖的Jar包。并且Tomcat本身也是一个Java程序，因此它需要加载自己的类和依赖的jar包。
 
@@ -164,10 +164,9 @@ Tomcat提供了四组目录供用户存放第三方类库：
 
 - 放置在/common目录中：类库可被Tomcat和所有的Web应用程序共同使用
 
-##### 线程上下文类加载器
+#### 线程上下文类加载器
 
 
-
-#### Tomcat热加载和热部署
+### Tomcat热加载和热部署
 
 

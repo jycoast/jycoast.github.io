@@ -190,7 +190,7 @@ export default defineUserConfig({
           },
           {
               text: 'Tomcat',
-              link: '/middleware/tomcat/'
+              link: '/middleware/Tomcat/'
           },
           {
             text: 'Zookeeper',
