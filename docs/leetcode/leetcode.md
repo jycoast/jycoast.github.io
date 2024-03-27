@@ -1,5 +1,12 @@
 # 算法刷题
 
+## 常用站点
+
+- [代码随想录](https://programmercarl.com/0530.%E4%BA%8C%E5%8F%89%E6%90%9C%E7%B4%A2%E6%A0%91%E7%9A%84%E6%9C%80%E5%B0%8F%E7%BB%9D%E5%AF%B9%E5%B7%AE.html)
+- [labuladong的算法笔记](https://labuladong.github.io/algo/)
+- [leetcode题解](https://doocs.github.io/leetcode/)
+- [geeksforgeeks](https://www.geeksforgeeks.org/)
+
 ## 数组
 
 ### [1. 两数之和](https://leetcode-cn.com/problems/two-sum/)
@@ -552,11 +559,53 @@ public class Solution {
 
 
 
-### 链表总结
+### 链表题目总结
 
 创建虚拟的头节点和快慢指针是链表常见的解题思路。
 
 ## 哈希表
+
+### 128. 最长连续序列
+
+[力扣题目链接](https://leetcode.cn/problems/longest-consecutive-sequence/)
+
+思路：先将所有元素放入哈希表，遍历数组，然后统计当前元素的最长连接序列，最后求所有元素最长连接序列的最大值。
+
+```java
+class Solution {
+    public int longestConsecutive(int[] nums) {
+        if (nums == null || nums.length == 0) {
+            return 0;
+        }
+        Set<Integer> set = new HashSet<>();
+        for (int num : nums) {
+            set.add(num);
+        }
+        int ans = 0;
+        for (int i = 0; i < nums.length; i++) {
+            int num = nums[i];
+            // 肯定包含自己，所以count = 1
+            int count = 1;
+            while (set.contains(--num)) {
+                count++;
+                // 统计过了就移除掉
+                set.remove(num);
+            }
+            num = nums[i];
+            while (set.contains(++num)) {
+                count++;
+                // 统计过了就移除掉
+                set.remove(num);
+            }
+            ans = Math.max(ans, count);
+        }
+
+        return ans;
+    }
+}
+```
+
+
 
 ### [49. 字母异位词分组](https://leetcode-cn.com/problems/group-anagrams/)
 
@@ -913,7 +962,7 @@ class Solution {
 
 
 
-### 字符串总结
+### 字符串题目总结
 
 
 
@@ -1165,6 +1214,8 @@ public int maxDepthByBFS(TreeNode root) {
 
 ### [236. 二叉树的最近公共祖先](https://leetcode-cn.com/problems/lowest-common-ancestor-of-a-binary-tree/)
 
+[力扣题目链接](https://leetcode.cn/problems/lowest-common-ancestor-of-a-binary-tree/)
+
 树的祖先的定义：若节点P在节点root的左（右）子树中，或P=root，则称root是p的祖先。
 
 <img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210713224143.png" alt="Picture1.png" style="zoom:50%;" />
@@ -1208,6 +1259,31 @@ class Solution {
 }
 ```
 
+解法二：
+
+```java
+class Solution {
+    public TreeNode lowestCommonAncestor(TreeNode root, TreeNode p, TreeNode q) {
+        if (root == null) {
+            return null;
+        }
+        if (p == root || q == root) {
+            return root;
+        }
+
+        TreeNode left = lowestCommonAncestor(root.left, p, q);
+        TreeNode right = lowestCommonAncestor(root.right, p, q);
+        if (left == null) {
+            return right;
+        }
+        if (right == null) {
+            return left;
+        }
+        return root;
+    }
+}
+```
+
 
 
 ### [78. 子集](https://leetcode-cn.com/problems/subsets/)
@@ -1235,48 +1311,7 @@ class Solution {
     }
 ```
 
-### [17. 电话号码的字母组合](https://leetcode-cn.com/problems/letter-combinations-of-a-phone-number/)
 
-题目的状态树：
-
-<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210712235154.png" alt="17. 电话号码的字母组合" style="zoom:50%;" />
-
-使用回溯法：
-
-```java
-     public List<String> letterCombinations(String digits) {
-        List<String> res = new ArrayList<>();
-        if (digits.length() == 0) {
-            return res;
-        }
-        Map<String, String> map = new HashMap<>();
-        map.put("2", "abc");
-        map.put("3", "def");
-        map.put("4", "ghi");
-        map.put("5", "jkl");
-        map.put("6", "mno");
-        map.put("7", "pqrs");
-        map.put("8", "tuv");
-        map.put("9", "wxyz");
-        dfs(digits, 0, map, res, new StringBuilder());
-        return res;
-    }
-
-    public void dfs(String digits, int index, Map<String, String> map, List<String> res, StringBuilder str) {
-        if (index == digits.length()) {
-            res.add(str.toString());
-            return;
-        }
-        // 获取当前数字对应的字符值
-        String val = map.get(digits.substring(index, index + 1));
-        for (char c : val.toCharArray()) {
-            str.append(c);
-            dfs(digits, index + 1, map, res, str);
-            // 删除刚才添加到末尾的元素，选择当前数字对应字符串的下一个值进行遍历
-            str.deleteCharAt(str.length() - 1);
-        }
-    }
-```
 
 ### [102. 二叉树的层序遍历](https://leetcode-cn.com/problems/binary-tree-level-order-traversal/)
 
@@ -1827,13 +1862,350 @@ class Solution {
 }
 ```
 
+### 617.合并二叉树
+
+[力扣题目链接](https://leetcode.cn/problems/merge-two-binary-trees/)
+
+```java
+class Solution {
+    public TreeNode mergeTrees(TreeNode root1, TreeNode root2) {
+        if (root1 == null) {
+            return root2;
+        }
+
+        if (root2 == null) {
+            return root1;
+        }
+        
+        // 处理当前层
+        int val = root1.val + root2.val;
+        TreeNode node = new TreeNode(val);
+
+        // 计算左右节点
+        TreeNode left = mergeTrees(root1.left, root2.left);
+        TreeNode right = mergeTrees(root1.right, root2.right);
+
+        node.left = left;
+        node.right = right;
+        return node;
+    }
+}
+```
+
+简洁一点的写法：
+
+```java
+class Solution {
+    public TreeNode mergeTrees(TreeNode root1, TreeNode root2) {
+        if (root1 == null) return root2;
+        if (root2 == null) return root1;
+
+        TreeNode node = new TreeNode(root1.val + root2.val);
+        node.left = mergeTrees(root1.left, root2.left);
+        node.right =  mergeTrees(root1.right, root2.right);
+        return node;
+    }
+}
+```
+
+### 700.二叉搜索树中的搜索
+
+```java
+class Solution {
+    public TreeNode searchBST(TreeNode root, int val) {
+        if (root == null) {
+            return null;
+        }
+
+        if (root.val == val) {
+            return root;
+        }
+
+        if (val > root.val) {
+            return searchBST(root.right, val);
+        } else {
+            return searchBST(root.left, val);
+        }
+    }
+}
+```
+
+简洁一点的写法：
+
+```java
+class Solution {
+    public TreeNode searchBST(TreeNode root, int val) {
+        if (root == null || root.val == val) return root;
+        return val > root.val ? searchBST(root.right, val) : searchBST(root.left, val);
+    }
+}
+```
+
+### 530.二叉搜索树的最小绝对差
+
+[力扣题目链接](https://leetcode.cn/problems/minimum-absolute-difference-in-bst/)
+
+自然的想法，按照中序遍历，然后求最小差：
+
+```java
+class Solution {
+    public int getMinimumDifference(TreeNode root) {
+        List<Integer> nums = new ArrayList<>();
+        if (root == null) {
+            return 0;
+        }
+        dfs(nums, root);
+        int min = Integer.MAX_VALUE;
+        for (int i = 1; i < nums.size(); i++) {
+            min = Math.min(min, nums.get(i) - nums.get(i - 1));
+        }
+        return min;
+    }
+
+    private void dfs(List<Integer> nums, TreeNode root) {
+        if (root == null) {
+            return;
+        }
+        dfs(nums, root.left);
+        nums.add(root.val);
+        dfs(nums, root.right);
+    }
+}
+```
+
+### 501.二叉搜索树中的众数
+
+[力扣题目链接](https://leetcode.cn/problems/find-mode-in-binary-search-tree/)
+
+解法一：
+
+```java
+class Solution {
+    public int[] findMode(TreeNode root) {
+        Map<Integer, Integer> map = new HashMap<>();
+        dfs(map, root);
+        List<Integer> ans = new ArrayList<>();
+        Integer maxFrequency = Collections.max(map.values());
+        for (Integer key : map.keySet()) {
+            if (map.get(key) == maxFrequency) {
+                ans.add(key);
+            }
+        }
+        return ans.stream().mapToInt(Integer::intValue).toArray();
+    }
+
+    private void dfs(Map<Integer, Integer> map, TreeNode root) {
+        if (root == null) {
+            return;
+        }
+        map.put(root.val, map.getOrDefault(root.val, 0) + 1);
+        dfs(map, root.left);
+        dfs(map, root.right);
+    }
+}
+```
+
+解法二：
+
+```java
+class Solution {
+    public int[] findMode(TreeNode root) {
+        Map<Integer, Integer> freqMap = new HashMap<>();
+        int max = dfs(root, freqMap);
+        return freqMap.entrySet().stream()
+                .filter(e -> e.getValue() == max)
+                .mapToInt(e -> e.getKey()).toArray();
+    }
+
+    private int dfs(TreeNode root, Map<Integer, Integer> freqMap) {
+        if (root == null) {
+            return 0;
+        }
+
+        int l = dfs(root.left, freqMap);
+        int r = dfs(root.right, freqMap);
+        freqMap.put(root.val, freqMap.getOrDefault(root.val, 0) + 1);
+        return Math.max(freqMap.get(root.val), Math.max(l, r));
+    }
+}
+
+```
 
 
-### 树总结
+
+### 树题目总结
 
 递归是解决树的最重要的方法。
 
+平衡二叉树的中序遍历是有序数组，这一点解题的时候会经常用到。
+
 ## 回溯算法
+
+### 77. 组合
+
+[力扣题目链接](https://leetcode.cn/problems/combinations/)
+
+```java
+class Solution {
+    public List<List<Integer>> combine(int n, int k) {
+        List<List<Integer>> ans = new ArrayList<>();
+        dfs(ans, new ArrayList<>(), n, k, 1);
+        return ans;
+    }
+
+
+    private void dfs(List<List<Integer>> ans, List<Integer> path, int n, int k, int startIndex) {
+        if (path.size() == k) {
+            ans.add(new ArrayList<>(path));
+            return;
+        }
+
+        for (int i = startIndex; i <= n; i++) {
+            path.add(i);
+            dfs(ans, path, n, k, i + 1);
+            path.remove(path.size() - 1);
+        }
+    }
+}
+```
+
+结果用成员变量保存：
+
+```java
+class Solution {
+
+    private List<List<Integer>> ans = new ArrayList<>();
+    private List<Integer> path = new ArrayList<>();
+
+    public List<List<Integer>> combine(int n, int k) {
+        dfs(n, k, 1);
+        return ans;
+    }
+
+
+    private void dfs(int n, int k, int startIndex) {
+        if (path.size() == k) {
+            ans.add(new ArrayList<>(path));
+            return;
+        }
+
+        for (int i = startIndex; i <= n; i++) {
+            path.add(i);
+            dfs(n, k, i + 1);
+            path.remove(path.size() - 1);
+        }
+    }
+}
+```
+
+剪枝优化：
+
+```java
+class Solution {
+
+    private List<List<Integer>> ans = new ArrayList<>();
+    private List<Integer> path = new ArrayList<>();
+
+    public List<List<Integer>> combine(int n, int k) {
+        dfs(n, k, 1);
+        return ans;
+    }
+
+
+    private void dfs(int n, int k, int startIndex) {
+        if (path.size() == k) {
+            ans.add(new ArrayList<>(path));
+            return;
+        }
+
+        for (int i = startIndex; i <= n - (k - path.size()) + 1; i++) {
+            path.add(i);
+            dfs(n, k, i + 1);
+            path.remove(path.size() - 1);
+        }
+    }
+}
+```
+
+### 216.组合总和III
+
+```java
+class Solution {
+
+    private List<List<Integer>> ans = new ArrayList<>();
+
+    private List<Integer> path = new ArrayList<>();
+
+    public List<List<Integer>> combinationSum3(int k, int n) { // k个，和为n // 组合只允许 1-9的正整数
+        dfs(k, n, 1, 0);
+        return ans;
+    }
+
+    private void dfs(int k, int n, int startIndex, int sum) {
+        if (path.size() == k) {
+            if (sum == n) {
+                ans.add(new ArrayList<>(path));
+            }
+            return;
+        }
+
+        for (int i = startIndex; i <= 9; i++) {
+            sum += i;
+            path.add(i);
+            dfs(k, n, i + 1, sum);
+            sum -= i;
+            path.remove(path.size() - 1);
+        }
+    }
+}
+```
+
+
+
+### [17. 电话号码的字母组合](https://leetcode-cn.com/problems/letter-combinations-of-a-phone-number/)
+
+题目的状态树：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210712235154.png" alt="17. 电话号码的字母组合" style="zoom:50%;" />
+
+使用回溯法：
+
+```java
+     public List<String> letterCombinations(String digits) {
+        List<String> res = new ArrayList<>();
+        if (digits.length() == 0) {
+            return res;
+        }
+        Map<String, String> map = new HashMap<>();
+        map.put("2", "abc");
+        map.put("3", "def");
+        map.put("4", "ghi");
+        map.put("5", "jkl");
+        map.put("6", "mno");
+        map.put("7", "pqrs");
+        map.put("8", "tuv");
+        map.put("9", "wxyz");
+        dfs(digits, 0, map, res, new StringBuilder());
+        return res;
+    }
+
+    public void dfs(String digits, int index, Map<String, String> map, List<String> res, StringBuilder str) {
+        if (index == digits.length()) {
+            res.add(str.toString());
+            return;
+        }
+        // 获取当前数字对应的字符值
+        String val = map.get(digits.substring(index, index + 1));
+        for (char c : val.toCharArray()) {
+            str.append(c);
+            dfs(digits, index + 1, map, res, str);
+            // 删除刚才添加到末尾的元素，选择当前数字对应字符串的下一个值进行遍历
+            str.deleteCharAt(str.length() - 1);
+        }
+    }
+```
+
+
 
 ### [22. 括号生成](https://leetcode-cn.com/problems/generate-parentheses/)
 
@@ -1929,6 +2301,10 @@ class Solution {
 ```
 
 
+
+### 回溯问题总结
+
+回溯的本质是递归。
 
 ## 贪心算法
 
@@ -2404,6 +2780,12 @@ class{
 ```
 
 ### [409. 最长回文串](https://leetcode-cn.com/problems/longest-palindrome/)
+
+
+
+### 动态规划问题总结
+
+
 
 ## 图论
 
