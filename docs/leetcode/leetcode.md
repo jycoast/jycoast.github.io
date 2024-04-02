@@ -2168,7 +2168,49 @@ class Solution {
 
 <img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210712235154.png" alt="17. 电话号码的字母组合" style="zoom:50%;" />
 
-使用回溯法：
+方法一：
+
+```java
+class Solution {
+    private List<String> ans = new ArrayList<>();
+    private StringBuilder path = new StringBuilder();
+
+    public List<String> letterCombinations(String digits) {
+        if (digits == null || digits.isEmpty()) {
+            return ans;
+        }
+        Map<Integer, String> map = new HashMap<>();
+        map.put(0, "");
+        map.put(1, "");
+        map.put(2, "abc");
+        map.put(3, "def");
+        map.put(4, "ghi");
+        map.put(5, "jkl");
+        map.put(6, "mno");
+        map.put(7, "pqrs");
+        map.put(8, "tuv");
+        map.put(9, "wxyz");
+        dfs(digits, map, 0);
+        return ans;
+    }
+
+    private void dfs(String digits, Map<Integer, String> map, int num) {
+        if (num == digits.length()) {
+            ans.add(path.toString());
+            return;
+        }
+
+        String str = map.get(digits.charAt(num) - '0'); // 找出按键对应的字符
+        for (int i = 0; i < str.length(); i++) {
+            path.append(str.charAt(i));
+            dfs(digits, map, num + 1);
+            path.deleteCharAt(path.length() - 1);
+        }
+    }
+}
+```
+
+方法二：
 
 ```java
      public List<String> letterCombinations(String digits) {
@@ -2205,7 +2247,326 @@ class Solution {
     }
 ```
 
+### 39. 组合总和
 
+```java
+class Solution {
+
+    private List<List<Integer>> ans = new ArrayList<>();
+
+    private List<Integer> path = new ArrayList<>();
+
+    public List<List<Integer>> combinationSum(int[] candidates, int target) {
+        Arrays.sort(candidates); // 先排序
+        dfs(candidates, target, 0, 0);
+        return ans;
+    }
+
+    private void dfs(int[] candidates, int target, int sum, int startIndex) {
+        if (target == sum) {
+            ans.add(new ArrayList<>(path));
+            return;
+        }
+        // 从小的往大的遍历找
+        for (int i = startIndex; i < candidates.length; i++) {
+            if (sum + candidates[i] > target) { // 说明已经不用找了
+                break;
+            }
+            path.add(candidates[i]);
+            dfs(candidates, target, sum + candidates[i], i);
+            path.remove(path.size() - 1);
+        }
+    }
+}
+```
+
+###  40.组合总和II
+
+和组合一一样的思路：
+
+```java
+class Solution {
+
+    private List<List<Integer>> ans = new ArrayList<>();
+    private List<Integer> path = new ArrayList<>();
+
+    public List<List<Integer>> combinationSum2(int[] candidates, int target) {
+        Arrays.sort(candidates);
+        dfs(candidates, target, 0, 0);
+        return ans;
+    }
+
+    private void dfs(int[] candidates, int target, int sum, int startIndex) {
+        if (sum == target) {
+            ans.add(new ArrayList<>(path));
+            return;
+        }
+
+        for (int i = startIndex; i < candidates.length; i++) {
+            if (candidates[i] + sum > target) {
+                break;
+            }
+            // 跳过同一树层使用过的元素
+            if (i > startIndex && candidates[i] == candidates[i - 1]) {
+                continue;
+            }
+            path.add(candidates[i]);
+            dfs(candidates, target, candidates[i] + sum, i + 1);
+            path.remove(path.size() - 1);
+        }
+    }
+}
+```
+
+###  131.分割回文串
+
+```java
+class Solution {
+
+    private List<List<String>> ans = new ArrayList<>();
+    private List<String> path = new ArrayList<>();
+
+    public List<List<String>> partition(String s) {
+        if (s == null || s.isEmpty()) {
+            return ans;
+        }
+        dfs(s);
+        return ans;
+    }
+
+    private void dfs(String s) {
+        if (s == null || s.isEmpty()) {
+            ans.add(new ArrayList<>(path));
+            return;
+        }
+
+        for (int i = 1; i <= s.length(); i++) {
+            String temp = s.substring(0, i);
+            if (!isPalinDrome(temp)) {
+                continue;
+            }
+            path.add(temp);
+            dfs(s.substring(i, s.length()));
+            path.remove(path.size() - 1);
+        }
+    }
+
+    private boolean isPalinDrome(String s) {
+        int i = 0, j = s.length() - 1;
+        while (i <= j) {
+            if (s.charAt(i) != s.charAt(j)) {
+                return false;
+            }
+            i++;
+            j--;
+        }
+        return true;
+    }
+}
+```
+
+###  78.子集
+
+[力扣题目链接](https://leetcode.cn/problems/subsets/)
+
+```java
+class Solution {
+
+    private List<List<Integer>> ans = new ArrayList<>();
+
+    private List<Integer> path = new ArrayList<>();
+
+    public List<List<Integer>> subsets(int[] nums) {
+        if (nums == null || nums.length == 0) {
+            return ans;
+        }
+        dfs(nums, 0);
+        return ans;
+    }
+
+    private void dfs(int[] nums, int startIndex) {
+        ans.add(new ArrayList<>(path));
+        if (startIndex >= nums.length) {
+            return;
+        }
+
+        for (int i = startIndex; i < nums.length; i++) { // 取过的不能再取了
+            path.add(nums[i]);
+            dfs(nums, i + 1);
+            path.remove(path.size() - 1);
+        }
+    }
+}
+```
+
+### 90.子集II
+
+[力扣题目链接](https://leetcode.cn/problems/subsets-ii/)
+
+```java
+class Solution {
+
+    private List<List<Integer>> ans = new ArrayList<>();
+
+    private List<Integer> path = new ArrayList<>();
+
+    public List<List<Integer>> subsetsWithDup(int[] nums) {
+        if (nums == null || nums.length == 0) {
+            return ans;
+        }
+        Arrays.sort(nums);
+        dfs(nums, 0);
+        return ans;
+    }
+
+    private void dfs(int[] nums, int startIndex) {
+        ans.add(new ArrayList<>(path));
+        if (startIndex >= nums.length) {
+            return;
+        }
+
+        for (int i = startIndex; i < nums.length; i++) {
+            if (i > startIndex && nums[i] == nums[i - 1]) {
+                continue;
+            }
+            path.add(nums[i]);
+            dfs(nums, i + 1);
+            path.remove(path.size() - 1);
+        }
+    }
+}
+```
+
+### 491.递增子序列
+
+[力扣题目链接](https://leetcode.cn/problems/non-decreasing-subsequences/)
+
+```java
+class Solution {
+
+
+    private List<List<Integer>> ans = new ArrayList<>();
+
+    private List<Integer> path = new ArrayList<>();
+
+    public List<List<Integer>> findSubsequences(int[] nums) {
+        if (nums == null || nums.length == 0) {
+            return ans;
+        }
+        dfs(nums, 0);
+        return ans;
+    }
+
+
+    private void dfs(int[] nums, int startIndex) {
+        if (path.size() > 1) {
+            ans.add(new ArrayList<>(path));
+        }
+
+        Set<Integer> set = new HashSet<>();
+        for (int i = startIndex; i < nums.length; i++) {
+            // 当前层已经用过的元素不能再用了
+            if (set.contains(nums[i])) {
+                continue;
+            }
+            // 当前元素必须要大于已经选择过的元素
+            if (!path.isEmpty() && path.get(path.size() - 1) > nums[i]) {
+                continue;
+            }
+            set.add(nums[i]);
+            path.add(nums[i]);
+            dfs(nums, i + 1);
+            path.remove(path.size() - 1);
+        }
+    }
+}
+```
+
+### 46.全排列
+
+[力扣题目链接](https://leetcode.cn/problems/permutations/)
+
+```java
+class Solution {
+
+    private List<List<Integer>> ans = new ArrayList<>();
+
+    private List<Integer> path = new ArrayList<>();
+
+    boolean[] used;
+
+    public List<List<Integer>> permute(int[] nums) {
+        if (nums == null || nums.length == 0) {
+            return ans;
+        }
+        used = new boolean[nums.length + 1];
+        dfs(nums);
+        return ans;
+    }
+
+    private void dfs(int[] nums) {
+        if (path.size() == nums.length) {
+            ans.add(new ArrayList<>(path));
+            return;
+        }
+
+        for (int i = 0; i < nums.length; i++) {
+            if (used[i]) {
+                continue;
+            }
+            used[i] = true;
+            path.add(nums[i]);
+            dfs(nums);
+            path.remove(path.size() - 1);
+            used[i] = false;
+        }
+    }
+}
+```
+
+### 47.全排列 II
+
+[力扣题目链接](https://leetcode.cn/problems/permutations-ii/)
+
+```java
+class Solution {
+
+    private List<List<Integer>> ans = new ArrayList<>();
+
+    private List<Integer> path = new ArrayList<>();
+
+    boolean[] used;
+
+    public List<List<Integer>> permuteUnique(int[] nums) {
+        if (nums == null || nums.length == 0) {
+            return ans;
+        }
+        used = new boolean[nums.length];
+        Arrays.sort(nums);
+        dfs(nums);
+        return ans;
+    }
+
+    private void dfs(int[] nums) {
+        if (path.size() == nums.length) {
+            ans.add(new ArrayList<>(path));
+        }
+
+        for (int i = 0; i < nums.length; i++) {
+            if (i > 0 && nums[i] == nums[i - 1] && used[i - 1] == false) {
+                continue;
+            }
+            if (used[i] == false) {
+                used[i] = true;
+                path.add(nums[i]);
+                dfs(nums);
+                path.remove(path.size() - 1);
+                used[i] = false;
+            }
+        }
+    }
+}
+```
 
 ### [22. 括号生成](https://leetcode-cn.com/problems/generate-parentheses/)
 
@@ -2240,9 +2601,108 @@ class Solution {
     }
 ```
 
+### 332.重新安排行程
+
+[力扣题目链接](https://leetcode.cn/problems/reconstruct-itinerary/)
+
+常规的回溯法，此题会超时：
+
+```java
+class Solution {
+
+    private List<String> ans = new ArrayList<>();
+    private List<String> path = new ArrayList<>();
+    boolean[] used;
+
+    /**
+     * @param tickets [["MUC", "LHR"], ["JFK", "MUC"], ["SFO", "SJC"], ["LHR", "SFO"]]
+     * @return 示例：["JFK", "MUC", "LHR", "SFO", "SJC"]
+     */
+    public List<String> findItinerary(List<List<String>> tickets) {
+        used = new boolean[tickets.size()];
+        Collections.sort(tickets, (a, b) -> a.get(1).compareTo(b.get(1)));
+//        System.out.println(tickets);
+        path.add("JFK");
+        dfs(tickets);
+        return ans;
+    }
+
+    private boolean dfs(List<List<String>> tickets) {
+        if (path.size() == tickets.size() + 1) { // 因为已经有一个 "JFK"了，所以最后的结果的长度是 tickets.size() + 1
+            ans = new ArrayList<>(path);
+            return true;
+        }
+
+        for (int i = 0; i < tickets.size(); i++) {
+            if (used[i] || !tickets.get(i).get(0).equals(path.get(path.size() - 1))) {
+                continue;
+            }
+
+            path.add(tickets.get(i).get(1));
+            used[i] = true;
+            if (dfs(tickets)) {
+                return true;
+            }
+            used[i] = false;
+            path.remove(path.size() - 1);
+        }
+        return false;
+    }
+}
+```
+
+解法二：
+
+```java
+class Solution {
+    public List<String> findItinerary(List<List<String>> tickets) {
+        Map<String, Queue<String>> adjLists = new HashMap<>();
+
+        for (List<String> ticket : tickets) {
+            String from = ticket.get(0);
+            String to = ticket.get(1);
+            if (!adjLists.containsKey(from)) {
+                adjLists.put(from, new PriorityQueue<>());
+            }
+            adjLists.get(from).add(to);
+        }
+
+        List<String> ans = new ArrayList<>();
+        dfs(adjLists, ans, "JFK");
+        Collections.reverse(ans);
+        return ans;
+    }
+
+    private void dfs(Map<String, Queue<String>> adjLists, List<String> ans, String curr) {
+        Queue<String> neighbors = adjLists.get(curr);
+        if (neighbors == null) {
+            ans.add(curr);
+            return;
+        }
+        while (!neighbors.isEmpty()) {
+            String neighbor = neighbors.poll();
+            dfs(adjLists, ans, neighbor);
+        }
+        ans.add(curr);
+        return;
+    }
+}
+```
+
 
 
 ### [212. 单词搜索 II](https://leetcode-cn.com/problems/word-search-ii/)
+
+
+
+### 37. 解数独
+
+[力扣题目链接](https://leetcode.cn/problems/sudoku-solver/)
+
+```java
+```
+
+
 
 ### [51. N 皇后](https://leetcode-cn.com/problems/n-queens/)
 
@@ -2439,7 +2899,25 @@ public
     }
 ```
 
+### 746. 使用最小花费爬楼梯
 
+[力扣题目链接](https://leetcode.cn/problems/min-cost-climbing-stairs/)
+
+```java
+class Solution {
+    public int minCostClimbingStairs(int[] cost) {
+        int n = cost.length;
+        // dp[i] 到达第i台阶所花费的最少体力为dp[i]
+        int[] dp = new int[n + 1];
+        dp[0] = 0; // 前两步不花费，可以直接选择从0或者从1开始
+        dp[1] = 0;
+        for (int i = 2; i <= n; i++) {
+            dp[i] = Math.min(dp[i - 1] + cost[i - 1], dp[i - 2] + cost[i - 2]);
+        }
+        return dp[n];
+    }
+}
+```
 
 ### [62. 不同路径](https://leetcode-cn.com/problems/unique-paths/)
 
@@ -2467,6 +2945,10 @@ $$
         return dp[m - 1][n - 1];
     }
 ```
+
+### 63. 不同路径 II
+
+
 
 ### [120. 三角形最小路径和](https://leetcode-cn.com/problems/triangle/)
 

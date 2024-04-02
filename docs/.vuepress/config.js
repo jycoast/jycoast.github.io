@@ -234,9 +234,9 @@ export default defineUserConfig({
   plugins: [
     searchProPlugin({
       queryHistoryCount: 0,
-    //   hotKeys:[{ key: "k", ctrl: true }, { key: "M", ctrl: true }]
     }),
     googleAnalyticsPlugin({
+        id: 'G-6QKG0ZYM99',
     }),
     // lightgalleryPlugin({delay:0})
     mdEnhancePlugin({
