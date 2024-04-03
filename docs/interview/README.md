@@ -2082,9 +2082,6 @@ CPU核心线程数*2：
 - ByteBuf支持slice操作，因此可以将ByteBuf分为多个共享同一个存储区域的ByteBuf，避免了内存的拷贝
 - 通过FileRegion包装的FileChannel.tranferTo实现文件传输，可以直接将文件缓冲区的数据发送到目标Channel，避免了传统通过循环write方式导致的内存拷贝问题
 
-## Spring Sercuity
-
-### Spring Sercuity 和 Shiro有什么区别？
 
 
 

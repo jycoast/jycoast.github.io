@@ -6,7 +6,7 @@ tagline: null
 heroImage: mlogo.svg
 actions:
   - text: 快速开始 →
-    link: /interview/
+    link: /interview/java_basics/Java_basic
     type: primary
 features:
 - title: 语言特性
