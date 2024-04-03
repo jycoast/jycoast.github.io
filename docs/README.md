@@ -9,10 +9,10 @@ actions:
     link: /interview/
     type: primary
 features:
-- title: 持续学习
-  details: 坚持每天学习
-- title: 边学边记
-  details: 学习过程中记录笔记，防止忘记
-- title: 知识库
-  details: 积少成多，串联知识，方便翻阅
+- title: 语言特性
+  details: 集合、IO、并发编程、Java EE等
+- title: 源码解析
+  details: Spring、Dubbo、Mybatis等
+- title: 计算机基础
+  details: 数据结构与算法、操作系统等
 ---

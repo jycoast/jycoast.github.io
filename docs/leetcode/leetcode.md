@@ -207,25 +207,52 @@ class Solution {
 
 ### [283. 移动零](https://leetcode-cn.com/problems/move-zeroes/)
 
+写法一：
+
 ```java
-public void moveZeroes(int[] nums) {
+class Solution {
+    public void moveZeroes(int[] nums) {
         if (nums == null || nums.length == 0) {
             return;
         }
-        // 将非零数移动到index处
-        int index = 0;
-        for (int i = 0; i < nums.length; i++) {
-            if (nums[i] != 0) {
-                nums[index] = nums[i];
-                index++;
+        int left = 0;
+        for (int right = 0; right < nums.length; right++) {
+            if (nums[right] != 0) {
+                nums[left] = nums[right];
+                left++;
             }
         }
 
-        for (int i = index; i < nums.length; i++) {
+        for (int i = left; i < nums.length; i++) {
             nums[i] = 0;
         }
     }
+}
 ```
+
+写法二：
+
+```java
+class Solution {
+    public void moveZeroes(int[] nums) {
+        if (nums == null || nums.length == 0) {
+            return;
+        }
+        int left = 0;
+        for (int right = 0; right < nums.length; right++) {
+            if (nums[right] != 0) {
+                nums[left] = nums[right];
+                if (right > left) {
+                    nums[right] = 0;
+                }
+                left++;
+            }
+        }
+    }
+}
+```
+
+
 
 ### [15. 三数之和](https://leetcode-cn.com/problems/3sum/)
 
@@ -565,6 +592,30 @@ public class Solution {
 
 ## 哈希表
 
+### 349. 两个数组的交集
+
+[力扣题目链接](https://leetcode.cn/problems/intersection-of-two-arrays/)
+
+```java
+class Solution {
+    public int[] intersection(int[] nums1, int[] nums2) {
+        Set<Integer> set = new HashSet<>();
+        for (int num : nums1) {
+            set.add(num);
+        }
+        Set<Integer> resSet = new HashSet<>();
+        for (int num : nums2) {
+            if (set.contains(num)) {
+                resSet.add(num);
+            }
+        }
+        return resSet.stream().mapToInt(Integer::intValue).toArray();
+    }
+}
+```
+
+
+
 ### 128. 最长连续序列
 
 [力扣题目链接](https://leetcode.cn/problems/longest-consecutive-sequence/)
@@ -605,26 +656,77 @@ class Solution {
 }
 ```
 
+### [242. 有效的字母异位词](https://leetcode-cn.com/problems/valid-anagram/)
+
+使用排序：
+
+```java
+class Solution {
+    public boolean isAnagram(String s, String t) {
+        if (s == null || t == null) {
+            return true;
+        }
+        if (s == null && t != null) {
+            return false;
+        }
+        if (s != null && t == null) {
+            return false;
+        }
+        char[] sCharArray = s.toCharArray();
+        char[] tCharArray = t.toCharArray();
+        Arrays.sort(sCharArray);
+        Arrays.sort(tCharArray);
+        return String.valueOf(sCharArray).equals(String.valueOf(tCharArray));
+    }
+}
+```
+
+使用哈希表：
+
+```java
+    public boolean isAnagram(String s, String t) {
+        HashMap<Character, Integer> hashTable = new HashMap<>();
+        for (char c : s.toCharArray()) {
+            hashTable.put(c, hashTable.getOrDefault(c, 0) + 1);
+        }
+        for (char c : t.toCharArray()) {
+            hashTable.put(c, hashTable.getOrDefault(c, 0) - 1);
+            if (hashTable.get(c) < 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+```
 
 
-### [49. 字母异位词分组](https://leetcode-cn.com/problems/group-anagrams/)
+
+### 49. 字母异位词分组
+
+[49.力扣题目链接](https://leetcode.cn/problems/group-anagrams/)
 
 使用哈希表，将排序之后的字符串作为key，并且排序之后相同的字符串添加到列表中，最后从Map中获取值并返回。
 
 ```java
-public List<List<String>> groupAnagrams(String[] strs) {
-        HashMap<String, List<String>> map = new HashMap<>();
-        for (int i = 0; i < strs.length; i++) {
-            char[] chars = strs[i].toCharArray();
-            Arrays.sort(chars);
-            String key = String.valueOf(chars);
-            if (!map.containsKey(key)) {
-                map.put(key, new ArrayList<>());
-            }
-            map.get(key).add(strs[i]);
+class Solution {
+    public List<List<String>> groupAnagrams(String[] strs) {
+        Map<String, List<String>> map = new HashMap();
+        for (String str : strs) {
+            char[] charArray = str.toCharArray();
+            Arrays.sort(charArray);
+            String anagram = String.valueOf(charArray);
+            List<String> list = map.getOrDefault(anagram, new ArrayList<>());
+            list.add(str);
+            map.put(anagram, list);
         }
-        return new ArrayList<>(map.values());
+        List<List<String>> ans = new ArrayList<>();
+        for (Map.Entry<String, List<String>> entry : map.entrySet()) {
+            List<String> anagrams = entry.getValue();
+            ans.add(anagrams);
+        }
+        return ans;
     }
+}
 ```
 
 ### [136. 只出现一次的数字](https://leetcode.cn/problems/single-number/)
@@ -665,6 +767,32 @@ class Solution {
         }
 
         return set.iterator().next();
+    }
+}
+```
+
+### 383. 赎金信
+
+[力扣题目链接](https://leetcode.cn/problems/ransom-note/)
+
+```java
+class Solution {
+    public boolean canConstruct(String ransomNote, String magazine) {
+        Map<Character, Integer> magezineMap = new HashMap<>();
+        for (int i = 0; i < magazine.length(); i++) {
+            magezineMap.put(magazine.charAt(i), magezineMap.getOrDefault(magazine.charAt(i), 0) + 1);
+        }
+
+        char[] charArray = ransomNote.toCharArray();
+        for (char c : charArray) {
+            Integer count = magezineMap.getOrDefault(c, 0);
+            count--;
+            if (count < 0) {
+                return false;
+            }
+            magezineMap.put(c, count);
+        }
+        return true;
     }
 }
 ```
@@ -817,98 +945,9 @@ public class Solution {
 
 
 
-### [20. 有效的括号](https://leetcode-cn.com/problems/valid-parentheses/)
+### 8. 字符串转换整数
 
-可以使用暴力破解法，即遍历字符串，找到最近的匹配括号开始，如果匹配就替换为空字符串，一直循环下去，如果括号是匹配的，那么最终的结果应该是个空字符串。
-
-这里使用的栈来解决。
-
-```java
-public boolean isValid(String s) {
-        int n = s.length();
-        // 如果个数是奇数个直接返回
-        if(n % 2 == 1) {
-            return false;
-        }
-        Map<Character, Character> characterMap = new HashMap<>();
-        characterMap.put('}', '{');
-        characterMap.put(']', '[');
-        characterMap.put(')', '(');
-        Deque<Character> stack = new LinkedList<>();
-        for (int i = 0; i < s.length(); i++) {
-            char bracket = s.charAt(i);
-            // 栈中有左括号
-            if (characterMap.containsKey(bracket)) {
-                // 如果栈中元素为空或者与Map中括号不匹配
-                if (stack.isEmpty() || stack.peek() != characterMap.get(bracket)) {
-                    return false;
-                }
-                stack.pop();
-            } else {
-                stack.push(bracket);
-            }
-        }
-
-        return stack.isEmpty();
-    }
-```
-
-除了这种，还有一种相对比较简单的写法：
-
-```java
-    public boolean isValid(String s) {
-        Deque<Character> stack = new LinkedList<>();
-        for (char c : s.toCharArray()) {
-            if (c == '[') {
-                stack.push(']');
-            } else if (c == '{') {
-                stack.push('}');
-            } else if (c == '(') {
-                stack.push(')');
-            } else if (stack.isEmpty() || c != stack.pop()) {
-                return false;
-            }
-        }
-        return stack.isEmpty();
-    }
-```
-
-
-
-### [242. 有效的字母异位词](https://leetcode-cn.com/problems/valid-anagram/)
-
-使用排序：
-
-```java
-    public boolean isAnagram(String s, String t) {
-        char[] sChars = s.toCharArray();
-        char[] tChars = t.toCharArray();
-        // 注意这里不能简写为 Arrays.sort(s.toCharArray())，因为Arrays.sort采用的就地排序。
-        Arrays.sort(sChars);
-        Arrays.sort(tChars);
-        return Arrays.equals(sChars, tChars);
-    }
-```
-
-使用哈希表：
-
-```java
-    public boolean isAnagram(String s, String t) {
-        HashMap<Character, Integer> hashTable = new HashMap<>();
-        for (char c : s.toCharArray()) {
-            hashTable.put(c, hashTable.getOrDefault(c, 0) + 1);
-        }
-        for (char c : t.toCharArray()) {
-            hashTable.put(c, hashTable.getOrDefault(c, 0) - 1);
-            if (hashTable.get(c) < 0) {
-                return false;
-            }
-        }
-        return true;
-    }
-```
-
-### [剑指 Offer 67. 把字符串转换成整数](https://leetcode-cn.com/problems/ba-zi-fu-chuan-zhuan-huan-cheng-zheng-shu-lcof/)
+[力扣题目链接](https://leetcode.cn/problems/string-to-integer-atoi/)
 
 ```java
 public int myAtoi(String str) {
@@ -960,13 +999,72 @@ class Solution {
 }
 ```
 
-
-
 ### 字符串题目总结
 
-
+字符串与字符数组的转换会经常用到，字符串的题目也常常会与哈希表、排序结合。
 
 ## 栈与队列
+
+### [20. 有效的括号](https://leetcode-cn.com/problems/valid-parentheses/)
+
+可以使用暴力破解法，即遍历字符串，找到最近的匹配括号开始，如果匹配就替换为空字符串，一直循环下去，如果括号是匹配的，那么最终的结果应该是个空字符串。
+
+这里使用的栈来解决。
+
+```java
+public boolean isValid(String s) {
+        int n = s.length();
+        // 如果个数是奇数个直接返回
+        if(n % 2 == 1) {
+            return false;
+        }
+        Map<Character, Character> characterMap = new HashMap<>();
+        characterMap.put('}', '{');
+        characterMap.put(']', '[');
+        characterMap.put(')', '(');
+        Deque<Character> stack = new LinkedList<>();
+        for (int i = 0; i < s.length(); i++) {
+            char bracket = s.charAt(i);
+            // 栈中有左括号
+            if (characterMap.containsKey(bracket)) {
+                // 如果栈中元素为空或者与Map中括号不匹配
+                if (stack.isEmpty() || stack.peek() != characterMap.get(bracket)) {
+                    return false;
+                }
+                stack.pop();
+            } else {
+                stack.push(bracket);
+            }
+        }
+
+        return stack.isEmpty();
+    }
+```
+
+除了这种方法，还有一种相对比较简单的写法：
+
+```java
+class Solution {
+    public boolean isValid(String s) {
+        Stack<Character> stack = new Stack<>();
+
+        for (char c : s.toCharArray()) {
+            if (c == '(') {
+                stack.push(')');
+            } else if (c == '{') {
+                stack.push('}');
+            } else if (c == '[') {
+                stack.push(']');
+            } else if (stack.isEmpty() || stack.peek() != c) {
+                return false;
+            } else {
+                stack.pop();
+            }
+        }
+        return stack.isEmpty();
+    }
+}
+```
 
 ### [155. 最小栈 ](https://leetcode-cn.com/problems/min-stack/)
 
@@ -1037,6 +1135,40 @@ class MinStack {
         return ans;
     }
 ```
+
+### [146. LRU 缓存](https://leetcode.cn/problems/lru-cache/)
+
+[力扣题目链接](https://leetcode.cn/problems/lru-cache/)
+
+```java
+class LRUCache extends LinkedHashMap<Integer, Integer> {
+
+    private int capacity;
+
+    public LRUCache(int capacity) {
+        // accessOrder为true，表示每次访问（get、put、putAll 等操作）一个已经存在的键时，该键值对会被移动到链表的尾部，
+        super(capacity, 0.75f, true);
+        // 初始化容量
+        this.capacity = capacity;
+    }
+
+    public int get(int key) {
+        return super.getOrDefault(key, -1);
+    }
+
+    public void put(int key, int value) {
+        super.put(key, value);
+    }
+
+    // 该方法在插入新的元素后被调用
+    @Override
+    protected boolean removeEldestEntry(Map.Entry<Integer, Integer> eldest) {
+        return super.size() > capacity;
+    }
+}
+```
+
+
 
 ## 树
 
@@ -2848,6 +2980,62 @@ public
 
 ## 动态规划
 
+### [509. 斐波那契数](https://leetcode-cn.com/problems/fibonacci-number/)
+
+直接暴力递归的时间复杂度是O(2<sup>n</sup>)，因为需要优化，优化的思路大致分为两种，一种是记忆化搜索，一种是动态规划，使用记忆化搜索相当于剪枝，记忆化搜索的递归树：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210727102616.png" alt="image-20210727102609636" style="zoom: 67%;" />
+
+代码：
+
+```java
+class Solution {
+    public int fib(int n) {
+        if (n < 2) {
+            return n;
+        }
+        int[] dp = new int[n + 1];
+        dp[0] = 0;
+        dp[1] = 1;
+        for (int i = 2; i <= n; i++) {
+            dp[i] = dp[i - 1] + dp[i - 2];
+        }
+        return dp[n];
+    }
+}
+```
+
+所谓的状态转移方程或者说递推公式为：`dp[i] = dp[i - 1] + dp[i - 2]`。
+
+```java
+    public int fib(int n) {
+        int[] dp = {0, 1};
+        for (int i = 2; i < n; i++) {
+            dp[i] = dp[i - 1] + dp[i - 2];
+        }
+        return dp[n];
+    }
+```
+
+还可以进一步优化，实际上每次只需要存储最近的两个结果即可，按照这个思路，可以将空间复杂度优化到O(1)。
+
+```java
+    public int fib(int n) {
+        if (n <= 1)
+            return n;
+        // 初始的时候，分别对应f(o) = 0和f(1) = 1
+        int prev = 0, curr = 1;
+        for (int i = 2; i <= n; i++) {
+            int sum = prev + curr;
+            // 原来的值变成前一个元素
+            prev = curr;
+            // 新的值变成当前值
+            curr = sum;
+        }
+        return curr;
+    }
+```
+
 ### [70. 爬楼梯 ](https://leetcode-cn.com/problems/climbing-stairs/)
 
 直接使用递归求接斐波那契数列：
@@ -2928,15 +3116,18 @@ $$
 直接求解即可：
 
 ```java
+class Solution {
     public int uniquePaths(int m, int n) {
         int[][] dp = new int[m][n];
-        // 最后一行和最后一列都只有一种走法
+
         for (int i = 0; i < m; i++) {
             dp[i][0] = 1;
         }
-        for (int j = 0; j < n; j++) {
-            dp[0][j] = 1;
+
+        for (int i = 0; i < n; i++) {
+            dp[0][i] = 1;
         }
+
         for (int i = 1; i < m; i++) {
             for (int j = 1; j < n; j++) {
                 dp[i][j] = dp[i - 1][j] + dp[i][j - 1];
@@ -2944,9 +3135,72 @@ $$
         }
         return dp[m - 1][n - 1];
     }
+}
 ```
 
 ### 63. 不同路径 II
+
+```java
+class Solution {
+    public int uniquePathsWithObstacles(int[][] obstacleGrid) {
+        int m = obstacleGrid.length;
+        int n = obstacleGrid[0].length;
+
+        int[][] dp = new int[m][n];
+
+        for (int i = 0; i < m && obstacleGrid[i][0] == 0; i++) { // 注意初始化条件
+            dp[i][0] = 1;
+        }
+
+        for (int i = 0; i < n && obstacleGrid[0][i] == 0; i++) {
+            dp[0][i] = 1;
+        }
+
+        for (int i = 1; i < m; i++) {
+            for (int j = 1; j < n; j++) {
+                if (obstacleGrid[i][j] == 1) {
+                    continue;
+                }
+                dp[i][j] = dp[i - 1][j] + dp[i][j - 1];
+            }
+        }
+
+        return dp[m - 1][n - 1];
+    }
+}
+```
+
+### 343. 整数拆分
+
+[力扣题目链接](https://leetcode.cn/problems/integer-break/)
+
+```java
+class Solution {
+    public int integerBreak(int n) {
+        int[] dp = new int[n + 1];
+        if (n <= 3) {
+            return n - 1;
+        }
+        dp[1] = 0;
+        dp[2] = 1;
+        dp[3] = 2;
+
+        for (int i = 4; i <= n; i++) {
+            dp[i] = i / 2 * (i - i / 2);
+            for (int j = 1; j < i; j++) {
+                dp[i] = Math.max(dp[i], j * dp[i - j]);
+            }
+        }
+        return dp[n];
+    }
+}
+```
+
+
+
+### 96.不同的二叉搜索树
+
+[力扣题目链接](https://leetcode.cn/problems/unique-binary-search-trees/)
 
 
 
@@ -3098,62 +3352,6 @@ $$
 ```
 
 
-
-### [509. 斐波那契数](https://leetcode-cn.com/problems/fibonacci-number/)
-
-直接暴力递归的时间复杂度是O(2<sup>n</sup>)，因为需要优化，优化的思路大致分为两种，一种是记忆化搜索，一种是动态规划，使用记忆化搜索相当于剪枝，记忆化搜索的递归树：
-
-<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210727102616.png" alt="image-20210727102609636" style="zoom: 67%;" />
-
-代码：
-
-```java
-class Solution {
-    public int fib(int n) {
-        if (n < 2) {
-            return n;
-        }
-        int[] dp = new int[n + 1];
-        dp[0] = 0;
-        dp[1] = 1;
-        for (int i = 2; i <= n; i++) {
-            dp[i] = dp[i - 1] + dp[i - 2];
-        }
-        return dp[n];
-    }
-}
-```
-
-所谓的状态转移方程或者说递推公式为：`dp[i] = dp[i - 1] + dp[i - 2]`。
-
-```java
-    public int fib(int n) {
-        int[] dp = {0, 1};
-        for (int i = 2; i < n; i++) {
-            dp[i] = dp[i - 1] + dp[i - 2];
-        }
-        return dp[n];
-    }
-```
-
-还可以进一步优化，实际上每次只需要存储最近的两个结果即可，按照这个思路，可以将空间复杂度优化到O(1)。
-
-```java
-    public int fib(int n) {
-        if (n <= 1)
-            return n;
-        // 初始的时候，分别对应f(o) = 0和f(1) = 1
-        int prev = 0, curr = 1;
-        for (int i = 2; i <= n; i++) {
-            int sum = prev + curr;
-            // 原来的值变成前一个元素
-            prev = curr;
-            // 新的值变成当前值
-            curr = sum;
-        }
-        return curr;
-    }
-```
 
 ### [53. 最大子序和](https://leetcode-cn.com/problems/maximum-subarray/)
 
