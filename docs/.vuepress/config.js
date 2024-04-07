@@ -24,12 +24,8 @@ export default defineUserConfig({
         children: [{
             text: 'Java基础',
             children: [{
-                text: 'Java语言',
+                text: 'Java语言特性',
                 link: '/interview/java_basics/Java_basic'
-            },
-            {
-                text: 'Java集合与IO',
-                link: '/interview/java_basics/Java_collections'
             },
             {
                 text: 'Java并发编程',
