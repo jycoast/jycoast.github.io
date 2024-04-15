@@ -163,47 +163,28 @@ class Solution {
 }
 ```
 
-### 59.螺旋矩阵II
+### 88. 合并两个有序数组
 
-[力扣题目链接](https://leetcode.cn/problems/spiral-matrix-ii/)
+[力扣题目链接](https://leetcode.cn/problems/merge-sorted-array/)
 
 ```java
 class Solution {
-    public int[][] generateMatrix(int n) {
-        int l = 0, r = n - 1, t = 0, b = n - 1;
-        int[][] result = new int[n][n];
-        int num = 1, tar = n * n;
-
-        while (num <= tar) {
-            // 从左到右
-            for (int i = l; i <= r; i++) {
-                result[t][i] = num++;
+    public void merge(int[] nums1, int m, int[] nums2, int n) {
+        int i = m - 1;
+        int j = n - 1;
+        int k = m + n - 1;
+        while (j >= 0) {
+            if (i >= 0 && nums1[i] > nums2[j]) {
+                nums1[k--] = nums1[i--];
+            } else {
+                nums1[k--] = nums2[j--];
             }
-            t++;
-
-            // 从上到下
-            for (int i = t; i <= b; i++) {
-                result[i][r] = num++;
-            }
-            r--;
-
-            // 从右到左
-            for (int i = r; i >= l; i--) {
-                result[b][i] = num++;
-            }
-            b--;
-
-            // 从下到上
-            for (int i = b; i >= t; i--) {
-                result[i][l] = num++;
-            }
-            l++;
         }
-
-        return result;
     }
 }
 ```
+
+有时候倒着遍历也是一种好办法。
 
 ### [283. 移动零](https://leetcode-cn.com/problems/move-zeroes/)
 
@@ -398,6 +379,48 @@ private int maxArea(int[] height) {
         }
         return max;
     }
+```
+
+### 59.螺旋矩阵II
+
+[力扣题目链接](https://leetcode.cn/problems/spiral-matrix-ii/)
+
+```java
+class Solution {
+    public int[][] generateMatrix(int n) {
+        int l = 0, r = n - 1, t = 0, b = n - 1;
+        int[][] result = new int[n][n];
+        int num = 1, tar = n * n;
+
+        while (num <= tar) {
+            // 从左到右
+            for (int i = l; i <= r; i++) {
+                result[t][i] = num++;
+            }
+            t++;
+
+            // 从上到下
+            for (int i = t; i <= b; i++) {
+                result[i][r] = num++;
+            }
+            r--;
+
+            // 从右到左
+            for (int i = r; i >= l; i--) {
+                result[b][i] = num++;
+            }
+            b--;
+
+            // 从下到上
+            for (int i = b; i >= t; i--) {
+                result[i][l] = num++;
+            }
+            l++;
+        }
+
+        return result;
+    }
+}
 ```
 
 
@@ -950,24 +973,25 @@ public class Solution {
 [力扣题目链接](https://leetcode.cn/problems/string-to-integer-atoi/)
 
 ```java
-public int myAtoi(String str) {
+class Solution {
+    public int myAtoi(String s) {
         int index = 0, sign = 1, total = 0;
         // 空字符串
-        if (str.length() == 0) {
+        if (s.length() == 0) {
             return 0;
         }
         // 移除空格
-        while (str.charAt(index) == ' ') {
+        while (s.charAt(index) == ' ') {
             index++;
         }
         // 处理正负号
-        if (str.charAt(index) == '+' || str.charAt(index) == '-') {
-            sign = str.charAt(index) == '+' ? 1 : -1;
+        if (s.charAt(index) == '+' || s.charAt(index) == '-') {
+            sign = s.charAt(index) == '+' ? 1 : -1;
             index++;
         }
         // 转为数字
-        while (index < str.length()) {
-            int digit = str.charAt(index) - '0';
+        while (index < s.length()) {
+            int digit = s.charAt(index) - '0';
             if (digit < 0 || digit > 9) {
                 break;
             }
@@ -982,6 +1006,7 @@ public int myAtoi(String str) {
         }
         return total * sign;
     }
+}
 ```
 
 ###  459.重复的子字符串
@@ -1066,6 +1091,39 @@ class Solution {
 }
 ```
 
+### 1047. 删除字符串中的所有相邻重复项
+
+[力扣题目链接](https://leetcode.cn/problems/remove-all-adjacent-duplicates-in-string/)
+
+栈的应用的经典题目：
+
+```java
+class Solution {
+    public String removeDuplicates(String s) {
+        if (s == null || s.isEmpty()) {
+            return s;
+        }
+        Stack<Character> stack = new Stack<>();
+        char[] charArray = s.toCharArray();
+        for (char ch : charArray) {
+            if (!stack.isEmpty() && ch == stack.peek()) {
+                stack.pop();
+            } else {
+                stack.push(ch);
+            }
+        }
+
+        StringBuilder stringBuilder = new StringBuilder();
+        while (!stack.isEmpty()) {
+            stringBuilder.append(stack.pop());
+        }
+        return stringBuilder.reverse().toString();
+    }
+}
+```
+
+
+
 ### [155. 最小栈 ](https://leetcode-cn.com/problems/min-stack/)
 
 ```java
@@ -1103,6 +1161,83 @@ class MinStack {
     }
 }
 ```
+
+### 150. 逆波兰表达式求值
+
+[力扣题目链接](https://leetcode.cn/problems/evaluate-reverse-polish-notation/)
+
+```java
+class Solution {
+    public int evalRPN(String[] tokens) {
+        Stack<Integer> stack = new Stack<>();
+        for (int i = 0; i < tokens.length; i++) {
+            // 是运算的符号
+            if (tokens[i].equals("+") || tokens[i].equals("-") || tokens[i].equals("*") || tokens[i].equals("/")) {
+                Integer num1 = stack.pop();
+                Integer num2 = stack.pop();
+                if (tokens[i].equals("+")) {
+                    stack.push(num2 + num1);
+                }
+                if (tokens[i].equals("-")) {
+                    stack.push(num2 - num1);
+                }
+                if (tokens[i].equals("*")) {
+                    stack.push(num2 * num1);
+                }
+                if (tokens[i].equals("/")) {
+                    stack.push(num2 / num1);
+                }
+            } else {
+                // 是数字
+                stack.push(Integer.valueOf(tokens[i]));
+            }
+        }
+
+        return stack.pop();
+    }
+}
+```
+
+
+
+### 347.前 K 个高频元素
+
+[力扣题目链接](https://leetcode.cn/problems/top-k-frequent-elements/)
+
+方法一：桶排序
+
+```java
+class Solution {
+    public int[] topKFrequent(int[] nums, int k) {
+        Map<Integer, Integer> map = new HashMap<>();
+        for (int num : nums) {
+            map.put(num, map.getOrDefault(num, 0) + 1);
+        }
+
+        List<Integer>[] bucket = new List[nums.length + 1];
+
+        for (Integer key : map.keySet()) {
+            Integer value = map.get(key);
+            if (bucket[value] == null) {
+                bucket[value] = new ArrayList<>();
+            }
+            bucket[value].add(key);
+        }
+
+        List<Integer> res = new ArrayList<>(); // 必须是List，出现同频次的元素可能有多个，例如 第一大的元素有3个
+
+        for (int i = bucket.length - 1; i >= 0 && res.size() < k; i--) {
+            if (bucket[i] != null) {
+                res.addAll(bucket[i]);
+            }
+        }
+
+        return res.stream().mapToInt(Integer::intValue).toArray();
+    }
+}
+```
+
+
 
 ### [239. 滑动窗口最大值](https://leetcode-cn.com/problems/sliding-window-maximum/)
 
@@ -2902,24 +3037,23 @@ class Solution {
 
 ### [121. 买卖股票的最佳时机](https://leetcode-cn.com/problems/best-time-to-buy-and-sell-stock/)
 
-使用贪心算法：
-
 ```java
+class Solution {
     public int maxProfit(int[] prices) {
-        int profit = 0;
-        int min = prices[0];
+        int low = Integer.MAX_VALUE;
+        int ans = Integer.MIN_VALUE;
+
         for (int i = 0; i < prices.length; i++) {
-            if (prices[i] < min) {
-                min = prices[i];
-            } else {
-                profit = Math.max(prices[i] - min, profit);
-            }
+            low = Math.min(low, prices[i]);
+            ans = Math.max(ans, prices[i] - low); // 计算和最低的间距即可
         }
-        return profit;
+
+        return ans;
     }
+}
 ```
 
-需要注意的是，本题中股票值买卖一次。
+需要注意的是，本题中股票只买卖一次。
 
 ### [322. 零钱兑换](https://leetcode-cn.com/problems/coin-change/)
 
@@ -2974,6 +3108,30 @@ public
         // 下标i正好是满足条件的孩子的个数
         return i;
     }
+```
+
+### 738. 单调递增的数字
+
+[力扣题目链接](https://leetcode.cn/problems/monotone-increasing-digits/)
+
+```java
+class Solution {
+    public int monotoneIncreasingDigits(int n) {
+        String s = String.valueOf(n);
+        char[] chars = s.toCharArray();
+        int start = s.length(); // 如果不需要重新赋值，第二次遍历赋值的操作就不用走了
+        for (int i = s.length() - 1; i >= 1; i--) {
+            if (chars[i -1] > chars[i]) { // 前一个元素大于当前元素，当前元素就需要被赋值为9，前一个元素减1
+                chars[i -1]--;
+                start = i;
+            }
+        }
+        for (int i = start; i < s.length(); i++) {
+            chars[i] = '9';
+        }
+        return Integer.parseInt(String.valueOf(chars));
+    }
+}
 ```
 
 
@@ -3107,7 +3265,9 @@ class Solution {
 }
 ```
 
-### [62. 不同路径](https://leetcode-cn.com/problems/unique-paths/)
+### 62. 不同路径
+
+[力扣题目链接](https://leetcode.cn/problems/unique-paths/)
 
 递推公式：
 $$
@@ -3139,6 +3299,8 @@ class Solution {
 ```
 
 ### 63. 不同路径 II
+
+[力扣题目链接](https://leetcode.cn/problems/unique-paths-ii/)
 
 ```java
 class Solution {
@@ -3237,7 +3399,374 @@ $$
     }
 ```
 
-### [1143. 最长公共子序列](https://leetcode-cn.com/problems/longest-common-subsequence/) 
+
+
+### 198. 打家劫舍
+
+[力扣题目链接](https://leetcode.cn/problems/house-robber/)
+
+假设一共有$n$个房子，每个房子的金额分别是$H_0,H_1,...H_{n-1}$，子问题$f(k)$表示从前$k$个房子（即$H_0，H_1,...,H_{k-1}$）中能偷盗的最大金额。那么偷$k$个房子有两种偷法：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210820105009.png" alt="image-20210820104524320" style="zoom:67%;" />
+
+状态转移方程为：
+$$
+f(k)=max\{ {f(k-1),H_{k-1} + f(k-2)} \}
+$$
+使用一维数组的方式：
+
+```java
+class Solution {
+    public int rob(int[] nums) {
+        if (nums == null || nums.length == 0) {
+            return 0;
+        }
+        if (nums.length == 1) {
+            return nums[0];
+        }
+        int[] dp = new int[nums.length];
+        dp[0] = nums[0];
+        dp[1] = Math.max(nums[0], nums[1]);
+        for (int i = 2; i < nums.length; i++) {
+            dp[i] = Math.max(nums[i] + dp[i - 2], dp[i - 1]);
+        }
+        return dp[nums.length - 1];
+    }
+}
+```
+
+还可以多开一维数组来存每次偷或者不偷的状态：
+
+```java
+    public int rob(int[] nums) {
+        if (nums == null || nums.length == 0)
+            return 0;
+        int n = nums.length;
+        int[][] dp = new int[n][2];
+        // 0表示不选当前元素，1表示选择当前元素
+        dp[0][0] = 0;
+        dp[0][1] = nums[0];
+        for (int i = 1; i < n; i++) {
+            dp[i][0] = Math.max(dp[i - 1][0], dp[i - 1][1]);
+            dp[i][1] = dp[i - 1][0] + nums[i];
+        }
+        return Math.max(dp[n - 1][0], dp[n - 1][1]);
+    }
+```
+
+### [213. 打家劫舍 II](https://leetcode-cn.com/problems/house-robber-ii/)
+
+状态转移方程：
+$$
+dp[i]=max(dp[i-2]+nums[i],dp[i-1])
+$$
+边界条件为：
+$$
+\left\{
+\begin{array}{lcl}
+dp[start] = nums[start] & 只有一间房屋，则偷窃该房屋 \\
+dp[start+1] = max(nums[start],nums[start+1]) & 只有两件房屋，偷窃其中金额较高的房屋
+\end{array}\right.
+$$
+相应的实现：
+
+```java
+class Solution {
+    public int rob(int[] nums) {
+        if (nums == null || nums.length == 0) {
+            return 0;
+        }
+        if (nums.length == 1) {
+            return nums[0];
+        }
+
+        return Math.max(robRange(nums, 0, nums.length - 2), robRange(nums, 1, nums.length - 1));
+    }
+
+    private int robRange(int[] nums, int start, int end) {
+        if (start == end) {
+            return nums[start];
+        }
+        int[] dp = new int[nums.length];
+        dp[start] = nums[start];
+        dp[start + 1] = Math.max(nums[start], nums[start + 1]);
+        for (int i = start + 2; i <= end; i++) {
+            dp[i] = Math.max(dp[i - 2] + nums[i], dp[i - 1]);
+        }
+        return dp[end];
+    }
+}
+```
+
+### 121. 买卖股票的最佳时机
+
+除了可以使用贪心算法以外，还可以使用动态规划来解决这个问题。
+
+```java
+class Solution {
+    public int maxProfit(int[] prices) {
+        if (prices == null || prices.length == 0) {
+            return 0;
+        }
+        int n = prices.length;
+        // dp[i][0] 表示第i天持有股票所得最多现金
+        // dp[i][1] 表示第i天不持有股票所得最多现金
+
+        int[][] dp = new int[n][2];
+        dp[0][0] = -prices[0];
+        dp[0][1] = 0;
+
+        for (int i = 1; i < n; i++) {
+            dp[i][0] = Math.max(dp[i - 1][0], -prices[i]); // 保持现状或者买入
+            dp[i][1] = Math.max(dp[i - 1][1], dp[i][0] + prices[i]); // 保持现状或者卖出
+        }
+
+        return dp[n - 1][1];
+    }
+}
+```
+
+### 122.买卖股票的最佳时机II
+
+[力扣题目链接](https://leetcode.cn/problems/best-time-to-buy-and-sell-stock-ii/)
+
+```java
+class Solution {
+    public int maxProfit(int[] prices) {
+        if (prices == null || prices.length == 0) {
+            return 0;
+        }
+
+        int n = prices.length;
+        // dp[i][0] 第i天持有
+        // dp[i][1] 第i天不持有
+        int[][] dp = new int[n][2];
+        dp[0][0] = -prices[0];
+        dp[0][1] = 0;
+        for (int i = 1; i < n; i++) {
+            dp[i][0] = Math.max(dp[i - 1][0], dp[i - 1][1] - prices[i]); // 前一天购入股票
+            dp[i][1] = Math.max(dp[i - 1][1], dp[i - 1][0] + prices[i]); // 前一天卖出股票
+        }
+
+        return dp[n - 1][1];
+    }
+}
+```
+
+### 123.买卖股票的最佳时机III
+
+[力扣题目链接](https://leetcode.cn/problems/best-time-to-buy-and-sell-stock-iii/)
+
+```java
+class Solution {
+    public int maxProfit(int[] prices) {
+        if (prices == null || prices.length == 0) {
+            return 0;
+        }
+        int n = prices.length;
+        int[][] dp = new int[n][5];
+
+        dp[0][1] = 0 - prices[0];
+        dp[0][3] = 0 - prices[0];
+
+        // 一天一共有五个状态
+        // 没有操作 （其实我们也可以不设置这个状态）
+        // 第一次持有股票
+        // 第一次不持有股票
+        // 第二次持有股票
+        // 第二次不持有股票
+        // dp[i][j]中 i表示第i天，j为 [0 - 4] 五个状态，dp[i][j]表示第i天状态j所剩最大现金。
+        for (int i = 1; i < n; i++) { // i从1开始
+            dp[i][0] = dp[i - 1][0];
+            dp[i][1] = Math.max(dp[i - 1][1], dp[i - 1][0] - prices[i]); // 第一次不持有股票 = Math.max(前一天不持有股票，前一天持有股票卖掉了)
+            dp[i][2] = Math.max(dp[i - 1][2], dp[i - 1][1] + prices[i]);
+            dp[i][3] = Math.max(dp[i - 1][3], dp[i - 1][2] - prices[i]);
+            dp[i][4] = Math.max(dp[i - 1][4], dp[i - 1][3] + prices[i]);
+        }
+
+        return dp[n - 1][4];
+    }
+}
+```
+
+### 188.买卖股票的最佳时机IV
+
+[力扣题目链接](https://leetcode.cn/problems/best-time-to-buy-and-sell-stock-iv/)
+
+```java
+class Solution {
+    public int maxProfit(int k, int[] prices) {
+        if (prices == null || prices.length == 0) {
+            return 0;
+        }
+
+        // k次交易=2k次操作
+        // 第i天的状态为j，所剩下的最大现金是dp[i][j]
+        // 使用二维数组 dp[i][j] ：第i天的状态为j，所剩下的最大现金是dp[i][j]
+        // j的状态表示为：
+        // 0 表示不操作
+        // 1 第一次买入
+        // 2 第一次卖出
+        // 3 第二次买入
+        // 4 第二次卖出
+        // ....
+        // 即状态为奇数的时候买入，状态为偶数的时候卖出
+        int n = prices.length;
+        int[][] dp = new int[n][2 * k + 1];
+
+        // 奇数是买 为偶数是卖
+        for (int j = 1; j < 2 * k; j += 2) {
+            dp[0][j] = -prices[0];
+        }
+
+        for (int i = 1; i < n; i++) {
+            for (int j = 0; j < 2 * k - 1; j += 2) { // 总共有 2*k步，每次确定第N次买入和卖出的值，所以循环的步长是2
+                dp[i][j + 1] = Math.max(dp[i - 1][j + 1], dp[i - 1][j] - prices[i]); // 买入
+                dp[i][j + 2] = Math.max(dp[i - 1][j + 2], dp[i - 1][j + 1] + prices[i]); // 卖出
+            }
+        }
+
+        return dp[n - 1][k * 2];
+    }
+}
+```
+
+### 309.最佳买卖股票时机含冷冻期
+
+[力扣题目链接](https://leetcode.cn/problems/best-time-to-buy-and-sell-stock-with-cooldown/)
+
+```java
+class Solution {
+    public int maxProfit(int[] prices) {
+        if (prices == null || prices.length == 0) {
+            return 0;
+        }
+        int n = prices.length;
+        int[][] dp = new int[n][4];
+        // 0：持有
+        // 1：不持有（保持卖出）
+        // 2：今天卖出
+        // 3：冷冻期
+        dp[0][0] = -prices[0];
+        for (int i = 1; i < n; i++) {
+            dp[i][0] = Math.max(dp[i - 1][0], Math.max(dp[i - 1][3] - prices[i], dp[i - 1][1] - prices[i]));
+            dp[i][1] = Math.max(dp[i - 1][1], dp[i - 1][3]);
+            dp[i][2] = dp[i - 1][0] + prices[i];
+            dp[i][3] = dp[i - 1][2];
+        }
+        return Math.max(dp[n - 1][3], Math.max(dp[n - 1][1], dp[n - 1][2]));
+    }
+}
+```
+
+### 714.买卖股票的最佳时机含手续费
+
+[力扣题目链接](https://leetcode.cn/problems/best-time-to-buy-and-sell-stock-with-transaction-fee/)
+
+```java
+class Solution {
+    public int maxProfit(int[] prices, int fee) {
+        if (prices == null || prices.length == 0) {
+            return 0;
+        }
+        int n = prices.length;
+        int[][] dp = new int[n][2]; // 0：持有 1：不持有
+        dp[0][0] = -prices[0];
+        dp[0][1] = 0;
+        for (int i = 1; i < n; i++) {
+            dp[i][0] = Math.max(dp[i - 1][0], dp[i - 1][1] - prices[i]);
+            dp[i][1] = Math.max(dp[i - 1][1], dp[i - 1][0] + prices[i] - fee);
+        }
+        return dp[n - 1][1];
+    }
+}
+```
+
+
+
+###  300.最长递增子序列
+
+[力扣题目链接](https://leetcode.cn/problems/longest-increasing-subsequence/)
+
+```java
+class Solution {
+    public int lengthOfLIS(int[] nums) {
+        if (nums == null || nums.length == 0) {
+            return 0;
+        }
+        // dp[i] 表示i之前包括i的以nums[i] 结尾的最长递增子序列的长度
+        int[] dp = new int[nums.length];
+        int res = 1;
+        Arrays.fill(dp, 1); // 最短的长度也是1
+        for (int i = 1; i < nums.length; i++) {
+            for (int j = 0; j < i; j++) {
+                if (nums[i] > nums[j]) {
+                    dp[i] = Math.max(dp[i], dp[j] + 1);
+                }
+                res = Math.max(res, dp[i]);
+            }
+        }
+        return res;
+    }
+}
+```
+
+### 674. 最长连续递增序列
+
+[力扣题目链接](https://leetcode.cn/problems/longest-continuous-increasing-subsequence/)
+
+```java
+class Solution {
+    public int findLengthOfLCIS(int[] nums) {
+        if (nums == null || nums.length == 0) {
+            return 0;
+        }
+        int[] dp = new int[nums.length];
+        int res = 1;
+        Arrays.fill(dp, 1);
+        for (int i = 1; i < nums.length; i++) {
+            if (nums[i] > nums[i - 1]) {
+                dp[i] = dp[i - 1] + 1;
+            }
+            res = Math.max(dp[i], res);
+        }
+        return res;
+    }
+}
+```
+
+
+
+### 718. 最长重复子数组
+
+[力扣题目链接](https://leetcode.cn/problems/maximum-length-of-repeated-subarray/)
+
+```java
+class Solution {
+    public int findLength(int[] nums1, int[] nums2) {
+        // dp[i][j] ：以下标i - 1为结尾的A，和以下标j - 1为结尾的B，最长重复子数组长度为dp[i][j]。
+        // 长度是length + 1的原因的 dp[0][0] 没法存，没有实际含义
+        int[][] dp = new int[nums1.length + 1][nums2.length + 1];
+
+        int result = 0;
+        for (int i = 1; i < nums1.length + 1; i++) {
+            for (int j = 1; j < nums2.length + 1; j++) {
+                if (nums1[i - 1] == nums2[j - 1]) {
+                    dp[i][j] = dp[i - 1][j - 1] + 1;
+                }
+                result = Math.max(dp[i][j], result);
+            }
+        }
+        return result;
+    }
+}
+```
+
+
+
+### 1143. 最长公共子序列
+
+[力扣题目链接](https://leetcode-cn.com/problems/longest-common-subsequence/)
 
 假设字符串$text_1$和$text_2$的长度分别为$m$和$n$，创建$m+1$行$n+1$列的二维数组$dp$，其中$dp[i][j]$表示$text_1[0:i]$和$text_2[0:j]$的最长公共序列的长度，状态转移方程如下：
 $$
@@ -3275,6 +3804,229 @@ $$
         return dp[m][n];
     }
 ```
+
+### 1035.不相交的线
+
+[力扣题目链接](https://leetcode.cn/problems/uncrossed-lines/)
+
+```java
+class Solution {
+    public int maxUncrossedLines(int[] nums1, int[] nums2) {
+        // 直线不能相交，这就是说明在字符串A中 找到一个与字符串B相同的子序列，且这个子序列不能改变相对顺序，只要相对顺序不改变，链接相同数字的直线就不会相交。
+        int[][] dp = new int[nums1.length + 1][nums2.length + 1];
+
+        for (int i = 1; i < nums1.length + 1; i++) {
+            for (int j = 1; j < nums2.length + 1; j++) {
+                if (nums1[i - 1] == nums2[j - 1]) {
+                    dp[i][j] = dp[i - 1][j - 1] + 1;
+                } else {
+                    dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+                }
+            }
+        }
+        return dp[nums1.length][nums2.length];
+    }
+}
+```
+
+
+
+### 53. 最大子序和
+
+[力扣题目链接](https://leetcode.cn/problems/maximum-subarray/)
+
+不难写出，这个问题的状态转移方程：
+$$
+f(i) = max\{f(i - 1) + nums[i],num[i]\}
+$$
+使用数组来保存 $f(i)$ 的值，遍历求出所有的 $f(i)$ 即可：
+
+```java
+class Solution {
+    public int maxSubArray(int[] nums) {
+        if (nums == null || nums.length == 0) {
+            return 0;
+        }
+
+        int n = nums.length;
+        int res = nums[0];
+
+        int[] dp = new int[n];
+        dp[0] = nums[0];
+
+        for (int i = 1; i < nums.length; i++) {
+            dp[i] = Math.max(nums[i], dp[i - 1] + nums[i]);
+            res = Math.max(res, dp[i]);
+        }
+        return res;
+    }
+}
+```
+
+实际上我们无需记录所有的中间状态，只需要记录前一个值即可：
+
+```java
+class Solution {
+    public int maxSubArray(int[] nums) {
+        int pre = 0, maxAns = nums[0];
+        for (int x : nums) {
+            pre = Math.max(pre + x, x);
+            maxAns = Math.max(maxAns, pre);
+        }
+        return maxAns;
+    }
+}
+```
+
+
+
+### 392.判断子序列
+
+[力扣题目链接](https://leetcode.cn/problems/is-subsequence/)
+
+```java
+class Solution {
+    public boolean isSubsequence(String s, String t) {
+        int n = s.length();
+        int m = t.length();
+        int[][] dp = new int[n + 1][m + 1];
+        for (int i = 1; i < n + 1; i++) {
+            for (int j = 1; j < m + 1; j++) {
+                if (s.charAt(i - 1) == t.charAt(j - 1)) {
+                    dp[i][j] = dp[i - 1][j - 1] + 1;
+                } else {
+                    dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+                }
+            }
+        }
+        return s.length() == dp[n][m];
+    }
+}
+```
+
+### 115.不同的子序列
+
+[力扣题目链接](https://leetcode.cn/problems/distinct-subsequences/)
+
+题目大意：求s里面有多少个t。
+
+```java
+class Solution {
+    
+    public int numDistinct(String s, String t) {
+        if (s.length() < t.length()) {
+            return 0;
+        }
+
+        // dp[i][j]：以i-1为结尾的s子序列中出现以j-1为结尾的t的个数为dp[i][j]。
+        int[][] dp = new int[s.length() + 1][t.length() + 1];
+
+        // 由于空字符串是任何字符串的子序列
+        for (int i = 0; i < s.length(); i++) {
+            dp[i][0] = 1;
+        }
+
+        // dp[i - 1][j - 1] 表示s[i - 1] 去匹配t[j] 得到的个数
+        // dp[i - 1][j] 表示s[i] 去匹配t[j]得到的个数
+        for (int i = 1; i < s.length() + 1; i++) {
+            for (int j = 1; j < t.length() + 1; j++) {
+                if (s.charAt(i - 1) == t.charAt(j - 1)) {
+                    // 相等有两部分构成 s[i]匹配的结果 + s[i - 1]匹配的结构
+                    dp[i][j] = dp[i - 1][j] + dp[i - 1][j - 1];
+                } else {
+                    // 不相等 只考虑s[i]匹配的结果
+                    dp[i][j] = dp[i - 1][j];
+                }
+            }
+        }
+        return dp[s.length()][t.length()];
+    }
+}
+```
+
+
+
+###  583. 两个字符串的删除操作
+
+[力扣题目链接](https://leetcode.cn/problems/delete-operation-for-two-strings/)
+
+```java
+class Solution {
+    public int minDistance(String word1, String word2) {
+        // dp[i][j]：以i-1为结尾的字符串word1，和以j-1位结尾的字符串word2，想要达到相等，所需要删除元素的最少次数。
+        int n = word1.length();
+        int m = word2.length();
+        int dp[][] = new int[n + 1][m + 1];
+        // 初始化
+        for (int i = 0; i <= n; i++) {
+            dp[i][0] = i;
+        }
+        for (int j = 0; j <= m; j++) {
+            dp[0][j] = j;
+        }
+
+        for (int i = 1; i < n + 1; i++) {
+            for (int j = 1; j < m + 1; j++) {
+                if (word1.charAt(i - 1) == word2.charAt(j - 1)) {
+                    dp[i][j] = dp[i - 1][j - 1];
+                } else {
+                    dp[i][j] = Math.min(dp[i - 1][j - 1] + 2, Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1));
+                }
+            }
+        }
+
+        return dp[n][m];
+    }
+}
+```
+
+
+
+### 72. 编辑距离
+
+[力扣题目链接](https://leetcode.cn/problems/edit-distance/)
+
+
+
+###  647. 回文子串
+
+[力扣题目链接](https://leetcode.cn/problems/palindromic-substrings/)
+
+```javascript
+class Solution {
+    public int countSubstrings(String s) {
+        if (s == null || s.length() == 0) {
+            return 0;
+        }
+        int ans = 0;
+        int n = s.length();
+        boolean[][] dp = new boolean[n][n];
+        for (int i = n - 1; i >= 0; i--) {
+            for (int j = i; j < n; j++) {
+                if (s.charAt(i) == s.charAt(j)) {
+                    if (j - i <= 1) {
+                        dp[i][j] = true;
+                        ans++;
+                    } else if (dp[i + 1][j - 1]) {
+                        dp[i][j] = true;
+                        ans++;
+                    }
+                }
+            }
+        }
+
+        return ans;
+    }
+}
+```
+
+
+
+### 409. 最长回文串
+
+[力扣题目链接](https://leetcode-cn.com/problems/longest-palindrome/)
+
+
 
 ### 5. [最长回文子串](https://leetcode-cn.com/problems/longest-palindromic-substring/)
 
@@ -3353,113 +4105,32 @@ $$
 
 
 
-### [53. 最大子序和](https://leetcode-cn.com/problems/maximum-subarray/)
+### 516.最长回文子序列
 
-不难写出，这个问题的状态转移方程：
-$$
-f(i) = max\{f(i - 1) + nums[i],num[i]\}
-$$
-使用数组来保存 $f(i)$ 的值，遍历求出所有的 $f(i)$ 即可：
+[力扣题目链接](https://leetcode.cn/problems/longest-palindromic-subsequence/)
 
 ```java
-    public int maxSubArray(int[] nums) {
-        int[] dp = new int[nums.length];
-        dp[0] = nums[0];
-        int res = nums[0];
-        for (int i = 1; i < nums.length; i++) {
-            dp[i] = Math.max(dp[i - 1] + nums[i], nums[i]);
-            res = Math.max(dp[i], res);
+class Solution {
+    public int longestPalindromeSubseq(String s) {
+        int n = s.length();
+        // dp[i][j] 字符串s在[i,j]范围内最长的回文子序列的长度为dp[i][j]
+        int[][] dp = new int[n + 1][n + 1];
+
+        for (int i = n - 1; i >= 0; i--) {
+            dp[i][i] = 1;
+            for (int j = i + 1; j < n; j++) {
+                if (s.charAt(i) == s.charAt(j)) {
+                    dp[i][j] = dp[i + 1][j - 1] + 2;
+                } else {
+                    dp[i][j] = Math.max(dp[i + 1][j], Math.max(dp[i][j], dp[i][j - 1]));
+                }
+            }
         }
-        return res;
+
+        return dp[0][n - 1];
     }
-```
-
-实际上我们无需记录所有的中间状态，只需要记录前一个值即可：
-
-```java
-    public int maxSubArray(int[] nums) {
-        int pre = 0, maxAns = nums[0];
-        for (int x : nums) {
-            pre = Math.max(pre + x, x);
-            maxAns = Math.max(maxAns, pre);
-        }
-        return maxAns;
-    }
-```
-
-
-
-### [198. 打家劫舍](https://leetcode-cn.com/problems/house-robber/)
-
-假设一共有$n$个房子，每个房子的金额分别是$H_0,H_1,...H_{n-1}$，子问题$f(k)$表示从前$k$个房子（即$H_0，H_1,...,H_{k-1}$）中能偷盗的最大金额。那么偷$k$个房子有两种偷法：
-
-<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210820105009.png" alt="image-20210820104524320" style="zoom:67%;" />
-
-状态转移方程为：
-$$
-f(k)=max\{ {f(k-1),H_{k-1} + f(k-2)} \}
-$$
-使用一维数组的方式：
-
-```java
-    public int rob(int[] nums) {
-        if (nums == null || nums.length == 0)
-            return 0;
-        int n = nums.length;
-        // 第0位用来存储0的情况，从第1位开始存储nums[1]
-        int[] dp = new int[n + 1];
-        dp[0] = 0;
-        dp[1] = nums[0];
-        // 注意这里从2开始，到n+1
-        for (int i = 2; i < n + 1; i++) {
-            dp[i] = Math.max(dp[i - 1], nums[i] + dp[i - 2]);
-        }
-        return dp[n];
-    }
-```
-
-还可以多开一维数组来存每次偷或者不偷的状态：
-
-```java
-    public int rob(int[] nums) {
-        if (nums == null || nums.length == 0)
-            return 0;
-        int n = nums.length;
-        int[][] dp = new int[n][2];
-        // 0表示不选当前元素，1表示选择当前元素
-        dp[0][0] = 0;
-        dp[0][1] = nums[0];
-        for (int i = 1; i < n; i++) {
-            dp[i][0] = Math.max(dp[i - 1][0], dp[i - 1][1]);
-            dp[i][1] = dp[i - 1][0] + nums[i];
-        }
-        return Math.max(dp[n - 1][0], dp[n - 1][1]);
-    }
-```
-
-### [213. 打家劫舍 II](https://leetcode-cn.com/problems/house-robber-ii/)
-
-状态转移方程：
-$$
-dp[i]=max(dp[i-2]+nums[i],dp[i-1])
-$$
-边界条件为：
-$$
-\left\{
-\begin{array}{lcl}
-dp[start] = nums[start] & 只有一间房屋，则偷窃该房屋 \\
-dp[start+1] = max(nums[start],nums[start+1]) & 只有两件房屋，偷窃其中金额较高的房屋
-\end{array}\right.
-$$
-相应的实现：
-
-```java
-class{
-    
 }
 ```
-
-### [409. 最长回文串](https://leetcode-cn.com/problems/longest-palindrome/)
 
 
 
