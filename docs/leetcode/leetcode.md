@@ -1,12 +1,5 @@
 # 算法刷题
 
-## 常用站点
-
-- [代码随想录](https://programmercarl.com/0530.%E4%BA%8C%E5%8F%89%E6%90%9C%E7%B4%A2%E6%A0%91%E7%9A%84%E6%9C%80%E5%B0%8F%E7%BB%9D%E5%AF%B9%E5%B7%AE.html)
-- [labuladong的算法笔记](https://labuladong.github.io/algo/)
-- [leetcode题解](https://doocs.github.io/leetcode/)
-- [geeksforgeeks](https://www.geeksforgeeks.org/)
-
 ## 数组
 
 ### [1. 两数之和](https://leetcode-cn.com/problems/two-sum/)
@@ -14,16 +7,19 @@
 梦开始的地方：
 
 ```java
+class Solution {
     public int[] twoSum(int[] nums, int target) {
-        Map<Integer,Integer> map = new HashMap<>();
-        for(int i = 0; i < nums.length; i++) {
-            if(map.containsKey(target - nums[i])) {
-                return new int[]{i,map.get(target-nums[i])};
+       Map<Integer, Integer> map = new HashMap<>();
+        for (int i = 0; i < nums.length; i++) {
+            if (map.get(target - nums[i]) != null) {
+                return new int[]{i, map.get(target - nums[i])};
             }
-            map.put(nums[i],i);
+            map.put(nums[i], i);
         }
-        return new int[2];
+
+        return new int[]{-1, -1};
     }
+}
 ```
 
 ### 704. 二分查找
@@ -233,6 +229,60 @@ class Solution {
 }
 ```
 
+### 26. 删除有序数组中的重复项
+
+[力扣题目链接](https://leetcode.cn/problems/remove-duplicates-from-sorted-array/)
+
+双指针：
+
+```java
+class Solution {
+    public int removeDuplicates(int[] nums) {
+        int left = 0;
+        for (int right = 0; right < nums.length; right++) {
+            if (nums[left] != nums[right]) {
+                nums[++left] = nums[right];
+            }
+        }
+        return left + 1;
+    }
+}
+```
+
+### 1122. 数组的相对排序
+
+[力扣题目链接](https://leetcode.cn/problems/relative-sort-array/)
+
+```java
+class Solution {
+    public int[] relativeSortArray(int[] arr1, int[] arr2) {
+        Map<Integer, Integer> map = new TreeMap<>();
+        for (int num : arr1) {
+            map.put(num, map.getOrDefault(num, 0) + 1);
+        }
+
+        int index = 0;
+        
+        for (int num : arr2) {
+            Integer count = map.get(num);
+            for (Integer i = 0; i < count; i++) {
+                arr1[index++] = num;
+            }
+            map.remove(num);
+        }
+
+        for (Map.Entry<Integer, Integer> entry : map.entrySet()) {
+            Integer num = entry.getKey();
+            Integer count = entry.getValue();
+            for (Integer i = 0; i < count; i++) {
+                arr1[index++] = num;
+            }
+        }
+        return arr1;
+    }
+}
+```
+
 
 
 ### [15. 三数之和](https://leetcode-cn.com/problems/3sum/)
@@ -260,47 +310,78 @@ class Solution {
 双指针法：
 
 ```java
+class Solution {
     public List<List<Integer>> threeSum(int[] nums) {
-        List<List<Integer>> res = new LinkedList<>();
-        if (nums == null || nums.length < 3) {
-            return res;
-        }
-        // 排序
+        int target = 0;
+        Set<List<Integer>> set = new HashSet<>(); // 使用Set去掉重复的数组
         Arrays.sort(nums);
-        // O(n^2)
-        for (int i = 0; i <= nums.length - 1; i++) {
-            // 经过排序之后的数组第一个数大于0，后面的数都比它大，一定不成立
-            if (nums[i] > 0) {
-                break;
-            }
-            // 去掉重复情况
-            if (i > 0 && nums[i] == nums[i - 1]) {
-                continue;
-            }
-            int left = i + 1, right = nums.length - 1;
-            while (left < right) {
-                if (nums[left] + nums[right] + nums[i] == 0) {
-                    res.add(new ArrayList<>(Arrays.asList(nums[i], nums[left], nums[right])));
-                    left++;
-                    right--;
-                    // 去掉重复情况，一直移动到没有相同项
-                    while (left < right && nums[left] == nums[left - 1]) {
-                        left++;
-                    }
-                    while (left < right && nums[right] == nums[right + 1]) {
-                        right--;
-                    }
-                } else if (nums[left] + nums[right] + nums[i] < 0) {
-                    left++;
-                } else { // nums[left] + nums[right] + nums[i] > 0
-                    right--;
+        for (int i = 0; i < nums.length; i++) {
+            int j = i + 1;
+            int k = nums.length - 1;
+            while (j < k) {
+                int sum = nums[i] + nums[j] + nums[k];
+                if (sum == target) {
+                    set.add(Arrays.asList(nums[i], nums[j], nums[k]));
+                    j++;
+                    k--;
+                } else if (sum < target) {
+                    j++;
+                } else {
+                    k--;
                 }
             }
         }
-
-        return res;
+        return new ArrayList<>(set);
     }
+}
 ```
+
+### 18. 四数之和
+
+和三数之和类似的思路：
+
+```java
+class Solution {
+    public List<List<Integer>> fourSum(int[] nums, int target) {
+        if (nums == null || nums.length == 0) {
+            return new ArrayList<>();
+        }
+        int n = nums.length;
+        List<List<Integer>> ans = new ArrayList<>();
+        Arrays.sort(nums);
+        for (int i = 0; i < n - 3; i++) {
+            if (i > 0 && nums[i] == nums[i - 1]) { // 去重
+                continue;
+            }
+            for (int j = i + 1; j < n - 2; j++) {
+                if (j > i + 1 && nums[j] == nums[j - 1]) { // 去重
+                    continue;
+                }
+                int k = j + 1, l = n - 1;
+                while (k < l) {
+                    long x = (long) nums[i] + nums[j] + nums[k] + nums[l];
+                    if (x < target) {
+                        ++k;
+                    } else if (x > target) {
+                        --l;
+                    } else {
+                        ans.add(Arrays.asList(nums[i], nums[j], nums[k++], nums[l--]));
+                        while (k < l && nums[k] == nums[k - 1]) {
+                            ++k;
+                        }
+                        while (k < l && nums[l] == nums[l + 1]) {
+                            --l;
+                        }
+                    }
+                }
+            }
+        }
+        return ans;
+    }
+}
+```
+
+
 
 ### [84. 柱状图中最大的矩形](https://leetcode-cn.com/problems/largest-rectangle-in-histogram/)
 
@@ -381,44 +462,70 @@ private int maxArea(int[] height) {
     }
 ```
 
-### 59.螺旋矩阵II
+### 42. 接雨水
 
-[力扣题目链接](https://leetcode.cn/problems/spiral-matrix-ii/)
+[力扣题目链接](https://leetcode.cn/problems/trapping-rain-water)
 
 ```java
 class Solution {
-    public int[][] generateMatrix(int n) {
-        int l = 0, r = n - 1, t = 0, b = n - 1;
-        int[][] result = new int[n][n];
-        int num = 1, tar = n * n;
-
-        while (num <= tar) {
-            // 从左到右
-            for (int i = l; i <= r; i++) {
-                result[t][i] = num++;
-            }
-            t++;
-
-            // 从上到下
-            for (int i = t; i <= b; i++) {
-                result[i][r] = num++;
-            }
-            r--;
-
-            // 从右到左
-            for (int i = r; i >= l; i--) {
-                result[b][i] = num++;
-            }
-            b--;
-
-            // 从下到上
-            for (int i = b; i >= t; i--) {
-                result[i][l] = num++;
-            }
-            l++;
+    public int trap(int[] height) {
+        int length = height.length;
+        if (length <= 2) {
+            return 0;
         }
 
-        return result;
+        int[] maxLeft = new int[length];
+        int[] maxRight = new int[length];
+
+        maxLeft[0] = height[0];
+        for (int i = 1; i < height.length; i++) {
+            maxLeft[i] = Math.max(height[i], maxLeft[i - 1]);
+        }
+
+        maxRight[length - 1] = height[length - 1];
+        for (int i = length - 2; i >= 0; i--) { // i = length - 1 的 已经赋过值了
+            maxRight[i] = Math.max(height[i], maxRight[i + 1]);
+        }
+
+        int sum = 0;
+        for (int i = 0; i < height.length; i++) {
+            int area = Math.min(maxRight[i], maxLeft[i]) - height[i];
+            if (area > 0) {
+                sum += area;
+            }
+        }
+        return sum;
+    }
+}
+```
+
+### [238. 除自身以外数组的乘积](https://leetcode.cn/problems/product-of-array-except-self/)
+
+
+
+```java
+class Solution {
+    public int[] productExceptSelf(int[] nums) {
+        int n = nums.length;
+        int[] leftProducts = new int[n];
+        int[] rightProuducts = new int[n];
+
+        leftProducts[0] = 1;
+        rightProuducts[n - 1] = 1;
+        for (int i = 1; i < n; i++) {
+            leftProducts[i] = leftProducts[i - 1] * nums[i - 1];
+        }
+
+        for (int i = n - 2; i >= 0; i--) { // 注意下标
+            rightProuducts[i] = rightProuducts[i + 1] * nums[i + 1];
+        }
+
+        int[] res = new int[n];
+        for (int i = 0; i < n; i++) {
+            res[i] = leftProducts[i] * rightProuducts[i];
+        }
+
+        return res;
     }
 }
 ```
@@ -820,9 +927,162 @@ class Solution {
 }
 ```
 
+### 454.四数相加II
+
+[力扣题目链接](https://leetcode.cn/problems/4sum-ii/)
+
+```java
+class Solution {
+    public int fourSumCount(int[] nums1, int[] nums2, int[] nums3, int[] nums4) {
+        int ans = 0;
+        Map<Integer, Integer> map = new HashMap<>();
+        for (int i : nums1) {
+            for (int j : nums2) {
+                int sum = i + j;
+                map.put(sum, map.getOrDefault(sum, 0) + 1);
+            }
+        }
+
+        for (int i : nums3) {
+            for (int j : nums4) {
+                ans += map.getOrDefault(0 - (i + j), 0);
+            }
+        }
+        return ans;
+    }
+}
+```
+
 
 
 ## 字符串
+
+### 387. 字符串中的第一个唯一字符
+
+[力扣题目链接](https://leetcode.cn/problems/first-unique-character-in-a-string/)
+
+```java
+class Solution {
+    public int firstUniqChar(String s) {
+        char[] charArray = s.toCharArray();
+        Map<Character, Integer> map = new HashMap<>();
+        for (char ch : charArray) {
+            map.put(ch, map.getOrDefault(ch, 0) + 1);
+        }
+        int ans = -1;
+        for (int i = 0; i < charArray.length; i++) {
+            if (map.get(charArray[i]) == 1) {
+                ans = i;
+                break;
+            }
+        }
+        return ans;
+    }
+}
+```
+
+
+
+### 14. 最长公共前缀
+
+[力扣题目链接](https://leetcode.cn/problems/longest-common-prefix/)
+
+常规思路：
+
+```java
+class Solution {
+    public String longestCommonPrefix(String[] strs) {
+        if (strs == null || strs.length == 0) {
+            return "";
+        }
+        String prefix = strs[0];
+        for (int i = 1; i < strs.length; i++) {
+            prefix = longestCommonPrefix(prefix, strs[i]); // 寻找当前的前缀和下一个单词的最长前缀
+            if (prefix.length() == 0) {
+                break;
+            }
+        }
+        return prefix;
+    }
+
+    public String longestCommonPrefix(String str1, String str2) {
+        int index = 0;
+        int length = Math.min(str1.length(), str2.length());
+        while (index < length && str1.charAt(index) == str2.charAt(index)) {
+            index++;
+        }
+        return str1.substring(0, index);
+    }
+}
+```
+
+排序后检查首尾：
+
+```java
+class Solution {
+    public String longestCommonPrefix(String[] strs) {
+        if (strs == null || strs.length == 0) {
+            return "";
+        }
+        // 排序会根据字符串的Unicode编码进行排序，会将具有公共子串的字符串排到前面
+        Arrays.sort(strs);
+        String first = strs[0];
+        String last = strs[strs.length - 1];
+        int count = 0;
+        while (count < first.length()) {
+            if (first.charAt(count) == last.charAt(count)) {
+                count++;
+            } else {
+                break;
+            }
+        }
+        return count == 0 ? "" : first.substring(0, count);
+    }
+}
+```
+
+
+
+### 709. 转换成小写字母
+
+[力扣题目链接](https://leetcode.cn/problems/to-lower-case/)
+
+```java
+class Solution {
+    public String toLowerCase(String s) {
+        StringBuilder ans = new StringBuilder();
+        for (char c : s.toCharArray()) {
+            if (c >= 65 && c <= 90) {
+                c = (char) (c + 32); // 也可以写作  c |= 32;
+            }
+            ans.append(c);
+        }
+        return ans.toString();
+    }
+}
+```
+
+### 58.最后一个单词的长度
+
+[力扣题目链接](https://leetcode.cn/problems/length-of-last-word/)
+
+```java
+class Solution {
+    public int lengthOfLastWord(String s) {
+        String trimStr = s.trim();
+        int ans = 0;
+        for (int i = trimStr.length() - 1; i >= 0; i--) {
+            if (trimStr.charAt(i) == ' ') {
+                break;
+            }
+            ans++;
+        }
+        return ans;
+    }
+}
+```
+
+
 
 ### 344.反转字符串
 
@@ -848,6 +1108,41 @@ class Solution {
     }
 }
 ```
+
+### 917. 仅仅反转字母
+
+[力扣题目链接](https://leetcode.cn/problems/reverse-only-letters/)
+
+```java
+class Solution {
+    public String reverseOnlyLetters(String s) {
+        if (s == null || s.isEmpty()) {
+            return s;
+        }
+
+        int i = 0, j = s.length() - 1;
+        char[] charArray = s.toCharArray();
+        while (i <= j) {
+            // 找到是字母的下标
+            while (i < j && !Character.isAlphabetic(charArray[i])) {
+                i++;
+            }
+            while (i < j && !Character.isAlphabetic(charArray[j])) {
+                j--;
+            }
+            char temp = charArray[i];
+            charArray[i] = charArray[j];
+            charArray[j] = temp;
+            i++;
+            j--;
+        }
+
+        return new String(charArray);
+    }
+}
+```
+
+
 
 ### 541. 反转字符串II
 
@@ -1024,6 +1319,35 @@ class Solution {
 }
 ```
 
+### 3. 无重复字符的最长子串
+
+[力扣题目链接](https://leetcode.cn/problems/longest-substring-without-repeating-characters/)
+
+滑动窗口：
+
+```java
+class Solution {
+    public int lengthOfLongestSubstring(String s) {
+        int ans = 0, left = 0;
+        // 保存无重复的子串
+        Set<Character> set = new HashSet<>();
+        // eg: "pwwkew" -> "kew"
+        for (int right = 0; right < s.length(); right++) {
+            Character ch = s.charAt(right);
+            while (set.contains(ch)) {
+                set.remove(s.charAt(left));
+                left++;
+            }
+            set.add(ch);
+            ans = Math.max(ans, set.size());
+        }
+        return ans;
+    }
+}
+```
+
+
+
 ### 字符串题目总结
 
 字符串与字符数组的转换会经常用到，字符串的题目也常常会与哈希表、排序结合。
@@ -1037,9 +1361,9 @@ class Solution {
 这里使用的栈来解决。
 
 ```java
-public boolean isValid(String s) {
+class Solution {
+    public boolean isValid(String s) {
         int n = s.length();
-        // 如果个数是奇数个直接返回
         if(n % 2 == 1) {
             return false;
         }
@@ -1064,6 +1388,7 @@ public boolean isValid(String s) {
 
         return stack.isEmpty();
     }
+}
 ```
 
 除了这种方法，还有一种相对比较简单的写法：
@@ -1303,6 +1628,246 @@ class LRUCache extends LinkedHashMap<Integer, Integer> {
 }
 ```
 
+###  739. 每日温度
+
+[力扣题目链接](https://leetcode.cn/problems/daily-temperatures/)
+
+完整代码：
+
+```java
+class Solution {
+    public int[] dailyTemperatures(int[] temperatures) {
+        int n = temperatures.length;
+        int[] ans = new int[n];
+        Stack<Integer> stack = new Stack<>();
+        stack.push(0); // 注意，push进去的是下标
+        for (int i = 1; i < temperatures.length; i++) {
+            if (temperatures[i] <= temperatures[stack.peek()]) {
+                stack.push(i);
+            } else {
+                while (!stack.isEmpty() && temperatures[stack.peek()] < temperatures[i]) {
+                    ans[stack.peek()] = i - stack.peek();
+                    stack.pop();
+                }
+                stack.push(i);
+            }
+        }
+
+        return ans;
+    }
+}
+```
+
+精简代码：
+
+```java
+class Solution {
+    public int[] dailyTemperatures(int[] temperatures) {
+        int n = temperatures.length;
+        int[] ans = new int[n];
+        Stack<Integer> stack = new Stack<>();
+        for (int i = 0; i < temperatures.length; i++) {
+            while (!stack.isEmpty() && temperatures[stack.peek()] < temperatures[i]) {
+                ans[stack.peek()] = i - stack.peek();
+                stack.pop();
+            }
+            stack.push(i);
+        }
+
+        return ans;
+    }
+}
+```
+
+
+
+### 496.下一个更大元素 I
+
+[力扣题目链接](https://leetcode.cn/problems/next-greater-element-i/)
+
+```java
+class Solution {
+    public int[] nextGreaterElement(int[] nums1, int[] nums2) {
+        // 单调栈
+        Deque<Integer> stk = new ArrayDeque<>();
+        Map<Integer, Integer> map = new HashMap<>();
+        for (int num : nums2) {
+            while (!stk.isEmpty() && stk.peek() < num) {
+                map.put(stk.pop(), num);
+            }
+            stk.push(num);
+        }
+
+        int n = nums1.length;
+        int[] res = new int[n];
+        for (int i = 0; i < n; i++) {
+            res[i] = map.getOrDefault(nums1[i], -1);
+        }
+        return res;
+    }
+}
+```
+
+
+
+### 503.下一个更大元素II
+
+[力扣题目链接](https://leetcode.cn/problems/next-greater-element-ii/)
+
+```java
+class Solution {
+    public int[] nextGreaterElements(int[] nums) {
+        int n = nums.length;
+        int[] ans = new int[n];
+        Arrays.fill(ans, -1);
+        Deque<Integer> stack = new LinkedList<>();
+        for (int i = 0; i < 2 * n; i++) {
+            while (!stack.isEmpty() && nums[i % n] > nums[stack.peek()]) {
+                ans[stack.peek()] = nums[i % n];
+                stack.pop();
+            }
+            stack.push(i % n);
+        }
+        return ans;
+    }
+}
+```
+
+### 394. 字符串解码
+
+[力扣题目链接](https://leetcode.cn/problems/decode-string/)
+
+```java
+class Solution {
+    public String decodeString(String s) {
+        // eg: 3[a]2[bc] -> aaabcbc
+        Deque<Character> stack = new LinkedList<>();
+        for (Character ch : s.toCharArray()) {
+            if (ch != ']') {
+                stack.push(ch);
+            } else {
+                StringBuilder letterBuilder = new StringBuilder();
+
+                while (!stack.isEmpty() && Character.isLetter(stack.peek())) {
+                    letterBuilder.insert(0, stack.pop());
+                }
+                stack.pop(); // 去掉 "["
+
+                StringBuilder digitalBuilder = new StringBuilder();
+                while (!stack.isEmpty() && Character.isDigit(stack.peek())) { // 数字可能是多位的
+                    digitalBuilder.insert(0, stack.pop());
+                }
+
+                int count = Integer.parseInt(digitalBuilder.toString());
+
+                for (int i = 0; i < count; i++) {
+                    for (char c : letterBuilder.toString().toCharArray()) {
+                        stack.push(c);
+                    }
+                }
+            }
+        }
+
+        StringBuilder ans = new StringBuilder();
+        while (!stack.isEmpty()) {
+            ans.insert(0, stack.pop());
+        }
+        return ans.toString();
+    }
+}
+```
+
+
+
+## 子串与区间
+
+### 560. 和为 K 的子数组
+
+[力扣题目链接](https://leetcode.cn/problems/subarray-sum-equals-k/)
+
+方法一：
+
+前缀和的解法原理：使用哈希表来统计每个前缀和出现的次数。遍历数组，计算每个前缀和，并在哈希表中查找当前前缀和减去k是否存在，如果存在，说明存在一个以当前元素为结尾的子数组的和为k。继续遍历，直到遍历完整个数组。
+
+前缀和算法通过使用前缀和和哈希表的方法来优化查找子数组的效率。
+
+```java
+class Solution {
+    public int subarraySum(int[] nums, int k) {
+        int ans = 0, sum = 0;
+        Map<Integer, Integer> map = new HashMap<>();
+        map.put(0, 1); // 出现0的次数是1
+
+        for (int num : nums) {
+            sum += num;
+            // 当前前缀和减去k，得到另一个前缀和
+            ans += map.getOrDefault(sum - k, 0);
+            // 当前前缀和加入map
+            map.put(sum, map.getOrDefault(sum, 0) + 1);
+        }
+        return ans;
+    }
+}
+```
+
+方法二：
+
+```java
+public class Solution {
+    public int subarraySum(int[] nums, int k) {
+        int count = 0;
+
+        int[] sum = new int[nums.length + 1];
+        sum[0] = 0;
+        for (int i = 1; i <= nums.length; i++) {
+            sum[i] = sum[i - 1] + nums[i - 1];
+        }
+
+        for (int start = 0; start < sum.length; start++) {
+            for (int end = start + 1; end < sum.length; end++) {
+                // 计算“nums”的总和意味着使用“sum”的最后一个元素减去“sum”的第一个元素
+                if (sum[end] - sum[start] == k) {
+                    count++;
+                }
+            }
+        }
+
+        return count;
+    }
+}
+```
+
+### 56. 合并区间
+
+[力扣题目链接](https://leetcode.cn/problems/merge-intervals/)
+
+```java
+class Solution {
+    public int[][] merge(int[][] intervals) {
+        if (intervals.length <= 1) {
+            return intervals;
+        }
+
+        Arrays.sort(intervals, (i1, i2) -> Integer.compare(i1[0], i2[0]));
+
+        List<int[]> result = new ArrayList<>();
+        int[] newInterval = intervals[0];
+        result.add(newInterval);
+
+        for (int[] interval : intervals) {
+            if (interval[0] <= newInterval[1]) {
+                newInterval[1] = Math.max(newInterval[1], interval[1]);
+            } else {
+                newInterval = interval;
+                result.add(newInterval);
+            }
+        }
+
+        return result.toArray(new int[result.size()][]);
+    }
+}
+```
+
 
 
 ## 树
@@ -1312,48 +1877,52 @@ class LRUCache extends LinkedHashMap<Integer, Integer> {
 使用传统的递归方式：
 
 ```java
-   public List<Integer> inorderTraversal(TreeNode root) {
-        List<Integer> list = new ArrayList<>();
-        this.inorder(root, list);
-        return list;
-    }
+class Solution {
 
-    public void inorder(TreeNode root, List<Integer> res) {
+    private List<Integer> ans = new ArrayList<>();
+
+    public List<Integer> inorderTraversal(TreeNode root) {
         if (root == null) {
-            return;
+            return ans;
         }
         if (root.left != null) {
-            inorder(root.left, res);
+            inorderTraversal(root.left);
         }
-        res.add(root.val);
+        ans.add(root.val);
         if (root.right != null) {
-            inorder(root.right, res);
+            inorderTraversal(root.right);
         }
+        return ans;
     }
+}
 ```
 
 迭代实现：
 
 ```java
-  public List<Integer> inorderTraversal(TreeNode root) {
-        List<Integer> res = new ArrayList<>();
-        Stack<TreeNode> stack = new Stack<>();
+class Solution {
+
+    private List<Integer> ans = new ArrayList<>();
+
+    public List<Integer> inorderTraversal(TreeNode root) {
+        Deque<TreeNode> stack = new LinkedList<>();
         while (stack.size() > 0 || root != null) {
             // 不断往左子树方向走，每走一次就将当前节点保存到栈中
             // 这是模拟递归的调用
             if (root != null) {
-                stack.add(root);
+                stack.push(root);
                 root = root.left;
+            } else {
                 // 当前节点为空，说明左边走到头了，从栈中弹出节点并保存
                 // 然后转向右边节点，继续上面整个过程
-            } else {
-                TreeNode tmp = stack.pop();
-                res.add(tmp.val);
-                root = tmp.right;
+                TreeNode temp = stack.pop();
+                ans.add(temp.val);
+                root = temp.right;
             }
         }
-        return res;
+        return ans;
     }
+}
 ```
 
 莫里斯遍历：
@@ -1394,12 +1963,15 @@ public List<Integer> inorderTraversal3(TreeNode root) {
 递归解法：
 
 ```java
+class Solution {
     public int maxDepth(TreeNode root) {
         if (root == null) {
             return 0;
         }
+
         return Math.max(maxDepth(root.left), maxDepth(root.right)) + 1;
     }
+}
 ```
 
 广度优先遍历解法：
@@ -1438,25 +2010,31 @@ public int maxDepthByBFS(TreeNode root) {
 使用递归：
 
 ```java
-    public boolean validate(TreeNode node, long min, long max) {
-        // 终止条件
-        if (node == null) {
+class Solution {
+    public boolean isValidBST(TreeNode root) {
+        return recursion(root, Long.MIN_VALUE, Long.MAX_VALUE);
+    }
+
+    private boolean recursion(TreeNode root, long lower, long upper) {
+        if (root == null) {
             return true;
         }
 
-        if (node.val <= min || node.val >= max) {
+        if (root.val >= upper || root.val <= lower) {
             return false;
         }
         // 相当于给子树上所有的节点都添加了min和max的边界
         // 约束root的左子树的值不超过root的值，右子树的值不小于root的值
-        return validate(node.left, min, node.val) && validate(node.right, node.val, max);
+        return recursion(root.left, lower, root.val) && recursion(root.right, root.val, upper);
     }
+}
 ```
 
 利用中序遍历的性质：
 
 ```java
-    public boolean isValidBST(TreeNode root) {
+class Solution {   
+	public boolean isValidBST(TreeNode root) {
         Deque<TreeNode> stack = new LinkedList<>();
         // 存储上一个节点的值
         double inorder = -Double.MAX_VALUE;
@@ -1475,6 +2053,7 @@ public int maxDepthByBFS(TreeNode root) {
         }
         return true;
     }
+}
 ```
 
 除此之外，也可以先进行中序遍历，然后判断返回的列表是否为升序。
@@ -1549,33 +2128,6 @@ class Solution {
         return root;
     }
 }
-```
-
-
-
-### [78. 子集](https://leetcode-cn.com/problems/subsets/)
-
-以求解[1,2,3]的子集为例，画出的树形图如下所示：
-
-<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210711180106.png" alt="image.png" style="zoom: 50%;" />
-
-使用回溯算法：
-
-```java
- public List<List<Integer>> subsets(int[] nums) {
-        List<List<Integer>> res = new LinkedList<>();
-        dfs(nums, res, 0, new ArrayList<>());
-        return res;
-    }
-
-    public void dfs(int[] nums, List<List<Integer>> res, int n, ArrayList<Integer> temp) {
-        res.add(new ArrayList<>(temp));
-        for (int i = n; i < nums.length; i++) {
-            temp.add(nums[i]);
-            dfs(nums, res, i + 1, temp);
-            temp.remove(temp.size() - 1);
-        }
-    }
 ```
 
 
@@ -2129,6 +2681,47 @@ class Solution {
 }
 ```
 
+### 437. 路径总和 III
+
+[力扣题目链接](https://leetcode.cn/problems/path-sum-iii/)
+
+```java
+class Solution {
+
+    private Long count = 0L; // 必须用Long类型，否则无法通过
+
+    public int pathSum(TreeNode root, int targetSum) {
+        if (root == null) {
+            return 0;
+        }
+
+        // 计算给节点
+        helper(root, targetSum, 0L);
+        // 计算给定节点的左子树
+        pathSum(root.left, targetSum);
+        // 计算给定节点的右子树
+        pathSum(root.right, targetSum);
+        return count.intValue();
+    }
+
+    private void helper(TreeNode root, int targetSum, Long currentSum) {
+        if (root == null) {
+            return;
+        }
+
+        currentSum += root.val;
+        if (currentSum == targetSum) {
+            count++;
+        }
+
+        helper(root.left, targetSum, currentSum);
+        helper(root.right, targetSum, currentSum);
+    }
+}
+```
+
+
+
 ### 617.合并二叉树
 
 [力扣题目链接](https://leetcode.cn/problems/merge-two-binary-trees/)
@@ -2636,6 +3229,10 @@ class Solution {
 
 [力扣题目链接](https://leetcode.cn/problems/subsets/)
 
+以求解[1,2,3]的子集为例，画出的树形图如下所示：
+
+<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210711180106.png" alt="image.png" style="zoom: 50%;" />
+
 ```java
 class Solution {
 
@@ -2841,32 +3438,78 @@ class Solution {
 
 <img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210712114808.png" alt="image.png" style="zoom:50%;" />
 
-```java
-    public List<String> generateParenthesis(int n) {
-        List<String> res = new LinkedList<>();
-        if (n <= 0) {
-            return res;
-        }
-        dfs("", res, n, 0, 0);
-        return res;
-    }
+解法一：
 
-    public void dfs(String paths, List<String> res, int n, int left, int right) {
+```java
+class Solution {
+
+    private List<String> ans = new ArrayList<>();
+    private int n;
+
+    public List<String> generateParenthesis(int n) {
+        if (n <= 0) {
+            return ans;
+        }
+        this.n = n;
+        dfs("", 0, 0);
+        return ans;
+    }
+    
+    private void dfs(String paths, int left, int right) {
         // 剪枝,去掉( > n 或 ) > n 或 ) > (的情况，由于传递性，) > n可以去掉
         if (left > n || right > left) {
             return;
         }
         // 因为括号都是成对出现的，因此需要遍历的树的深度为n*2
         if (paths.length() == n * 2) {
-            res.add(paths);
-            // 每次遍历后，需要将上一次的结果清理，从根结点继续遍历
+            ans.add(paths);
+            // 回溯
             paths = "";
             return;
         }
-        dfs(paths + '(', res, n, left + 1, right);
-        dfs(paths + ')', res, n, left, right + 1);
+
+        dfs(paths + "(", left + 1, right);
+        dfs(paths + ")", left, right + 1);
     }
+}
 ```
+
+解法二：
+
+```java
+class Solution {
+   StringBuffer path = new StringBuffer();
+   List<String> res = new ArrayList<>();
+
+   public List<String> generateParenthesis(int n) {
+       backtracking(0, 0, n);
+       return res;
+   }
+
+   void backtracking(int l, int r, int n) {
+       if (l > n || l < r) { // 左边括号小于右边括号，一定不符合要求，其次括号超过n也不符合成对要求
+           return;
+       }
+       if (path.length() == 2 * n) {
+           res.add(path.toString());
+       }
+       for (int i = 0; i < 2; i++) { // 将括号看作大小为 2 的数组，求他们的有效组合，括号个数决定了树的深度
+           if (i == 0) {
+               path.append("(");
+               backtracking(l + 1, r, n);
+               path.deleteCharAt(path.length() - 1);
+           }
+           if (i == 1) {
+               path.append(")");
+               backtracking(l, r + 1, n);
+               path.deleteCharAt(path.length() - 1);
+           }
+       }
+   }
+}
+```
+
+
 
 ### 332.重新安排行程
 
@@ -3057,10 +3700,32 @@ class Solution {
 
 ### [322. 零钱兑换](https://leetcode-cn.com/problems/coin-change/)
 
-使用贪心算法：
+使用动态规划：
 
 ```java
-public
+class Solution {
+    public int coinChange(int[] coins, int amount) {
+        int max = Integer.MAX_VALUE;
+        int[] dp = new int[amount + 1];
+        //初始化dp数组为最大值
+        for (int j = 0; j < dp.length; j++) {
+            dp[j] = max;
+        }
+        //当金额为0时需要的硬币数目为0
+        dp[0] = 0;
+        for (int i = 0; i < coins.length; i++) {
+            //正序遍历：完全背包每个硬币可以选择多次
+            for (int j = coins[i]; j <= amount; j++) {
+                //只有dp[j-coins[i]]不是初始最大值时，该位才有选择的必要
+                if (dp[j - coins[i]] != max) {
+                    //选择硬币数目最小的情况
+                    dp[j] = Math.min(dp[j], dp[j - coins[i]] + 1);
+                }
+            }
+        }
+        return dp[amount] == max ? -1 : dp[amount];
+    }
+}
 ```
 
 ### [55. 跳跃游戏](https://leetcode-cn.com/problems/jump-game/)
@@ -3130,6 +3795,44 @@ class Solution {
             chars[i] = '9';
         }
         return Integer.parseInt(String.valueOf(chars));
+    }
+}
+```
+
+### [860. 柠檬水找零](https://leetcode.cn/problems/lemonade-change/)
+
+[力扣题目链接](https://leetcode.cn/problems/lemonade-change/)
+
+```java
+class Solution {
+    public boolean lemonadeChange(int[] bills) {
+        int five = 0;
+        int ten = 0;
+        int twenty = 0;
+        for (int bill : bills) {
+            if (bill == 5) {
+                five++;
+            }
+            if (bill == 10) {
+                if (five <= 0) {
+                    return false;
+                }
+                ten++;
+                five--;
+            }
+            if (bill == 20) {
+                twenty++;
+                if (five > 0 & ten > 0) {
+                    five--;
+                    ten--;
+                } else if (five >= 3) {
+                    five = five - 3;
+                } else {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 }
 ```
@@ -4408,3 +5111,55 @@ public double myPow2(double x, int n) {
     }
 ```
 
+### 59.螺旋矩阵II
+
+[力扣题目链接](https://leetcode.cn/problems/spiral-matrix-ii/)
+
+```java
+class Solution {
+    public int[][] generateMatrix(int n) {
+        int l = 0, r = n - 1, t = 0, b = n - 1;
+        int[][] result = new int[n][n];
+        int num = 1, tar = n * n;
+
+        while (num <= tar) {
+            // 从左到右
+            for (int i = l; i <= r; i++) {
+                result[t][i] = num++;
+            }
+            t++;
+
+            // 从上到下
+            for (int i = t; i <= b; i++) {
+                result[i][r] = num++;
+            }
+            r--;
+
+            // 从右到左
+            for (int i = r; i >= l; i--) {
+                result[b][i] = num++;
+            }
+            b--;
+
+            // 从下到上
+            for (int i = b; i >= t; i--) {
+                result[i][l] = num++;
+            }
+            l++;
+        }
+
+        return result;
+    }
+}
+```
+
+
+
+## 附录
+
+### 常用站点
+
+- [代码随想录](https://programmercarl.com/0530.%E4%BA%8C%E5%8F%89%E6%90%9C%E7%B4%A2%E6%A0%91%E7%9A%84%E6%9C%80%E5%B0%8F%E7%BB%9D%E5%AF%B9%E5%B7%AE.html)
+- [labuladong的算法笔记](https://labuladong.github.io/algo/)
+- [leetcode题解](https://doocs.github.io/leetcode/)
+- [geeksforgeeks](https://www.geeksforgeeks.org/)
