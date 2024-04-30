@@ -2,7 +2,9 @@
 
 ## 数组
 
-### [1. 两数之和](https://leetcode-cn.com/problems/two-sum/)
+### 1. 两数之和
+
+[力扣题目链接](https://leetcode-cn.com/problems/two-sum/)
 
 梦开始的地方：
 
@@ -182,7 +184,9 @@ class Solution {
 
 有时候倒着遍历也是一种好办法。
 
-### [283. 移动零](https://leetcode-cn.com/problems/move-zeroes/)
+### 283. 移动零
+
+[力扣题目链接](https://leetcode-cn.com/problems/move-zeroes/)
 
 写法一：
 
@@ -285,7 +289,9 @@ class Solution {
 
 
 
-### [15. 三数之和](https://leetcode-cn.com/problems/3sum/)
+### 15. 三数之和
+
+[力扣题目链接](https://leetcode-cn.com/problems/3sum/)
 
 穷举法：
 
@@ -383,7 +389,9 @@ class Solution {
 
 
 
-### [84. 柱状图中最大的矩形](https://leetcode-cn.com/problems/largest-rectangle-in-histogram/)
+### 84. 柱状图中最大的矩形
+
+[力扣题目链接](https://leetcode-cn.com/problems/largest-rectangle-in-histogram/)
 
 使用暴力法求解：
 
@@ -422,7 +430,9 @@ class Solution {
 
 
 
-### [11. 盛最多水的容器 ](https://leetcode-cn.com/problems/container-with-most-water/)
+### 11. 盛最多水的容器
+
+[力扣题目链接](https://leetcode-cn.com/problems/container-with-most-water/)
 
 传统的遍历方式，时间复杂度为O(n^2)。
 
@@ -499,33 +509,33 @@ class Solution {
 }
 ```
 
-### [238. 除自身以外数组的乘积](https://leetcode.cn/problems/product-of-array-except-self/)
+### 238. 除自身以外数组的乘积
 
-
+[力扣题目链接](https://leetcode.cn/problems/product-of-array-except-self/)
 
 ```java
 class Solution {
     public int[] productExceptSelf(int[] nums) {
         int n = nums.length;
-        int[] leftProducts = new int[n];
-        int[] rightProuducts = new int[n];
+        int[] ans = new int[n];
+        int[] leftExceptSelf = new int[n];
+        int[] rightExceptSelf = new int[n];
 
-        leftProducts[0] = 1;
-        rightProuducts[n - 1] = 1;
+        leftExceptSelf[0] = 1;
+        rightExceptSelf[n - 1] = 1;
+        // 计算左边的乘积
         for (int i = 1; i < n; i++) {
-            leftProducts[i] = leftProducts[i - 1] * nums[i - 1];
+            leftExceptSelf[i] = leftExceptSelf[i - 1] * nums[i - 1];
         }
-
-        for (int i = n - 2; i >= 0; i--) { // 注意下标
-            rightProuducts[i] = rightProuducts[i + 1] * nums[i + 1];
+        // 计算右边的乘积
+        for (int i = n - 2; i >= 0; i--) {
+            rightExceptSelf[i] = rightExceptSelf[i + 1] * nums[i + 1];
         }
-
-        int[] res = new int[n];
-        for (int i = 0; i < n; i++) {
-            res[i] = leftProducts[i] * rightProuducts[i];
+        // 计算结果
+        for (int i = 0; i < ans.length; i++) {
+            ans[i] = leftExceptSelf[i] * rightExceptSelf[i];
         }
-
-        return res;
+        return ans;
     }
 }
 ```
@@ -568,7 +578,9 @@ class Solution {
 
 
 
-### [206. 反转链表](https://leetcode-cn.com/problems/reverse-linked-list/)
+### 206. 反转链表
+
+[力扣题目链接](https://leetcode-cn.com/problems/reverse-linked-list/)
 
 双指针的解法：
 
@@ -586,7 +598,9 @@ class Solution {
     }
 ```
 
-### [141. 环形链表 ](https://leetcode-cn.com/problems/linked-list-cycle/)
+### 141. 环形链表 
+
+[力扣题目链接](https://leetcode-cn.com/problems/linked-list-cycle/)
 
 使用哈希表来实现：
 
@@ -1354,7 +1368,9 @@ class Solution {
 
 ## 栈与队列
 
-### [20. 有效的括号](https://leetcode-cn.com/problems/valid-parentheses/)
+### 20. 有效的括号
+
+[力扣题目链接](https://leetcode-cn.com/problems/valid-parentheses/)
 
 可以使用暴力破解法，即遍历字符串，找到最近的匹配括号开始，如果匹配就替换为空字符串，一直循环下去，如果括号是匹配的，那么最终的结果应该是个空字符串。
 
@@ -1564,7 +1580,9 @@ class Solution {
 
 
 
-### [239. 滑动窗口最大值](https://leetcode-cn.com/problems/sliding-window-maximum/)
+### 239. 滑动窗口最大值
+
+[力扣题目链接](https://leetcode-cn.com/problems/sliding-window-maximum/)
 
 <div class="note info"><p>所有滑动窗口的问题都可以使用队列来解决。</p></div>
 
@@ -1596,7 +1614,7 @@ class Solution {
     }
 ```
 
-### [146. LRU 缓存](https://leetcode.cn/problems/lru-cache/)
+### 146. LRU 缓存
 
 [力扣题目链接](https://leetcode.cn/problems/lru-cache/)
 
@@ -1872,7 +1890,9 @@ class Solution {
 
 ## 树
 
-### [94. 二叉树的中序遍历](https://leetcode-cn.com/problems/binary-tree-inorder-traversal/)
+### 94. 二叉树的中序遍历
+
+[力扣题目链接](https://leetcode-cn.com/problems/binary-tree-inorder-traversal/)
 
 使用传统的递归方式：
 
@@ -1928,7 +1948,8 @@ class Solution {
 莫里斯遍历：
 
 ```java
-public List<Integer> inorderTraversal3(TreeNode root) {
+class Solution {
+	public List<Integer> inorderTraversal3(TreeNode root) {
         if (root == null) {
             return new ArrayList<>();
         }
@@ -1956,6 +1977,7 @@ public List<Integer> inorderTraversal3(TreeNode root) {
         }
         return res;
     }
+}
 ```
 
 ### [104. 二叉树的最大深度](https://leetcode-cn.com/problems/maximum-depth-of-binary-tree/)
@@ -1977,7 +1999,8 @@ class Solution {
 广度优先遍历解法：
 
 ```java
-public int maxDepthByBFS(TreeNode root) {
+class Solution {
+	public int maxDepthByBFS(TreeNode root) {
         if (root == null) {
             return 0;
         }
@@ -2001,6 +2024,7 @@ public int maxDepthByBFS(TreeNode root) {
         }
         return depth;
     }
+}
 ```
 
 ### [98. 验证二叉搜索树](https://leetcode-cn.com/problems/validate-binary-search-tree/)
@@ -3531,7 +3555,6 @@ class Solution {
     public List<String> findItinerary(List<List<String>> tickets) {
         used = new boolean[tickets.size()];
         Collections.sort(tickets, (a, b) -> a.get(1).compareTo(b.get(1)));
-//        System.out.println(tickets);
         path.add("JFK");
         dfs(tickets);
         return ans;
@@ -3866,22 +3889,25 @@ class Solution {
 }
 ```
 
-所谓的状态转移方程或者说递推公式为：`dp[i] = dp[i - 1] + dp[i - 2]`。
+状态转移方程为：`dp[i] = dp[i - 1] + dp[i - 2]`。
 
 ```java
-    public int fib(int n) {
+class Solution {     
+	public int fib(int n) {
         int[] dp = {0, 1};
         for (int i = 2; i < n; i++) {
             dp[i] = dp[i - 1] + dp[i - 2];
         }
         return dp[n];
     }
+}
 ```
 
 还可以进一步优化，实际上每次只需要存储最近的两个结果即可，按照这个思路，可以将空间复杂度优化到O(1)。
 
 ```java
-    public int fib(int n) {
+class Solution {  
+	public int fib(int n) {
         if (n <= 1)
             return n;
         // 初始的时候，分别对应f(o) = 0和f(1) = 1
@@ -3895,6 +3921,7 @@ class Solution {
         }
         return curr;
     }
+}
 ```
 
 ### [70. 爬楼梯 ](https://leetcode-cn.com/problems/climbing-stairs/)
@@ -3902,7 +3929,8 @@ class Solution {
 直接使用递归求接斐波那契数列：
 
 ```java
-    public int climbStairs(int n) {
+class Solution {    
+	public int climbStairs(int n) {
         if (n == 1) {
             return 1;
         }
@@ -3911,12 +3939,14 @@ class Solution {
         }
         return climbStairs(n - 1) + climbStairs(n - 2);
     }
+}
 ```
 
 使用循环求解：
 
 ```java
-    public int climbStairs(int n) {
+class Solution {      
+	public int climbStairs(int n) {
         if (n <= 2) {
             return n;
         }
@@ -3929,12 +3959,14 @@ class Solution {
         }
         return f3;
     }
+}
 ```
 
 也可以直接dp求解：
 
 ```java
-    public int climbStairs(int n) {
+class Solution {  
+	public int climbStairs(int n) {
         if(n <= 2) {
             return n;
         }
@@ -3946,6 +3978,7 @@ class Solution {
         }
         return dp[n -1];
     }
+}
 ```
 
 ### 746. 使用最小花费爬楼梯
@@ -4078,7 +4111,8 @@ $$
 其中$c(i)(j)$表示位置$(i, j)$对应的元素值。
 
 ```java
-    public int minimumTotal(List<List<Integer>> triangle) {
+class Solution {    
+	public int minimumTotal(List<List<Integer>> triangle) {
         int n = triangle.size();
         // 结果一定是下三角矩阵
         int[][] dp = new int[n][n];
@@ -4100,6 +4134,7 @@ $$
         }
         return min;
     }
+}
 ```
 
 
@@ -4486,7 +4521,8 @@ $$
 直接求解即可：
 
 ```java
-    public int longestCommonSubsequence(String text1, String text2) {
+class Solution {  
+	public int longestCommonSubsequence(String text1, String text2) {
         int m = text1.length();
         int n = text2.length();
         int[][] dp = new int[m + 1][n + 1];
@@ -4506,6 +4542,7 @@ $$
         }
         return dp[m][n];
     }
+}
 ```
 
 ### 1035.不相交的线
@@ -4761,7 +4798,8 @@ $$
 相应的示例代码：
 
 ```java
-    public String longestPalindrome(String s) {
+class Solution {    
+	public String longestPalindrome(String s) {
         int len = s.length();
         if (len < 2) {
             return s;
@@ -4804,6 +4842,7 @@ $$
         }
         return s.substring(begin, begin + maxLen);
     }
+}
 ```
 
 
