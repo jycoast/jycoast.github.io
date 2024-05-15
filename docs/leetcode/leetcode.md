@@ -296,7 +296,8 @@ class Solution {
 穷举法：
 
 ```java
-    public List<List<Integer>> threeSum(int[] nums) {
+class Solution {
+	public List<List<Integer>> threeSum(int[] nums) {
         List<List<Integer>> res = new LinkedList<>();
         int target = 0;
         for (int i = 0; i < nums.length - 2; i++) {
@@ -311,6 +312,7 @@ class Solution {
         }
         return res;
     }
+}
 ```
 
 双指针法：
@@ -2915,6 +2917,85 @@ class Solution {
 
 ```
 
+### 208. 实现 Trie (前缀树)
+
+[力扣题目链接](https://leetcode.cn/problems/implement-trie-prefix-tree)
+
+```java
+class Trie {
+
+    Node root;
+
+    public Trie() {
+        root = new Node();
+    }
+
+    public void insert(String word) {
+        root.insert(word, 0);
+    }
+
+    public boolean search(String word) {
+        return root.search(word, 0);
+    }
+
+    public boolean startsWith(String prefix) {
+        return root.startsWith(prefix, 0);
+    }
+
+    class Node {
+        Node[] nodes;
+        boolean isEnd;
+
+        Node() {
+            nodes = new Node[26];
+        }
+
+        private void insert(String word, int idx) {
+            if (idx >= word.length()) {
+                return;
+            }
+            int i = word.charAt(idx) - 'a';
+            if (nodes[i] == null) {
+                nodes[i] = new Node();
+            }
+
+            if (idx == word.length() - 1) {
+                nodes[i].isEnd = true;
+            }
+            nodes[i].insert(word, ++idx);
+        }
+
+        private boolean search(String word, int idx) {
+            if (idx >= word.length()) {
+                return false;
+            }
+            Node node = nodes[word.charAt(idx) - 'a'];
+            if (node == null) {
+                return false;
+            }
+            if (idx == word.length() - 1 && node.isEnd) {
+                return true;
+            }
+            return node.search(word, ++idx);
+        }
+
+        private boolean startsWith(String prefix, int idx) {
+            if (idx >= prefix.length()) {
+                return false;
+            }
+            Node node = nodes[prefix.charAt(idx) - 'a'];
+            if (node == null) {
+                return false;
+            }
+            if (idx == prefix.length() - 1) {
+                return true;
+            }
+            return node.startsWith(prefix, ++idx);
+        }
+    }
+}
+```
+
 
 
 ### 树题目总结
@@ -3640,7 +3721,8 @@ class Solution {
 ### [51. N 皇后](https://leetcode-cn.com/problems/n-queens/)
 
 ```java
- public List<List<String>> solveNQueens(int n) {
+class Solution {
+	public List<List<String>> solveNQueens(int n) {
         List<List<String>> solutions = new ArrayList<List<String>>();
         int[] queens = new int[n];
         Arrays.fill(queens, -1);
@@ -3691,6 +3773,7 @@ class Solution {
         }
         return board;
     }
+}
 ```
 
 
@@ -3864,7 +3947,9 @@ class Solution {
 
 ## 动态规划
 
-### [509. 斐波那契数](https://leetcode-cn.com/problems/fibonacci-number/)
+### 509. 斐波那契数
+
+[力扣题目链接](https://leetcode-cn.com/problems/fibonacci-number/)
 
 直接暴力递归的时间复杂度是O(2<sup>n</sup>)，因为需要优化，优化的思路大致分为两种，一种是记忆化搜索，一种是动态规划，使用记忆化搜索相当于剪枝，记忆化搜索的递归树：
 
@@ -3924,7 +4009,9 @@ class Solution {
 }
 ```
 
-### [70. 爬楼梯 ](https://leetcode-cn.com/problems/climbing-stairs/)
+### 70. 爬楼梯 
+
+[题目链接](https://leetcode-cn.com/problems/climbing-stairs/)
 
 直接使用递归求接斐波那契数列：
 
@@ -4102,7 +4189,9 @@ class Solution {
 
 
 
-### [120. 三角形最小路径和](https://leetcode-cn.com/problems/triangle/)
+### 120. 三角形最小路径和
+
+[力扣题目链接](https://leetcode-cn.com/problems/triangle/)
 
 注意，本题要求每一步只能移动到下一行相邻的结点上，由此，递归方程为：
 $$
@@ -4176,7 +4265,8 @@ class Solution {
 还可以多开一维数组来存每次偷或者不偷的状态：
 
 ```java
-    public int rob(int[] nums) {
+class Solution {    
+	public int rob(int[] nums) {
         if (nums == null || nums.length == 0)
             return 0;
         int n = nums.length;
@@ -4190,9 +4280,12 @@ class Solution {
         }
         return Math.max(dp[n - 1][0], dp[n - 1][1]);
     }
+}
 ```
 
-### [213. 打家劫舍 II](https://leetcode-cn.com/problems/house-robber-ii/)
+### 213. 打家劫舍 II
+
+[力扣题目链接](https://leetcode-cn.com/problems/house-robber-ii/)
 
 状态转移方程：
 $$
@@ -4768,7 +4861,9 @@ class Solution {
 
 
 
-### 5. [最长回文子串](https://leetcode-cn.com/problems/longest-palindromic-substring/)
+### 5. 最长回文子串
+
+ [力扣题目链接](https://leetcode-cn.com/problems/longest-palindromic-substring/)
 
 我们使用$p(i,j)$表示字符串$s$的第$i$到$j$个字母组成的串（下文表示成$s[i:j]$）是否为回文串：
 $$
@@ -4882,7 +4977,9 @@ class Solution {
 
 ## 图论
 
-### [200. 岛屿数量](https://leetcode-cn.com/problems/number-of-islands/)
+### 200. 岛屿数量
+
+[力扣题目链接](https://leetcode-cn.com/problems/number-of-islands/)
 
 岛屿问题是一类典型的网格问题。通常而言，网格中的格子的相邻的格子节点分别是上下左右四个。
 
@@ -4996,24 +5093,31 @@ boolean inArea(int[][] grid, int r, int c) {
 
 
 ## 数学
-### [136. 只出现一次的数字](https://leetcode-cn.com/problems/single-number/)
+### 136. 只出现一次的数字
+
+[力扣题目链接](https://leetcode-cn.com/problems/single-number/)
 
 ```java
-    public int singleNumber(int[] nums) {
+class Solution {    
+	public int singleNumber(int[] nums) {
         int single = 0;
         for (int num : nums) {
             single ^= num;
         }
         return single;
     }
+}
 ```
 
-### [50. Pow(x, n)](https://leetcode-cn.com/problems/powx-n/)
+### 50. Pow(x, n)
+
+[力扣题目链接](https://leetcode-cn.com/problems/powx-n/)
 
 使用暴力解法：
 
 ```java
-    public double myPow(double x, int n) {
+class Solution {    
+	public double myPow(double x, int n) {
         long N = n;
         if (N < 0) {
             N = -n;
@@ -5026,12 +5130,14 @@ boolean inArea(int[][] grid, int r, int c) {
         }
         return x;
     }
+}
 ```
 
 通过观察不难发现，对于f(n) = x<sup>n</sup>（x为常数）都有f(n) = f(n/2)* f(n/2)，因此可以通过分治的方式来处理：
 
 ```java
-public double myPow2(double x, int n) {
+class Solution { 
+	public double myPow2(double x, int n) {
         if (n == 0 || x==1) {
             return 1;
         }
@@ -5054,14 +5160,18 @@ public double myPow2(double x, int n) {
             return myPow2Helper(x, N / 2) * myPow2Helper(x, N / 2);
         }
     }
+}
 ```
 
-### [69. x 的平方根](https://leetcode-cn.com/problems/sqrtx/)
+### 69. x 的平方根
+
+[力扣题目链接](https://leetcode-cn.com/problems/sqrtx/)
 
 使用二分查找：
 
 ````java
-    public int mySqrt(int x) {
+class Solution {     
+	public int mySqrt(int x) {
         int left = 0;
         int right = x;
         while (left < right) {
@@ -5075,14 +5185,45 @@ public double myPow2(double x, int n) {
         }
         return left;
     }
+}
 ````
 
 另外，解决此类问题也可以使用平方根法。
 
-### [367. 有效的完全平方数](https://leetcode-cn.com/problems/valid-perfect-square/)
+### 35. 搜索插入位置
+
+[力扣题目链接](https://leetcode.cn/problems/search-insert-position/)
 
 ```java
-    public boolean isPerfectSquare(int num) {
+class Solution {
+    public int searchInsert(int[] nums, int target) {
+        int left = 0, right = nums.length - 1, ans = -1;
+        while (left <= right) {
+            int mid = (right - left) / 2 + left;
+            if (nums[mid] == target) {
+                ans = mid;
+                return ans;
+            } else if (nums[mid] < target) {
+                left = mid + 1;
+            } else {
+                right = mid - 1;
+            }
+            ans = left;
+        }
+        return ans;
+    }
+}
+```
+
+
+
+### 367. 有效的完全平方数
+
+[力扣题目链接](https://leetcode-cn.com/problems/valid-perfect-square/)
+
+```java
+class Solution {    
+	public boolean isPerfectSquare(int num) {
         int left = 0;
         int right = num;
         while (left <= right) {
@@ -5098,12 +5239,18 @@ public double myPow2(double x, int n) {
         }
         return false;
     }
+}
 ```
 
-### [414. 第三大的数](https://leetcode-cn.com/problems/third-maximum-number/)
+### 414. 第三大的数
+
+[力扣题目链接](https://leetcode-cn.com/problems/third-maximum-number/)
+
+解法一：
 
 ```java
-    public static int thirdMax(int[] nums) {
+class Solution {     
+	public static int thirdMax(int[] nums) {
         Set<Integer> set = new HashSet<>();
         for (int n : nums) {
             set.add(n);
@@ -5118,16 +5265,206 @@ public double myPow2(double x, int n) {
         // 说明数组的元素不超过3个
         return Collections.max(set);
     }
+}
 ```
+
+解法二：
+
+```java
+class Solution {
+    public int thirdMax(int[] nums) {
+        long firstMax = Long.MIN_VALUE, secondMax = Long.MIN_VALUE, thirdMax = Long.MIN_VALUE; // 必须用long类型
+        for (int num : nums) {
+            if (num > firstMax) {
+                thirdMax = secondMax;
+                secondMax = firstMax;
+                firstMax = num;
+            } else if (num < firstMax && num > secondMax) {
+                thirdMax = secondMax;
+                secondMax = num;
+            } else if (num < secondMax && num > thirdMax) {
+                thirdMax = num;
+            }
+        }
+        return thirdMax == Long.MIN_VALUE ? (int) firstMax : (int) thirdMax;
+    }
+}
+```
+
+解法三：
+
+```java
+class Solution {
+    public int thirdMax(int[] nums) {
+        Set<Integer> set = new HashSet<>();
+        // 维护一个堆
+        PriorityQueue<Integer> pq = new PriorityQueue<>();
+        for (int num : nums) {
+            if (set.contains(num)) { // 避免重复计算
+                continue;
+            }
+            pq.add(num);
+            if (pq.size() > 3) { // 如果堆的大小超过3，移除堆顶元素（最小元素）
+                pq.poll();
+            }
+            set.add(num);
+        }
+        // 如果堆的大小小于3，说明没有第三大的元素，返回最大的元素
+        if (pq.size() < 3) {
+            while (pq.size() > 1) { // 移除直到堆中只剩下最大的元素
+                pq.poll();
+            }
+        }
+        return pq.peek(); // 返回堆顶元素，即第三大的数或最大的数
+    }
+}
+```
+
+### 215.数组中的第K个最大元素
+
+[力扣题目链接](https://leetcode.cn/problems/kth-largest-element-in-an-array/)
+
+解法一：
+
+```java
+class Solution {
+    public int findKthLargest(int[] nums, int k) {
+        Arrays.sort(nums);
+        return nums[nums.length - k];
+    }
+}
+```
+
+解法二：
+
+```java
+class Solution {
+    public int findKthLargest(int[] nums, int k) {
+        PriorityQueue<Integer> pq = new PriorityQueue<>();
+        for (int num : nums) {
+            pq.add(num);
+            if (pq.size() > k) {
+                pq.poll();
+            }
+        }
+        return pq.peek();
+    }
+}
+```
+
+### 12. 整数转罗马数字
+
+[力扣题目链接](https://leetcode.cn/problems/integer-to-roman)
+
+```java
+class Solution {
+
+    /**
+     * 数字和罗马数字对应数组
+     */
+    private static final int[] VALUES = {1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1};
+    private static final String[] ROMAN_NUMERALS = {"M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I"};
+
+    public String intToRoman(int num) {
+        StringBuilder ans = new StringBuilder();
+        for (int i = 0; i < VALUES.length; i++) {
+            while (num >= VALUES[i]) {
+                num -= VALUES[i];
+                ans.append(ROMAN_NUMERALS[i]);
+            }
+        }
+        return ans.toString();
+    }
+}
+```
+
+### 13. 罗马数字转整数
+
+[13.力扣题目链接](https://leetcode.cn/problems/roman-to-integer)
+
+```java
+class Solution {
+
+    private static final Map<Character, Integer> map = new HashMap<>();
+
+    static {
+        map.put('I', 1);
+        map.put('V', 5);
+        map.put('X', 10);
+        map.put('L', 50);
+        map.put('C', 100);
+        map.put('D', 500);
+        map.put('M', 1000);
+    }
+
+    public int romanToInt(String s) {
+        int ans = map.get(s.charAt(s.length() - 1));
+        for (int i = s.length() - 2; i >= 0; i--) {
+            Integer value = map.get(s.charAt(i));
+            if (value < map.get(s.charAt(i + 1))) {
+                ans -= value;
+            } else {
+                ans += value;
+            }
+        }
+        return ans;
+    }
+}
+```
+
+
 
 ## 矩阵
 
-### [74. 搜索二维矩阵](https://leetcode-cn.com/problems/search-a-2d-matrix/)
+### 73. 矩阵置零
+
+[力扣题目链接](https://leetcode.cn/problems/set-matrix-zeroes/)
+
+```java
+class Solution {
+    public void setZeroes(int[][] matrix) {
+        int m = matrix.length;
+        int n = matrix[0].length;
+        int[][] matrix2 = new int[m][n];
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+                matrix2[i][j] = matrix[i][j];
+            }
+        }
+
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+                if (matrix[i][j] == 0) {
+                    for (int k = 0; k < m; k++) {
+                        matrix2[k][j] = 0;
+                    }
+                    for (int k = 0; k < n; k++) {
+                        matrix2[i][k] = 0;
+                    }
+                }
+            }
+        }
+
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+                matrix[i][j] = matrix2[i][j];
+            }
+        }
+    }
+}
+```
+
+
+
+### 74. 搜索二维矩阵
+
+[力扣题目链接](https://leetcode-cn.com/problems/search-a-2d-matrix/)
 
 将矩阵每一行拼接在上一行的末尾，则会得到一个升序数组，我们可以在该数组上二分找到目标元素，可以二分升序数组的下标，将其映射到原矩阵的行和列上：
 
 ```java
-    public boolean searchMatrix(int[][] matrix, int target) {
+class Solution { 
+	public boolean searchMatrix(int[][] matrix, int target) {
         int r = matrix.length;
         int c = matrix[0].length;
         int left = 0;
@@ -5148,6 +5485,7 @@ public double myPow2(double x, int n) {
         }
         return false;
     }
+}
 ```
 
 ### 59.螺旋矩阵II
@@ -5202,3 +5540,96 @@ class Solution {
 - [labuladong的算法笔记](https://labuladong.github.io/algo/)
 - [leetcode题解](https://doocs.github.io/leetcode/)
 - [geeksforgeeks](https://www.geeksforgeeks.org/)
+
+### TOP 题目
+
+#### 数组和字符串
+
+1. Two Sum - LeetCode 1
+2. Best Time to Buy and Sell Stock - LeetCode 121
+3. Contains Duplicate - LeetCode 217
+4. Product of Array Except Self - LeetCode 238
+5. Maximum Subarray - LeetCode 53
+6. Merge Intervals - LeetCode 56
+7. Valid Anagram - LeetCode 242
+8. Group Anagrams - LeetCode 49
+9. Longest Substring Without Repeating Characters - LeetCode 3
+10. Longest Palindromic Substring - LeetCode 5
+
+#### 链表
+
+1. Reverse Linked List - LeetCode 206
+2. Merge Two Sorted Lists - LeetCode 21
+3. Linked List Cycle - LeetCode 141
+4. Remove Nth Node From End of List - LeetCode 19
+5. Reorder List - LeetCode 143
+6. Merge k Sorted Lists - LeetCode 23
+7. Palindrome Linked List - LeetCode 234
+8. Copy List with Random Pointer - LeetCode 138
+
+#### 栈和队列
+
+1. Valid Parentheses - LeetCode 20
+2. Min Stack - LeetCode 155
+3. Implement Queue using Stacks - LeetCode 232
+4. Generate Parentheses - LeetCode 22
+5. Daily Temperatures - LeetCode 739
+6. Next Greater Element I - LeetCode 496
+
+#### 树和图
+
+1. Maximum Depth of Binary Tree - LeetCode 104
+2. Invert Binary Tree - LeetCode 226
+3. Validate Binary Search Tree - LeetCode 98
+4. Binary Tree Level Order Traversal - LeetCode 102
+5. Serialize and Deserialize Binary Tree - LeetCode 297
+6. Lowest Common Ancestor of a Binary Search Tree - LeetCode 235
+7. Number of Islands - LeetCode 200
+8. Clone Graph - LeetCode 133
+
+#### 排序和搜索
+
+1. Merge Sorted Array - LeetCode 88
+2. Search in Rotated Sorted Array - LeetCode 33
+3. Find Minimum in Rotated Sorted Array - LeetCode 153
+4. Kth Largest Element in an Array - LeetCode 215
+5. Top K Frequent Elements - LeetCode 347
+
+#### 动态规划
+
+1. Climbing Stairs - LeetCode 70
+2. Coin Change - LeetCode 322
+3. Longest Increasing Subsequence - LeetCode 300
+4. House Robber - LeetCode 198
+5. House Robber II - LeetCode 213
+6. Unique Paths - LeetCode 62
+7. Longest Palindromic Subsequence - LeetCode 516
+8. Word Break - LeetCode 139
+
+#### 哈希表
+
+1. Two Sum - LeetCode 1
+2. Happy Number - LeetCode 202
+3. Valid Sudoku - LeetCode 36
+4. Intersection of Two Arrays II - LeetCode 350
+5. 4Sum - LeetCode 18
+
+#### 其他重要题目
+
+1. LRU Cache - LeetCode 146
+2. Trapping Rain Water - LeetCode 42
+3. Median of Two Sorted Arrays - LeetCode 4
+4. Longest Consecutive Sequence - LeetCode 128
+
+#### 常见高频面试题
+
+1. Implement Trie (Prefix Tree) - LeetCode 208
+2. Word Search - LeetCode 79
+3. Surrounded Regions - LeetCode 130
+4. Course Schedule - LeetCode 207
+5. Graph Valid Tree - LeetCode 261
+6. Reconstruct Itinerary - LeetCode 332
+7. Binary Tree Maximum Path Sum - LeetCode 124
+8. Word Ladder - LeetCode 127
+9. Longest Valid Parentheses - LeetCode 32
+10. Edit Distance - LeetCode 72
