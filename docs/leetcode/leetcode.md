@@ -28,8 +28,6 @@ class Solution {
 
 [力扣题目链接](https://leetcode.cn/problems/binary-search/)
 
-模板代码：
-
 ```java
 class Solution {
     public int search(int[] nums, int target) {
@@ -287,6 +285,37 @@ class Solution {
 }
 ```
 
+### 238. 除自身以外数组的乘积
+
+[力扣题目链接](https://leetcode.cn/problems/product-of-array-except-self/)
+
+```java
+class Solution {
+    public int[] productExceptSelf(int[] nums) {
+        int n = nums.length;
+        int[] ans = new int[n];
+        int[] leftExceptSelf = new int[n];
+        int[] rightExceptSelf = new int[n];
+
+        leftExceptSelf[0] = 1;
+        rightExceptSelf[n - 1] = 1;
+        // 计算左边的乘积
+        for (int i = 1; i < n; i++) {
+            leftExceptSelf[i] = leftExceptSelf[i - 1] * nums[i - 1];
+        }
+        // 计算右边的乘积
+        for (int i = n - 2; i >= 0; i--) {
+            rightExceptSelf[i] = rightExceptSelf[i + 1] * nums[i + 1];
+        }
+        // 计算结果
+        for (int i = 0; i < ans.length; i++) {
+            ans[i] = leftExceptSelf[i] * rightExceptSelf[i];
+        }
+        return ans;
+    }
+}
+```
+
 
 
 ### 15. 三数之和
@@ -389,49 +418,6 @@ class Solution {
 }
 ```
 
-
-
-### 84. 柱状图中最大的矩形
-
-[力扣题目链接](https://leetcode-cn.com/problems/largest-rectangle-in-histogram/)
-
-使用暴力法求解：
-
-<img src="https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/img/20210713190144.png" alt="image.png" style="zoom: 33%;" />
-
-对于每一个位置，我们需要：
-
-- 向左遍历，找到大于等于当前柱形高度最左元素的下标
-- 向右遍历，找到大于等于当前柱形高度最右元素的下标
-
-然后得到一个矩形的面积，求出他们的最大值。
-
-```java
-    public int largestRectangleArea(int[] heights) {
-        if (heights.length == 0) {
-            return 0;
-        }
-        int res = 0;
-        for (int i = 0; i < heights.length; i++) {
-            // 向左遍历，找到大于等于当前柱形高度最左元素的下标
-            int left = i;
-            while (left > 0 && heights[left - 1] >= heights[i]) {
-                left--;
-            }
-            // 向右遍历，找到大于等于当前柱形高度最右元素的下标，注意这里的边界条件
-            int right = i;
-            while (right < heights.length - 1 && heights[right + 1] >= heights[i]) {
-                right++;
-            }
-            int width = right - left + 1;
-            res = Math.max(res, width * heights[i]);
-        }
-        return res;
-    }
-```
-
-
-
 ### 11. 盛最多水的容器
 
 [力扣题目链接](https://leetcode-cn.com/problems/container-with-most-water/)
@@ -481,63 +467,119 @@ private int maxArea(int[] height) {
 ```java
 class Solution {
     public int trap(int[] height) {
-        int length = height.length;
-        if (length <= 2) {
-            return 0;
+        int n = height.length;
+        int[] left = new int[n];
+        int[] right = new int[n];
+
+        left[0] = height[0];
+        for (int i = 1; i < n; i++) {
+            left[i] = Math.max(height[i], left[i - 1]);
+        }
+        right[n - 1] = height[n - 1];
+        for (int i = n - 2; i >= 0; i--) {
+            right[i] = Math.max(height[i], right[i + 1]);
         }
 
-        int[] maxLeft = new int[length];
-        int[] maxRight = new int[length];
-
-        maxLeft[0] = height[0];
-        for (int i = 1; i < height.length; i++) {
-            maxLeft[i] = Math.max(height[i], maxLeft[i - 1]);
-        }
-
-        maxRight[length - 1] = height[length - 1];
-        for (int i = length - 2; i >= 0; i--) { // i = length - 1 的 已经赋过值了
-            maxRight[i] = Math.max(height[i], maxRight[i + 1]);
-        }
-
-        int sum = 0;
-        for (int i = 0; i < height.length; i++) {
-            int area = Math.min(maxRight[i], maxLeft[i]) - height[i];
+        int ans = 0;
+        for (int i = 0; i < n; i++) {
+            int area = Math.min(left[i], right[i]) - height[i];
             if (area > 0) {
-                sum += area;
+                ans += area;
             }
         }
-        return sum;
+        return ans;
     }
 }
 ```
 
-### 238. 除自身以外数组的乘积
+### [84. 柱状图中最大的矩形](https://leetcode.cn/problems/largest-rectangle-in-histogram)
 
-[力扣题目链接](https://leetcode.cn/problems/product-of-array-except-self/)
+[力扣题目链接](https://leetcode-cn.com/problems/largest-rectangle-in-histogram/)
+
+方法一：
+
+```java
+    public int largestRectangleArea(int[] heights) {
+        if (heights.length == 0) {
+            return 0;
+        }
+        int res = 0;
+        for (int i = 0; i < heights.length; i++) {
+            // 向左遍历，找到大于等于当前柱形高度最左元素的下标
+            int left = i;
+            while (left > 0 && heights[left - 1] >= heights[i]) {
+                left--;
+            }
+            // 向右遍历，找到大于等于当前柱形高度最右元素的下标，注意这里的边界条件
+            int right = i;
+            while (right < heights.length - 1 && heights[right + 1] >= heights[i]) {
+                right++;
+            }
+            int width = right - left + 1;
+            res = Math.max(res, width * heights[i]);
+        }
+        return res;
+    }
+```
+
+方法二：
 
 ```java
 class Solution {
-    public int[] productExceptSelf(int[] nums) {
-        int n = nums.length;
-        int[] ans = new int[n];
-        int[] leftExceptSelf = new int[n];
-        int[] rightExceptSelf = new int[n];
+    public int largestRectangleArea(int[] heights) {
 
-        leftExceptSelf[0] = 1;
-        rightExceptSelf[n - 1] = 1;
-        // 计算左边的乘积
+        int n = heights.length;
+        int[] left = new int[n];
+        int[] right = new int[n];
+
+        left[0] = -1;
         for (int i = 1; i < n; i++) {
-            leftExceptSelf[i] = leftExceptSelf[i - 1] * nums[i - 1];
+            int index = i - 1;
+            while (index >= 0 && heights[index] >= heights[i]) {
+                index = left[index];
+            }
+            left[i] = index;
         }
-        // 计算右边的乘积
+        right[n - 1] = n;
         for (int i = n - 2; i >= 0; i--) {
-            rightExceptSelf[i] = rightExceptSelf[i + 1] * nums[i + 1];
+            int index = i + 1;
+            while (index < n && heights[index] >= heights[i]) {
+                index = right[index];
+            }
+            right[i] = index;
         }
-        // 计算结果
-        for (int i = 0; i < ans.length; i++) {
-            ans[i] = leftExceptSelf[i] * rightExceptSelf[i];
+
+        int ans = 0;
+        for (int i = 0; i < n; i++) {
+            int sum = heights[i] * (right[i] - left[i] - 1);
+            ans = Math.max(sum, ans);
         }
         return ans;
+    }
+}
+```
+
+方法三：
+
+```java
+class Solution {
+    public int largestRectangleArea(int[] heights) {
+        int res = 0, n = heights.length;
+        Deque<Integer> stk = new ArrayDeque<>();
+        int[] left = new int[n];
+        int[] right = new int[n];
+        Arrays.fill(right, n);
+        for (int i = 0; i < n; ++i) {
+            while (!stk.isEmpty() && heights[stk.peek()] >= heights[i]) {
+                right[stk.pop()] = i;
+            }
+            left[i] = stk.isEmpty() ? -1 : stk.peek();
+            stk.push(i);
+        }
+        for (int i = 0; i < n; ++i) {
+            res = Math.max(res, heights[i] * (right[i] - left[i] - 1));
+        }
+        return res;
     }
 }
 ```
@@ -643,6 +685,18 @@ public boolean hasCycle(ListNode head) {
 ### 24. 两两交换链表中的节点
 
 [力扣题目链接](https://leetcode.cn/problems/swap-nodes-in-pairs/)
+
+```java
+class Solution {
+    public ListNode swapPairs(ListNode head) {
+        ListNode dummy = new ListNode(0);
+        dummy.next = head;
+        ListNode first;
+        ListNode curr = dummy.next;
+        return dummy.next;
+    }
+}
+```
 
 
 
@@ -875,9 +929,11 @@ class Solution {
 }
 ```
 
-### [136. 只出现一次的数字](https://leetcode.cn/problems/single-number/)
+### 136. 只出现一次的数字
 
-使用Map统计 每个数字出现的次数，然后遍历map，找出出现次数为1次的数字：
+[力扣题目链接](https://leetcode.cn/problems/single-number/)
+
+解法一：使用Map统计 每个数字出现的次数，然后遍历map，找出出现次数为1次的数字：
 
 ```java
 class Solution {
@@ -898,7 +954,7 @@ class Solution {
 }
 ```
 
-更简单的做法是用set：
+解法二：更简单的做法是用set：
 
 ```java
 class Solution {
@@ -916,6 +972,170 @@ class Solution {
     }
 }
 ```
+
+解法三：
+
+```java
+class Solution {    
+	public int singleNumber(int[] nums) {
+        int single = 0;
+        for (int num : nums) {
+            single ^= num;
+        }
+        return single;
+    }
+}
+```
+
+### [137. 只出现一次的数字 II](https://leetcode.cn/problems/single-number-ii/)
+
+解法一：
+
+[力扣题目链接](https://leetcode.cn/problems/single-number-ii/)
+
+```java
+class Solution {
+    public int singleNumber(int[] nums) {
+        Map<Integer, Integer> map = new HashMap<>();
+        for (int num : nums) {
+            Integer count = map.getOrDefault(num, 0);
+            map.put(num, ++count);
+        }
+
+        for (Map.Entry<Integer, Integer> entry : map.entrySet()) {
+            if (entry.getValue() == 1) {
+                return entry.getKey();
+            }
+        }
+        return -1;
+    }
+}
+```
+
+解法二：
+
+```java
+class Solution {
+    public int singleNumber(int[] nums) {
+        // 为了防止相加整数溢出，所以用long类型
+        long sumOfAllNumbers = 0;
+        long sumOfUniqueNumbers = 0;
+        Set<Integer> uniqueNumbers = new HashSet<>();
+
+        for (int num : nums) {
+            sumOfAllNumbers += num;
+            if (!uniqueNumbers.contains(num)) {
+                uniqueNumbers.add(num);
+                sumOfUniqueNumbers += num;
+            }
+        }
+        
+        // 只出现一次的数字 = （3 * 不重复数字的和 - 所有数字的和）/ 2
+        return (int) ((3 * sumOfUniqueNumbers - sumOfAllNumbers) / 2);
+    }
+}
+```
+
+### 217. 存在重复元素
+
+[力扣题目链接](https://leetcode.cn/problems/contains-duplicate)
+
+解法一：
+
+```java
+class Solution {
+    public boolean containsDuplicate(int[] nums) {
+        Map<Integer, Integer> map = new HashMap<>();
+        for (int num : nums) {
+            map.put(num, map.getOrDefault(num, 0) + 1);
+        }
+        for (Integer count : map.values()) {
+            if (count >= 2) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+```
+
+解法二：
+
+```java
+class Solution {
+    public boolean containsDuplicate(int[] nums) {
+        Set<Integer> set = new HashSet<>();
+        for (int num : nums) {
+            if (!set.add(num)) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+```
+
+解法三：
+
+```java
+class Solution {
+    public boolean containsDuplicate(int[] nums) {
+        Arrays.sort(nums);
+        for (int i = 0; i < nums.length - 1; i++) {
+            if (nums[i] == nums[i + 1]) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+```
+
+### 219. 存在重复元素 II
+
+[力扣题目链接](https://leetcode.cn/problems/contains-duplicate-ii)
+
+```java
+class Solution {
+    public boolean containsNearbyDuplicate(int[] nums, int k) {
+        Map<Integer, Integer> map = new HashMap<>();
+        for (int i = 0; i < nums.length; i++) {
+            if (map.containsKey(nums[i])) {
+                if (Math.abs(map.get(nums[i]) - i) <= k) {
+                    return true;
+                }
+            }
+            map.put(nums[i], i);
+        }
+        return false;
+    }
+}
+```
+
+### 220. 存在重复元素 III
+
+[力扣题目链接](https://leetcode.cn/problems/contains-duplicate-iii)
+
+```java
+class Solution {
+    public boolean containsNearbyAlmostDuplicate(int[] nums, int indexDiff, int valueDiff) {
+        TreeSet<Long> ts = new TreeSet<>();
+        for (int i = 0; i < nums.length; ++i) {
+            Long x = ts.ceiling((long) nums[i] - (long) valueDiff);
+            if (x != null && x <= (long) nums[i] + (long) valueDiff) {
+                return true;
+            }
+            ts.add((long) nums[i]);
+            if (i >= indexDiff) {
+                ts.remove((long) nums[i - indexDiff]);
+            }
+        }
+        return false;
+    }
+}
+```
+
+
 
 ### 383. 赎金信
 
@@ -993,6 +1213,43 @@ class Solution {
             }
         }
         return ans;
+    }
+}
+```
+
+
+
+### 28. 找出字符串中第一个匹配项的下标
+
+[力扣题目链接](https://leetcode.cn/problems/find-the-index-of-the-first-occurrence-in-a-string)
+
+```java
+class Solution {
+    public int strStr(String haystack, String needle) {
+        if (needle.isEmpty()) {
+            return 0;
+        }
+        if (haystack.isEmpty()) {
+            return -1;
+        }
+        int p = 0;
+        int q = 0;
+        while (p < haystack.length() && q < needle.length()) {
+            if (haystack.charAt(p) == needle.charAt(q)) {
+                p++;
+                q++;
+            } else {
+                // haystack指针回退，开始下一个匹配尝试
+                p = p + 1 - q;
+                // needle指针重置为0
+                q = 0;
+            }
+        }
+        // 如果needle指针到达needle的末尾，说明匹配成功
+        if (q == needle.length()) {
+            return p - q;
+        }
+        return -1;
     }
 }
 ```
@@ -1467,7 +1724,9 @@ class Solution {
 
 
 
-### [155. 最小栈 ](https://leetcode-cn.com/problems/min-stack/)
+### 155. 最小栈 
+
+[力扣题目连接](https://leetcode-cn.com/problems/min-stack/)
 
 ```java
 class MinStack {
@@ -1543,6 +1802,33 @@ class Solution {
 
 
 
+### 71. 简化路径
+
+[力扣题目链接](https://leetcode.cn/problems/simplify-path)
+
+```java
+class Solution {
+    public String simplifyPath(String path) {
+        Deque<String> stack = new LinkedList<>(); // 用ArrayDeque执行效率会更高
+        for (String s : path.split("/")) {
+            if ("".equals(s) || ".".equals(s)) { // . 表示当前目录
+                continue;
+            }
+            // 使用 pollLast 和 offerLast 是方便将来拼接结果，如果用pop方法和push方法，就得倒着遍历栈了
+            // eg：/a/./b/ 结果是 /a/b 用 pop方法和push方法，遍历栈得到的结果：/b/a，在队尾遍历的结果：/a/b
+            if ("..".equals(s)) { // .. 表示上级目录
+                stack.pollLast();
+            } else {
+                stack.offerLast(s);
+            }
+        }
+        return "/" + String.join("/", stack);
+    }
+}
+```
+
+
+
 ### 347.前 K 个高频元素
 
 [力扣题目链接](https://leetcode.cn/problems/top-k-frequent-elements/)
@@ -1591,7 +1877,8 @@ class Solution {
 使用最大堆（优先队列）：
 
 ```java
- public int[] maxSlidingWindow(int[] nums, int k) {
+class Solution { 
+	public int[] maxSlidingWindow(int[] nums, int k) {
         int n = nums.length;
         // 传入比较器，当两者的值相同时，比较下标的位置，下标大的在前面。
         PriorityQueue<int[]> queue = new PriorityQueue<>((p1, p2) -> p1[0] != p2[0] ? p2[0] - p1[0] : p2[1] - p1[1]);
@@ -1614,6 +1901,7 @@ class Solution {
         }
         return ans;
     }
+}
 ```
 
 ### 146. LRU 缓存
@@ -5090,21 +5378,152 @@ boolean inArea(int[][] grid, int r, int c) {
     }
 ```
 
+### 994.腐烂的橘子
+
+[力扣题目链接](https://leetcode.cn/problems/rotting-oranges/)
+
+```java
+class Solution {
+    public int orangesRotting(int[][] grid) {
+        int m = grid.length;
+        int n = grid[0].length;
+        // 用来记录已经访问过的橘子
+        int[][] visited = grid;
+        Queue<int[]> q = new LinkedList<>();
+        int freshOrange = 0;
+
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+                if (visited[i][j] == 2) {
+                    q.offer(new int[]{i, j});
+                }
+                if (visited[i][j] == 1) {
+                    freshOrange++;
+                }
+            }
+        }
+
+        // 处理边界
+        if (freshOrange == 0) {
+            return 0;
+        }
+        if (q.isEmpty()) {
+            return -1;
+        }
+
+        int minutes = -1;
+        // 表示四个可能的方向：上、下、左、右
+        int[][] dirs = {{1, 0}, {-1, 0}, {0, -1}, {0, 1}};
+        // BFS遍历
+        while (!q.isEmpty()) {
+            int size = q.size();
+            while (size-- > 0) {
+                int[] cell = q.poll();
+                int x = cell[0]; // 腐烂的橘子的横坐标
+                int y = cell[1]; // 腐烂的橘子的纵坐标
+                // 对每个腐烂的橘子的四个方向检查，如果是新鲜橘子，则将其腐烂并加入队列，同时更新新鲜橘子计数
+                for (int[] dir : dirs) {
+                    int i = x + dir[0];
+                    int j = y + dir[1];
+                    if (i >= 0 && i < m && j >= 0 && j < n && visited[i][j] == 1) {
+                        visited[i][j] = 2;
+                        freshOrange--;
+                        q.offer(new int[]{i, j});
+                    }
+                }
+            }
+            minutes++;
+        }
+
+        return freshOrange == 0 ? minutes : -1;
+    }
+}
+```
+
+### 207. 课程表
+
+[力扣题目链接](https://leetcode.cn/problems/course-schedule)
+
+```java
+class Solution {
+    public boolean canFinish(int numCourses, int[][] prerequisites) {
+        // 使用邻接表存储图的结构，方便快速访问每个课程的后续课程
+        List<List<Integer>> graph = new ArrayList<>();
+        for (int i = 0; i < numCourses; i++) {
+            graph.add(new ArrayList<>());
+        }
+        // 保存每个课程的入度（有多少课程依赖于该课程）
+        int[] inDegree = new int[numCourses];
+        // eg: [[1,0], [0,1]]
+        for (int[] pair : prerequisites) {
+            graph.get(pair[1]).add(pair[0]);
+            inDegree[pair[0]]++;
+        }
+        Queue<Integer> queue = new LinkedList<>();
+        // 将所有入度为0的课程加入队列，这些课程没有任何先修课程
+        for (int i = 0; i < numCourses; i++) {
+            if (inDegree[i] == 0) {
+                queue.offer(i);
+            }
+        }
+        // 处理队列中的课程
+        int count = 0;
+        while (!queue.isEmpty()) {
+            int course = queue.poll();
+            count++;
+            List<Integer> courseList = graph.get(course);
+            for (Integer neighbor : courseList) {
+                inDegree[neighbor]--;
+                // 如果某个后续课程的入度变为0，说明它所有的先修课程都已经处理完毕，将其加入队列
+                if (inDegree[neighbor] == 0) {
+                    queue.offer(neighbor);
+                }
+            }
+        }
+
+        return count == numCourses;
+    }
+}
+```
+
 
 
 ## 数学
-### 136. 只出现一次的数字
 
-[力扣题目链接](https://leetcode-cn.com/problems/single-number/)
+### 172. 阶乘后的零
+
+题目实际上是求 [1, n] 中有多少个5的因数。
+
+[力扣题目链接](https://leetcode.cn/problems/factorial-trailing-zeroes)
 
 ```java
-class Solution {    
-	public int singleNumber(int[] nums) {
-        int single = 0;
-        for (int num : nums) {
-            single ^= num;
+class Solution {
+    public int trailingZeroes(int n) {
+        int ans = 0;
+        while (n > 0) {
+            n = n / 5;
+            ans += n;
         }
-        return single;
+        return ans;
+    }
+}
+```
+
+### 66. 加一
+
+[力扣题目链接](https://leetcode.cn/problems/plus-one)
+
+```java
+class Solution {
+    public int[] plusOne(int[] digits) {
+        for (int i = digits.length - 1; i >= 0; i--) {
+            digits[i]++;
+            digits[i] = digits[i] % 10;
+            if(digits[i] != 0) return digits;
+        }
+        int[] res = new int[digits.length + 1];
+        res[0] = 1;
+        return res;
     }
 }
 ```
@@ -5170,7 +5589,7 @@ class Solution {
 使用二分查找：
 
 ````java
-class Solution {     
+class Solution {
 	public int mySqrt(int x) {
         int left = 0;
         int right = x;
@@ -5380,7 +5799,7 @@ class Solution {
 
 ### 13. 罗马数字转整数
 
-[13.力扣题目链接](https://leetcode.cn/problems/roman-to-integer)
+[力扣题目链接](https://leetcode.cn/problems/roman-to-integer)
 
 ```java
 class Solution {
@@ -5408,6 +5827,122 @@ class Solution {
             }
         }
         return ans;
+    }
+}
+```
+
+### 190. 颠倒二进制位
+
+[力扣题目链接](https://leetcode.cn/problems/reverse-bits/)
+
+```java
+public class Solution {
+    public int reverseBits(int n) {
+        // 将指定的32位整数的二进制位进行反转
+        return Integer.reverse(n);
+    }
+}
+```
+
+### 191. 位1的个数
+
+[力扣题目链接](https://leetcode.cn/problems/number-of-1-bits/)
+
+解法一：
+
+```java
+public class Solution {
+    public int hammingWeight(int n) {
+        String str = Integer.toBinaryString(n);
+        int ans = 0;
+        for (int i = 0; i < str.length(); i++) {
+            if (str.charAt(i) == '1') {
+                ans++;
+            }
+        }
+        return ans;
+    }
+}
+```
+
+解法二：
+
+```java
+public class Solution {
+    public int hammingWeight(int n) {
+        return Integer.bitCount(n);
+    }
+}
+```
+
+
+
+### 67. 二进制求和
+
+[力扣题目链接](https://leetcode.cn/problems/add-binary/)
+
+```java
+class Solution {
+    public String addBinary(String a, String b) {
+        StringBuilder ans = new StringBuilder();
+        int ca = 0;
+        for (int i = a.length() - 1, j = b.length() - 1; i >= 0 || j >= 0; i--, j--) {
+            // 上一次的进位
+            int sum = ca;
+            // 没有的话，需要用 0 占位
+            // a.charAt(i) - '0' 等价于 Integer.parseInt(String.valueOf(a.charAt(i)))
+            sum += i >= 0 ? a.charAt(i) - '0' : 0;
+            sum += j >= 0 ? b.charAt(j) - '0' : 0;
+            ans.append(sum % 2);
+            ca = sum / 2;
+        }
+
+        // 最后看还有没有进位的
+        ans.append(ca == 1 ? ca : "");
+        return ans.reverse().toString();
+    }
+}
+```
+
+### [201. 数字范围按位与](https://leetcode.cn/problems/bitwise-and-of-numbers-range/)
+
+[力扣题目链接](https://leetcode.cn/problems/bitwise-and-of-numbers-range/)
+
+直接按位与会超时：
+
+```java
+class Solution {
+    public int rangeBitwiseAnd(int left, int right) {
+        int ans = left;
+        for (int i = left + 1; i <= right; i++) {
+            ans &= i;
+        }
+        return ans;
+    }
+}
+```
+
+需要将题目转化为求数字的公共二进制前缀。
+
+按位与操作的一个特性是：只要有一个位置上存在0，结果的那个位置上就一定是0。所以从m到n之间的所有数字进行按位与，某些位上的值最终可能会变为0。
+
+找到m和n共有的前缀部分，因为这些部分在整个范围内是不变的，而不同的后缀部分一定会变成0：
+
+- 不断右移m和n，直到它们相等，这个相等的部分就是公共前缀
+- 把公共前缀再左移回原来的位置（根据右移的次数）
+
+```java
+class Solution {
+    public int rangeBitwiseAnd(int left, int right) {
+        int shift = 0;
+        // 找到公共前缀
+        while (left < right) {
+            left >>= 1;
+            right >>= 1;
+            shift++;
+        }
+        // 将公共前缀左移回原来的位置
+        return left << shift;
     }
 }
 ```
@@ -5540,6 +6075,7 @@ class Solution {
 - [labuladong的算法笔记](https://labuladong.github.io/algo/)
 - [leetcode题解](https://doocs.github.io/leetcode/)
 - [geeksforgeeks](https://www.geeksforgeeks.org/)
+- [codeTop](https://codetop.cc)
 
 ### TOP 题目
 

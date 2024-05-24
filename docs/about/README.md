@@ -3,7 +3,7 @@ sidebar: false
 ---
 # 关于我
 ## 开源项目
-- [软考通](https://dtwr.gitee.io/software_exam/)（Owner）
+- [软考通](https://software-exam.pages.dev)（Owner）
 - [代码随想录](https://github.com/youngyangyang04/leetcode-master)（Contributor）
 ## 社区
 - [掘金](https://juejin.cn/user/1345457965251991/posts)
