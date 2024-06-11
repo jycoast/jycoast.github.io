@@ -784,6 +784,26 @@ public class Solution {
 }
 ```
 
+### [83. 删除排序链表中的重复元素](https://leetcode.cn/problems/remove-duplicates-from-sorted-list)
+
+[力扣题目链接](https://leetcode.cn/problems/remove-duplicates-from-sorted-list)
+
+```java
+class Solution {
+    public ListNode deleteDuplicates(ListNode head) {
+        ListNode curr = head;
+        while (curr != null && curr.next != null) {
+            if (curr.val == curr.next.val) {
+                curr.next  = curr.next.next;
+            } else {
+                curr = curr.next;
+            }
+        }
+        return head;
+    }
+}
+```
+
 
 
 ### 链表题目总结
@@ -1254,7 +1274,29 @@ class Solution {
 }
 ```
 
+### 1768.交替合并字符串
 
+[力扣题目链接](https://leetcode.cn/problems/merge-strings-alternately/description/)
+
+```java
+class Solution {
+    public String mergeAlternately(String word1, String word2) {
+        StringBuilder ans = new StringBuilder();
+        int i = 0;
+        int length = word1.length() + word2.length();
+        while (i < length) {
+            if (i < word1.length()) {
+                ans.append(word1.charAt(i));
+            }
+            if (i < word2.length()) {
+                ans.append(word2.charAt(i));
+            }
+            i++;
+        }
+        return ans.toString();
+    }
+}
+```
 
 ### 14. 最长公共前缀
 
@@ -1530,6 +1572,49 @@ public class Solution {
             a[i++] = a[j];
             a[j--] = t;
         }
+    }
+}
+```
+
+### 345. 反转字符串中的元音字母
+
+[力扣题目链接](https://leetcode.cn/problems/reverse-vowels-of-a-string/)
+
+```java
+class Solution {
+
+    static Set<Character> vowels = new HashSet<>() {{
+        add('a');
+        add('o');
+        add('e');
+        add('i');
+        add('u');
+        add('A');
+        add('O');
+        add('E');
+        add('I');
+        add('U');
+    }};
+
+    public String reverseVowels(String s) {
+        int l = 0, r = s.length() - 1;
+        char[] chars = s.toCharArray();
+        while (l < r) {
+            while (l < r && !vowels.contains(chars[l])) {
+                l++;
+            }
+            while (l < r && !vowels.contains(chars[r])) {
+                r--;
+            }
+
+            Character temp = chars[l];
+            chars[l] = chars[r];
+            chars[r] = temp;
+            // 注意这里
+            l++;
+            r--;
+        }
+        return String.valueOf(chars);
     }
 }
 ```
@@ -2145,6 +2230,64 @@ public class Solution {
 }
 ```
 
+### 435. 无重叠区间
+
+[力扣题目链接](https://leetcode.cn/problems/non-overlapping-intervals/)
+
+```java
+class Solution {
+    public int eraseOverlapIntervals(int[][] intervals) {
+        Arrays.sort(intervals, (a, b) -> {
+            return Integer.compare(a[0], b[0]);
+        });
+        int count = 1;
+        for (int i = 1; i < intervals.length; i++) {
+            if (intervals[i][0] < intervals[i - 1][1]) {
+                intervals[i][1] = Math.min(intervals[i - 1][1], intervals[i][1]);
+                continue;
+            } else {
+                count++;
+            }
+        }
+        return intervals.length - count;
+    }
+}
+```
+
+
+
+### 763.划分字母区间
+
+[力扣题目链接](https://leetcode.cn/problems/partition-labels/)
+
+```java
+class Solution {
+    public List<Integer> partitionLabels(String s) {
+        List<Integer> ans = new ArrayList<>();
+        int[] edge = new int[26];
+        char[] charArray = s.toCharArray();
+
+        for (int i = 0; i < charArray.length; i++) {
+            edge[charArray[i] - 'a'] = i;
+        }
+
+        int left = 0;
+        int right = 0;
+        for (int i = 0; i < charArray.length; i++) {
+            right = Math.max(right, edge[charArray[i] - 'a']);
+            if (i == right) {
+                ans.add(right - left + 1);
+                left = i + 1;
+            }
+        }
+
+        return ans;
+    }
+}
+```
+
+
+
 ### 56. 合并区间
 
 [力扣题目链接](https://leetcode.cn/problems/merge-intervals/)
@@ -2156,7 +2299,7 @@ class Solution {
             return intervals;
         }
 
-        Arrays.sort(intervals, (i1, i2) -> Integer.compare(i1[0], i2[0]));
+        Arrays.sort(intervals, (a, b) -> Integer.compare(a[0], b[0]));
 
         List<int[]> result = new ArrayList<>();
         int[] newInterval = intervals[0];
@@ -3205,6 +3348,76 @@ class Solution {
 
 ```
 
+### 1448. 统计二叉树中好节点的数目
+
+[力扣题目链接](https://leetcode.cn/problems/count-good-nodes-in-binary-tree/)
+
+```java
+class Solution {
+
+    private int ans = 0;
+
+    public int goodNodes(TreeNode root) {
+        dfs(root, root.val);
+        return ans;
+    }
+
+    private void dfs(TreeNode root, int max) {
+        if (root == null) {
+            return;
+        }
+
+        if (root.val >= max) {
+            ans++;
+            max = root.val;
+        }
+
+        dfs(root.left, max);
+        dfs(root.right, max);
+    }
+}
+```
+
+### 872. 叶子相似的树
+
+[力扣题目链接](https://leetcode.cn/problems/leaf-similar-trees)
+
+```java
+class Solution {
+    public boolean leafSimilar(TreeNode root1, TreeNode root2) {
+        List<Integer> list1 = new ArrayList<>();
+        List<Integer> list2 = new ArrayList<>();
+        dfs(root1, list1);
+        dfs(root2, list2);
+
+        if (list1.size() != list2.size()) {
+            return false;
+        }
+        for (int i = 0; i < list1.size(); i++) {
+            if (!list1.get(i).equals(list2.get(i))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void dfs(TreeNode root, List<Integer> list) {
+        if (root == null) {
+            return;
+        }
+
+        if (root.left == null && root.right == null) {
+            list.add(root.val);
+        }
+
+        dfs(root.left, list);
+        dfs(root.right, list);
+    }
+}
+```
+
+
+
 ### 208. 实现 Trie (前缀树)
 
 [力扣题目链接](https://leetcode.cn/problems/implement-trie-prefix-tree)
@@ -4002,6 +4215,48 @@ class Solution {
 [力扣题目链接](https://leetcode.cn/problems/sudoku-solver/)
 
 ```java
+class Solution {
+    private boolean ok;
+    private char[][] board;
+    private List<Integer> t = new ArrayList<>();
+    private boolean[][] row = new boolean[9][9];
+    private boolean[][] col = new boolean[9][9];
+    private boolean[][][] block = new boolean[3][3][9];
+
+    public void solveSudoku(char[][] board) {
+        this.board = board;
+        for (int i = 0; i < 9; ++i) {
+            for (int j = 0; j < 9; ++j) {
+                if (board[i][j] == '.') {
+                    t.add(i * 9 + j);
+                } else {
+                    int v = board[i][j] - '1';
+                    row[i][v] = col[j][v] = block[i / 3][j / 3][v] = true;
+                }
+            }
+        }
+        dfs(0);
+    }
+
+    private void dfs(int k) {
+        if (k == t.size()) {
+            ok = true;
+            return;
+        }
+        int i = t.get(k) / 9, j = t.get(k) % 9;
+        for (int v = 0; v < 9; ++v) {
+            if (!row[i][v] && !col[j][v] && !block[i / 3][j / 3][v]) {
+                row[i][v] = col[j][v] = block[i / 3][j / 3][v] = true;
+                board[i][j] = (char) (v + '1');
+                dfs(k + 1);
+                row[i][v] = col[j][v] = block[i / 3][j / 3][v] = false;
+            }
+            if (ok) {
+                return;
+            }
+        }
+    }
+}
 ```
 
 
@@ -4072,6 +4327,37 @@ class Solution {
 
 ## 贪心算法
 
+### 455. 分发饼干
+
+[力扣题目链接](https://leetcode-cn.com/problems/assign-cookies/)
+
+使用贪心算法：
+
+```java
+class Solution {
+	public int findContentChildren(int[] g, int[] s) {
+        Arrays.sort(g);
+        Arrays.sort(s);
+        // 孩子数组的下标
+        int i = 0;
+        // 饼干数组的下标
+        int j = 0;
+        while (i < g.length && j < s.length) {
+            // 满足条件就下一个孩子
+            if (g[i] <= s[i]) {
+                i++;
+            }
+            // 不满足下一个饼干
+            j++;
+        }
+        // 下标i正好是满足条件的孩子的个数
+        return i;
+    }
+}
+```
+
+
+
 ### [121. 买卖股票的最佳时机](https://leetcode-cn.com/problems/best-time-to-buy-and-sell-stock/)
 
 ```java
@@ -4131,7 +4417,8 @@ class Solution {
 此时0这个位置的下标是4，但是之前最大的可达步数是3，因为无法再进行跳跃。
 
 ```java
-   public boolean canJump(int[] nums) {
+class Solution {  
+	public boolean canJump(int[] nums) {
         // 最大能跳跃到的地方
         int maxJump = 0;
         for (int i = 0; i < nums.length; i++) {
@@ -4142,32 +4429,75 @@ class Solution {
         }
         return true;
     }
+}
 ```
 
-### [455. 分发饼干](https://leetcode-cn.com/problems/assign-cookies/)
+### 45. 跳跃游戏 II
 
-使用贪心算法：
+[力扣题目链接](https://leetcode.cn/problems/jump-game-ii)
 
 ```java
-    public int findContentChildren(int[] g, int[] s) {
-        Arrays.sort(g);
-        Arrays.sort(s);
-        // 孩子数组的下标
-        int i = 0;
-        // 饼干数组的下标
-        int j = 0;
-        while (i < g.length && j < s.length) {
-            // 满足条件就下一个孩子
-            if (g[i] <= s[i]) {
-                i++;
+class Solution {
+    public int jump(int[] nums) {
+        // 跳跃的次数
+        int ans = 0;
+        // 跳跃起始位置
+        int start = 0;
+        // 基于当前位置跳跃后的位置
+        int end = 1;
+        while (end < nums.length) {
+            int maxPosition = 0;
+            for (int i = start; i < end; i++) {
+                maxPosition = Math.max(maxPosition, nums[i] + i);
             }
-            // 不满足下一个饼干
-            j++;
+            start = end;
+            end = maxPosition + 1;
+            ans++;
         }
-        // 下标i正好是满足条件的孩子的个数
-        return i;
+        return ans;
     }
+}
 ```
+
+### 1005. K 次取反后最大化的数组和
+
+[力扣题目链接](https://leetcode.cn/problems/maximize-sum-of-array-after-k-negations)
+
+```java
+class Solution {
+    public int largestSumAfterKNegations(int[] nums, int k) {
+        // 按照绝对值从大到小排序
+        nums = IntStream.of(nums).boxed()
+                .sorted((a, b) -> Integer.compare(Math.abs(b), Math.abs(a))).mapToInt(Integer::intValue).toArray();
+
+        for (int i = 0; i < nums.length; i++) {
+            if (nums[i] < 0 && k > 0) {
+                nums[i] = -nums[i];
+                k--;
+            }
+        }
+
+        // 如果k还是大于0，且k是奇数，那么反转数值最小的元素
+        if (k % 2 == 1) {
+            nums[nums.length - 1] = -nums[nums.length - 1];
+        }
+
+        // 上面的代码等价于下面的代码，对同一个元素，不断变幻符号，
+        // 如果k是偶数，最终符号和原来一样，如果k是奇数，则正号变负号，负号变正号
+//        while (k-- > 0) {
+//            nums[nums.length - 1] = -nums[nums.length - 1];
+//        }
+        
+        int ans = 0;
+        for (int num : nums) {
+            ans += num;
+        }
+        return ans;
+    }
+}
+```
+
+
 
 ### 738. 单调递增的数字
 
@@ -4227,6 +4557,244 @@ class Solution {
             }
         }
         return true;
+    }
+}
+```
+
+### [134. 加油站](https://leetcode.cn/problems/gas-station)
+
+[力扣题目链接](https://leetcode.cn/problems/gas-station)
+
+方法一（会超时）：
+
+```java
+class Solution {
+    public int canCompleteCircuit(int[] gas, int[] cost) {
+        int n = gas.length;
+        for (int i = 0; i < n; i++) {
+            int j = i;
+            int remain = gas[i];
+            while (remain - cost[j] >= 0) {
+                remain = remain - cost[j] + gas[(j + 1) % n];
+                j = (j + 1) % n;
+                if (j == i) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+}
+```
+
+方法二：
+
+思路如下：
+
+- 如果总的汽油量小于总的消耗量，那么无论从哪里出发都不可能绕环路一圈，返回 -1
+- 如果总的汽油量大于或等于总的消耗量，那么一定存在一个起点能完成绕环路一圈的任务
+- 通过贪心算法找到这个起点。从第一个加油站开始，如果当前加油站无法到达下一个加油站，则将起点设为下一个加油站，并重新计算
+
+```java
+class Solution {
+    public int canCompleteCircuit(int[] gas, int[] cost) {
+        // 整个旅程中总的油量与总的消耗量的差值
+        int totalTank = 0;
+        // 当前起点到当前位置的油量与消耗值的差值
+        int currTank = 0;
+        // 当前假设的起点站
+        int startStation = 0;
+
+        for (int i = 0; i < gas.length; i++) {
+            // 总的汽油量
+            totalTank += gas[i] - cost[i];
+            // 总的消耗量
+            currTank += gas[i] - cost[i];
+
+            // 当前汽油量小于0，说明无法从起点startStation到达这个点
+            if (currTank < 0) {
+                startStation = i + 1;
+                currTank = 0;
+            }
+        }
+
+        return totalTank >= 0 ? startStation : -1;
+    }
+}
+```
+
+### 376. 摆动序列
+
+[力扣题目链接](https://leetcode.cn/problems/wiggle-subsequence)
+
+方法一：
+
+```java
+class Solution {
+    public int wiggleMaxLength(int[] nums) {
+        if (nums == null || nums.length == 0) {
+            return 0;
+        }
+
+        int ans = 1;
+        Boolean isUp = null; // 记录当前摆动方向
+        for (int i = 1; i < nums.length; i++) {
+            if (nums[i] > nums[i - 1] && (isUp == null || !isUp)) {
+                ans++;
+                isUp = true;
+            } else if (nums[i] < nums[i - 1] && (isUp == null || isUp)) {
+                ans++;
+                isUp = false;
+            }
+        }
+
+        return ans;
+    }
+}
+```
+
+方法二：
+
+```java
+class Solution {
+    public int wiggleMaxLength(int[] nums) {
+        if (nums == null || nums.length == 0) {
+            return 0;
+        }
+        int up = 1, down = 1;
+        for (int i = 1; i < nums.length; i++) {
+            if (nums[i] > nums[i - 1]) {
+                up = Math.max(up, down + 1);
+            } else if (nums[i] < nums[i - 1]) {
+                down = Math.max(down, up + 1);
+            }
+        }
+
+        return Math.max(up, down);
+    }
+}
+```
+
+### [135. 分发糖果](https://leetcode.cn/problems/candy)
+
+[力扣题目链接](https://leetcode.cn/problems/candy)
+
+```java
+class Solution {
+    public int candy(int[] ratings) {
+        int n = ratings.length;
+        int[] nums = new int[n];
+        nums[0] = 1;
+
+        // 从左往右
+        for (int i = 1; i < n; i++) {
+            if (ratings[i] > ratings[i - 1]) {
+                nums[i] = nums[i - 1] + 1;
+            } else {
+                nums[i] = 1;
+            }
+        }
+
+        // 从右往左
+        for (int i = n - 2; i >= 0; i--) {
+            if (ratings[i] > ratings[i + 1]) {
+                nums[i] = Math.max(nums[i], nums[i + 1] + 1);
+            }
+        }
+
+        int ans = 0;
+        for (int num : nums) {
+            ans += num;
+        }
+        return ans;
+    }
+}
+```
+
+###  406.根据身高重建队列
+
+[力扣题目链接](https://leetcode.cn/problems/queue-reconstruction-by-height/)
+
+```java
+class Solution {
+    public int[][] reconstructQueue(int[][] people) {
+        Arrays.sort(people, (a, b) -> a[0] == b[0] ? a[1] - b[1] : b[0] - a[0]);
+        List<int[]> ans = new ArrayList<>(people.length);
+        for (int[] p : people) {
+            ans.add(p[1], p);
+        }
+        return ans.toArray(new int[ans.size()][]);
+    }
+}
+```
+
+### 452. 用最少数量的箭引爆气球
+
+[力扣题目链接](https://leetcode.cn/problems/minimum-number-of-arrows-to-burst-balloons/)
+
+```java
+class Solution {
+    public int findMinArrowShots(int[][] points) {
+        Arrays.sort(points, (a, b) -> Integer.compare(a[0], b[0]));
+        int ans = 1; // 至少需要一支箭
+        for (int i = 1; i < points.length; i++) {
+            if (points[i][0] > points[i - 1][1]) {
+                ans++;
+            } else {
+                points[i][1] = Math.min(points[i][1], points[i - 1][1]);
+            }
+        }
+        return ans;
+    }
+}
+```
+
+
+
+### 968.监控二叉树
+
+[力扣题目链接](https://leetcode.cn/problems/binary-tree-cameras/)
+
+```java
+class Solution {
+    private int ans;
+
+    public int minCameraCover(TreeNode root) {
+        ans = 0;
+        if (minCamera(root) == 0) {
+            ans++;
+        }
+        return ans;
+    }
+
+    /**
+     * @param root
+     * @return 返回值含义如下
+     * 0:表示节点没有被相机监控，只能依靠父节点放相机
+     * 1：表示节点被相机监控，但相机不是放在自身节点上
+     * 2：表示节点被相机监控，但相机放在自身节点上
+     */
+    private int minCamera(TreeNode root) {
+        if (root == null) {
+            return 1; // 空树认为被监控，但没有相机
+        }
+
+        int l = minCamera(root.left);
+        int r = minCamera(root.right);
+
+        // 左右节点有任意一个节点为空，则需要当前节点放置相机
+        if (l == 0 || r == 0) {
+            ans++;
+            return 2;
+        }
+
+        // 左右子树都被监控，且没有监控当前节点
+        if (l == 1 && r == 1) {
+            return 0;
+        }
+
+        // 剩下的情况就是左右子树有可能为2，即当前节点被监控
+        return 1;
     }
 }
 ```
@@ -5527,6 +6095,55 @@ class Solution {
     }
 }
 ```
+
+### [169. 多数元素](https://leetcode.cn/problems/majority-element)
+
+[力扣题目链接](https://leetcode.cn/problems/majority-element)
+
+摩尔投票法：
+
+```java
+class Solution {
+    public int majorityElement(int[] nums) {
+        int major = 0;
+        int count = 0;
+        for (int i = 0; i < nums.length; i++) {
+            if (count == 0) {
+                major = nums[i];
+            }
+            if (major == nums[i]) {
+                count++;
+            } else {
+                count--;
+            }
+        }
+        return major;
+    }
+}
+```
+
+哈希表：
+
+```java
+class Solution {
+    public int majorityElement(int[] nums) {
+        int n = nums.length;
+        Map<Integer, Integer> map = new HashMap<>();
+        for (int num : nums) {
+            map.put(num, map.getOrDefault(num, 0) + 1);
+        }
+        for (Map.Entry<Integer, Integer> entry : map.entrySet()) {
+            Integer count = entry.getValue();
+            if (2 * count >= n) {
+                return entry.getKey();
+            }
+        }
+        throw new RuntimeException("not found number");
+    }
+}
+```
+
+
 
 ### 50. Pow(x, n)
 
