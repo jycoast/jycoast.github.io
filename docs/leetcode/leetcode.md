@@ -47,6 +47,29 @@ class Solution {
 }
 ```
 
+### 167. 两数之和 II - 输入有序数组
+
+[力扣题目链接](https://leetcode.cn/problems/two-sum-ii-input-array-is-sorted)
+
+```java
+class Solution {
+    public int[] twoSum(int[] numbers, int target) {
+        int left = 0, right = numbers.length - 1;
+        while (left < right) {
+            int sum = numbers[left] + numbers[right];
+            if (sum == target) {
+                return new int[]{left + 1, right + 1}; // 题目要求：1 <= index1 < index2 <= numbers.length，所以要数组下标加1
+            } else if (sum < target) {
+                left++;
+            } else {
+                right--;
+            }
+        }
+        return new int[]{-1, -1};
+    }
+}
+```
+
 ### 27. 移除元素
 
 [力扣题目链接](https://leetcode.cn/problems/remove-element/)
@@ -82,6 +105,48 @@ class Solution {
             fast++;
         }
         return slow;
+    }
+}
+```
+
+### [1732. 找到最高海拔](https://leetcode.cn/problems/find-the-highest-altitude)
+
+[力扣题目链接](https://leetcode.cn/problems/find-the-highest-altitude)
+
+```java
+class Solution {
+    public int largestAltitude(int[] gain) {
+        int sum = 0, max = 0;
+        for (int i = 0; i < gain.length; i++) {
+            sum += gain[i];
+            max = Math.max(max, sum);
+        }
+        return max;
+    }
+}
+```
+
+
+
+### [724. 寻找数组的中心下标](https://leetcode.cn/problems/find-pivot-index)
+
+[力扣题目链接](https://leetcode.cn/problems/find-pivot-index)
+
+前缀和：
+
+```java
+class Solution {
+    public int pivotIndex(int[] nums) {
+        int left = 0;
+        int sum = Arrays.stream(nums).sum();
+        for (int i = 0; i < nums.length; i++) {
+            sum -= nums[i];
+            if (left == sum) {
+                return i;
+            }
+            left += nums[i];
+        }
+        return -1;
     }
 }
 ```
@@ -158,6 +223,57 @@ class Solution {
     }
 }
 ```
+
+### 643. 子数组最大平均数 I
+
+[力扣题目链接](https://leetcode.cn/problems/maximum-average-subarray-i)
+
+解法一（会超时）：
+
+```java
+class Solution {
+    public double findMaxAverage(int[] nums, int k) {
+        int max = Integer.MIN_VALUE;
+
+        for (int i = 0; i < nums.length - k + 1; i++) {
+            int j = 0;
+            int temp = 0;
+            while (j < k) {
+                temp += nums[i + j];
+                j++;
+            }
+            max = Math.max(temp, max);
+        }
+        // 隐式将整数转换为双精度浮点数
+        return max * 1.0 / k;
+    }
+}
+```
+
+解法二：
+
+```java
+public class Solution {
+    public double findMaxAverage(int[] nums, int k) {
+        int sum = 0;
+        // 先求出前k个元素的和
+        for (int i = 0; i < k; i++) {
+            sum += nums[i];
+        }
+
+        int maxSum = sum;
+        // 滑动窗口求最大值
+        for (int i = k; i < nums.length; i++) {
+            sum = sum - nums[i - k] + nums[i]; // 减掉最前面那一项，加上当前项
+            maxSum = Math.max(sum, maxSum);
+        }
+        // 隐式将整数转换为双精度浮点数
+        return maxSum * 1.0 / k;
+    }
+}
+```
+
+
 
 ### 88. 合并两个有序数组
 
@@ -800,6 +916,221 @@ class Solution {
             }
         }
         return head;
+    }
+}
+```
+
+### 82. 删除排序链表中的重复元素 II
+
+[力扣题目链接](https://leetcode.cn/problems/remove-duplicates-from-sorted-list-ii)
+
+```java
+class Solution {
+    public ListNode deleteDuplicates(ListNode head) {
+        ListNode dummy = new ListNode(0, head);
+        ListNode pre = dummy;
+        ListNode curr = head;
+        while (curr != null) {
+            while (curr.next != null && curr.next.val == curr.val) {
+                curr = curr.next;
+            }
+            if (pre.next == curr) { // 如果相等，说明pre 与cur 之间没有重复节点
+                pre = curr;
+            } else {
+                pre.next = curr.next;
+            }
+            curr = curr.next;
+        }
+        return dummy.next;
+    }
+}
+```
+
+### [86. 分隔链表](https://leetcode.cn/problems/partition-list)
+
+[力扣题目链接](https://leetcode.cn/problems/partition-list)
+
+```java
+class Solution {
+    public ListNode partition(ListNode head, int x) {
+        ListNode dummy1 = new ListNode(-1);
+        ListNode dummy2 = new ListNode(-1);
+        ListNode p1 = dummy1; // 移动的指针，避免头节点移动
+        ListNode p2 = dummy2;
+
+        while (head != null) {
+            if (head.val < x) {
+                p1.next = head;
+                p1 = p1.next;
+            } else {
+                p2.next = head;
+                p2 = p2.next;
+            }
+            head = head.next;
+        }
+
+        // 合并两个链表
+        p1.next = dummy2.next;
+        p2.next = null; // p2 指向的是 dummy2，所以这里要置为 null
+        return dummy1.next;
+    }
+}
+```
+
+
+
+### 2. 两数相加
+
+[力扣题目链接](https://leetcode.cn/problems/add-two-numbers)
+
+```java
+class Solution {
+    public ListNode addTwoNumbers(ListNode l1, ListNode l2) {
+        int carry = 0;
+        ListNode node = new ListNode(0);
+        ListNode curr = node;
+        while (l1 != null || l2 != null || carry != 0) {
+            if (l1 != null) {
+                carry += l1.val;
+                l1 = l1.next;
+            }
+
+            if (l2 != null) {
+                carry += l2.val;
+                l2 = l2.next;
+            }
+
+            ListNode newNode;
+            if (carry > 9) {
+                newNode = new ListNode(carry - 10);
+                carry = 1;
+            } else {
+                newNode = new ListNode(carry);
+                carry = 0;
+            }
+            curr.next = newNode;
+            curr = curr.next;
+        }
+        return node.next;
+    }
+}
+```
+
+简洁一点的写法：
+
+```java
+class Solution {
+    public ListNode addTwoNumbers(ListNode l1, ListNode l2) {
+        ListNode dummy = new ListNode(0);
+        int carry = 0;
+        ListNode curr = dummy;
+        while (l1 != null || l2 != null || carry != 0) {
+            int sum = (l1 == null ? 0 : l1.val) + (l2 == null ? 0 : l2.val) + carry;
+            l1 = l1 == null ? null : l1.next;
+            l2 = l2 == null ? null : l2.next;
+
+            carry = sum / 10;
+            curr.next = new ListNode(sum % 10);
+            curr = curr.next;
+        }
+        return dummy.next;
+    }
+}
+```
+
+### 61. 旋转链表
+
+[力扣题目链接](https://leetcode.cn/problems/rotate-list)
+
+```java
+class Solution {
+    public ListNode rotateRight(ListNode head, int k) {
+        if (head == null || k == 0) {
+            return head;
+        }
+        // 计算链表长度
+        int len = 1;
+        ListNode curr = head;
+        while (curr.next != null) {
+            curr = curr.next;
+            len++;
+        }
+        k %= len;
+        if (k == 0) {
+            return head;
+        }
+        // 先让快指针先走k步，然后快慢指针同时走
+        ListNode fast = head;
+        ListNode slow = head;
+        while (k-- > 0) {
+            fast = fast.next;
+        }
+        while (fast.next != null) {
+            fast = fast.next;
+            slow = slow.next;
+        }
+        // 此时快指针在链表的尾部，慢指针的下一个节点就是新的链表头节点
+        ListNode ans = slow.next;
+        slow.next = null;
+        fast.next = head;
+        return ans;
+    }
+}
+```
+
+### [114. 二叉树展开为链表](https://leetcode.cn/problems/flatten-binary-tree-to-linked-list)
+
+[力扣题目链接](https://leetcode.cn/problems/flatten-binary-tree-to-linked-list)
+
+写法一：
+
+```java
+class Solution {
+    public void flatten(TreeNode root) {
+        while (root != null) {
+            if (root.left == null) {
+                root = root.right;
+                continue;
+            }
+            // 1.找到左子树的最右侧节点
+            TreeNode prev = root.left;
+            while (prev.right != null) {
+                prev = prev.right;
+            }
+            // 2.将右子树接到左子树的最右边节点
+            prev.right = root.right;
+            // 3.将root的左子树挪到右子树上
+            root.right = root.left;
+            root.left = null;
+            // 考虑下一个节点
+            root = root.right;
+        }
+    }
+}
+```
+
+写法二：
+
+```java
+class Solution {
+    public void flatten(TreeNode root) {
+        while (root != null) {
+            if (root.left != null) {
+                // 找到当前节点左子树的最右节点
+                TreeNode pre = root.left;
+                while (pre.right != null) {
+                    pre = pre.right;
+                }
+
+                // 将左子树的最右节点指向原来的右子树
+                pre.right = root.right;
+
+                // 将当前节点指向左子树
+                root.right = root.left;
+                root.left = null;
+            }
+            root = root.right;
+        }
     }
 }
 ```
@@ -2170,7 +2501,30 @@ class Solution {
 }
 ```
 
+### [933. 最近的请求次数](https://leetcode.cn/problems/number-of-recent-calls)
 
+[力扣题目链接](https://leetcode.cn/problems/number-of-recent-calls)
+
+```java
+class RecentCounter {
+
+    Queue<Integer> queue = new LinkedList<>();
+    
+    // t代表这个员工的工号，每次新员工加入q公司之前，先把工号小于 t-3000的老家伙都辞退，然后再让t入职，统计q公司现在有多少个员工
+    public int ping(int t) {
+        while (!queue.isEmpty()) {
+            Integer time  = queue.peek();
+            if (time < t - 3000) {
+                queue.poll();
+            } else {
+                break;
+            }
+        }
+        queue.offer(t);
+        return queue.size();
+    }
+}
+```
 
 ## 子串与区间
 
@@ -2315,6 +2669,36 @@ class Solution {
         }
 
         return result.toArray(new int[result.size()][]);
+    }
+}
+```
+
+### 57. 插入区间
+
+```java
+class Solution {
+    public int[][] insert(int[][] intervals, int[] newInterval) {
+        List<int[]> ans = new ArrayList<>();
+        int len = intervals.length;
+        int i = 0;
+        // 判断左边不重合
+        while (i < len && intervals[i][1] < newInterval[0]) {
+            ans.add(intervals[i]);
+            i++;
+        }
+        // 判断重合
+        while (i < len && intervals[i][0] <= newInterval[1]) {
+            newInterval[0] = Math.min(intervals[i][0], newInterval[0]);
+            newInterval[1] = Math.max(intervals[i][1], newInterval[1]);
+            i++;
+        }
+        ans.add(newInterval);
+        // 判断右边不重合
+        while (i < len && intervals[i][0] > newInterval[1]) {
+            ans.add(intervals[i]);
+            i++;
+        }
+        return ans.toArray(new int[0][]);
     }
 }
 ```
@@ -3177,8 +3561,6 @@ class Solution {
 }
 ```
 
-
-
 ### 617.合并二叉树
 
 [力扣题目链接](https://leetcode.cn/problems/merge-two-binary-trees/)
@@ -3385,20 +3767,11 @@ class Solution {
 ```java
 class Solution {
     public boolean leafSimilar(TreeNode root1, TreeNode root2) {
-        List<Integer> list1 = new ArrayList<>();
-        List<Integer> list2 = new ArrayList<>();
-        dfs(root1, list1);
-        dfs(root2, list2);
-
-        if (list1.size() != list2.size()) {
-            return false;
-        }
-        for (int i = 0; i < list1.size(); i++) {
-            if (!list1.get(i).equals(list2.get(i))) {
-                return false;
-            }
-        }
-        return true;
+        List<Integer> l1 = new ArrayList<>();
+        List<Integer> l2 = new ArrayList<>();
+        dfs(root1, l1);
+        dfs(root2, l2);
+        return l1.equals(l2);
     }
 
     private void dfs(TreeNode root, List<Integer> list) {
@@ -3492,6 +3865,37 @@ class Trie {
                 return true;
             }
             return node.startsWith(prefix, ++idx);
+        }
+    }
+}
+```
+
+### [173. 二叉搜索树迭代器](https://leetcode.cn/problems/binary-search-tree-iterator)
+
+[力扣题目链接](https://leetcode.cn/problems/binary-search-tree-iterator)
+
+```java
+class BSTIterator {
+    private List<Integer> list = new ArrayList<>();
+    private int index = 0;
+
+    public BSTIterator(TreeNode root) {
+        travel(root);
+    }
+
+    public int next() {
+        return list.get(index++);
+    }
+
+    public boolean hasNext() {
+        return index < list.size();
+    }
+
+    private void travel(TreeNode root) {
+        if (root != null) {
+            travel(root.left);
+            list.add(root.val);
+            travel(root.right);
         }
     }
 }
@@ -4865,6 +5269,8 @@ class Solution {
 }
 ```
 
+
+
 ### 70. 爬楼梯 
 
 [题目链接](https://leetcode-cn.com/problems/climbing-stairs/)
@@ -4923,6 +5329,30 @@ class Solution {
     }
 }
 ```
+
+### 1137. 第 N 个泰波那契数
+
+[力扣题目链接](https://leetcode.cn/problems/n-th-tribonacci-number)
+
+```java
+class Solution {
+    public int tribonacci(int n) {
+        if (n == 0) return 0;
+        if (n <= 2) return 1;
+
+        int[] dp = new int[n + 1];
+        dp[0] = 0;
+        dp[1] = 1;
+        dp[2] = 1;
+        for (int i = 3; i <= n; i++) {
+            dp[i] = dp[i - 1] + dp[i - 2] + dp[i - 3];
+        }
+        return dp[n];
+    }
+}
+```
+
+
 
 ### 746. 使用最小花费爬楼梯
 
@@ -6278,6 +6708,31 @@ class Solution {
 }
 ```
 
+### 162. 寻找峰值
+
+[力扣题目链接](https://leetcode.cn/problems/find-peak-element)
+
+不是有序序列也可以使用二分查找：
+
+```java
+class Solution {
+    public int findPeakElement(int[] nums) {
+        int left = 0, right = nums.length - 1;
+        while (left < right) {
+            int mid = (left + right) / 2;
+            if (nums[mid] > nums[mid + 1]) {
+                right = mid;
+            } else {
+                left = mid + 1;
+            }
+        }
+        return left; // return right 也可以
+    }
+}
+```
+
+
+
 ### 414. 第三大的数
 
 [力扣题目链接](https://leetcode-cn.com/problems/third-maximum-number/)
@@ -6564,8 +7019,6 @@ class Solution {
 }
 ```
 
-
-
 ## 矩阵
 
 ### 73. 矩阵置零
@@ -6678,6 +7131,44 @@ class Solution {
         }
 
         return result;
+    }
+}
+```
+
+## 其他
+
+### [380. O(1) 时间插入、删除和获取随机元素](https://leetcode.cn/problems/insert-delete-getrandom-o1)
+
+[力扣题目链接](https://leetcode.cn/problems/insert-delete-getrandom-o1)
+
+```java
+class RandomizedSet {
+
+    List<Integer> randomSet;
+
+    Random random = new Random();
+
+    public RandomizedSet() {
+        randomSet = new LinkedList<>();
+    }
+
+    public boolean insert(int val) {
+        if (randomSet.contains(val)) {
+            return false;
+        }
+        return randomSet.add(val);
+    }
+
+    public boolean remove(int val) {
+        if (randomSet.contains(val)) {
+            return randomSet.remove(Integer.valueOf(val));
+        }
+        return false;
+    }
+
+    public int getRandom() {
+        int i = random.nextInt(randomSet.size());
+        return randomSet.get(i);
     }
 }
 ```
