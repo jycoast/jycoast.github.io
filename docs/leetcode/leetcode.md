@@ -109,7 +109,7 @@ class Solution {
 }
 ```
 
-### [1732. 找到最高海拔](https://leetcode.cn/problems/find-the-highest-altitude)
+### 1732. 找到最高海拔
 
 [力扣题目链接](https://leetcode.cn/problems/find-the-highest-altitude)
 
@@ -128,7 +128,7 @@ class Solution {
 
 
 
-### [724. 寻找数组的中心下标](https://leetcode.cn/problems/find-pivot-index)
+### 724. 寻找数组的中心下标
 
 [力扣题目链接](https://leetcode.cn/problems/find-pivot-index)
 
@@ -223,6 +223,26 @@ class Solution {
     }
 }
 ```
+
+### 53. 最大子数组和
+
+[力扣题目链接](https://leetcode.cn/problems/maximum-subarray)
+
+```java
+class Solution {
+
+    public int maxSubArray(int[] nums) {
+        int pre = 0, maxAns = nums[0];
+        for (int x : nums) {
+            pre = Math.max(pre + x, x);
+            maxAns = Math.max(maxAns, pre);
+        }
+        return maxAns;
+    }
+}
+```
+
+
 
 ### 643. 子数组最大平均数 I
 
@@ -900,7 +920,7 @@ public class Solution {
 }
 ```
 
-### [83. 删除排序链表中的重复元素](https://leetcode.cn/problems/remove-duplicates-from-sorted-list)
+### 83. 删除排序链表中的重复元素
 
 [力扣题目链接](https://leetcode.cn/problems/remove-duplicates-from-sorted-list)
 
@@ -946,7 +966,7 @@ class Solution {
 }
 ```
 
-### [86. 分隔链表](https://leetcode.cn/problems/partition-list)
+### 86. 分隔链表
 
 [力扣题目链接](https://leetcode.cn/problems/partition-list)
 
@@ -1078,7 +1098,7 @@ class Solution {
 }
 ```
 
-### [114. 二叉树展开为链表](https://leetcode.cn/problems/flatten-binary-tree-to-linked-list)
+### 114. 二叉树展开为链表
 
 [力扣题目链接](https://leetcode.cn/problems/flatten-binary-tree-to-linked-list)
 
@@ -1131,6 +1151,102 @@ class Solution {
             }
             root = root.right;
         }
+    }
+}
+```
+
+### 148. 排序链表
+
+[力扣题目链接](https://leetcode.cn/problems/sort-list)
+
+解法一：
+
+```java
+class Solution {
+    public ListNode sortList(ListNode head) {
+        List<Integer> list = new ArrayList<>();
+        while (head != null) {
+            int val = head.val;
+            list.add(val);
+            head = head.next;
+        }
+        Collections.sort(list);
+        ListNode dumy = new ListNode(0);
+        ListNode curr = dumy;
+        for (int i = 0; i < list.size(); i++) {
+            ListNode node = new ListNode(list.get(i));
+            curr.next = node;
+            curr = curr.next;
+        }
+
+        return dumy.next;
+    }
+}
+```
+
+解法二：
+
+```java
+class Solution {
+    public ListNode sortList(ListNode head) {
+        if (head == null || head.next == null) {
+            return head;
+        }
+        ListNode slow = head, fast = head.next;
+        while (fast != null && fast.next != null) {
+            slow = slow.next;
+            fast = fast.next.next;
+        }
+        ListNode t = slow.next;
+        slow.next = null;
+        ListNode l1 = sortList(head);
+        ListNode l2 = sortList(t);
+        ListNode dummy = new ListNode();
+        ListNode cur = dummy;
+        while (l1 != null && l2 != null) {
+            if (l1.val <= l2.val) {
+                cur.next = l1;
+                l1 = l1.next;
+            } else {
+                cur.next = l2;
+                l2 = l2.next;
+            }
+            cur = cur.next;
+        }
+        cur.next = l1 == null ? l2 : l1;
+        return dummy.next;
+    }
+}
+```
+
+
+
+### 23. 合并 K 个升序链表
+
+[力扣题目链接](https://leetcode.cn/problems/merge-k-sorted-lists)
+
+```java
+class Solution {
+    public ListNode mergeKLists(ListNode[] lists) {
+        PriorityQueue<ListNode> pq = new PriorityQueue<>((a, b) -> a.val - b.val);
+        for (ListNode head : lists) {
+            if (head != null) {
+                pq.offer(head); // 取出所有链表的头节点
+            }
+        }
+
+        ListNode dummy = new ListNode();
+        ListNode curr = dummy;
+        while (!pq.isEmpty()) {
+            ListNode node = pq.poll(); // 取出最小的节点
+             curr.next = node;
+            curr = curr.next;
+            
+            if (node.next != null) {
+                pq.offer(node.next); // 将当前节点的下一个节点加入堆中
+            }
+        }
+        return dummy.next;
     }
 }
 ```
@@ -1207,7 +1323,7 @@ class Solution {
 }
 ```
 
-### [242. 有效的字母异位词](https://leetcode-cn.com/problems/valid-anagram/)
+### 242. 有效的字母异位词
 
 使用排序：
 
@@ -1338,7 +1454,7 @@ class Solution {
 }
 ```
 
-### [137. 只出现一次的数字 II](https://leetcode.cn/problems/single-number-ii/)
+### 137. 只出现一次的数字 II
 
 解法一：
 
@@ -2501,7 +2617,7 @@ class Solution {
 }
 ```
 
-### [933. 最近的请求次数](https://leetcode.cn/problems/number-of-recent-calls)
+### 933. 最近的请求次数
 
 [力扣题目链接](https://leetcode.cn/problems/number-of-recent-calls)
 
@@ -2797,7 +2913,7 @@ class Solution {
 }
 ```
 
-### [104. 二叉树的最大深度](https://leetcode-cn.com/problems/maximum-depth-of-binary-tree/)
+### 104. 二叉树的最大深度
 
 递归解法：
 
@@ -2844,7 +2960,7 @@ class Solution {
 }
 ```
 
-### [98. 验证二叉搜索树](https://leetcode-cn.com/problems/validate-binary-search-tree/)
+### 98. 验证二叉搜索树
 
 > 二叉搜索树有两个重要性质，第一，左子树上所有结点的值都要小于根节点的值，右子树所有结点的值都要大于根节点的值；第二，中序遍历后的结果是一个递增的数列。
 
@@ -2973,7 +3089,7 @@ class Solution {
 
 
 
-### [102. 二叉树的层序遍历](https://leetcode-cn.com/problems/binary-tree-level-order-traversal/)
+### 102. 二叉树的层序遍历
 
 模板代码：
 
@@ -3870,7 +3986,7 @@ class Trie {
 }
 ```
 
-### [173. 二叉搜索树迭代器](https://leetcode.cn/problems/binary-search-tree-iterator)
+### 173. 二叉搜索树迭代器
 
 [力扣题目链接](https://leetcode.cn/problems/binary-search-tree-iterator)
 
@@ -3897,6 +4013,127 @@ class BSTIterator {
             list.add(root.val);
             travel(root.right);
         }
+    }
+}
+```
+
+### 129. 求根节点到叶节点数字之和
+
+[力扣题目链接](https://leetcode.cn/problems/sum-root-to-leaf-numbers)
+
+```java
+class Solution {
+    public int sumNumbers(TreeNode root) {
+        return dfs(root, 0);
+    }
+
+    private int dfs(TreeNode root, int sum) {
+        if (root == null) {
+            return 0;
+        }
+        sum = root.val + sum * 10;
+        if (root.left == null && root.right == null) {
+            return sum;
+        }
+        return dfs(root.left, sum) + dfs(root.right, sum);
+    }
+}
+```
+
+### 124. 二叉树中的最大路径和
+
+[力扣题目链接](https://leetcode.cn/problems/binary-tree-maximum-path-sum)
+
+```java
+class Solution {
+
+    private Integer ans = Integer.MIN_VALUE;
+
+    public int maxPathSum(TreeNode root) {
+        dfs(root);
+        return ans;
+    }
+
+    private int dfs(TreeNode root) {
+        if (root == null) {
+            return 0;
+        }
+        int l = Math.max(0, dfs(root.left));
+        int r = Math.max(0, dfs(root.right));
+        ans = Math.max(ans, root.val + l + r);
+        return root.val + Math.max(l, r);
+    }
+}
+```
+
+### 117. 填充每个节点的下一个右侧节点指针 II
+
+[力扣题目链接](https://leetcode.cn/problems/populating-next-right-pointers-in-each-node-ii)
+
+```java
+class Solution {
+    public Node connect(Node root) {
+        if (root == null) {
+            return null;
+        }
+        Queue<Node> queue = new LinkedList<>();
+        queue.offer(root);
+        while (!queue.isEmpty()) {
+            Node pre = null;
+            for (int i = queue.size(); i > 0; i--) {
+                Node node = queue.poll();
+                if (pre != null) {
+                    pre.next = node;
+                }
+                pre = node;
+                if (node.left != null) {
+                    queue.offer(node.left);
+                }
+                if (node.right != null) {
+                    queue.offer(node.right);
+                }
+            }
+        }
+        return root;
+    }
+}
+```
+
+### 103. 二叉树的锯齿形层序遍历
+
+[力扣题目链接](https://leetcode.cn/problems/binary-tree-zigzag-level-order-traversal)
+
+```java
+class Solution {
+    public List<List<Integer>> zigzagLevelOrder(TreeNode root) {
+        List<List<Integer>> ans = new ArrayList<>();
+        if (root == null) {
+            return ans;
+        }
+        Queue<TreeNode> queue = new LinkedList<>();
+        queue.offer(root);
+        boolean left = true;
+        while (!queue.isEmpty()) {
+            List<Integer> list = new ArrayList<>();
+            for (int i = queue.size(); i > 0; i--) {
+                TreeNode node = queue.poll();
+                if (left) {
+                    list.add(node.val);
+                } else {
+                    list.add(0, node.val);
+                }
+
+                if (node.left != null) {
+                    queue.offer(node.left);
+                }
+                if (node.right != null) {
+                    queue.offer(node.right);
+                }
+            }
+            ans.add(list);
+            left = !left;
+        }
+        return ans;
     }
 }
 ```
@@ -4032,7 +4269,7 @@ class Solution {
 
 
 
-### [17. 电话号码的字母组合](https://leetcode-cn.com/problems/letter-combinations-of-a-phone-number/)
+### 17. 电话号码的字母组合
 
 题目的状态树：
 
@@ -4442,7 +4679,7 @@ class Solution {
 }
 ```
 
-### [22. 括号生成](https://leetcode-cn.com/problems/generate-parentheses/)
+### 22. 括号生成
 
 括号生成的状态树：
 
@@ -4610,7 +4847,70 @@ class Solution {
 
 
 
-### [212. 单词搜索 II](https://leetcode-cn.com/problems/word-search-ii/)
+### 212. 单词搜索 II
+
+```java
+class Trie {
+    Trie[] children = new Trie[26];
+    int ref = -1;
+
+    public void insert(String w, int ref) {
+        Trie node = this;
+        for (int i = 0; i < w.length(); ++i) {
+            int j = w.charAt(i) - 'a';
+            if (node.children[j] == null) {
+                node.children[j] = new Trie();
+            }
+            node = node.children[j];
+        }
+        node.ref = ref;
+    }
+}
+
+class Solution {
+    private char[][] board;
+    private String[] words;
+    private List<String> ans = new ArrayList<>();
+
+    public List<String> findWords(char[][] board, String[] words) {
+        this.board = board;
+        this.words = words;
+        Trie tree = new Trie();
+        for (int i = 0; i < words.length; ++i) {
+            tree.insert(words[i], i);
+        }
+        int m = board.length, n = board[0].length;
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < n; ++j) {
+                dfs(tree, i, j);
+            }
+        }
+        return ans;
+    }
+
+    private void dfs(Trie node, int i, int j) {
+        int idx = board[i][j] - 'a';
+        if (node.children[idx] == null) {
+            return;
+        }
+        node = node.children[idx];
+        if (node.ref != -1) {
+            ans.add(words[node.ref]);
+            node.ref = -1;
+        }
+        char c = board[i][j];
+        board[i][j] = '#';
+        int[] dirs = {-1, 0, 1, 0, -1};
+        for (int k = 0; k < 4; ++k) {
+            int x = i + dirs[k], y = j + dirs[k + 1];
+            if (x >= 0 && x < board.length && y >= 0 && y < board[0].length && board[x][y] != '#') {
+                dfs(node, x, y);
+            }
+        }
+        board[i][j] = c;
+    }
+}
+```
 
 
 
@@ -4665,7 +4965,7 @@ class Solution {
 
 
 
-### [51. N 皇后](https://leetcode-cn.com/problems/n-queens/)
+### 51. N 皇后
 
 ```java
 class Solution {
@@ -4762,7 +5062,7 @@ class Solution {
 
 
 
-### [121. 买卖股票的最佳时机](https://leetcode-cn.com/problems/best-time-to-buy-and-sell-stock/)
+### 121. 买卖股票的最佳时机
 
 ```java
 class Solution {
@@ -4782,7 +5082,7 @@ class Solution {
 
 需要注意的是，本题中股票只买卖一次。
 
-### [322. 零钱兑换](https://leetcode-cn.com/problems/coin-change/)
+### 322. 零钱兑换
 
 使用动态规划：
 
@@ -4812,7 +5112,7 @@ class Solution {
 }
 ```
 
-### [55. 跳跃游戏](https://leetcode-cn.com/problems/jump-game/)
+### 55. 跳跃游戏
 
 使用贪心算法：
 
@@ -4927,7 +5227,7 @@ class Solution {
 }
 ```
 
-### [860. 柠檬水找零](https://leetcode.cn/problems/lemonade-change/)
+### 860. 柠檬水找零
 
 [力扣题目链接](https://leetcode.cn/problems/lemonade-change/)
 
@@ -4965,7 +5265,7 @@ class Solution {
 }
 ```
 
-### [134. 加油站](https://leetcode.cn/problems/gas-station)
+### 134. 加油站
 
 [力扣题目链接](https://leetcode.cn/problems/gas-station)
 
@@ -5472,6 +5772,21 @@ class Solution {
 ### 96.不同的二叉搜索树
 
 [力扣题目链接](https://leetcode.cn/problems/unique-binary-search-trees/)
+
+```java
+class Solution {
+    public int numTrees(int n) {
+        int[] f = new int[n + 1];
+        f[0] = 1;
+        for (int i = 1; i <= n; ++i) {
+            for (int j = 0; j < i; ++j) {
+                f[i] += f[j] * f[i - j - 1];
+            }
+        }
+        return f[n];
+    }
+}
+```
 
 
 
@@ -6105,6 +6420,29 @@ class Solution {
 
 [力扣题目链接](https://leetcode.cn/problems/edit-distance/)
 
+```java
+class Solution {
+    public int minDistance(String word1, String word2) {
+        int m = word1.length(), n = word2.length();
+        int[][] f = new int[m + 1][n + 1];
+        for (int j = 1; j <= n; ++j) {
+            f[0][j] = j;
+        }
+        for (int i = 1; i <= m; ++i) {
+            f[i][0] = i;
+            for (int j = 1; j <= n; ++j) {
+                if (word1.charAt(i - 1) == word2.charAt(j - 1)) {
+                    f[i][j] = f[i - 1][j - 1];
+                } else {
+                    f[i][j] = Math.min(f[i - 1][j], Math.min(f[i][j - 1], f[i - 1][j - 1])) + 1;
+                }
+            }
+        }
+        return f[m][n];
+    }
+}
+```
+
 
 
 ###  647. 回文子串
@@ -6144,6 +6482,24 @@ class Solution {
 ### 409. 最长回文串
 
 [力扣题目链接](https://leetcode-cn.com/problems/longest-palindrome/)
+
+```java
+class Solution {
+    public int longestPalindrome(String s) {
+        int[] cnt = new int[128];
+        int n = s.length();
+        for (int i = 0; i < n; ++i) {
+            ++cnt[s.charAt(i)];
+        }
+        int ans = 0;
+        for (int v : cnt) {
+            ans += v / 2 * 2;
+        }
+        ans += ans < n ? 1 : 0;
+        return ans;
+    }
+}
+```
 
 
 
@@ -6976,7 +7332,7 @@ class Solution {
 }
 ```
 
-### [201. 数字范围按位与](https://leetcode.cn/problems/bitwise-and-of-numbers-range/)
+### 201. 数字范围按位与
 
 [力扣题目链接](https://leetcode.cn/problems/bitwise-and-of-numbers-range/)
 
@@ -7015,6 +7371,108 @@ class Solution {
         }
         // 将公共前缀左移回原来的位置
         return left << shift;
+    }
+}
+```
+
+### 34. 在排序数组中查找元素的第一个和最后一个位置
+
+[力扣题目链接](https://leetcode.cn/problems/find-first-and-last-position-of-element-in-sorted-array)
+
+解法一：53
+
+```java
+class Solution {
+    public int[] searchRange(int[] nums, int target) {
+        int[] res = new int[2];
+        int first = findFirst(nums, target);
+        int last = findList(nums, target);
+        res[0] = first;51
+        res[1] = last;
+        return res;
+    }
+
+    private int findFirst(int[] nums, int target) {
+        int result = -1;
+        int left = 0;
+        int right = nums.length - 1;
+        while (left <= right) {
+            int mid = (left + right) / 2;
+            if (nums[mid] < target) {
+                left = mid + 1;
+            } else if (nums[mid] > target) {
+                right = mid - 1;
+            } else {
+                result = mid;
+                right = mid - 1; // 找到一个了，继续往左边搜索，直到搜索到第一个
+            }
+        }
+        return result;
+    }
+
+    private int findList(int[] nums, int target) {
+        int result = -1;
+        int left = 0;
+        int right = nums.length - 1;
+        while (left <= right) {
+            int mid = (left + right) / 2;
+            if (nums[mid] < target) {
+                left = mid + 1;
+            } else if (nums[mid] > target) {
+                right = mid - 1;
+            } else {
+                result = mid;
+                left = mid + 1; // 找到一个了，继续往右边搜索，直到搜索到最后一个
+            }
+        }
+        return result;
+    }
+}
+```
+
+解法二：
+
+```java
+class Solution {
+    public int[] searchRange(int[] nums, int target) {
+        int[] ans = new int[2];
+        int l = search(nums, target);
+        int r = search(nums, target + 1);
+        return l == r ? new int[]{-1, -1} : new int[]{l, r - 1};
+    }
+
+    private int search(int[] nums, int target) {
+        int left = 0, right = nums.length;
+        while (left < right) {
+            int mid = (left + right) >>> 1;
+            if (nums[mid] >= target) {
+                right = mid;
+            } else {
+                left = mid + 1;
+            }
+        }
+        return left;
+    }
+}
+```
+
+### 153. 寻找旋转排序数组中的最小值
+
+[力扣题目链接](https://leetcode.cn/problems/find-minimum-in-rotated-sorted-array)
+
+```java
+class Solution {
+    public int findMin(int[] nums) {
+        int left = 0, right = nums.length - 1;
+        while (left < right) {
+            int mid = (left + right) >>> 1;
+            if (nums[mid] > nums[right]) {
+                left = mid + 1;
+            } else {
+                right = mid;
+            }
+        }
+        return nums[left];
     }
 }
 ```
@@ -7137,7 +7595,7 @@ class Solution {
 
 ## 其他
 
-### [380. O(1) 时间插入、删除和获取随机元素](https://leetcode.cn/problems/insert-delete-getrandom-o1)
+### 380. O(1) 时间插入、删除和获取随机元素
 
 [力扣题目链接](https://leetcode.cn/problems/insert-delete-getrandom-o1)
 
