@@ -7,6 +7,9 @@
 [力扣题目链接](https://leetcode-cn.com/problems/two-sum/)
 
 梦开始的地方：
+::: code-tabs#java
+
+@tab java
 
 ```java
 class Solution {
@@ -23,6 +26,29 @@ class Solution {
     }
 }
 ```
+
+@tab c++
+```cpp
+#include <unordered_map>
+
+class Solution {
+public:
+    vector<int> twoSum(vector<int> &nums, int target) {
+        unordered_map<int, int> hash_map;
+        for (int i = 0; i < nums.size(); ++i) {
+            int temp = target - nums[i];
+            if (hash_map.find(temp) != hash_map.end()) {
+                return {hash_map[temp], i};
+            }
+
+            hash_map[nums[i]] = i;
+        }
+        return {};
+    }
+};
+```
+
+:::
 
 ### 704. 二分查找
 
@@ -1214,6 +1240,31 @@ class Solution {
             cur = cur.next;
         }
         cur.next = l1 == null ? l2 : l1;
+        return dummy.next;
+    }
+}
+```
+
+### 21. 合并两个有序链表
+
+[力扣题目链接](https://leetcode.cn/problems/merge-two-sorted-lists)
+
+```java
+class Solution {
+    public ListNode mergeTwoLists(ListNode list1, ListNode list2) {
+        ListNode dummy = new ListNode(0);
+        ListNode curr = dummy;
+        while (list1 != null && list2 != null) {
+            if (list1.val < list2.val) {
+                curr.next = list1;
+                list1 = list1.next;
+            } else {
+                curr.next = list2;
+                list2 = list2.next;
+            }
+            curr = curr.next;
+        }
+        curr.next = list1 == null ? list2 : list1;
         return dummy.next;
     }
 }
@@ -5896,8 +5947,8 @@ $$
 $$
 \left\{
 \begin{array}{lcl}
-dp[start] = nums[start] & 只有一间房屋，则偷窃该房屋 \\
-dp[start+1] = max(nums[start],nums[start+1]) & 只有两件房屋，偷窃其中金额较高的房屋
+dp[start] = nums[start] &  \text{只有一间房屋，则偷窃该房屋} \\
+dp[start+1] = max(nums[start],nums[start+1]) & \text{只有两件房屋，偷窃其中金额较高的房屋}
 \end{array}\right.
 $$
 相应的实现：
@@ -6511,8 +6562,8 @@ class Solution {
 $$
 p(i,j)=\left\{
 \begin{array}{lcl}
-true, & 如果字串S_i...S_j是回文串 \\
-false, & 其它情况
+true, & \text{如果字串S_i...S_j是回文串} \\
+false, & \text{其它情况}
 \end{array}\right.
 $$
 这里的其它情况包含两种可能性：
@@ -6528,8 +6579,8 @@ $$
 $$
 \left\{
 \begin{array}{lcl}
-p(i,i)=true, & 如果字串S_i...S_j是回文串 \\
-p(i,i+1)=(S_i==S_{i+1}), & 其它情况
+p(i,i)=true, & \text{如果字串S_i...S_j是回文串} \\
+p(i,i+1)=(S_i==S_{i+1}), & \text{其它情况}
 \end{array}\right.
 $$
 相应的示例代码：

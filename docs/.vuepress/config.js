@@ -327,6 +327,8 @@ export default defineUserConfig({
       mathjax: true,
       // 启用 Markmap
       markmap: true,
+      //启用代码块分组
+      codetabs: true,
     }),
     // 这个插件有问题，所以让它对所有的元素都不生效
     mediumZoomPlugin({

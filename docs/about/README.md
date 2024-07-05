@@ -12,7 +12,6 @@ sidebar: false
 - Flutter（⭐⭐⭐）
 - Vue（⭐⭐⭐）
 - C++（⭐⭐）
-- Python（⭐⭐）
 
 ## 个人经历
 - 2015-2019 中国矿业大学（北京）
