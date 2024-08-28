@@ -5,8 +5,8 @@ import { searchProPlugin } from "vuepress-plugin-search-pro";
 import { photoSwipePlugin } from "@vuepress/plugin-photo-swipe";
 import { googleAnalyticsPlugin } from '@vuepress/plugin-google-analytics'
 import { mdEnhancePlugin } from "vuepress-plugin-md-enhance";
-import { mediumZoomPlugin } from '@vuepress/plugin-medium-zoom'
-import { readingTimePlugin } from '@vuepress/plugin-reading-time'
+import { mediumZoomPlugin } from '@vuepress/plugin-medium-zoom';
+import { readingTimePlugin } from '@vuepress/plugin-reading-time';
 
 export default defineUserConfig({
   lang: 'zh-CN',
@@ -180,6 +180,10 @@ export default defineUserConfig({
             text: '算法刷题',
             link: '/leetcode/leetcode.md'
         },
+        {
+            text: 'Top 100',
+            link: 'https://algorithm-wiki.pages.dev/'
+        },
         ]
     },
     {
@@ -309,7 +313,6 @@ export default defineUserConfig({
         link: '/about/'
     },
     ],
-    
   }),
 
   bundler: viteBundler(),
