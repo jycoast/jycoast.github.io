@@ -6,7 +6,7 @@ tagline: null
 heroImage: mlogo.svg
 actions:
   - text: 快速开始 →
-    link: /study_guide/study_path/
+    link: https://tutorial-wiki.pages.dev/
     type: primary
 features:
 - title: 语言特性

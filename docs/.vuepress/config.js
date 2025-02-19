@@ -10,7 +10,17 @@ import { readingTimePlugin } from '@vuepress/plugin-reading-time';
 
 export default defineUserConfig({
   lang: 'zh-CN',
-  markdown: {toc: {level:[1, 2, 3], shouldAllowNested: true}},
+  markdown: {
+    toc: {
+        level:[1, 2, 3], 
+        shouldAllowNested: true
+    },   
+    headers: {
+      // 用到哪一级就提取哪一级
+      level: [2, 3, 4],
+    },
+    // extractHeaders: [ 'h1', 'h2', 'h3']
+},
   title: 'thinking in programming',
   description: 'My first VuePress Site',
   theme: defaultTheme({
