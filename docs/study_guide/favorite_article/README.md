@@ -15,3 +15,5 @@ sidebar: false
 - [一个高并发项目到落地的心酸路](https://juejin.cn/post/7346021356679675967)
 
 - [硬核Redis](https://mp.weixin.qq.com/mp/appmsgalbum?__biz=MzIyOTYxNDI5OA==&action=getalbum&album_id=1699766580538032128&scene=126#wechat_redirect)
+
+- [万亿级日访问量下，Redis在微博的9年优化历程](https://www.infoq.cn/article/bpdipuy0qm4ilmzbjbs1)
