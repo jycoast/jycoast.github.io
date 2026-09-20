@@ -5,3 +5,5 @@ docs/.cache
 docs/.temp
 docs/dist
 docs/.vuepress
+docs/.vitepress/cache
+docs/.vitepress/dist

@@ -1,8 +1,10 @@
 # 关于项目
 
-用来记录学习过程的笔记，方便回顾。
+这是一个个人技术知识库，用来记录和整理学习内容。
 
-# 本地运行
+站点主题覆盖 Java、数据库、框架、中间件、计算机原理、算法与学习路线等内容。
+
+## 本地运行
 
 安装依赖：
 
@@ -10,30 +12,25 @@
 npm install
 ```
 
-启动：
+启动开发服务器：
 
 ```shell
 npm run docs:dev
 ```
 
-# Java面试
-- [Java面试专栏](https://jycoder.club/interview/)
+构建生产版本：
 
-# 数据结构与算法
-- [数据结构](https://jycoder.club/leetcode/data_structure.html)
+```shell
+npm run docs:build
+```
 
-# 数据库
-- [MySQL](https://jycoder.club/database/mysql/)
-- [Redis](https://jycoder.club/database/redis/)
+## 内容入口
 
-# 常用框架
-- [springFramework](https://jycoder.club/framework/spring_framework/)
-- [SpringAop](https://jycoder.club/framework/spring_aop/)
-
-# 中间件
-- [深入理解JVM](https://jycoder.club/middleware/jvm/)
-- [RocketMQ](https://jycoder.club/middleware/mq/)
-
-# 学习指南
-
-- [深度好文](https://jycoder.club/favorite_article/)
+- [Java 面试](https://jycoder.club/interview/)
+- [Java 基础](https://jycoder.club/java_basics/)
+- [数据结构与算法 Top 100](https://algorithm-wiki.pages.dev/)
+- [数据库](https://jycoder.club/database/mysql/)
+- [常用框架](https://jycoder.club/framework/spring_framework/)
+- [中间件](https://jycoder.club/middleware/jvm/)
+- [学习路线](https://jycoder.club/study_guide/study_path/)
+- [深度好文](https://jycoder.club/study_guide/favorite_article/)
