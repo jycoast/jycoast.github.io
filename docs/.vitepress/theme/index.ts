@@ -1,11 +1,31 @@
 import DefaultTheme from 'vitepress/theme'
 import './styles/custom.css'
 
+let outlineFrame = 0
+let outlineTimer: ReturnType<typeof setTimeout> | undefined
+let outlineIdle: number | undefined
+let outlineScheduleVersion = 0
+
+function hideBookOutline() {
+  if (typeof document !== 'undefined') {
+    document.documentElement.classList.add('book-outline-pending')
+  }
+}
+
+function showBookOutline() {
+  if (typeof document !== 'undefined') {
+    document.documentElement.classList.remove('book-outline-pending')
+  }
+}
+
 function enhanceBookOutline() {
-  if (typeof document === 'undefined') return
+  if (typeof document === 'undefined') return false
 
   const outline = document.querySelector('.VPDoc .left-aside .VPDocAsideOutline')
-  if (!outline) return
+  if (!outline) {
+    showBookOutline()
+    return false
+  }
 
   outline.querySelectorAll('li').forEach((item) => {
     const directChildren = Array.from(item.children)
@@ -50,21 +70,71 @@ function enhanceBookOutline() {
     }
 
     toggle.setAttribute('aria-expanded', String(!item.classList.contains('is-collapsed')))
-    toggle.setAttribute('aria-label', `${item.classList.contains('is-collapsed') ? '展开' : '收起'} ${link.textContent?.trim() ?? ''}`)
+    toggle.setAttribute(
+      'aria-label',
+      `${item.classList.contains('is-collapsed') ? '展开' : '收起'} ${link.textContent?.trim() ?? ''}`,
+    )
   })
+
+  showBookOutline()
+  return true
+}
+
+function cancelOutlineSchedule() {
+  if (typeof window === 'undefined') return
+  outlineScheduleVersion += 1
+  if (outlineFrame) {
+    window.cancelAnimationFrame(outlineFrame)
+    outlineFrame = 0
+  }
+  if (outlineTimer) {
+    window.clearTimeout(outlineTimer)
+    outlineTimer = undefined
+  }
+  const cancelIdle = (window as typeof window & { cancelIdleCallback?: (id: number) => void }).cancelIdleCallback
+  if (outlineIdle !== undefined && cancelIdle) {
+    cancelIdle.call(window, outlineIdle)
+  }
+  outlineIdle = undefined
 }
 
 function scheduleOutlineEnhancement() {
-  window.requestAnimationFrame(() => {
-    enhanceBookOutline()
-    window.setTimeout(enhanceBookOutline, 250)
+  if (typeof window === 'undefined') return
+  cancelOutlineSchedule()
+  const scheduleVersion = outlineScheduleVersion
+
+  outlineFrame = window.requestAnimationFrame(() => {
+    outlineFrame = 0
+    if (scheduleVersion !== outlineScheduleVersion) return
+    if (enhanceBookOutline()) return
+
+    const runLater = () => {
+      outlineIdle = undefined
+      outlineTimer = undefined
+      if (scheduleVersion === outlineScheduleVersion) enhanceBookOutline()
+    }
+    const idle = (window as typeof window & {
+      requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number
+    }).requestIdleCallback
+
+    if (idle) outlineIdle = idle.call(window, runLater, { timeout: 500 })
+    else outlineTimer = window.setTimeout(runLater, 120)
   })
 }
 
 export default {
   extends: DefaultTheme,
   enhanceApp({ router }) {
-    router.onAfterRouteChanged = (to) => {
+    const previousBeforeRouteChange = router.onBeforeRouteChange
+    router.onBeforeRouteChange = async (to) => {
+      const result = await previousBeforeRouteChange?.(to)
+      if (result === false) return false
+      cancelOutlineSchedule()
+      hideBookOutline()
+    }
+
+    router.onAfterRouteChange = (to) => {
+      scheduleOutlineEnhancement()
       if (typeof window === 'undefined') return
       const gtag = (window as typeof window & { gtag?: (...args: unknown[]) => void }).gtag
       gtag?.('event', 'page_view', {
@@ -72,11 +142,10 @@ export default {
         page_location: window.location.href,
         page_title: document.title,
       })
-      scheduleOutlineEnhancement()
     }
 
     if (typeof window !== 'undefined') {
-      window.setTimeout(scheduleOutlineEnhancement, 0)
+      window.requestAnimationFrame(scheduleOutlineEnhancement)
     }
   },
 }

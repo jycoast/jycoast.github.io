@@ -47,7 +47,10 @@ body {
   background: #3b2a0f;
 }
 
-/* PDF-style bookmark rail. */
+.book-outline-pending .VPDoc .left-aside .VPDocAsideOutline {
+  visibility: hidden;
+}
+
 .VPDoc .left-aside {
   flex: 0 0 var(--book-outline-width);
   width: var(--book-outline-width);

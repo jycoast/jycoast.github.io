@@ -7,7 +7,10 @@ export default defineConfig({
   cleanUrls: false,
   markdown: {
     math: true,
-    lineNumbers: true,
+    lineNumbers: false,
+    image: {
+      lazyLoading: true,
+    },
   },
   head: [
     ['link', { rel: 'icon', href: '/favicon.ico' }],
