@@ -1,10 +1,26 @@
 import { defineConfig } from 'vitepress'
+import { pageMetadata, seoHead, SITE_DESCRIPTION, SITE_URL } from './seo'
 import { topNav } from './theme/book-sidebar'
 
 export default defineConfig({
   lang: 'zh-CN',
   title: 'thinking in programming',
+  description: SITE_DESCRIPTION,
   cleanUrls: false,
+  sitemap: {
+    hostname: SITE_URL,
+    transformItems: (items) => items.filter((item) => !item.url.endsWith('/404.html')),
+  },
+  transformPageData: (pageData, { siteConfig }) => {
+    const metadata = pageMetadata(pageData, siteConfig.srcDir)
+    return metadata
+      ? { title: metadata.title, description: metadata.description }
+      : undefined
+  },
+  transformHead: ({ pageData, siteConfig, title }) => {
+    const metadata = pageMetadata(pageData, siteConfig.srcDir)
+    return metadata ? seoHead(metadata, title) : []
+  },
   markdown: {
     math: true,
     lineNumbers: false,

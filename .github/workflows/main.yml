@@ -22,11 +22,17 @@ jobs:
           cache: npm
           cache-dependency-path: package-lock.json
 
+      - name: Install dependencies
+        run: npm ci
+
       - name: Check documentation navigation
         run: npm run docs:check-nav
 
       - name: Build documentation
-        run: npm ci && npm run docs:build
+        run: npm run docs:build
+
+      - name: Check SEO metadata and indexing files
+        run: npm run docs:check-seo
 
       - name: Deploy
         if: github.event_name == 'push'
