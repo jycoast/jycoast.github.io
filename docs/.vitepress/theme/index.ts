@@ -27,6 +27,18 @@ function enhanceBookOutline() {
     return false
   }
 
+  const pageHeadings = Array.from(
+    document.querySelectorAll('.VPDoc .vp-doc h1, .VPDoc .vp-doc h2, .VPDoc .vp-doc h3, .VPDoc .vp-doc h4'),
+  )
+  const outlineLinks = Array.from(outline.querySelectorAll('a.outline-link'))
+  const headingIds = new Set(pageHeadings.map((heading) => heading.id).filter(Boolean))
+  const outlineMatchesCurrentPage = outlineLinks.length > 0 && outlineLinks.every((link) => {
+    const id = decodeURIComponent(link.hash.slice(1))
+    return headingIds.has(id)
+  })
+
+  if (pageHeadings.length > 0 && !outlineMatchesCurrentPage) return false
+
   outline.querySelectorAll('li').forEach((item) => {
     const directChildren = Array.from(item.children)
     const childList = directChildren.find(
