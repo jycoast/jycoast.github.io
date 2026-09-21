@@ -26,11 +26,11 @@ npm run docs:build
 
 ## 内容入口
 
-- [Java 面试](https://jycoder.club/interview/)
-- [Java 基础](https://jycoder.club/java_basics/)
+- [Java 面试](https://jiyc.kdns.fr/interview/)
+- [Java 基础](https://jiyc.kdns.fr/java_basics/)
 - [数据结构与算法 Top 100](https://algorithm-wiki.pages.dev/)
-- [数据库](https://jycoder.club/database/mysql/)
-- [常用框架](https://jycoder.club/framework/spring_framework/)
-- [中间件](https://jycoder.club/middleware/jvm/)
-- [学习路线](https://jycoder.club/study_guide/study_path/)
-- [深度好文](https://jycoder.club/study_guide/favorite_article/)
+- [数据库](https://jiyc.kdns.fr/database/mysql/)
+- [常用框架](https://jiyc.kdns.fr/framework/spring_framework/)
+- [中间件](https://jiyc.kdns.fr/middleware/jvm/)
+- [学习路线](https://jiyc.kdns.fr/study_guide/study_path/)
+- [深度好文](https://jiyc.kdns.fr/study_guide/favorite_article/)

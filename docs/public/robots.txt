@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://jycoder.club/sitemap.xml
+Sitemap: https://jiyc.kdns.fr/sitemap.xml

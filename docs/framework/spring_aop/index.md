@@ -5,7 +5,7 @@ tags: Spring
 author: 吉永超
 ---
 
-AOP（Aspect Oriented Programming）面向切面编程，是针对面向对象编程的一种补充，同时也是Spring中第二个最核心的功能。在学习AOP之前，可以首先了解有关于Spring IoC的相关内容：[Spring Framework](https://jycoder.club/2020/07/16/SpringFramework/)。
+AOP（Aspect Oriented Programming）面向切面编程，是针对面向对象编程的一种补充，同时也是Spring中第二个最核心的功能。在学习AOP之前，可以首先了解有关于Spring IoC的相关内容：[Spring Framework](https://jiyc.kdns.fr/framework/spring_framework/)。
 
 <!-- more -->
 

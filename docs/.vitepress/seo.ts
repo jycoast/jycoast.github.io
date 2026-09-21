@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import type { HeadConfig, PageData } from 'vitepress'
 
-export const SITE_URL = 'https://jycoder.club'
+export const SITE_URL = 'https://jiyc.kdns.fr'
 export const SITE_TITLE = 'thinking in programming'
 export const SITE_DESCRIPTION = '面向 Java、数据库、常用框架与计算机基础的中文技术知识库。'
 

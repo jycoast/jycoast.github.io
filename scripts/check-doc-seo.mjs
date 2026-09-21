@@ -4,7 +4,7 @@ import path from 'node:path'
 const repoRoot = process.cwd()
 const docsRoot = path.join(repoRoot, 'docs')
 const distRoot = path.join(docsRoot, '.vitepress', 'dist')
-const siteUrl = 'https://jycoder.club'
+const siteUrl = 'https://jiyc.kdns.fr'
 
 function collectMarkdown(directory, result = []) {
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
