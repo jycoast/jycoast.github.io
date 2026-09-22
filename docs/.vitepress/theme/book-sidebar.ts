@@ -3,110 +3,119 @@ export interface BookItem {
   text: string
   link?: string
   children?: BookItem[]
+  /** 生成顶部导航时忽略子级，下拉菜单只保留带链接的直接入口（类似「中间件」） */
+  flatInNav?: boolean
 }
 
 export const bookSidebar: BookItem[] = [
   {
-    id: 'interview',
-    text: 'Java 面试',
-    link: '/interview/',
+    id: 'java-technology',
+    text: 'Java 技术',
+    flatInNav: true,
     children: [
       {
-        id: 'interview-java',
+        id: 'interview',
+        text: 'Java 面试',
+        link: '/interview/',
+        children: [
+          {
+            id: 'interview-java',
+            text: 'Java 基础',
+            children: [
+              { id: 'interview-java-basic', text: 'Java 语言', link: '/interview/java_basics/Java_basic.html' },
+              { id: 'interview-java-concurrency', text: 'Java 并发编程', link: '/interview/java_basics/Java_concurrency.html' },
+              { id: 'interview-java-network', text: 'Java 网络编程', link: '/interview/java_basics/Java_network.html' },
+              { id: 'interview-java-vm', text: 'Java 虚拟机', link: '/interview/java_basics/Java_virtual_machine.html' },
+            ],
+          },
+          {
+            id: 'interview-auth',
+            text: '认证与安全',
+            children: [
+              { id: 'interview-security', text: '网络安全', link: '/interview/auth/cyber_security.html' },
+            ],
+          },
+          {
+            id: 'interview-database',
+            text: '数据库',
+            children: [
+              { id: 'interview-mysql', text: 'MySQL', link: '/interview/database/MySQL.html' },
+              { id: 'interview-redis', text: 'Redis', link: '/interview/database/Redis.html' },
+              { id: 'interview-elasticsearch', text: 'Elasticsearch', link: '/interview/database/Elasticsearch.html' },
+            ],
+          },
+          {
+            id: 'interview-framework',
+            text: '常用框架',
+            children: [
+              { id: 'interview-spring', text: 'Spring', link: '/interview/common_framework/Spring.html' },
+              { id: 'interview-spring-boot', text: 'Spring Boot', link: '/interview/common_framework/SpringBoot.html' },
+              { id: 'interview-mybatis', text: 'MyBatis', link: '/interview/common_framework/Mybatis.html' },
+              { id: 'interview-netty', text: 'Netty', link: '/interview/common_framework/Netty.html' },
+            ],
+          },
+          {
+            id: 'interview-distributed',
+            text: '分布式',
+            children: [
+              { id: 'interview-microservice', text: '微服务', link: '/interview/distributed/microservice.html' },
+              { id: 'interview-mq', text: '消息队列', link: '/interview/distributed/mq.html' },
+            ],
+          },
+          {
+            id: 'interview-architecture',
+            text: '系统架构',
+            children: [
+              { id: 'interview-design-pattern', text: '设计模式', link: '/interview/architecture/design_pattern.html' },
+            ],
+          },
+          {
+            id: 'interview-operations',
+            text: '部署运维',
+            children: [
+              { id: 'interview-docker', text: 'Docker', link: '/interview/operations_maintenance/Docker.html' },
+              { id: 'interview-linux', text: 'Linux', link: '/interview/operations_maintenance/Linux.html' },
+              { id: 'interview-nginx', text: 'Nginx', link: '/interview/operations_maintenance/Nginx.html' },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'java-basics',
         text: 'Java 基础',
+        link: '/java_basics/',
         children: [
-          { id: 'interview-java-basic', text: 'Java 语言', link: '/interview/java_basics/Java_basic.html' },
-          { id: 'interview-java-concurrency', text: 'Java 并发编程', link: '/interview/java_basics/Java_concurrency.html' },
-          { id: 'interview-java-network', text: 'Java 网络编程', link: '/interview/java_basics/Java_network.html' },
-          { id: 'interview-java-vm', text: 'Java 虚拟机', link: '/interview/java_basics/Java_virtual_machine.html' },
+          {
+            id: 'java-se',
+            text: 'JavaSE',
+            children: [
+              { id: 'java-functional', text: '函数式编程', link: '/java_basics/functional_programming/' },
+              { id: 'java-core', text: '集合与 IO', link: '/java_basics/core_technology/' },
+              { id: 'java-concurrent', text: '并发编程', link: '/java_basics/concurrent_programming/' },
+            ],
+          },
+          {
+            id: 'java-ee',
+            text: 'JavaEE',
+            children: [
+              { id: 'java-jndi', text: 'JNDI', link: '/java_basics/jndi/' },
+              { id: 'java-jmx', text: 'JMX', link: '/java_basics/jmx/' },
+              { id: 'java-rmi', text: 'RMI', link: '/java_basics/rmi/' },
+              { id: 'java-jms', text: 'JMS', link: '/java_basics/jms/' },
+              { id: 'java-ejb', text: 'EJB', link: '/java_basics/ejb/' },
+            ],
+          },
+          {
+            id: 'java-performance',
+            text: '性能与监控',
+            children: [
+              { id: 'java-log', text: '日志', link: '/java_basics/log/' },
+              { id: 'java-monitoring', text: '监控', link: '/java_basics/monitoring/' },
+            ],
+          },
+          { id: 'java-knowledge-system', text: '知识体系', link: '/java_basics/knowledge_system/' },
         ],
       },
-      {
-        id: 'interview-auth',
-        text: '认证与安全',
-        children: [
-          { id: 'interview-security', text: '网络安全', link: '/interview/auth/cyber_security.html' },
-        ],
-      },
-      {
-        id: 'interview-database',
-        text: '数据库',
-        children: [
-          { id: 'interview-mysql', text: 'MySQL', link: '/interview/database/MySQL.html' },
-          { id: 'interview-redis', text: 'Redis', link: '/interview/database/Redis.html' },
-          { id: 'interview-elasticsearch', text: 'Elasticsearch', link: '/interview/database/Elasticsearch.html' },
-        ],
-      },
-      {
-        id: 'interview-framework',
-        text: '常用框架',
-        children: [
-          { id: 'interview-spring', text: 'Spring', link: '/interview/common_framework/Spring.html' },
-          { id: 'interview-spring-boot', text: 'Spring Boot', link: '/interview/common_framework/SpringBoot.html' },
-          { id: 'interview-mybatis', text: 'MyBatis', link: '/interview/common_framework/Mybatis.html' },
-          { id: 'interview-netty', text: 'Netty', link: '/interview/common_framework/Netty.html' },
-        ],
-      },
-      {
-        id: 'interview-distributed',
-        text: '分布式',
-        children: [
-          { id: 'interview-microservice', text: '微服务', link: '/interview/distributed/microservice.html' },
-          { id: 'interview-mq', text: '消息队列', link: '/interview/distributed/mq.html' },
-        ],
-      },
-      {
-        id: 'interview-architecture',
-        text: '系统架构',
-        children: [
-          { id: 'interview-design-pattern', text: '设计模式', link: '/interview/architecture/design_pattern.html' },
-        ],
-      },
-      {
-        id: 'interview-operations',
-        text: '部署运维',
-        children: [
-          { id: 'interview-docker', text: 'Docker', link: '/interview/operations_maintenance/Docker.html' },
-          { id: 'interview-linux', text: 'Linux', link: '/interview/operations_maintenance/Linux.html' },
-          { id: 'interview-nginx', text: 'Nginx', link: '/interview/operations_maintenance/Nginx.html' },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'java-basics',
-    text: 'Java 基础',
-    link: '/java_basics/',
-    children: [
-      {
-        id: 'java-se',
-        text: 'JavaSE',
-        children: [
-          { id: 'java-functional', text: '函数式编程', link: '/java_basics/functional_programming/' },
-          { id: 'java-core', text: '集合与 IO', link: '/java_basics/core_technology/' },
-          { id: 'java-concurrent', text: '并发编程', link: '/java_basics/concurrent_programming/' },
-        ],
-      },
-      {
-        id: 'java-ee',
-        text: 'JavaEE',
-        children: [
-          { id: 'java-jndi', text: 'JNDI', link: '/java_basics/jndi/' },
-          { id: 'java-jmx', text: 'JMX', link: '/java_basics/jmx/' },
-          { id: 'java-rmi', text: 'RMI', link: '/java_basics/rmi/' },
-          { id: 'java-jms', text: 'JMS', link: '/java_basics/jms/' },
-          { id: 'java-ejb', text: 'EJB', link: '/java_basics/ejb/' },
-        ],
-      },
-      {
-        id: 'java-performance',
-        text: '性能与监控',
-        children: [
-          { id: 'java-log', text: '日志', link: '/java_basics/log/' },
-          { id: 'java-monitoring', text: '监控', link: '/java_basics/monitoring/' },
-        ],
-      },
-      { id: 'java-knowledge-system', text: '知识体系', link: '/java_basics/knowledge_system/' },
     ],
   },
   {
@@ -211,7 +220,13 @@ export const topNav = [
     text: section.text,
     ...(section.link ? { link: section.link } : {}),
     ...(section.children?.length
-      ? { items: section.children.map(toNavItem) }
+      ? {
+          items: section.flatInNav
+            ? section.children
+                .filter((child) => child.link)
+                .map((child) => ({ text: child.text, link: child.link }))
+            : section.children.map(toNavItem),
+        }
       : {}),
   })),
 ]
