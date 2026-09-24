@@ -116,6 +116,7 @@ export const bookSidebar: BookItem[] = [
           { id: 'java-knowledge-system', text: '知识体系', link: '/java_basics/knowledge_system/' },
         ],
       },
+      { id: 'java-concurrency', text: 'Java 并发', link: '/java_concurrency/' },
     ],
   },
   {

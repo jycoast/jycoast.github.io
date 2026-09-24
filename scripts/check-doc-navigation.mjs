@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { discoverSeries, isFragmentDir } from '../docs/.vitepress/series.mjs'
 
 const repoRoot = process.cwd()
 const docsRoot = path.join(repoRoot, 'docs')
@@ -29,7 +30,13 @@ function normalizeLink(link) {
   return link.split('#')[0].split('?')[0]
 }
 
-const files = collectMarkdown(docsRoot)
+// Files composed into a series page are not routes; every one of them must be
+// referenced by the manifest so a renamed or dropped article cannot go unnoticed.
+const series = await discoverSeries(docsRoot)
+const fragmentFiles = collectMarkdown(docsRoot).filter((file) => isFragmentDir(series.fragmentDirs, file))
+const orphanFragments = fragmentFiles.filter((file) => !series.fragmentFiles.has(path.resolve(file)))
+
+const files = collectMarkdown(docsRoot).filter((file) => !isFragmentDir(series.fragmentDirs, file))
 const routes = files.map(routeFor)
 const duplicateRoutes = routes.filter((route, index) => routes.indexOf(route) !== index)
 const localLinks = [...navigationSource.matchAll(/\blink:\s*['"]([^'"]+)['"]/g)]
@@ -51,13 +58,19 @@ const required = ['/framework/spring_aop/']
 const missingRequired = required.filter((route) => !linkCounts.has(route))
 
 console.log(`Navigation audit: ${routes.length} markdown routes, ${localLinks.length} local navigation links`)
+console.log(`Series fragments: ${fragmentFiles.length} (composed, not routed)`)
 console.log(`Orphan routes: ${orphanRoutes.length}`)
+console.log(`Orphan series fragments: ${orphanFragments.length}`)
 console.log(`Broken local links: ${brokenLinks.length}`)
 console.log(`Duplicate navigation links: ${duplicateLinks.length}`)
 
 if (orphanRoutes.length) {
   console.error('\nOrphan routes:')
   orphanRoutes.forEach((route) => console.error(`- ${route}`))
+}
+if (orphanFragments.length) {
+  console.error('\nOrphan series fragments (not referenced by any manifest):')
+  orphanFragments.forEach((file) => console.error(`- ${path.relative(repoRoot, file).split(path.sep).join('/')}`))
 }
 if (brokenLinks.length) {
   console.error('\nBroken local links:')
@@ -76,6 +89,13 @@ if (duplicateRoutes.length) {
   ;[...new Set(duplicateRoutes)].forEach((route) => console.error(`- ${route}`))
 }
 
-if (orphanRoutes.length || brokenLinks.length || duplicateLinks.length || missingRequired.length || duplicateRoutes.length) {
+if (
+  orphanRoutes.length ||
+  orphanFragments.length ||
+  brokenLinks.length ||
+  duplicateLinks.length ||
+  missingRequired.length ||
+  duplicateRoutes.length
+) {
   process.exitCode = 1
 }

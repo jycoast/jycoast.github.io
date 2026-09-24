@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { discoverSeries, isFragmentDir } from '../docs/.vitepress/series.mjs'
 
 const repoRoot = process.cwd()
 const docsRoot = path.join(repoRoot, 'docs')
@@ -49,7 +50,8 @@ function assert(condition, message) {
   if (!condition) throw new Error(message)
 }
 
-const files = collectMarkdown(docsRoot)
+const series = await discoverSeries(docsRoot)
+const files = collectMarkdown(docsRoot).filter((file) => !isFragmentDir(series.fragmentDirs, file))
 const routes = files.map(routeFor)
 const routeSet = new Set(routes)
 assert(routes.length === routeSet.size, 'Duplicate Markdown routes detected')

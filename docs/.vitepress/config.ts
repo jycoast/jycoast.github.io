@@ -1,15 +1,46 @@
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitepress'
 import { pageMetadata, seoHead, SITE_DESCRIPTION, SITE_URL } from './seo'
+import { composeSeries, discoverSeries } from './series.mjs'
 import { topNav } from './theme/book-sidebar'
+
+const docsRoot = path.dirname(fileURLToPath(import.meta.url))
+const srcDir = path.dirname(docsRoot)
+
+const series = await discoverSeries(srcDir)
+const fragmentDirPatterns = [...series.fragmentDirs]
+  .map((dir) => `${path.relative(srcDir, dir).split(path.sep).join('/')}/**`)
+  .sort()
 
 export default defineConfig({
   lang: 'zh-CN',
   title: 'thinking in programming',
   description: SITE_DESCRIPTION,
   cleanUrls: false,
+  // Fragment files are composed into their shell page, never published on their own.
+  srcExclude: fragmentDirPatterns,
   sitemap: {
     hostname: SITE_URL,
     transformItems: (items) => items.filter((item) => !item.url.endsWith('/404.html')),
+  },
+  vite: {
+    plugins: [
+      {
+        name: 'vitepress-series',
+        // Must run before VitePress turns markdown into a Vue module.
+        enforce: 'pre',
+        async transform(code, id) {
+          const [file] = id.split('?')
+          if (!file.endsWith('.md')) return
+          const composed = await composeSeries(code, file)
+          if (!composed) return
+          for (const fragment of composed.fragments) this.addWatchFile(fragment)
+          this.addWatchFile(composed.manifestPath)
+          return { code: composed.code, map: null }
+        },
+      },
+    ],
   },
   transformPageData: (pageData, { siteConfig }) => {
     const metadata = pageMetadata(pageData, siteConfig.srcDir)
