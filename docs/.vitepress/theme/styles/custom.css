@@ -286,6 +286,16 @@ body {
   }
 }
 
+/* Laptop widths: the menu still fits inline, but only with tighter item
+   spacing, otherwise it overflows past the appearance/social controls. */
+@media (min-width: 1440px) and (max-width: 1535.98px) {
+  .VPNavBarMenu .VPNavBarMenuLink,
+  .VPNavBarMenu .VPNavBarMenuGroup .button {
+    padding: 0 7px;
+    font-size: 13px;
+  }
+}
+
 /* The homepage page-class rules (`.custom-home-page .container`) also match
    the mobile nav screen container, stretching the menu across the viewport;
    keep the theme's centered column instead. */

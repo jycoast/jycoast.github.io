@@ -18,6 +18,14 @@
 //     ],
 //   }
 //
+// A part may omit `title` to emit its articles straight onto the page with no
+// group heading above them (a flat series).
+//
+// `articleLevel` (optional, default 2) sets the heading level of an article
+// title; content inside a fragment starts one level below it. Use 1 for a flat
+// series whose articles should read as top-level chapters, like the shell page's
+// own H1.
+//
 // Each fragment is a normal markdown file carrying its own `title:` frontmatter;
 // that title becomes the article heading on the composed page.
 import fs from 'node:fs'
@@ -27,7 +35,11 @@ import { pathToFileURL } from 'node:url'
 const FRONTMATTER_RE = /^---\s*\r?\n([\s\S]*?)\r?\n---\s*\r?\n?/
 const PLACEHOLDER = '<!-- series -->'
 const DEFAULT_PART_DIR = 'parts'
-const ARTICLE_HEADING_LEVEL = 3 // H1 is the section, H2 the article, so fragments start at H3
+// Heading level for an article title. The default assumes the manifest groups
+// articles under parts: H1 is the part, H2 the article, so content starts at H3.
+// A flat manifest can pass `articleLevel: 1` to make each article a top-level
+// H1 instead (content then starts at H2).
+const DEFAULT_ARTICLE_LEVEL = 2
 const MAX_HEADING_LEVEL = 4 // the left outline renders levels 1-4
 
 /** Read the flat `key: value` frontmatter block. Nested values are not supported. */
@@ -80,7 +92,12 @@ async function loadManifest(manifestPath) {
   const cached = manifestCache.get(manifestPath)
   if (cached && cached.mtime === mtime) return cached.value
 
-  const imported = await import(pathToFileURL(manifestPath).href)
+  // Node caches ES modules by URL, so re-importing the same path would hand back
+  // the stale instance and defeat the mtime check — a long-running dev server
+  // would keep rendering the old manifest. The mtime query forces a fresh module
+  // per edit.
+  const moduleUrl = `${pathToFileURL(manifestPath).href}?mtime=${mtime}`
+  const imported = await import(moduleUrl)
   const value = imported.default ?? imported
   if (!Array.isArray(value.parts)) {
     throw new Error(`${manifestPath}: manifest must export { parts: [...] }`)
@@ -91,13 +108,17 @@ async function loadManifest(manifestPath) {
 
 function normalizeManifest(value) {
   const dir = value.dir ?? DEFAULT_PART_DIR
+  const articleLevel = value.articleLevel ?? DEFAULT_ARTICLE_LEVEL
+  if (!Number.isInteger(articleLevel) || articleLevel < 1 || articleLevel > MAX_HEADING_LEVEL - 1) {
+    throw new Error(`articleLevel must be an integer between 1 and ${MAX_HEADING_LEVEL - 1}, got ${articleLevel}`)
+  }
   const parts = value.parts.map((part, index) => {
-    if (!part?.title || !Array.isArray(part.articles)) {
-      throw new Error(`parts[${index}] must be { title, articles: [...] }`)
+    if (!Array.isArray(part?.articles)) {
+      throw new Error(`parts[${index}] must be { title, articles: [...] } (title is optional)`)
     }
-    return { title: part.title, articles: part.articles }
+    return { title: part.title ?? '', articles: part.articles }
   })
-  return { dir, parts }
+  return { dir, articleLevel, parts }
 }
 
 /** Resolve the fragments referenced by a manifest, in order. */
@@ -116,7 +137,11 @@ function resolveFragments(chapterDir, manifest) {
   return { fragmentDir, fragments }
 }
 
-function shiftHeadings(body) {
+/**
+ * Shift a fragment's headings so its shallowest heading sits one level below the
+ * article title (`contentLevel`), keeping relative nesting intact.
+ */
+function shiftHeadings(body, contentLevel) {
   const lines = body.split('\n')
   const levels = []
   let inFence = false
@@ -129,7 +154,7 @@ function shiftHeadings(body) {
     const match = line.match(/^(#{1,6})\s/)
     if (match) levels.push(match[1].length)
   }
-  const shift = levels.length ? ARTICLE_HEADING_LEVEL - Math.min(...levels) : 0
+  const shift = levels.length ? contentLevel - Math.min(...levels) : 0
 
   inFence = false
   return lines
@@ -147,7 +172,7 @@ function shiftHeadings(body) {
 }
 
 /** Fragment body: drop its frontmatter and the leading H1 (the manifest supplies the title). */
-function fragmentBody(absFile) {
+function fragmentBody(absFile, contentLevel) {
   const { body } = splitSource(fs.readFileSync(absFile, 'utf8'))
   const lines = body.trim().split('\n')
   const first = lines.findIndex((line) => line.trim())
@@ -155,7 +180,7 @@ function fragmentBody(absFile) {
     lines.splice(first, 1)
     while (lines[first] !== undefined && !lines[first].trim()) lines.splice(first, 1)
   }
-  return shiftHeadings(lines.join('\n').trim())
+  return shiftHeadings(lines.join('\n').trim(), contentLevel)
 }
 
 /**
@@ -174,14 +199,17 @@ export async function composeSeries(source, absShellFile) {
 
   const chunks = []
   let cursor = 0
+  const articleHashes = '#'.repeat(manifest.articleLevel)
   for (const part of manifest.parts) {
-    chunks.push(`# ${part.title}`)
+    // A part without a title contributes no group heading: its articles land
+    // directly on the page, at the manifest's article level.
+    if (part.title) chunks.push(`# ${part.title}`)
     for (const name of part.articles) {
       const absFile = fragments[cursor++]
       const { frontmatter: meta } = splitSource(fs.readFileSync(absFile, 'utf8'))
       const title = meta.title || path.basename(absFile, '.md')
-      chunks.push(`## ${title}`)
-      chunks.push(fragmentBody(absFile))
+      chunks.push(`${articleHashes} ${title}`)
+      chunks.push(fragmentBody(absFile, manifest.articleLevel + 1))
     }
   }
 

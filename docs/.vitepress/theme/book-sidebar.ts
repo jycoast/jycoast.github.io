@@ -95,17 +95,6 @@ export const bookSidebar: BookItem[] = [
             ],
           },
           {
-            id: 'java-ee',
-            text: 'JavaEE',
-            children: [
-              { id: 'java-jndi', text: 'JNDI', link: '/java_basics/jndi/' },
-              { id: 'java-jmx', text: 'JMX', link: '/java_basics/jmx/' },
-              { id: 'java-rmi', text: 'RMI', link: '/java_basics/rmi/' },
-              { id: 'java-jms', text: 'JMS', link: '/java_basics/jms/' },
-              { id: 'java-ejb', text: 'EJB', link: '/java_basics/ejb/' },
-            ],
-          },
-          {
             id: 'java-performance',
             text: '性能与监控',
             children: [
@@ -187,6 +176,13 @@ export const bookSidebar: BookItem[] = [
     text: '计算机原理',
     children: [
       { id: 'computer-os', text: '操作系统', link: '/computer_theory/Os/' },
+    ],
+  },
+  {
+    id: 'ai',
+    text: 'AI',
+    children: [
+      { id: 'ai-rag', text: 'RAG', link: '/ai/rag/' },
     ],
   },
   {
