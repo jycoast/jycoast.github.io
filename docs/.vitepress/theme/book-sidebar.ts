@@ -194,11 +194,6 @@ export const bookSidebar: BookItem[] = [
       { id: 'study-path', text: '学习路线', link: '/study_guide/study_path/' },
     ],
   },
-  {
-    id: 'about',
-    text: '关于我',
-    link: '/about/',
-  },
 ]
 
 function toNavItem(item: BookItem) {
