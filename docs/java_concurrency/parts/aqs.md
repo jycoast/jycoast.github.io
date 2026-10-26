@@ -23,6 +23,10 @@ AQS 核心封装了三样东西：
 
 ![image.png](https://blog-1304855543.cos.ap-guangzhou.myqcloud.com/blog/171d2d42c77b2765~tplv-t2oaga2asx-image.image)
 
+光看静态图不够直观。下面跟着「线程一抢锁 → 线程二、线程三入队 → 线程一释放锁 → 线程二接棒」这条时间线，把 CLH 队列的入队与出队动画演示一遍。建议点「下一步」逐步推演，每一步都对应后文源码里的一次 CAS 或一次 park()：
+
+<CLHQueue />
+
 #### AQS的结构
 
 ```java

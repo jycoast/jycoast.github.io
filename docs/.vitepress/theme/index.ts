@@ -1,4 +1,5 @@
 import DefaultTheme from 'vitepress/theme'
+import CLHQueue from './components/CLHQueue.vue'
 import './styles/custom.css'
 
 let outlineFrame = 0
@@ -136,7 +137,9 @@ function scheduleOutlineEnhancement() {
 
 export default {
   extends: DefaultTheme,
-  enhanceApp({ router }) {
+  enhanceApp({ app, router }) {
+    app.component('CLHQueue', CLHQueue)
+
     const previousBeforeRouteChange = router.onBeforeRouteChange
     router.onBeforeRouteChange = async (to) => {
       const result = await previousBeforeRouteChange?.(to)
